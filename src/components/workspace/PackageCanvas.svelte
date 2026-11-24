@@ -675,7 +675,7 @@
   </div>
 
   <!-- Bottom-Left Semantic Legend -->
-  <div data-placement-furniture class="card card-border absolute bottom-3 left-3 z-20 flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-1.5 bg-base-100/95 text-[11px] text-base-content/60">
+  <div data-placement-furniture class="card card-border absolute bottom-3 left-3 z-20 flex flex-row flex-wrap items-center justify-start text-left gap-x-3 gap-y-1 px-3 py-1.5 bg-base-100/95 text-[11px] text-base-content/60">
     <span class="inline-flex items-center gap-1.5">
       <span class="size-2.5 rounded-xs bg-base-300"></span>
       Unused

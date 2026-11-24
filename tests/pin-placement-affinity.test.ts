@@ -563,8 +563,8 @@ describe('placement overlay interaction refresh', () => {
 
   it('uses tighter ring spacing with a larger outer ring', () => {
     const overlay = readOverlay();
-    expect(overlay).toContain('high: 0.5');
-    expect(overlay).toContain('medium: 0.72');
+    expect(overlay).toContain('high: 0.8');
+    expect(overlay).toContain('medium: 0.84');
     expect(overlay).toContain('low: 0.98');
     expect(overlay).not.toContain('0.34');
     expect(overlay).not.toContain('0.66');
@@ -738,8 +738,8 @@ describe('priority ring identifiers', () => {
       path.join(ROOT, 'src/components/workspace/PlacementOverlay.svelte'),
       'utf8',
     );
-    expect(overlay).toContain('high: 0.5');
-    expect(overlay).toContain('medium: 0.72');
+    expect(overlay).toContain('high: 0.8');
+    expect(overlay).toContain('medium: 0.84');
     expect(overlay).toContain('low: 0.98');
     const panel = fs.readFileSync(
       path.join(ROOT, 'src/components/workspace/PlacementPanel.svelte'),

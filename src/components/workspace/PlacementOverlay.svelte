@@ -38,8 +38,8 @@
 
   /** Display-only ring radii relative to the safe outer radius, high first. */
   const RING_FACTORS: Record<PlacementRing, number> = {
-    high: 0.5,
-    medium: 0.72,
+    high: 0.8,
+    medium: 0.84,
     low: 0.98,
   };
 

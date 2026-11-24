@@ -4,7 +4,92 @@
  * cover vendor badges, RP GPIOBASE windows and remap summaries.
  */
 
-import type { CatalogIndexEntry, CatalogMeta, PinTag, VendorId } from './types';
+import type {
+  CatalogIndexEntry,
+  CatalogMeta,
+  PeripheralKind,
+  PeripheralStatus,
+  PinTag,
+  VendorId,
+} from './types';
+
+/** Stable identifiers of the peripheral categories shown in the workspace tree. */
+export type PeripheralCategoryId =
+  | 'system'
+  | 'analog'
+  | 'timers'
+  | 'programmable'
+  | 'connectivity'
+  | 'other';
+
+/** One browsable category and the peripheral kinds it contains. */
+export interface PeripheralCategory {
+  id: PeripheralCategoryId;
+  label: string;
+  kinds: PeripheralKind[];
+}
+
+/**
+ * Shared category table for the tree and the detail header. `kinds: ['pwm', 'pio']`
+ * is the RP/CH32 programmable bucket; `other` is the collapsed catch-all.
+ */
+export const PERIPHERAL_CATEGORIES: readonly PeripheralCategory[] = [
+  { id: 'system', label: 'System Core', kinds: ['sys'] },
+  { id: 'analog', label: 'Analog', kinds: ['adc', 'dac'] },
+  { id: 'timers', label: 'Timers', kinds: ['tim'] },
+  { id: 'programmable', label: 'Programmable I/O', kinds: ['pwm', 'pio'] },
+  { id: 'connectivity', label: 'Connectivity', kinds: ['spi', 'i2c', 'usart', 'can', 'usb'] },
+  { id: 'other', label: 'Other peripherals', kinds: ['other'] },
+];
+
+/** Resolve the category that owns a peripheral kind. */
+export function peripheralCategoryForKind(kind: PeripheralKind): PeripheralCategory {
+  return PERIPHERAL_CATEGORIES.find((category) => category.kinds.includes(kind)) ?? PERIPHERAL_CATEGORIES[5];
+}
+
+/** Configured and unconfigured peripheral name lists, each sorted for display. */
+export interface PeripheralPartition {
+  configured: string[];
+  unconfigured: string[];
+}
+
+function comparePeripheralNames(a: string, b: string): number {
+  return a.localeCompare(b, undefined, { numeric: true });
+}
+
+/**
+ * Partition peripheral names using solver status and selected modes.
+ * A peripheral is configured when it has a status other than `none` or a mode
+ * other than `disabled`; absent values and blank modes are unconfigured.
+ */
+export function partitionPeripherals(
+  peripheralStatus: Record<string, PeripheralStatus>,
+  peripheralModes: Record<string, string>,
+): PeripheralPartition {
+  const configured: string[] = [];
+  const unconfigured: string[] = [];
+  const names = new Set([...Object.keys(peripheralStatus), ...Object.keys(peripheralModes)]);
+  for (const name of names) {
+    const status = peripheralStatus[name];
+    const mode = peripheralModes[name];
+    const hasStatus = status !== undefined && status !== 'none';
+    const hasMode = typeof mode === 'string' && mode.trim().length > 0 && mode !== 'disabled';
+    (hasStatus || hasMode ? configured : unconfigured).push(name);
+  }
+  configured.sort(comparePeripheralNames);
+  unconfigured.sort(comparePeripheralNames);
+  return { configured, unconfigured };
+}
+
+/** Order names configured-first while preserving alphabetical order in each group. */
+export function orderPeripheralNames(names: string[], partition: PeripheralPartition): string[] {
+  const configured = new Set(partition.configured);
+  return [...names].sort((a, b) => {
+    const rankA = configured.has(a) ? 0 : 1;
+    const rankB = configured.has(b) ? 0 : 1;
+    return rankA - rankB || comparePeripheralNames(a, b);
+  });
+}
 
 /** Curated hero chips, one per vendor, each loaded from generated data. */
 export const HERO_CHIPS: Array<{ vendor: VendorId; id: string; label: string }> = [

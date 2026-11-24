@@ -1,9 +1,7 @@
 import {
   PINCRAFT_STATE_VERSION,
-  normalizeDockTab,
   normalizePackageRotation,
   parseGpioConfig,
-  type DockTab,
   type GpioConfig,
   type PinAssignment,
   type PinPlacementPreference,
@@ -32,8 +30,6 @@ export interface PinCraftProjectFile {
   gpioConfig?: Record<string, GpioConfig>;
   placement?: Record<string, PinPlacementPreference>;
   placementOverlayVisible?: boolean;
-  /** Active portrait dock tab, omitted until the user selects one. */
-  dockTab?: DockTab;
   /** Package rotation, emitted only for the non-default -90 value. */
   packageRotation?: 0 | -90;
   /** Display-only placement overlay rotation, omitted at zero. */
@@ -150,7 +146,6 @@ export function exportPinoutJson(state: WorkspaceState, vendor?: VendorId): stri
     }
     doc.placement = sortRecordKeys(cleanPlacement);
   }
-  if (state.dockTab !== undefined) doc.dockTab = normalizeDockTab(state.dockTab);
   const rotation = normalizePackageRotation(state.packageRotation);
   if (rotation !== 0) doc.packageRotation = rotation;
   const overlayRotation = normalizeAngle(state.placementOverlayRotation ?? 0);
@@ -277,7 +272,8 @@ export function parsePinoutJson(raw: string): JsonImportResult {
     }
 
     if (obj.placementOverlayVisible === true) state.placementOverlayVisible = true;
-    if (obj.dockTab !== undefined) state.dockTab = normalizeDockTab(obj.dockTab);
+    // Legacy `dockTab` values are ignored so older project files keep their
+    // pin configuration without importing a local view preference.
     const rotation = normalizePackageRotation(obj.packageRotation);
     if (rotation !== 0) state.packageRotation = rotation;
     if (typeof obj.placementOverlayRotation === 'number') {

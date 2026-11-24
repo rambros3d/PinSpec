@@ -1,115 +1,42 @@
 <script lang="ts">
+  /** Compact, navigable peripheral tree. Editing happens in the right drawer. */
   import { ChevronDown, ChevronRight, Search } from 'lucide-svelte';
   import { getModesForPeripheral } from '../../core/solver';
+  import type { ChipData, PeripheralStatus } from '../../core/types';
   import {
-    formatMuxLabel,
-    getChipMuxModel,
-    type ChipData,
-    type PeripheralKind,
-    type PeripheralStatus,
-    type PinAssignment,
-    type PinTag,
-  } from '../../core/types';
-  import { summarizeRemapSignals } from '../../core/vendor-view';
-  import PinTagPills from './PinTagPills.svelte';
+    orderPeripheralNames,
+    partitionPeripherals,
+    PERIPHERAL_CATEGORIES,
+  } from '../../core/vendor-view';
+  import { viewPreferences } from '../../state/workspace-preferences.svelte';
 
   interface Props {
     chip: ChipData;
-    assignments: Record<string, PinAssignment>;
-    peripheralModes: Record<string, string>;
     peripheralStatus: Record<string, PeripheralStatus>;
-    activeRemaps: Record<string, number>;
-    onModeChange: (peripheralName: string, modeId: string) => void;
-    onRemapChange: (peripheralName: string, remapId: number) => void;
-    onToggleSignal: (peripheralName: string, signal: string) => void;
-    onFocusPin: (pos: string) => void;
+    peripheralModes: Record<string, string>;
+    onSelectPeripheral: (peripheralName: string) => void;
   }
 
-  let {
-    chip,
-    assignments,
-    peripheralModes,
-    peripheralStatus,
-    activeRemaps,
-    onModeChange,
-    onRemapChange,
-    onToggleSignal,
-    onFocusPin,
-  }: Props = $props();
+  let { chip, peripheralStatus, peripheralModes, onSelectPeripheral }: Props = $props();
 
-  type CategoryId = 'system' | 'analog' | 'timers' | 'programmable' | 'connectivity' | 'other';
-
-  const CATEGORIES: Array<{ id: CategoryId; label: string; kinds: PeripheralKind[] }> = [
-    { id: 'system', label: 'System Core', kinds: ['sys'] },
-    { id: 'analog', label: 'Analog', kinds: ['adc', 'dac'] },
-    { id: 'timers', label: 'Timers', kinds: ['tim'] },
-    { id: 'programmable', label: 'Programmable I/O', kinds: ['pwm', 'pio'] },
-    { id: 'connectivity', label: 'Connectivity', kinds: ['spi', 'i2c', 'usart', 'can', 'usb'] },
-    { id: 'other', label: 'Other', kinds: ['other'] },
-  ];
-
-  let filterText = $state('');
-  let openCategories = $state<Record<string, boolean>>({
-    system: true,
-    analog: false,
-    timers: true,
-    programmable: true,
-    connectivity: true,
-    other: false,
-  });
-  let expandedPeriphs = $state<Record<string, boolean>>({});
-
-  const muxModel = $derived(getChipMuxModel(chip));
-
-  // Map (peripheral:signal) -> { pos, pinName, muxLabel }
-  const assignedLookup = $derived.by(() => {
-    const pinMap = new Map(chip.pins.map((p) => [p.pos, p.name]));
-    const map = new Map<string, { pos: string; pinName: string; muxLabel: string }>();
-    for (const [pos, asgn] of Object.entries(assignments)) {
-      if (asgn.peripheral === 'GPIO') continue;
-      map.set(`${asgn.peripheral}:${asgn.signal}`, {
-        pos,
-        pinName: pinMap.get(pos) ?? pos,
-        muxLabel: formatMuxLabel(asgn, muxModel),
-      });
-    }
-    return map;
-  });
-
-  /** Tags of pins that host or are assigned to each peripheral. */
-  const peripheralTags = $derived.by(() => {
-    const map = new Map<string, PinTag[]>();
-    const add = (peripheral: string, tags: PinTag[] | undefined) => {
-      if (!tags?.length) return;
-      const existing = map.get(peripheral) ?? [];
-      for (const tag of tags) if (!existing.includes(tag)) existing.push(tag);
-      map.set(peripheral, existing);
-    };
-    for (const pin of chip.pins) {
-      for (const sig of pin.signals) add(sig.peripheral, pin.tags);
-    }
-    for (const [pos, asgn] of Object.entries(assignments)) {
-      add(asgn.peripheral, chip.pins.find((p) => p.pos === pos)?.tags);
-    }
-    return map;
-  });
+  const partition = $derived(partitionPeripherals(peripheralStatus, peripheralModes));
+  const hasConfigured = $derived(partition.configured.length > 0);
 
   const grouped = $derived.by(() => {
-    const q = filterText.trim().toUpperCase();
-    return CATEGORIES.map((cat) => {
+    const query = viewPreferences.filterText.trim().toUpperCase();
+    return PERIPHERAL_CATEGORIES.map((category) => {
       const names = Object.entries(chip.peripherals)
         .filter(([name, info]) => {
-          if (!cat.kinds.includes(info.kind)) return false;
-          if (!q) return true;
+          if (!category.kinds.includes(info.kind)) return false;
+          if (!query) return true;
           return (
-            name.toUpperCase().includes(q) ||
-            info.signals.some((s) => `${name}_${s}`.toUpperCase().includes(q))
+            name.toUpperCase().includes(query) ||
+            info.signals.some((signal) => `${name}_${signal}`.toUpperCase().includes(query))
           );
         })
-        .map(([name]) => name)
-        .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
-      return { ...cat, names };
-    }).filter((cat) => cat.names.length > 0);
+        .map(([name]) => name);
+      return { ...category, names: orderPeripheralNames(names, partition) };
+    }).filter((category) => category.names.length > 0);
   });
 
   function statusColor(status: PeripheralStatus): string {
@@ -138,12 +65,9 @@
     }
   }
 
-  function toggleCategory(id: string): void {
-    openCategories[id] = !openCategories[id];
-  }
-
-  function togglePeripheral(name: string): void {
-    expandedPeriphs[name] = !expandedPeriphs[name];
+  function inlineModeLabel(name: string): string {
+    const modeId = peripheralModes[name] ?? 'disabled';
+    return getModesForPeripheral(chip, name).find((mode) => mode.id === modeId)?.label ?? modeId;
   }
 </script>
 
@@ -159,7 +83,7 @@
     <div class="relative flex items-center">
       <Search class="size-3.5 text-base-content/40 absolute left-2.5 pointer-events-none" />
       <input
-        bind:value={filterText}
+        bind:value={viewPreferences.filterText}
         type="text"
         placeholder="Filter SPI, TIM, USART, PWM, PIO..."
         class="input input-xs w-full pl-8 pr-2.5"
@@ -169,165 +93,62 @@
 
   <!-- Grouped Accordion -->
   <div class="flex-1 min-h-0 overflow-y-auto py-1">
-    {#each grouped as cat (cat.id)}
-      {@const isCatOpen = filterText.trim().length > 0 || openCategories[cat.id]}
+    {#if !hasConfigured}
+      <p class="px-3 py-2 text-[11px] text-base-content/60">
+        No peripherals configured. Select one below to open its configuration.
+      </p>
+    {/if}
+
+    {#each grouped as category (category.id)}
+      {@const isCategoryOpen =
+        viewPreferences.filterText.trim().length > 0 || viewPreferences.isCategoryOpen(category.id)}
       <div class="border-b border-base-300 last:border-b-0">
         <button
           type="button"
-          onclick={() => toggleCategory(cat.id)}
+          onclick={() =>
+            viewPreferences.setCategoryOpen(category.id, !viewPreferences.isCategoryOpen(category.id))}
           class="btn btn-ghost btn-sm w-full justify-between text-xs font-semibold"
         >
           <span class="flex items-center gap-1.5">
-            {#if isCatOpen}
+            {#if isCategoryOpen}
               <ChevronDown class="size-3.5 text-base-content/40" />
             {:else}
               <ChevronRight class="size-3.5 text-base-content/40" />
             {/if}
-            <span>{cat.label}</span>
+            <span>
+              {category.id === 'other'
+                ? `${category.label} (${category.names.length})`
+                : category.label}
+            </span>
           </span>
           <span class="font-mono-tabular text-[11px] text-base-content/60">
-            {cat.names.length}
+            {category.names.length}
           </span>
         </button>
 
-        {#if isCatOpen}
+        {#if isCategoryOpen}
           <div class="pb-1">
-            {#each cat.names as pName (pName)}
-              {@const pInfo = chip.peripherals[pName]}
-              {@const pStatus = peripheralStatus[pName] ?? 'none'}
-              {@const isOpen = Boolean(expandedPeriphs[pName])}
-              {@const modes = getModesForPeripheral(chip, pName)}
-              {@const activeMode = peripheralModes[pName] ?? 'disabled'}
-
-              <div>
-                <button
-                  type="button"
-                  onclick={() => togglePeripheral(pName)}
-                  class={`btn btn-ghost btn-sm w-full justify-between text-xs ${
-                    isOpen ? 'btn-active' : ''
-                  }`}
-                >
-                  <span class="flex items-center gap-2 min-w-0">
-                    {#if isOpen}
-                      <ChevronDown class="size-3 text-base-content/40 shrink-0" />
-                    {:else}
-                      <ChevronRight class="size-3 text-base-content/40 shrink-0" />
-                    {/if}
-                    <span class="font-mono font-medium truncate">{pName}</span>
+            {#each category.names as name (name)}
+              {@const status = peripheralStatus[name] ?? 'none'}
+              {@const isSelected = viewPreferences.selectedPeripheral === name}
+              <button
+                type="button"
+                onclick={() => onSelectPeripheral(name)}
+                class={`btn btn-ghost btn-sm w-full justify-between gap-2 text-xs ${
+                  isSelected ? 'btn-active' : ''
+                }`}
+                aria-current={isSelected ? 'true' : undefined}
+              >
+                <span class="flex items-center gap-2 min-w-0">
+                  <span class="font-mono font-medium truncate">{name}</span>
+                  <span class="badge badge-ghost badge-xs font-mono text-[10px] text-base-content/60">
+                    {inlineModeLabel(name)}
                   </span>
-                  <span class="flex items-center gap-1.5 shrink-0" title={statusLabel(pStatus)}>
-                    {#if pStatus !== 'none'}
-                      <span
-                        class={`badge badge-xs ${
-                          pStatus === 'active'
-                            ? 'badge-success'
-                            : pStatus === 'partial'
-                              ? 'badge-warning'
-                              : 'badge-error'
-                        }`}
-                      >
-                        {statusLabel(pStatus)}
-                      </span>
-                    {/if}
-                    <span class={`status status-sm ${statusColor(pStatus)}`}></span>
-                  </span>
-                </button>
-
-                {#if isOpen}
-                  <div class="px-4 py-2 bg-base-200 border-y border-base-300 space-y-2">
-                    {#if (peripheralTags.get(pName) ?? []).length > 0}
-                      <div class="flex items-center gap-1.5">
-                        <span class="text-[10px] text-base-content/60">Pins:</span>
-                        <PinTagPills tags={peripheralTags.get(pName) ?? []} compact={true} />
-                      </div>
-                    {/if}
-
-                    <!-- Mode Selector Dropdown -->
-                    {#if modes.length > 1}
-                      <div class="space-y-1">
-                        <label
-                          for={`mode-${pName}`}
-                          class="block text-[10px] font-medium text-base-content/60"
-                        >
-                          Mode
-                        </label>
-                        <select
-                          id={`mode-${pName}`}
-                          value={activeMode}
-                          onchange={(e) =>
-                            onModeChange(pName, (e.currentTarget as HTMLSelectElement).value)}
-                          class="select select-xs w-full"
-                        >
-                          {#each modes as m (m.id)}
-                            <option value={m.id}>{m.label}</option>
-                          {/each}
-                        </select>
-                      </div>
-                    {/if}
-
-                    <!-- Coupled remap-group selector (CH32 and other remap chips) -->
-                    {#if pInfo.remaps && pInfo.remaps.length > 1}
-                      {@const selectedRemap =
-                        pInfo.remaps.find((r) => r.id === (activeRemaps[pName] ?? 0)) ?? pInfo.remaps[0]}
-                      <div class="space-y-1">
-                        <label
-                          for={`remap-${pName}`}
-                          class="block text-[10px] font-medium text-base-content/60"
-                        >
-                          Remap group
-                        </label>
-                        <select
-                          id={`remap-${pName}`}
-                          value={activeRemaps[pName] ?? 0}
-                          onchange={(e) =>
-                            onRemapChange(pName, Number((e.currentTarget as HTMLSelectElement).value))}
-                          class="select select-xs w-full"
-                        >
-                          {#each pInfo.remaps as option (option.id)}
-                            <option value={option.id}>{option.name}</option>
-                          {/each}
-                        </select>
-                        <div class="font-mono text-[10px] text-base-content/60 break-words">
-                          {summarizeRemapSignals(selectedRemap.signals)}
-                        </div>
-                        {#if selectedRemap.registerNote}
-                          <div class="font-mono text-[10px] text-base-content/60">
-                            {selectedRemap.registerNote}
-                          </div>
-                        {/if}
-                      </div>
-                    {/if}
-
-                    <!-- Individual Signal Toggles -->
-                    <div class="space-y-0.5 max-h-56 overflow-y-auto pr-0.5">
-                      {#each pInfo.signals as sig (sig)}
-                        {@const assigned = assignedLookup.get(`${pName}:${sig}`)}
-                        <div class="flex items-center justify-between gap-2 py-0.5">
-                          <label class="flex items-center gap-2 min-w-0 cursor-pointer text-[11px] text-foreground">
-                            <input
-                              type="checkbox"
-                              checked={Boolean(assigned)}
-                              onchange={() => onToggleSignal(pName, sig)}
-                              class="checkbox checkbox-xs"
-                            />
-                            <span class="font-mono truncate">{sig}</span>
-                          </label>
-                          {#if assigned}
-                            <button
-                              type="button"
-                              onclick={() => onFocusPin(assigned.pos)}
-                              title="Locate pin on package"
-                              class="btn btn-link btn-xs font-mono-tabular shrink-0"
-                            >
-                              {assigned.pinName} / {assigned.muxLabel}
-                            </button>
-                          {/if}
-                        </div>
-                      {/each}
-                    </div>
-                  </div>
-                {/if}
-              </div>
+                </span>
+                <span class="flex items-center gap-1.5 shrink-0" title={statusLabel(status)}>
+                  <span class={`status status-sm ${statusColor(status)}`}></span>
+                </span>
+              </button>
             {/each}
           </div>
         {/if}

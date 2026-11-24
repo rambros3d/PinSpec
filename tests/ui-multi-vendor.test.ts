@@ -111,20 +111,36 @@ describe('multi-vendor package rendering', () => {
   });
 });
 
-describe('peripheral tree remaps and RP PIO panel', () => {
-  it('offers remap options with register notes and supports pwm/pio categories', () => {
-    const source = readSource('src/components/workspace/PeripheralTree.svelte');
-    expect(source).toContain('pInfo.remaps && pInfo.remaps.length > 1');
-    expect(source).toContain('registerNote');
-    expect(source).toContain('summarizeRemapSignals');
-    expect(source).toContain("kinds: ['pwm', 'pio']");
-    expect(source).toContain('onRemapChange');
-    expect(source).toContain('PinTagPills');
+describe('peripheral configuration detail and RP PIO panel', () => {
+  it('offers remap options with register notes in the detail surface', () => {
+    const detail = readSource('src/components/workspace/PeripheralDetail.svelte');
+    expect(detail).toContain('pInfo.remaps && pInfo.remaps.length > 1');
+    expect(detail).toContain('registerNote');
+    expect(detail).toContain('summarizeRemapSignals');
+    expect(detail).toContain('onRemapChange');
+    expect(detail).toContain('PinTagPills');
     expect(summarizeRemapSignals({ TX: 'PB6', RX: 'PB7' })).toBe('TX:PB6, RX:PB7');
+
+    const categories = readSource('src/core/vendor-view.ts');
+    expect(categories).toContain("kinds: ['pwm', 'pio']");
+    expect(categories).toContain("label: 'Other peripherals'");
 
     const ch32 = readChip('CH32V203C8T6');
     expect(ch32.peripherals.SPI1.remaps?.length).toBeGreaterThan(1);
     expect(ch32.peripherals.SPI1.remaps?.[1].registerNote).toBeTruthy();
+  });
+
+  it('keeps the compact tree free of inline editing controls', () => {
+    const tree = readSource('src/components/workspace/PeripheralTree.svelte');
+    expect(tree).toContain('onSelectPeripheral');
+    expect(tree).toContain('peripheralStatus');
+    expect(tree).not.toContain('pInfo.remaps && pInfo.remaps.length > 1');
+    expect(tree).not.toContain('registerNote');
+    expect(tree).not.toContain('summarizeRemapSignals');
+    expect(tree).not.toContain('onRemapChange');
+    expect(tree).not.toContain('PinTagPills');
+    expect(tree).not.toContain('type="checkbox"');
+    expect(tree).not.toContain('<select');
   });
 
   it('shows both RP2350B GPIOBASE windows and flags out-of-window pins', () => {

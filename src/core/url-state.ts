@@ -1,10 +1,8 @@
 import { deflateSync, inflateSync, strFromU8, strToU8 } from 'fflate';
 import {
   PINCRAFT_STATE_VERSION,
-  normalizeDockTab,
   normalizePackageRotation,
   parseGpioConfig,
-  type DockTab,
   type GpioConfig,
   type PinPlacementPreference,
   type PinAssignment,
@@ -44,8 +42,6 @@ interface CompactUrlPayload {
   y?: Record<string, CompactPlacement>;
   /** Placement overlay visibility (only when true). */
   w?: 1;
-  /** Active portrait dock tab (only when explicitly stored). */
-  d?: DockTab;
   /** Package rotation, emitted only for the non-default -90 value. */
   z?: -90;
   /** Display-only overlay rotation in degrees, emitted only when non-zero. */
@@ -95,7 +91,8 @@ function sortedKeys(record: Record<string, unknown>): string[] {
 /**
  * Encode a workspace into a compressed, URL-safe share payload.
  * Remap, PIO, GPIO config and placement maps are included only when populated
- * to keep links short. The dock tab is included only when explicitly stored.
+ * to keep links short. View preferences such as the dock tab are deliberately
+ * excluded because they are local UI state, not shareable pin configuration.
  */
 export function encodeWorkspaceState(state: WorkspaceState): string {
   const payload: CompactUrlPayload = {
@@ -166,7 +163,6 @@ export function encodeWorkspaceState(state: WorkspaceState): string {
   }
 
   if (state.placementOverlayVisible) payload.w = 1;
-  if (state.dockTab !== undefined) payload.d = state.dockTab;
   const rotation = normalizePackageRotation(state.packageRotation);
   if (rotation !== 0) payload.z = rotation;
   const overlayRotation = normalizeAngle(state.placementOverlayRotation ?? 0);
@@ -288,7 +284,8 @@ export function decodeWorkspaceState(encoded: string): DecodeResult {
     }
 
     if (obj.w === 1 || obj.w === true) state.placementOverlayVisible = true;
-    if (obj.d !== undefined) state.dockTab = normalizeDockTab(obj.d);
+    // Legacy `d` values from earlier links are ignored: the dock tab is now a
+    // localStorage-only UI preference and must not enter shared state.
     const rotation = normalizePackageRotation(obj.z);
     if (rotation !== 0) state.packageRotation = rotation;
     if (typeof obj.q === 'number') {

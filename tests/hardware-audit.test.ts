@@ -318,37 +318,40 @@ describe('workspace UI and dock integration', () => {
     expect(modal).toContain('_hardware_audit.txt');
   });
 
-  it('adds the audit value to the existing persisted dock-tab field only', () => {
+  it('adds the audit value to the dock set without persisting it as pin configuration', () => {
     expect(DOCK_TABS).toContain('audit');
+    expect(DOCK_TABS).toContain('configuration');
     expect(normalizeDockTab('audit')).toBe('audit');
     expect(normalizeDockTab('bootsel')).toBe('peripherals');
 
-    const state = stateFor(stm32Chip, { dockTab: 'audit' });
+    const state = stateFor(stm32Chip, {
+      assignments: { '7': { peripheral: 'GPIO', signal: 'Input', af: null } },
+    });
     expect(cloneWorkspaceState(state)).toEqual(state);
     expect(decodeWorkspaceState(encodeWorkspaceState(state)).ok).toBe(true);
     const decoded = decodeWorkspaceState(encodeWorkspaceState(state));
-    if (decoded.ok) expect(decoded.state.dockTab).toBe('audit');
+    if (decoded.ok) expect(decoded.state).toEqual(state);
     const parsed = parsePinoutJson(exportPinoutJson(state));
-    if (parsed.ok) expect(parsed.state.dockTab).toBe('audit');
+    if (parsed.ok) expect(parsed.state).toEqual(state);
 
     expect(PINCRAFT_STATE_VERSION).toBe(2);
-    expect(Object.keys(JSON.parse(exportPinoutJson(state))).sort()).toEqual([
-      'assignments', 'dockTab', 'format', 'labels', 'locked', 'mcuId', 'peripheralModes', 'version',
+    expect(Object.keys(JSON.parse(exportPinoutJson(state)) as Record<string, unknown>).sort()).toEqual([
+      'assignments', 'format', 'labels', 'locked', 'mcuId', 'peripheralModes', 'version',
     ]);
     expect(readSource('src/core/types.ts')).not.toMatch(/audit[A-Z]\w*\??:/);
 
     const history = createWorkspaceHistory(createEmptyWorkspace(stm32Chip.id));
     expect(history.push(state)).toBe(true);
-    expect(history.current.dockTab).toBe('audit');
-    expect(history.undo()?.dockTab).toBeUndefined();
-    expect(history.redo()?.dockTab).toBe('audit');
+    expect(history.current).toEqual(state);
+    expect(Object.keys(history.current)).not.toContain('dockTab');
+    expect(history.undo()).toEqual(createEmptyWorkspace(stm32Chip.id));
 
     const page = readSource('src/pages/WorkspacePage.svelte');
     expect(page).toContain("audit: 'Audit'");
     expect(readSource('src/app.css')).toContain("[data-dock-tab='audit']");
   });
 
-  it('keeps an audit dock selection in a localStorage session', async () => {
+  it('keeps an audit dock selection in localStorage only', async () => {
     const storage = new Map<string, string>();
     vi.stubGlobal('window', {
       localStorage: {
@@ -364,10 +367,16 @@ describe('workspace UI and dock integration', () => {
       await workspaceStore.openMcu(stm32Chip.id);
       workspaceStore.setDockTab('audit');
       expect(workspaceStore.dockTab).toBe('audit');
+
+      const preferences = JSON.parse(
+        storage.get('pincraft:workspace_view_preferences_v1') ?? '{}',
+      ) as Record<string, unknown>;
+      expect(preferences.dockTab).toBe('audit');
       const sessions = JSON.parse(storage.get('pincraft:recent_sessions_v1') ?? '[]') as Array<{
         state: WorkspaceState;
       }>;
-      expect(sessions[0].state.dockTab).toBe('audit');
+      expect(Object.keys(sessions[0].state)).not.toContain('dockTab');
+      expect(exportPinoutJson(workspaceStore.state)).not.toContain('dockTab');
     } finally {
       vi.unstubAllGlobals();
     }

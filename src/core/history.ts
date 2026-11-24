@@ -1,5 +1,5 @@
 import { normalizeAngle, normalizePlacement } from './placement';
-import { normalizeDockTab, normalizePackageRotation, type WorkspaceState } from './types';
+import { normalizePackageRotation, type WorkspaceState } from './types';
 
 export function cloneWorkspaceState(state: WorkspaceState): WorkspaceState {
   const assignments: WorkspaceState['assignments'] = {};
@@ -35,7 +35,6 @@ export function cloneWorkspaceState(state: WorkspaceState): WorkspaceState {
     }
   }
   if (state.placementOverlayVisible) cloned.placementOverlayVisible = true;
-  if (state.dockTab !== undefined) cloned.dockTab = normalizeDockTab(state.dockTab);
   const rotation = normalizePackageRotation(state.packageRotation);
   if (rotation !== 0) cloned.packageRotation = rotation;
   if (state.placementOverlayRotation !== undefined) {
@@ -46,8 +45,6 @@ export function cloneWorkspaceState(state: WorkspaceState): WorkspaceState {
 
 export function statesEqual(a: WorkspaceState, b: WorkspaceState): boolean {
   if (a.mcuId !== b.mcuId) return false;
-  // Absent and explicit Peripherals are the same visible dock state.
-  if (normalizeDockTab(a.dockTab) !== normalizeDockTab(b.dockTab)) return false;
   if (normalizePackageRotation(a.packageRotation) !== normalizePackageRotation(b.packageRotation)) {
     return false;
   }

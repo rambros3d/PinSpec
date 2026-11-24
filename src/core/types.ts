@@ -270,7 +270,15 @@ export function parseGpioConfig(value: unknown): GpioConfig | null {
 }
 
 /** Tabs available in the portrait workspace dock. */
-export const DOCK_TABS = ['peripherals', 'pins', 'diagnostics', 'dma', 'pio', 'audit'] as const;
+export const DOCK_TABS = [
+  'peripherals',
+  'pins',
+  'configuration',
+  'diagnostics',
+  'dma',
+  'pio',
+  'audit',
+] as const;
 export type DockTab = (typeof DOCK_TABS)[number];
 
 /**
@@ -281,6 +289,25 @@ export function normalizeDockTab(value: unknown): DockTab {
   return typeof value === 'string' && (DOCK_TABS as readonly string[]).includes(value)
     ? (value as DockTab)
     : 'peripherals';
+}
+
+/** Tabs hosted by the right-hand summary drawer in both orientations. */
+export const SUMMARY_TABS = [
+  'pins',
+  'configuration',
+  'diagnostics',
+  'dma',
+  'pio',
+  'gpio',
+  'audit',
+] as const;
+export type SummaryTab = (typeof SUMMARY_TABS)[number];
+
+/** Normalize an untrusted persisted summary tab to its documented default. */
+export function normalizeSummaryTab(value: unknown): SummaryTab {
+  return typeof value === 'string' && (SUMMARY_TABS as readonly string[]).includes(value)
+    ? (value as SummaryTab)
+    : 'pins';
 }
 
 /**
@@ -326,12 +353,6 @@ export interface WorkspaceState {
   gpioConfig?: Record<string, GpioConfig>; // physical pin pos -> electrical settings
   placement?: Record<string, PinPlacementPreference>; // peripheral -> placement preference
   placementOverlayVisible?: boolean; // canvas overlay toggle, persisted with the state
-  /**
-   * Active portrait dock tab. Additive and optional so existing version-2
-   * state stays valid; persisted through history, sessions, links and project
-   * files because it is a user preference, not a session-only view flag.
-   */
-  dockTab?: DockTab;
   /** Additive view rotation; absent means the default 0-degree orientation. */
   packageRotation?: PackageRotation;
   /**

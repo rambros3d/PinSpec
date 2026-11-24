@@ -16,7 +16,7 @@
     prepareIocImport,
     type IocRawRecord,
   } from '../core/importers/ioc';
-  import { DOCK_TABS, type DockTab, type WorkspaceState } from '../core/types';
+  import { DOCK_TABS, type DockTab, type SummaryTab, type WorkspaceState } from '../core/types';
   import {
     BOARD_PRESETS,
     buildBoardPresetState,
@@ -26,6 +26,7 @@
   import { catalogStore } from '../state/catalog.svelte';
   import { openDialogWithFocus } from '../state/dialog-focus';
   import { router } from '../state/router.svelte';
+  import { viewPreferences } from '../state/workspace-preferences.svelte';
   import { workspaceStore } from '../state/workspace.svelte';
 
   interface Props {
@@ -35,10 +36,10 @@
 
   let { mcuId, sharedPayload }: Props = $props();
 
-  type SummaryTab = 'pins' | 'diagnostics' | 'dma' | 'pio' | 'gpio' | 'audit';
   const DOCK_TAB_LABELS: Record<DockTab, string> = {
     peripherals: 'Peripherals',
     pins: 'Pins',
+    configuration: 'Configuration',
     diagnostics: 'Diagnostics',
     dma: 'DMA',
     pio: 'PIO',
@@ -64,13 +65,29 @@
 
   let canvasRef = $state<{ fitView: () => void } | null>(null);
   let searchInputRef = $state<HTMLInputElement | null>(null);
-  let summaryTab = $state<SummaryTab>('pins');
+  let summaryTab = $state<SummaryTab>(viewPreferences.summaryTab);
 
   /** Select a portrait dock tab; non-tree tabs drive the shared summary pane. */
   function selectDockTab(tab: DockTab): void {
     workspaceStore.setDockTab(tab);
     if (tab !== 'peripherals') summaryTab = tab;
   }
+
+  /**
+   * A tree row selects the peripheral for editing and opens the Configuration
+   * tab in both orientations. Selection and tab choice are local UI state.
+   */
+  function selectPeripheral(name: string): void {
+    viewPreferences.selectedPeripheral = name;
+    viewPreferences.summaryTab = 'configuration';
+    summaryTab = 'configuration';
+    workspaceStore.setDockTab('configuration');
+  }
+
+  // Keep the drawer's own tab clicks in localStorage view preferences.
+  $effect(() => {
+    if (viewPreferences.summaryTab !== summaryTab) viewPreferences.summaryTab = summaryTab;
+  });
 
   // Hydrate MCU or shared payload when props change
   let lastLoadedKey = '';
@@ -405,14 +422,9 @@
         <div class="workspace-peripherals h-full">
           <PeripheralTree
             chip={workspaceStore.chip}
-            assignments={workspaceStore.state.assignments}
             peripheralModes={workspaceStore.state.peripheralModes}
             peripheralStatus={workspaceStore.report.peripheralStatus}
-            activeRemaps={workspaceStore.state.activeRemaps ?? {}}
-            onModeChange={(p, m) => workspaceStore.setPeripheralMode(p, m)}
-            onRemapChange={(p, id) => workspaceStore.setActiveRemap(p, id)}
-            onToggleSignal={(p, s) => workspaceStore.toggleSignal(p, s)}
-            onFocusPin={(pos) => workspaceStore.focusPin(pos)}
+            onSelectPeripheral={selectPeripheral}
           />
         </div>
         <!-- Left Drag Resizer (landscape only) -->
@@ -521,7 +533,14 @@
             locked={workspaceStore.state.locked}
             pioAssignments={workspaceStore.state.pioAssignments ?? {}}
             report={workspaceStore.report}
+            peripheralName={viewPreferences.selectedPeripheral}
+            peripheralModes={workspaceStore.state.peripheralModes}
+            peripheralStatus={workspaceStore.report.peripheralStatus}
+            activeRemaps={workspaceStore.state.activeRemaps ?? {}}
             bind:activeTab={summaryTab}
+            onModeChange={(p, m) => workspaceStore.setPeripheralMode(p, m)}
+            onRemapChange={(p, id) => workspaceStore.setActiveRemap(p, id)}
+            onToggleSignal={(p, s) => workspaceStore.toggleSignal(p, s)}
             onFocusPin={(pos) => workspaceStore.focusPin(pos)}
             onSetLabel={(pos, lbl) => workspaceStore.setLabel(pos, lbl)}
             onToggleLock={(pos) => workspaceStore.toggleLock(pos)}

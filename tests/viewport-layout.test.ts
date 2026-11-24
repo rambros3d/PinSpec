@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
+import { deflateSync, inflateSync, strFromU8, strToU8 } from 'fflate';
 import { clampOverlayPosition } from '../src/core/overlay-position';
 import { exportPinoutJson, parsePinoutJson } from '../src/core/exporters/json';
 import { cloneWorkspaceState, createWorkspaceHistory, statesEqual } from '../src/core/history';
@@ -26,14 +27,31 @@ const chip: ChipData = {
   peripherals: { SPI1: { kind: 'spi', signals: ['SCK', 'MISO'] } },
 };
 
-const dockState: WorkspaceState = {
+const pinConfigState: WorkspaceState = {
   ...createEmptyWorkspace(chip.id),
   assignments: { '15': { peripheral: 'SPI1', signal: 'SCK', af: 5 } },
   labels: { '15': 'CLK' },
   locked: { '15': true },
   peripheralModes: { SPI1: 'full_duplex' },
-  dockTab: 'diagnostics',
 };
+
+/** Build a legacy compact payload that still carries a dock tab value. */
+function encodeLegacyUrlPayload(payload: Record<string, unknown>): string {
+  const deflated = deflateSync(strToU8(JSON.stringify(payload)), { level: 9 });
+  return Buffer.from(deflated)
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+}
+
+/** Decode a share payload's compact JSON keys without importing app codec internals. */
+function urlPayloadKeys(encoded: string): string[] {
+  const normalized = encoded.replace(/-/g, '+').replace(/_/g, '/');
+  const bytes = new Uint8Array(Buffer.from(normalized, 'base64'));
+  const raw = strFromU8(inflateSync(bytes));
+  return Object.keys(JSON.parse(raw) as Record<string, unknown>);
+}
 
 describe('document viewport lock', () => {
   it('locks the document and the application root', () => {
@@ -104,14 +122,14 @@ describe('orientation-driven grid layout', () => {
       expect(page).toContain(`workspace-${component === 'PeripheralTree' ? 'peripherals' : component === 'PackageCanvas' ? 'canvas' : 'summary'}`);
     }
     expect(page.match(/data-dock-tab=/g)?.length).toBe(1);
-    for (const tab of ['Peripherals', 'Pins', 'Diagnostics', 'DMA', 'PIO']) {
+    for (const tab of ['Peripherals', 'Pins', 'Configuration', 'Diagnostics', 'DMA', 'PIO']) {
       expect(page, tab).toContain(tab);
     }
     expect(page).not.toContain('matchMedia');
     expect(page).not.toContain("addEventListener('resize'");
     expect(page).not.toContain('addEventListener("resize"');
     const css = readSource('src/app.css');
-    for (const tab of ['peripherals', 'pins', 'diagnostics', 'dma', 'pio']) {
+    for (const tab of ['peripherals', 'pins', 'configuration', 'diagnostics', 'dma', 'pio']) {
       expect(css, tab).toContain(`[data-dock-tab='${tab}']`);
     }
     expect(css).toMatch(/\.workspace-summary \.summary-tab-strip \{\s*display: none/);
@@ -307,75 +325,132 @@ describe('dock tab persistence', () => {
   it('normalizes absent and unknown values to Peripherals', () => {
     expect(normalizeDockTab(undefined)).toBe('peripherals');
     expect(normalizeDockTab('invalid')).toBe('peripherals');
+    expect(normalizeDockTab('configuration')).toBe('configuration');
     expect(normalizeDockTab('pio')).toBe('pio');
-    const absent = createEmptyWorkspace(chip.id);
-    expect(absent.dockTab).toBeUndefined();
-    expect(normalizeDockTab(absent.dockTab)).toBe('peripherals');
+    expect(Object.keys(createEmptyWorkspace(chip.id))).not.toContain('dockTab');
   });
 
-  it('clones and compares dock tabs through history', () => {
-    const cloned = cloneWorkspaceState(dockState);
-    expect(cloned).toEqual(dockState);
-    expect(cloned).not.toBe(dockState);
-    expect(statesEqual(dockState, { ...dockState, dockTab: 'pio' })).toBe(false);
-    expect(statesEqual(createEmptyWorkspace(chip.id), { ...createEmptyWorkspace(chip.id), dockTab: 'peripherals' })).toBe(true);
+  it('does not clone, compare or record a dock tab in workspace state or history', () => {
+    const cloned = cloneWorkspaceState(pinConfigState);
+    expect(cloned).toEqual(pinConfigState);
+    expect(cloned).not.toBe(pinConfigState);
+    expect(statesEqual(pinConfigState, cloned)).toBe(true);
 
     const history = createWorkspaceHistory(createEmptyWorkspace(chip.id));
-    expect(history.push(dockState)).toBe(true);
-    expect(history.current.dockTab).toBe('diagnostics');
-    expect(history.push({ ...dockState, dockTab: 'pio' })).toBe(true);
-    expect(history.undo()?.dockTab).toBe('diagnostics');
-    expect(history.redo()?.dockTab).toBe('pio');
+    expect(history.push(pinConfigState)).toBe(true);
+    expect(history.current).toEqual(pinConfigState);
+    expect(Object.keys(history.current)).not.toContain('dockTab');
+    expect(history.undo()).toEqual(createEmptyWorkspace(chip.id));
   });
 
-  it('round-trips the dock tab through URL and project JSON', () => {
-    const decoded = decodeWorkspaceState(encodeWorkspaceState(dockState));
+  it('omits UI preferences from share links and project JSON', () => {
+    const encoded = encodeWorkspaceState(pinConfigState);
+    expect(urlPayloadKeys(encoded)).not.toContain('d');
+    const decoded = decodeWorkspaceState(encoded);
     expect(decoded.ok).toBe(true);
-    if (decoded.ok) expect(decoded.state.dockTab).toBe('diagnostics');
+    if (decoded.ok) expect(decoded.state).toEqual(pinConfigState);
 
-    const parsed = parsePinoutJson(exportPinoutJson(dockState));
+    const json = exportPinoutJson(pinConfigState);
+    expect(Object.keys(JSON.parse(json) as Record<string, unknown>)).not.toContain('dockTab');
+    const parsed = parsePinoutJson(json);
     expect(parsed.ok).toBe(true);
-    if (parsed.ok) expect(parsed.state.dockTab).toBe('diagnostics');
-
-    const absentDecoded = decodeWorkspaceState(encodeWorkspaceState(createEmptyWorkspace(chip.id)));
-    expect(absentDecoded.ok).toBe(true);
-    if (absentDecoded.ok) expect(absentDecoded.state.dockTab).toBeUndefined();
+    if (parsed.ok) expect(parsed.state).toEqual(pinConfigState);
   });
 
-  it('persists the dock tab in a localStorage session and preserves pin state', async () => {
+  it('ignores legacy dock values while preserving pin configuration', () => {
+    const legacyUrl = decodeWorkspaceState(
+      encodeLegacyUrlPayload({
+        v: 2,
+        m: chip.id,
+        a: { '15': ['SPI1', 'SCK', 5] },
+        k: ['15'],
+        p: { SPI1: 'full_duplex' },
+        d: 'diagnostics',
+      }),
+    );
+    expect(legacyUrl.ok).toBe(true);
+    if (legacyUrl.ok) {
+      expect(legacyUrl.state.assignments['15']).toEqual(pinConfigState.assignments['15']);
+      expect(legacyUrl.state.locked).toEqual(pinConfigState.locked);
+      expect(legacyUrl.state.peripheralModes).toEqual(pinConfigState.peripheralModes);
+      expect(Object.keys(legacyUrl.state)).not.toContain('dockTab');
+    }
+
+    const legacyJson = parsePinoutJson(
+      JSON.stringify({
+        format: 'pincraft-pinout',
+        version: 2,
+        mcuId: chip.id,
+        assignments: { '15': { peripheral: 'SPI1', signal: 'SCK', af: 5 } },
+        labels: { '15': 'CLK' },
+        locked: ['15'],
+        peripheralModes: { SPI1: 'full_duplex' },
+        dockTab: 'audit',
+      }),
+    );
+    expect(legacyJson.ok).toBe(true);
+    if (legacyJson.ok) {
+      expect(legacyJson.state).toEqual(pinConfigState);
+      expect(Object.keys(legacyJson.state)).not.toContain('dockTab');
+    }
+  });
+
+  it('survives reload in localStorage without touching pin state or undo history', async () => {
     const storage = new Map<string, string>();
     vi.stubGlobal('window', {
+      location: { origin: 'https://example.test', pathname: '/pincraft/' },
       localStorage: {
         getItem: (key: string) => storage.get(key) ?? null,
         setItem: (key: string, value: string) => storage.set(key, value),
       },
     });
     vi.resetModules();
-    const { workspaceStore } = await import('../src/state/workspace.svelte.ts');
-    const { catalogStore } = await import('../src/state/catalog.svelte.ts');
-    catalogStore.primeChip(chip);
-    await workspaceStore.openMcu(chip.id);
-    workspaceStore.assignPin('15', { peripheral: 'SPI1', signal: 'SCK', af: 5 });
-    workspaceStore.toggleLock('15');
-    workspaceStore.setPeripheralMode('SPI1', 'full_duplex');
-    const before = cloneWorkspaceState(workspaceStore.state);
+    try {
+      const { workspaceStore } = await import('../src/state/workspace.svelte.ts');
+      const { catalogStore } = await import('../src/state/catalog.svelte.ts');
+      const { viewPreferences, VIEW_PREFERENCES_STORAGE_KEY } = await import(
+        '../src/state/workspace-preferences.svelte.ts'
+      );
+      catalogStore.primeChip(chip);
+      await workspaceStore.openMcu(chip.id);
+      workspaceStore.assignPin('15', { peripheral: 'SPI1', signal: 'SCK', af: 5 });
+      workspaceStore.toggleLock('15');
+      workspaceStore.setPeripheralMode('SPI1', 'full_duplex');
+      const before = cloneWorkspaceState(workspaceStore.state);
+      const canUndoBefore = workspaceStore.canUndo;
+      const canRedoBefore = workspaceStore.canRedo;
 
-    // Selecting a dock tab is layout-only: the rest of the workspace survives.
-    workspaceStore.setDockTab('dma');
-    expect(workspaceStore.dockTab).toBe('dma');
-    const { dockTab: _ignored, ...withoutDock } = workspaceStore.state;
-    expect(withoutDock).toEqual(before);
-    workspaceStore.undo();
-    expect(workspaceStore.dockTab).toBe('peripherals');
-    expect(workspaceStore.state.assignments['15']).toEqual(before.assignments['15']);
-    expect(workspaceStore.state.locked['15']).toBe(true);
-    expect(workspaceStore.state.peripheralModes).toEqual(before.peripheralModes);
-    workspaceStore.setDockTab('pio');
+      // Selecting a dock tab is layout-only: it needs no history entry.
+      workspaceStore.setDockTab('dma');
+      expect(workspaceStore.dockTab).toBe('dma');
+      expect(workspaceStore.state).toEqual(before);
+      expect(workspaceStore.canUndo).toBe(canUndoBefore);
+      expect(workspaceStore.canRedo).toBe(canRedoBefore);
 
-    const sessions = JSON.parse(storage.get('pincraft:recent_sessions_v1') ?? '[]') as Array<{
-      state: WorkspaceState;
-    }>;
-    expect(sessions[0].state.dockTab).toBe('pio');
-    vi.unstubAllGlobals();
+      workspaceStore.setDockTab('configuration');
+      expect(workspaceStore.dockTab).toBe('configuration');
+      const preferences = JSON.parse(
+        storage.get(VIEW_PREFERENCES_STORAGE_KEY) ?? '{}',
+      ) as Record<string, unknown>;
+      expect(preferences.dockTab).toBe('configuration');
+      expect(viewPreferences.dockTab).toBe('configuration');
+
+      const sessions = JSON.parse(storage.get('pincraft:recent_sessions_v1') ?? '[]') as Array<{
+        state: WorkspaceState;
+      }>;
+      expect(sessions[0].state).toEqual(before);
+      expect(Object.keys(sessions[0].state)).not.toContain('dockTab');
+      expect(exportPinoutJson(workspaceStore.state)).not.toContain('dockTab');
+      expect(
+        urlPayloadKeys(workspaceStore.buildShareUrl().split('#/s/')[1]),
+      ).not.toContain('d');
+
+      // Undo still targets pin configuration rather than the dock selection.
+      workspaceStore.undo();
+      expect(workspaceStore.dockTab).toBe('configuration');
+      expect(workspaceStore.state.peripheralModes).toEqual({});
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });

@@ -1,6 +1,6 @@
 import { cloneWorkspaceState, createWorkspaceHistory, type HistoryStack } from '../core/history';
 import { normalizeAngle } from '../core/placement';
-import { normalizeDockTab, normalizePackageRotation, type PackageRotation } from '../core/types';
+import { normalizePackageRotation, type PackageRotation } from '../core/types';
 import {
   allocatePeripheralMode,
   applyOneHopFix,
@@ -27,6 +27,7 @@ import type {
 } from '../core/types';
 import { decodeWorkspaceState, encodeWorkspaceState } from '../core/url-state';
 import { catalogStore } from './catalog.svelte';
+import { viewPreferences } from './workspace-preferences.svelte';
 
 export interface RecentSession {
   mcuId: string;
@@ -118,9 +119,9 @@ class WorkspaceStore {
 
   assignedCount = $derived(Object.keys(this.state.assignments).length);
 
-  /** Active portrait dock tab, defaulting to Peripherals for older state. */
+  /** Active portrait dock tab, stored only in localStorage view preferences. */
   get dockTab(): DockTab {
-    return normalizeDockTab(this.state.dockTab);
+    return viewPreferences.dockTab;
   }
 
   /** Effective package rotation derived from persisted workspace state. */
@@ -128,13 +129,9 @@ class WorkspaceStore {
     return normalizePackageRotation(this.state.packageRotation);
   }
 
-  /** Persist a dock tab change as one history entry, like other view settings. */
+  /** Select a dock tab without touching pin configuration or undo history. */
   setDockTab(tab: DockTab): void {
-    const nextTab = normalizeDockTab(tab);
-    if (this.state.dockTab === nextTab) return;
-    const next = cloneWorkspaceState(this.state);
-    next.dockTab = nextTab;
-    this.commit(next);
+    viewPreferences.dockTab = tab;
   }
 
   setPendingHandoff(state: WorkspaceState): void {

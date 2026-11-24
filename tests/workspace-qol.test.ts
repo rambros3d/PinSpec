@@ -231,10 +231,6 @@ describe('focus visibility, motion, and contrast', () => {
       ['src/components/workspace/McuSwitcherModal.svelte', 'mx-1 text-base-content/40'],
       ['src/components/workspace/PackageCanvas.svelte', 'text-base-content/40 ml-2'],
       ['src/components/workspace/PackageCanvas.svelte', 'text-[10px] text-base-content/40'],
-      [
-        'src/components/workspace/PeripheralTree.svelte',
-        'font-mono-tabular text-[11px] text-base-content/40',
-      ],
       ['src/components/workspace/PinPopover.svelte', 'class="text-base-content/40">·<'],
       ['src/components/workspace/PioPanel.svelte', 'text-[11px] text-base-content/40'],
       ['src/components/workspace/SummaryDrawer.svelte', 'text-base-content/40 ml-1">'],
@@ -248,6 +244,10 @@ describe('focus visibility, motion, and contrast', () => {
     expect(readSource('src/components/landing/HeroChipPreview.svelte')).toContain(
       'text-[11px] text-base-content/60">Click any pin to edit',
     );
+    const tree = readSource('src/components/workspace/PeripheralTree.svelte');
+    expect(tree).not.toContain('font-mono-tabular text-[11px] text-base-content/40');
+    expect(tree).not.toContain('type="checkbox"');
+    expect(tree).not.toContain('<select');
   });
 });
 
@@ -276,7 +276,7 @@ describe('portrait dock and toolbar affordance', () => {
     expect(page).toContain('aria-selected={workspaceStore.dockTab === tab}');
     expect(page).toContain('min-h-11');
     expect(page.match(/data-dock-tab=/g)?.length).toBe(1);
-    for (const label of ['Peripherals', 'Pins', 'Diagnostics', 'DMA', 'PIO']) {
+    for (const label of ['Peripherals', 'Pins', 'Configuration', 'Diagnostics', 'DMA', 'PIO']) {
       expect(page, label).toContain(label);
     }
   });

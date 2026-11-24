@@ -19,6 +19,7 @@
     type PioPinAssignment,
     type SolverReport,
   } from '../../core/types';
+  import { deriveExtiLineId } from '../../core/solver';
   import PioPanel from './PioPanel.svelte';
   import PinTagPills from './PinTagPills.svelte';
 
@@ -75,6 +76,10 @@
           pinName: pin?.name ?? pos,
           signalFull,
           muxLabel: formatMuxLabel(asgn, muxModel),
+          extiLine:
+            asgn.peripheral === 'GPIO' && asgn.signal === 'EXTI'
+              ? deriveExtiLineId(pin?.name ?? '')
+              : null,
           bondedNames: pin?.bondedNames ?? [],
           tags: pin?.tags ?? [],
           label: labels[pos] ?? '',
@@ -89,6 +94,7 @@
           r.pinName.toUpperCase().includes(q) ||
           r.signalFull.toUpperCase().includes(q) ||
           r.muxLabel.toUpperCase().includes(q) ||
+          (r.extiLine ?? '').toUpperCase().includes(q) ||
           r.label.toUpperCase().includes(q)
         );
       });
@@ -257,6 +263,14 @@
                   >
                     {row.signalFull}
                   </span>
+                  {#if row.extiLine}
+                    <span
+                      class="text-hint ml-1"
+                      title={`GPIO_EXTI uses hardware line ${row.extiLine}`}
+                    >
+                      {row.extiLine}
+                    </span>
+                  {/if}
                   <span class="text-faint ml-1">{row.muxLabel}</span>
                 </td>
                 <!-- svelte-ignore a11y_click_events_have_key_events -->

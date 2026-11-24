@@ -2,6 +2,7 @@
   import { ArrowLeftRight, Crosshair, Lock, Tag, Trash2, Unlock } from 'lucide-svelte';
   import { onMount } from 'svelte';
   import { formatMuxLabel, getChipMuxModel, type ChipData, type PinAssignment, type PinInfo } from '../../core/types';
+  import { deriveExtiLineId } from '../../core/solver';
   import PinTagPills from './PinTagPills.svelte';
 
   interface Props {
@@ -58,6 +59,11 @@
   const muxLabel = $derived(
     assignment ? formatMuxLabel(assignment, getChipMuxModel(chip)) : '',
   );
+  const extiLine = $derived(
+    assignment?.peripheral === 'GPIO' && assignment.signal === 'EXTI'
+      ? deriveExtiLineId(pin.name)
+      : null,
+  );
 
   function startEditLabel(): void {
     draftLabel = label;
@@ -102,6 +108,14 @@
         <div class="font-mono text-[11px] text-primary">
           {assignment.peripheral}_{assignment.signal}
           <span class="text-muted">[{muxLabel}]</span>
+        </div>
+      {/if}
+      {#if extiLine}
+        <div
+          class="font-mono text-[11px] text-hint"
+          title={`GPIO_EXTI uses hardware line ${extiLine}`}
+        >
+          EXTI line: {extiLine}
         </div>
       {/if}
       {#if pin.bondedNames?.length}

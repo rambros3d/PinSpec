@@ -272,6 +272,7 @@ export interface DiagnosticItem {
     | 'INCOMPLETE_MODE'
     | 'DMA_CONTENTION'
     | 'RESOURCE_CONFLICT'
+    | 'EXTI_LINE_CONFLICT'
     | 'REMAP_MISMATCH'
     | 'REMAP_LOCKED'
     | 'PIO_GPIOBASE_CONFLICT'

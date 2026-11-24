@@ -10,6 +10,7 @@
     type PinInfo,
     type PinSignal,
   } from '../../core/types';
+  import { deriveExtiLineId } from '../../core/solver';
   import PinTagPills from './PinTagPills.svelte';
 
   interface Props {
@@ -47,6 +48,11 @@
 
   const muxModel = $derived(getChipMuxModel(chip));
   const bondedNames = $derived(pin.bondedNames ?? []);
+  const extiLine = $derived(
+    currentAssignment?.peripheral === 'GPIO' && currentAssignment.signal === 'EXTI'
+      ? deriveExtiLineId(pin.name)
+      : null,
+  );
 
   const clampedPos = $derived.by(() => {
     if (typeof window === 'undefined') return { left: x, top: y };
@@ -129,6 +135,14 @@
           {currentLabel}
         </div>
       {/if}
+      {#if extiLine}
+        <div
+          class="text-[11px] font-mono text-hint truncate"
+          title={`GPIO_EXTI uses hardware line ${extiLine}`}
+        >
+          EXTI line: {extiLine}
+        </div>
+      {/if}
       <div class="mt-1 flex items-center gap-1">
         <PinTagPills tags={pin.tags} compact={true} />
       </div>
@@ -204,6 +218,11 @@
             <button
               type="button"
               disabled={isLocked}
+              title={mode === 'EXTI'
+                ? extiLine
+                  ? `Uses hardware line ${extiLine}`
+                  : 'No EXTI line is derived from this pin name'
+                : undefined}
               onclick={() => {
                 onAssign({ peripheral: 'GPIO', signal: mode, af: null });
                 onClose();

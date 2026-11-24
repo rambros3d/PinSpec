@@ -1169,6 +1169,85 @@ function analyzeResourceConflicts(
   return diagnostics;
 }
 
+/**
+ * Derive the hardware EXTI line id from a GPIO pin name. ST and WCH parts name
+ * GPIO pads `P<bank><index>` (PA0, PB0, PC0 -> EXTI0); the numeric suffix is
+ * the EXTI line index. Returns null when no GPIO index is present, so pins
+ * without one never enter EXTI conflict detection. Bonded-name forms such as
+ * `PA0 [PB0]` use the first listed pad; multi-pad EXTI multiplexing is not
+ * encoded in the generated catalog and is out of scope for this rule.
+ */
+export function deriveExtiLineId(pinName: string): string | null {
+  const match = /\bP[A-Z](\d+)\b/i.exec(pinName);
+  return match ? `EXTI${Number.parseInt(match[1], 10)}` : null;
+}
+
+/** Evaluation-only assignments with EXTI line ids attached to GPIO/EXTI pins. */
+interface ExtiAwareAssignments {
+  state: WorkspaceState;
+  derivedPositions: Set<string>;
+}
+
+/**
+ * Build a local assignment view that carries derived EXTI line ids. Only
+ * STM32/CH32-style mux models are covered; RP parts use FUNCSEL and have no
+ * GPIO-index EXTI line. Generated shards and persisted workspace state are
+ * never mutated, so share links and project files stay unchanged.
+ */
+function withDerivedExtiLines(
+  chip: ChipData,
+  state: WorkspaceState,
+  pinMap: Map<string, PinInfo>,
+): ExtiAwareAssignments {
+  const next = cloneWorkspaceState(state);
+  const derivedPositions = new Set<string>();
+  if (getChipMuxModel(chip) === 'funcsel-pio') return { state: next, derivedPositions };
+
+  for (const [pos, asgn] of Object.entries(state.assignments)) {
+    if (asgn.peripheral !== 'GPIO' || asgn.signal !== 'EXTI' || asgn.resourceId) continue;
+    const pin = pinMap.get(pos);
+    if (!pin || pin.type !== 'io') continue;
+    const line = deriveExtiLineId(pin.name);
+    if (!line) continue;
+    next.assignments[pos] = { ...asgn, resourceId: line };
+    derivedPositions.add(pos);
+  }
+
+  return { state: next, derivedPositions };
+}
+
+/**
+ * Detect shared EXTI lines by running the shared-resource detector over only
+ * the derived assignments and relabelling its diagnostics for EXTI. Both
+ * participating pins are listed so the standard conflict-marking path
+ * highlights them; non-EXTI resource diagnostics are untouched.
+ */
+function analyzeExtiConflicts(
+  derived: ExtiAwareAssignments,
+  pinMap: Map<string, PinInfo>,
+): DiagnosticItem[] {
+  if (derived.derivedPositions.size === 0) return [];
+
+  const extiState = cloneWorkspaceState(derived.state);
+  extiState.assignments = {};
+  for (const pos of derived.derivedPositions) {
+    extiState.assignments[pos] = derived.state.assignments[pos];
+  }
+
+  return analyzeResourceConflicts(extiState, pinMap).map((diagnostic) => {
+    const line = diagnostic.id.slice('resource:'.length);
+    const names = diagnostic.pins
+      .map((pos) => `${pinMap.get(pos)?.name ?? pos} (${pos})`)
+      .join(', ');
+    return {
+      ...diagnostic,
+      id: `exti:${line}`,
+      code: 'EXTI_LINE_CONFLICT' as const,
+      message: `EXTI line ${line} is assigned to multiple GPIO pins: ${names}.`,
+    };
+  });
+}
+
 /** Validate RP PIO state-machine reservations and gpioBaseOptions windows. */
 function analyzePio(
   chip: ChipData,
@@ -1509,12 +1588,21 @@ export function evaluateWorkspace(chip: ChipData, state: WorkspaceState): Solver
   const dmaResult = analyzeDma(chip, state);
   diagnostics.push(...dmaResult.diagnostics);
 
-  // 7. Vendor-aware mux analysis
+  // 7. Vendor-aware mux analysis. EXTI lines are derived into a local clone
+  // before shared-resource analysis runs; the generic pass keeps its original
+  // inputs and diagnostics, while the EXTI pass consumes the derived ids.
   const remapDiagnostics = analyzeActiveRemaps(chip, state, pinMap);
+  const derivedExti = withDerivedExtiLines(chip, state, pinMap);
   const resourceDiagnostics = analyzeResourceConflicts(state, pinMap);
+  const extiDiagnostics = analyzeExtiConflicts(derivedExti, pinMap);
   const pioDiagnostics = analyzePio(chip, state, pinMap);
-  diagnostics.push(...remapDiagnostics, ...resourceDiagnostics, ...pioDiagnostics);
-  for (const d of [...resourceDiagnostics, ...pioDiagnostics]) {
+  diagnostics.push(
+    ...remapDiagnostics,
+    ...resourceDiagnostics,
+    ...extiDiagnostics,
+    ...pioDiagnostics,
+  );
+  for (const d of [...resourceDiagnostics, ...extiDiagnostics, ...pioDiagnostics]) {
     for (const pos of d.pins) {
       pinStatus[pos] = 'conflict';
       if (d.peripheral && peripheralStatus[d.peripheral] !== undefined) {

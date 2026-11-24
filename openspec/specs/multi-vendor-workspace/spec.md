@@ -65,17 +65,6 @@ Quick search and the MCU switcher SHALL expose vendor filter tabs and vendor-awa
 - **WHEN** the user clears the vendor tab
 - **THEN** chips from all vendors are listed again
 
-### Requirement: Presets and hero are cross-vendor
-Curated presets SHALL include STM32, CH32, and RP parts and open the selected generated chip; the hero SHALL offer a vendor switcher that lazy-fetches a generated chip per vendor and builds demo assignments appropriate to that vendor rather than importing a committed chip snapshot.
-
-#### Scenario: Open an RP preset
-- **WHEN** a user selects an RP preset
-- **THEN** the workspace loads the generated RP chip data without fetching a hardcoded STM32 snapshot
-
-#### Scenario: Switch hero vendor
-- **WHEN** the hero vendor switcher is set to CH32
-- **THEN** the preview fetches a generated CH32 chip and shows a demo built from its available peripherals
-
 ### Requirement: Export previews and provenance reflect all vendors
 The export modal SHALL present tabs that invoke the vendor-aware exporters and show copy/download controls for each format, and the landing footer and workspace copy SHALL describe multi-vendor coverage and credit the STM32, CH32, and RP upstream data sources without STM32-only claims.
 
@@ -93,3 +82,25 @@ The package renderers SHALL produce clean, non-overlapping pins and readable lab
 #### Scenario: Zoomed inspection in both themes
 - **WHEN** each listed package is rendered at minimum and maximum zoom in light and dark themes
 - **THEN** pin pads, mux labels, and bonded/exposed-pad annotations remain readable and do not overlap
+
+### Requirement: Presets are cross-vendor
+
+Curated presets SHALL include STM32, CH32, and RP parts and SHALL open the
+selected generated chip when activated from the start screen or the workspace.
+No chip preview on the start screen SHALL fetch a hardcoded snapshot or build a
+demo state.
+
+#### Scenario: Open an RP preset
+
+- **WHEN** a user selects an RP preset
+- **THEN** the workspace loads the generated RP chip data without fetching a hardcoded STM32 snapshot
+
+#### Scenario: Open a CH32 preset
+
+- **WHEN** a user selects a CH32 preset from the start screen
+- **THEN** the workspace loads the generated CH32 chip data with its remap data intact
+
+#### Scenario: No hero preview fetches a chip
+
+- **WHEN** the start screen is mounted
+- **THEN** no hero demo chip request is made

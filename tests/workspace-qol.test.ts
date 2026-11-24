@@ -12,7 +12,7 @@ const DIALOG_FILES = [
   'src/components/workspace/BoardSelectorModal.svelte',
   'src/components/workspace/CompatibleMcuFinder.svelte',
   'src/components/workspace/PinoutDiffModal.svelte',
-  'src/pages/WorkspacePage.svelte',
+  'src/pages/LandingPage.svelte',
 ];
 
 describe('catalog error state and retry', () => {
@@ -126,25 +126,18 @@ describe('toast placement and dismissal', () => {
 });
 
 describe('export failure feedback', () => {
-  it('reports copy and download failures from both export surfaces', () => {
-    const landing = readSource('src/pages/LandingPage.svelte');
+  it('reports copy and download failures from the workspace export dialog', () => {
     const modal = readSource('src/components/workspace/ExportModal.svelte');
-    for (const [name, source] of [
-      ['landing', landing],
-      ['export modal', modal],
-    ] as const) {
-      expect(source, name).toContain('workspaceStore.showToast(');
-      expect(source, name).toContain('Check clipboard access.');
-      expect(source, name).toContain('Unable to start the export download.');
-      expect(source.indexOf('click()'), name).toBeLessThan(source.indexOf('revokeObjectURL'));
-    }
+    expect(modal).toContain('workspaceStore.showToast(');
+    expect(modal).toContain('Check clipboard access.');
+    expect(modal).toContain('Unable to start the export download.');
+    expect(modal.indexOf('click()')).toBeLessThan(modal.indexOf('revokeObjectURL'));
     expect(modal).toContain('copyContent');
     expect(modal).toContain('downloadFile');
-    expect(landing).toContain('downloadPreview');
-    expect(landing).toContain('rustCrate');
     for (const crate of ['embassy-stm32', 'embassy-rp', 'ch32-hal']) {
       expect(modal, crate).toContain(crate);
     }
+    expect(readSource('src/pages/LandingPage.svelte')).not.toContain('id="export-preview"');
   });
 });
 
@@ -216,7 +209,6 @@ describe('focus visibility, motion, and contrast', () => {
 
   it('raises text-bearing muted copy to the standard muted token', () => {
     const replaced: Array<[string, string]> = [
-      ['src/components/landing/HeroChipPreview.svelte', 'text-[11px] text-base-content/40'],
       [
         'src/components/landing/PresetGrid.svelte',
         'text-base-content/40 font-mono-tabular',
@@ -240,9 +232,6 @@ describe('focus visibility, motion, and contrast', () => {
     }
     expect(readSource('src/components/landing/QuickSearchBar.svelte')).toContain(
       'class="size-4 text-base-content/40 absolute left-3.5 pointer-events-none"',
-    );
-    expect(readSource('src/components/landing/HeroChipPreview.svelte')).toContain(
-      'text-[11px] text-base-content/60">Click any pin to edit',
     );
     const tree = readSource('src/components/workspace/PeripheralTree.svelte');
     expect(tree).not.toContain('font-mono-tabular text-[11px] text-base-content/40');

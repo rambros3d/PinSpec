@@ -77,24 +77,30 @@ toast SHALL provide a dismiss control in addition to its existing timeout.
 ### Requirement: Copy and download failures are reported
 
 Failure of a clipboard write or file download SHALL be reported to the user in
-both the landing export preview and the workspace export dialog. Success SHALL
-keep the existing confirmation indicator. A generated object URL SHALL remain
-valid until the browser has started the download.
+the workspace export dialog. That dialog SHALL keep its success confirmation
+indicator on a successful copy. A generated object URL SHALL remain valid until
+the browser has started the download. The start screen SHALL NOT provide an
+export preview, so no copy or download failure strings are required there.
 
 #### Scenario: Clipboard write is rejected
 
-- **WHEN** the browser rejects a clipboard write from an export surface
+- **WHEN** the browser rejects a clipboard write from the workspace export dialog
 - **THEN** a visible failure notification is shown and the success indicator is not set
 
 #### Scenario: Download cannot be started
 
-- **WHEN** a download action on an export surface fails
+- **WHEN** a download action in the workspace export dialog fails
 - **THEN** a visible failure notification is shown instead of failing silently
 
 #### Scenario: Object URL lifetime
 
-- **WHEN** a download is started from an export surface
+- **WHEN** a download is started from the workspace export dialog
 - **THEN** the object URL is revoked only after the download has begun, so the anchor can still read its content
+
+#### Scenario: No landing export surface
+
+- **WHEN** the start screen is rendered
+- **THEN** it shows no copy or download control for an export preview, and export failure handling is exercised only by the workspace dialog
 
 ### Requirement: Native dialogs manage focus on open and close
 

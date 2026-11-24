@@ -24,6 +24,13 @@
   let inputEl = $state<HTMLInputElement | null>(null);
   let wrapperEl = $state<HTMLDivElement | null>(null);
 
+  /** Focus and select the search input when the start-screen action is used. */
+  export function focusInput(): void {
+    inputEl?.focus();
+    inputEl?.select();
+    focused = true;
+  }
+
   const vendorTabs = $derived(buildVendorTabs(catalogStore.meta, catalogStore.index));
   const familyOptions = $derived(catalogFamilies(catalogStore.index));
   const packageOptions = $derived(catalogPackageKinds(catalogStore.index));

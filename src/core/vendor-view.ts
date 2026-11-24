@@ -91,13 +91,6 @@ export function orderPeripheralNames(names: string[], partition: PeripheralParti
   });
 }
 
-/** Curated hero chips, one per vendor, each loaded from generated data. */
-export const HERO_CHIPS: Array<{ vendor: VendorId; id: string; label: string }> = [
-  { vendor: 'stm32', id: 'STM32G431CBU6', label: 'STM32G431' },
-  { vendor: 'ch32', id: 'CH32V203C8T6', label: 'CH32V203' },
-  { vendor: 'rp', id: 'RP2350B', label: 'RP2350B' },
-];
-
 /** Human-readable, monochrome pill text for every supported pin tag. */
 export const PIN_TAG_LABELS: Record<PinTag, string> = {
   'debug-sdi': 'SWIO',

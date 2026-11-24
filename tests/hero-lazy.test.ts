@@ -3,30 +3,31 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const ROOT = process.cwd();
+const read = (rel: string): string => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 
-describe('lazy hero chip data', () => {
-  it('does not statically import a committed hero snapshot', () => {
-    const page = fs.readFileSync(path.join(ROOT, 'src', 'pages', 'LandingPage.svelte'), 'utf8');
+describe('no hero snapshot on the start screen', () => {
+  it('does not import a committed hero snapshot or render a hero preview', () => {
+    const page = read('src/pages/LandingPage.svelte');
     expect(page).not.toMatch(/from\s+['"][^'"]*hero-chip\.json['"]/);
     expect(page).not.toContain('heroChipRaw');
-    expect(page).toContain("const HERO_CHIP_ID = 'STM32G431CBU6'");
-    expect(page).toContain('catalogStore.loadChip(HERO_CHIP_ID)');
-    expect(page).toContain('$state<ChipData | null>');
+    expect(page).not.toContain('HeroChipPreview');
+    expect(page).not.toContain('buildHeroDemoState');
     expect(fs.existsSync(path.join(ROOT, 'src', 'data', 'hero-chip.json'))).toBe(false);
+    expect(fs.existsSync(path.join(ROOT, 'src', 'core', 'hero-demo.ts'))).toBe(false);
+    expect(fs.existsSync(path.join(ROOT, 'src', 'components', 'landing', 'HeroChipPreview.svelte'))).toBe(
+      false,
+    );
   });
 
   it('fetches chip data relative to the GitHub Pages base path', () => {
-    const store = fs.readFileSync(path.join(ROOT, 'src', 'state', 'catalog.svelte.ts'), 'utf8');
+    const store = read('src/state/catalog.svelte.ts');
     expect(store).toContain('import.meta.env.BASE_URL');
     expect(store).toContain('chips/${encodeURIComponent(key)}.json');
     expect(store).not.toMatch(/fetch\(['"]\/data\//);
   });
 
   it('does not recreate the hero snapshot during generation', () => {
-    const generatorSource = fs.readFileSync(
-      path.join(ROOT, 'tools', 'data-gen', 'index.ts'),
-      'utf8',
-    );
+    const generatorSource = read('tools/data-gen/index.ts');
     expect(generatorSource).not.toContain('hero-chip.json');
   });
 });

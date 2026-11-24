@@ -1,7 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { buildHeroDemoState } from '../src/core/hero-demo';
 import { formatMuxLabel } from '../src/core/types';
 import {
   buildVendorTabs,
@@ -49,7 +48,6 @@ describe('vendor-correct mux labels', () => {
       'src/components/workspace/SummaryDrawer.svelte',
       'src/components/workspace/PerimeterPackage.svelte',
       'src/components/workspace/GridPackage.svelte',
-      'src/components/landing/HeroChipPreview.svelte',
     ];
     for (const site of sites) {
       const source = readSource(site);
@@ -169,7 +167,7 @@ describe('peripheral configuration detail and RP PIO panel', () => {
   });
 });
 
-describe('vendor-aware discovery, presets and hero', () => {
+describe('vendor-aware discovery and presets', () => {
   it('builds vendor tabs with live per-source counts', () => {
     const tabs = buildVendorTabs(meta, index);
     expect(tabs.map((t) => t.id)).toEqual(['all', 'stm32', 'ch32', 'rp']);
@@ -217,50 +215,16 @@ describe('vendor-aware discovery, presets and hero', () => {
     expect(source).toContain('Cross-Vendor Starter Chips');
   });
 
-  it('lazy-fetches one generated chip per hero vendor', () => {
-    const page = readSource('src/pages/LandingPage.svelte');
-    expect(page).toContain("const HERO_CHIP_ID = 'STM32G431CBU6'");
-    expect(page).toContain('catalogStore.loadChip(HERO_CHIP_ID)');
-    expect(page).toContain('HERO_CHIPS');
-    expect(page).toContain('selectHeroVendor');
-    expect(page).not.toMatch(/from\s+['"][^'"]*hero-chip\.json['"]/);
-
-    const preview = readSource('src/components/landing/HeroChipPreview.svelte');
-    expect(preview).toContain('onVendorChange');
-    expect(preview).toContain('buildHeroDemoState');
-    expect(preview).not.toContain("'TIM1', 'pwm_3phase_comp'");
-  });
-
-  it('builds demos from peripherals actually present on each vendor chip', () => {
-    for (const id of ['STM32G431CBU6', 'CH32V203C8T6', 'RP2040', 'RP2350B']) {
-      const chip = readChip(id);
-      const demo = buildHeroDemoState(chip);
-      expect(Object.keys(demo.assignments).length, id).toBeGreaterThan(0);
-      for (const [pos, asgn] of Object.entries(demo.assignments)) {
-        expect(chip.peripherals[asgn.peripheral], `${id}:${pos}`).toBeDefined();
-      }
-    }
-    const rpChip = readChip('RP2350B');
-    const rpDemo = buildHeroDemoState(rpChip);
-    expect(rpDemo.mcuId).toBe('RP2350B');
-    for (const pos of Object.keys(rpDemo.assignments)) {
-      expect(rpChip.pins.some((pin) => pin.pos === pos)).toBe(true);
-    }
-  });
 });
 
-describe('export previews and provenance copy', () => {
-  it('dispatches vendor-aware Rust labels in both export surfaces', () => {
+describe('workspace exports and provenance copy', () => {
+  it('dispatches vendor-aware Rust labels in the workspace export modal', () => {
     const modal = readSource('src/components/workspace/ExportModal.svelte');
     expect(modal).toContain('ch32-hal');
     expect(modal).toContain('embassy-rp');
     expect(modal).toContain('embassy-stm32');
     expect(modal).toContain('downloadFile');
     expect(modal).toContain('copyContent');
-
-    const page = readSource('src/pages/LandingPage.svelte');
-    expect(page).toContain('rustCrate');
-    expect(page).toContain('downloadPreview');
   });
 
   it('contains no STM32-only claims and credits all three upstream sources', () => {

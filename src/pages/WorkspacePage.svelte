@@ -1,7 +1,6 @@
 <script lang="ts">
-  import { AlertCircle, CircuitBoard, FileUp, PanelLeft, PanelRight, X } from 'lucide-svelte';
+  import { AlertCircle, PanelLeft, PanelRight, X } from 'lucide-svelte';
   import { onMount } from 'svelte';
-  import BoardSelectorModal from '../components/workspace/BoardSelectorModal.svelte';
   import CombinedSidebar from '../components/workspace/CombinedSidebar.svelte';
   import CompatibleMcuFinder from '../components/workspace/CompatibleMcuFinder.svelte';
   import ExportModal from '../components/workspace/ExportModal.svelte';
@@ -11,20 +10,8 @@
   import ShortcutHelpDialog from '../components/workspace/ShortcutHelpDialog.svelte';
   import SummaryDrawer from '../components/workspace/SummaryDrawer.svelte';
   import TopToolbar from '../components/workspace/TopToolbar.svelte';
-  import {
-    buildWorkspaceFromPins,
-    prepareIocImport,
-    type IocRawRecord,
-  } from '../core/importers/ioc';
   import { DOCK_TABS, type DockTab, type SummaryTab, type WorkspaceState } from '../core/types';
-  import {
-    BOARD_PRESETS,
-    buildBoardPresetState,
-    resolveBoardPreset,
-    type BoardPreset,
-  } from '../data/boards';
   import { catalogStore } from '../state/catalog.svelte';
-  import { openDialogWithFocus } from '../state/dialog-focus';
   import { router } from '../state/router.svelte';
   import { viewPreferences } from '../state/workspace-preferences.svelte';
   import { workspaceStore } from '../state/workspace.svelte';
@@ -54,14 +41,7 @@
   let showFinder = $state(false);
   let showDiff = $state(false);
   let showExport = $state(false);
-  let showBoardSelector = $state(false);
   let showShortcutHelp = $state(false);
-  let iocDropActive = $state(false);
-  let iocFileInput = $state<HTMLInputElement | null>(null);
-  let ambiguousImport = $state<{ record: IocRawRecord; candidates: string[] } | null>(null);
-  let ambiguousChoice = $state<string | null>(null);
-  let ambiguousDialogEl = $state<HTMLDialogElement | null>(null);
-  let ambiguousCancelEl = $state<HTMLButtonElement | null>(null);
 
   let canvasRef = $state<{ fitView: () => void } | null>(null);
   let searchInputRef = $state<HTMLInputElement | null>(null);
@@ -100,15 +80,6 @@
       workspaceStore.openSharedPayload(sharedPayload);
     } else if (mcuId) {
       workspaceStore.openMcu(mcuId);
-    }
-  });
-
-  // The ambiguous-import dialog is conditional, so promote it when it mounts.
-  $effect(() => {
-    if (ambiguousImport && ambiguousDialogEl && !ambiguousDialogEl.open) {
-      const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-      ambiguousDialogEl.showModal();
-      openDialogWithFocus(ambiguousDialogEl, ambiguousCancelEl, opener);
     }
   });
 
@@ -163,108 +134,6 @@
     workspaceStore.showToast(`Imported pinout for ${imported.mcuId}.`, 'success');
   }
 
-  /** Hand a prepared state to the existing MCU-open handoff path. */
-  function applyImportedState(
-    state: WorkspaceState,
-    message: string,
-    tone: 'info' | 'success' | 'warning' = 'success',
-  ): void {
-    workspaceStore.setPendingHandoff(state);
-    if (workspaceStore.chip && state.mcuId.toUpperCase() === workspaceStore.chip.id.toUpperCase()) {
-      workspaceStore.openMcu(state.mcuId, state);
-    } else {
-      router.navigateMcu(state.mcuId);
-    }
-    workspaceStore.showToast(message, tone);
-  }
-
-  async function applyIocRecord(record: IocRawRecord, mcuId: string): Promise<void> {
-    try {
-      const chip = await catalogStore.loadChip(mcuId);
-      const built = buildWorkspaceFromPins(record.pins, { chip, mcuId: chip.id });
-      if (!built.ok) {
-        workspaceStore.showToast(built.error, 'warning');
-        return;
-      }
-      const label = record.board || mcuId;
-      const message =
-        built.warnings.length > 0
-          ? `Imported ${label} with ${built.warnings.length} warning(s): ${built.warnings[0]}`
-          : `Imported ${label} pinout.`;
-      applyImportedState(
-        built.state,
-        message,
-        built.warnings.length > 0 ? 'warning' : 'success',
-      );
-    } catch (err) {
-      workspaceStore.showToast(
-        err instanceof Error ? err.message : 'Unable to load the imported MCU.',
-        'warning',
-      );
-    }
-  }
-
-  async function handleIocFile(file: File): Promise<void> {
-    if (catalogStore.index.length === 0) await catalogStore.ensureLoaded();
-    if (catalogStore.indexError) {
-      workspaceStore.showToast(catalogStore.indexError, 'warning');
-      return;
-    }
-    const text = await file.text();
-    const prepared = prepareIocImport(text, catalogStore.index);
-    if (prepared.kind === 'error') {
-      workspaceStore.showToast(prepared.error, 'warning');
-      return;
-    }
-    if (prepared.kind === 'ambiguous') {
-      ambiguousImport = { record: prepared.record, candidates: prepared.candidates };
-      return;
-    }
-    await applyIocRecord(prepared.record, prepared.mcuId);
-  }
-
-  /** Close the native dialog; the close event applies a choice or cancels it. */
-  function closeAmbiguousDialog(): void {
-    ambiguousDialogEl?.close();
-  }
-
-  function handleAmbiguousClose(): void {
-    const record = ambiguousImport?.record;
-    const mcuId = ambiguousChoice;
-    ambiguousChoice = null;
-    ambiguousImport = null;
-    if (record && mcuId) void applyIocRecord(record, mcuId);
-  }
-
-  function handleAmbiguousSelect(mcuId: string): void {
-    ambiguousChoice = mcuId;
-    closeAmbiguousDialog();
-  }
-
-  async function handleBoardSelect(preset: BoardPreset): Promise<void> {
-    await catalogStore.ensureLoaded();
-    const resolved = resolveBoardPreset(preset, catalogStore.index);
-    if (!resolved.ok) {
-      workspaceStore.showToast(resolved.error, 'warning');
-      return;
-    }
-    showBoardSelector = false;
-    try {
-      const chip = await catalogStore.loadChip(resolved.mcuId);
-      const built = buildBoardPresetState(preset, chip);
-      if (!built.ok) {
-        workspaceStore.showToast(built.error, 'warning');
-        return;
-      }
-      applyImportedState(built.state, `Loaded ${preset.board} board preset.`);
-    } catch (err) {
-      workspaceStore.showToast(
-        err instanceof Error ? err.message : 'Unable to load the selected board MCU.',
-        'warning',
-      );
-    }
-  }
-
   onMount(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (document.querySelector('dialog[open]')) return;
@@ -294,33 +163,9 @@
         showShortcutHelp = true;
       }
     };
-    const onDragOver = (e: DragEvent) => {
-      if (!e.dataTransfer?.types.includes('Files')) return;
-      e.preventDefault();
-      iocDropActive = true;
-    };
-    const onDragLeave = (e: DragEvent) => {
-      if (!e.relatedTarget) iocDropActive = false;
-    };
-    const onDrop = (e: DragEvent) => {
-      iocDropActive = false;
-      const iocFile = Array.from(e.dataTransfer?.files ?? []).find((file) =>
-        file.name.toLowerCase().endsWith('.ioc'),
-      );
-      if (!iocFile) return;
-      e.preventDefault();
-      void handleIocFile(iocFile);
-    };
-
     window.addEventListener('keydown', onKeyDown);
-    window.addEventListener('dragover', onDragOver);
-    window.addEventListener('dragleave', onDragLeave);
-    window.addEventListener('drop', onDrop);
     return () => {
       window.removeEventListener('keydown', onKeyDown);
-      window.removeEventListener('dragover', onDragOver);
-      window.removeEventListener('dragleave', onDragLeave);
-      window.removeEventListener('drop', onDrop);
     };
   });
 </script>
@@ -463,42 +308,6 @@
           <PanelRight class="size-3.5" />
         </button>
 
-        <div class="absolute top-3 left-12 z-20 flex items-center gap-1">
-          <button
-            type="button"
-            onclick={() => iocFileInput?.click()}
-            title="Import an STM32CubeIDE .ioc project file"
-            aria-label="Import .ioc project file"
-            data-placement-furniture
-            class="btn btn-ghost btn-sm gap-1.5 shadow-xs"
-          >
-            <FileUp class="size-3.5" />
-            <span class="hidden xl:inline text-[11px] font-medium">Import .ioc</span>
-          </button>
-          <button
-            type="button"
-            onclick={() => (showBoardSelector = true)}
-            title="Start from an official ST board preset"
-            aria-label="Open board preset selector"
-            data-placement-furniture
-            class="btn btn-ghost btn-sm gap-1.5 shadow-xs"
-          >
-            <CircuitBoard class="size-3.5" />
-            <span class="hidden xl:inline text-[11px] font-medium">Board preset</span>
-          </button>
-        </div>
-        <input
-          bind:this={iocFileInput}
-          type="file"
-          accept=".ioc"
-          class="hidden"
-          onchange={(e) => {
-            const file = (e.currentTarget as HTMLInputElement).files?.[0];
-            if (file) void handleIocFile(file);
-            (e.currentTarget as HTMLInputElement).value = '';
-          }}
-        />
-
         <PackageCanvas
           bind:this={canvasRef}
           chip={workspaceStore.chip}
@@ -597,71 +406,6 @@
     </div>
   {/if}
 
-  {#if iocDropActive}
-    <div class="pointer-events-none fixed inset-0 z-40 flex items-center justify-center bg-neutral/50">
-      <div class="card card-border border-dashed border-info bg-base-100 px-8 py-6 text-center shadow-lg">
-        <FileUp class="w-8 h-8 mx-auto text-info" />
-        <p class="mt-2 text-sm font-semibold text-foreground">Drop an .ioc file to import</p>
-        <p class="text-xs text-base-content/60 mt-1">Pins are matched by name against the loaded catalog.</p>
-      </div>
-    </div>
-  {/if}
-
-  <!-- Ambiguous part ID confirmation -->
-  {#if ambiguousImport}
-    <dialog
-      bind:this={ambiguousDialogEl}
-      class="modal"
-      onclose={handleAmbiguousClose}
-      oncancel={(e) => {
-        e.preventDefault();
-        closeAmbiguousDialog();
-      }}
-      onclick={(e) => {
-        if (e.target === ambiguousDialogEl) closeAmbiguousDialog();
-      }}
-      aria-label="Confirm MCU for .ioc import"
-    >
-      <div
-        class="modal-box w-full max-w-md max-h-[92dvh] min-h-0 flex flex-col p-0 shadow-2xl overflow-hidden"
-      >
-        <div class="flex items-center justify-between px-5 py-3.5 border-b border-base-300">
-          <h2 class="text-sm font-semibold text-foreground">Confirm MCU for Import</h2>
-          <button
-            bind:this={ambiguousCancelEl}
-            type="button"
-            onclick={closeAmbiguousDialog}
-            class="btn btn-ghost btn-sm btn-square"
-            aria-label="Cancel import"
-            title="Cancel import"
-          >
-            <X class="size-4" />
-          </button>
-        </div>
-        <div class="px-5 py-4 space-y-3 min-h-0 overflow-y-auto">
-          <p class="text-xs text-base-content/60">
-            The part ID in this file matches more than one catalog MCU. Select the part used by your board.
-          </p>
-          <p class="font-mono text-xs text-foreground break-all">{ambiguousImport.record.mcuName}</p>
-          <div class="flex flex-wrap gap-2">
-            {#each ambiguousImport.candidates as candidate (candidate)}
-              <button
-                type="button"
-                onclick={() => handleAmbiguousSelect(candidate)}
-                class="btn btn-sm btn-outline font-mono text-xs"
-              >
-                {candidate}
-              </button>
-            {/each}
-          </div>
-        </div>
-      </div>
-      <form method="dialog" class="modal-backdrop">
-        <button aria-label="Cancel import">close</button>
-      </form>
-    </dialog>
-  {/if}
-
   <!-- Modals -->
   {#if showDiff}
     <PinoutDiffModal onClose={() => (showDiff = false)} />
@@ -690,14 +434,6 @@
       shareUrl={workspaceStore.buildShareUrl()}
       onImportState={handleImportState}
       onClose={() => (showExport = false)}
-    />
-  {/if}
-
-  {#if showBoardSelector}
-    <BoardSelectorModal
-      presets={BOARD_PRESETS}
-      onSelect={handleBoardSelect}
-      onClose={() => (showBoardSelector = false)}
     />
   {/if}
 

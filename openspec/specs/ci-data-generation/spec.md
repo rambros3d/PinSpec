@@ -46,17 +46,6 @@ The orchestrator SHALL write `build-warnings.json` containing warnings from all 
 - **WHEN** every configured part is emitted successfully
 - **THEN** `build-warnings.json` is still written with an empty warning list and a warning count of zero
 
-### Requirement: Lazy hero chip data
-The landing page SHALL fetch the `STM32G431CBU6` chip JSON from the generated `public/data` catalog at runtime and MUST NOT import a committed hero snapshot from application source.
-
-#### Scenario: Landing page loads with generated data
-- **WHEN** the landing page mounts and the generated hero chip JSON is available
-- **THEN** the hero preview and export previews render from the fetched `ChipData` and the chip is available to the catalog store
-
-#### Scenario: Hero data fetch fails
-- **WHEN** the generated hero chip JSON cannot be fetched
-- **THEN** the page shows a non-crashing error or loading state and the rest of the landing page remains usable
-
 ### Requirement: Per-vendor generation gates
 The generator SHALL evaluate build-blocking gates per vendor. The STM32 gates MUST retain the six reference part assertions and the thresholds of at least 1,000 MCUs, at least 95 percent Embassy match rate, and under 150 MB total JSON output.
 
@@ -82,3 +71,25 @@ The GitHub Actions workflow SHALL fetch every configured reference source during
 #### Scenario: A configured source is absent locally
 - **WHEN** generation runs in a clean Actions checkout with no source caches
 - **THEN** the workflow fetches the sources before generation and the build succeeds without committed generated data
+
+### Requirement: Start screen reads generated catalog data at runtime
+
+The landing start screen SHALL load `meta.json` and `index.json` from the
+generated catalog through `import.meta.env.BASE_URL` and SHALL use them for
+quick search, catalog statistics, and provenance. It MUST NOT import a committed
+chip snapshot from application source, and the generator MUST NOT emit one.
+
+#### Scenario: Generated catalog is available
+
+- **WHEN** the start screen mounts and the generated catalog files are available
+- **THEN** quick search returns parts from the index and the start screen shows counts and source revisions from the metadata
+
+#### Scenario: Generated catalog cannot be loaded
+
+- **WHEN** a catalog request fails
+- **THEN** the start screen shows the existing retryable search error and a loading or unavailable state in the statistics rail without crashing
+
+#### Scenario: No committed snapshot is recreated
+
+- **WHEN** application source and generator output are inspected
+- **THEN** no committed hero chip snapshot is imported by the application and none is emitted by generation

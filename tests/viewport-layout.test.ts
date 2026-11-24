@@ -89,7 +89,8 @@ describe('document viewport lock', () => {
     expect(page).not.toContain('min-h-screen');
     expect(page).toContain('navbar sticky top-0');
     expect(page).toContain('href="#presets"');
-    expect(page).toContain('id="export-preview"');
+    expect(page).not.toContain('href="#export-preview"');
+    expect(page).not.toContain('id="export-preview"');
     expect(page).toContain('id="provenance"');
     expect(readSource('src/components/landing/PresetGrid.svelte')).toContain('id="presets"');
   });
@@ -193,7 +194,7 @@ describe('toolbar and modal viewport fit', () => {
       'src/components/workspace/McuSwitcherModal.svelte',
       'src/components/workspace/ExportModal.svelte',
       'src/components/workspace/BoardSelectorModal.svelte',
-      'src/pages/WorkspacePage.svelte',
+      'src/pages/LandingPage.svelte',
     ];
     for (const file of files) {
       const source = readSource(file);
@@ -230,13 +231,15 @@ describe('native dialog contract', () => {
       expect(source, file).toContain('modal-backdrop');
       expect(source, file).not.toContain("addEventListener('keydown'");
     }
-    const page = readSource('src/pages/WorkspacePage.svelte');
-    expect(page).toContain('<dialog');
-    expect(page).toContain('bind:this={ambiguousDialogEl}');
-    expect(page).toContain('showModal()');
-    expect(page).toContain('onclose={handleAmbiguousClose}');
-    expect(page).toContain('modal-backdrop');
-    expect(page).not.toContain("e.key === 'Escape'");
+    const landing = readSource('src/pages/LandingPage.svelte');
+    expect(landing).toContain('<dialog');
+    expect(landing).toContain('bind:this={ambiguousDialogEl}');
+    expect(landing).toContain('showModal()');
+    expect(landing).toContain('onclose={handleAmbiguousClose}');
+    expect(landing).toContain('modal-backdrop');
+    const workspace = readSource('src/pages/WorkspacePage.svelte');
+    expect(workspace).not.toContain('ambiguousDialogEl');
+    expect(workspace).not.toContain('accept=".ioc"');
   });
 
   it('guards both window shortcut handlers while a native dialog is open', () => {

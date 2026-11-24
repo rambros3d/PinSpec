@@ -1,12 +1,9 @@
 <script lang="ts">
   import {
     AlertCircle,
-    ArrowLeftRight,
     Check,
     Copy,
-    Cpu,
     Download,
-    FileCode2,
     RefreshCw,
     Upload,
   } from 'lucide-svelte';
@@ -250,9 +247,6 @@
         <a href="#presets" class="hover:text-primary transition-colors whitespace-nowrap shrink-0">
           Starter Chips
         </a>
-        <a href="#capabilities" class="hover:text-primary transition-colors whitespace-nowrap shrink-0">
-          Capabilities
-        </a>
         <a href="#export-preview" class="hover:text-primary transition-colors whitespace-nowrap shrink-0">
           Exports
         </a>
@@ -379,60 +373,6 @@
       onDeleteRecent={(id) => workspaceStore.deleteRecentSession(id)}
     />
 
-    <!-- Core Capabilities Grid (4 Engineering Cards) -->
-    <section id="capabilities" class="space-y-4">
-      <div>
-        <h2 class="text-lg font-semibold text-primary">
-          Built for Real Hardware Workflows
-        </h2>
-        <p class="text-sm text-muted">
-          Deterministic constraint solving and accurate package layouts without desktop bloat.
-        </p>
-      </div>
-
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="rounded-panel border-ui border-hairline bg-surface p-5 space-y-2.5">
-          <Cpu class="size-ui-lg text-hint" />
-          <h3 class="text-sm font-semibold text-primary">
-            Parametric Perimeter & BGA Renderers
-          </h3>
-          <p class="text-xs text-muted leading-relaxed">
-            Two-sided SOP and TSSOP bodies, exposed-pad QFN and LQFP outlines, bonded CH32 pins and zoom-adaptive BGA ball matrices.
-          </p>
-        </div>
-
-        <div class="rounded-panel border-ui border-hairline bg-surface p-5 space-y-2.5">
-          <ArrowLeftRight class="size-ui-lg text-brand-accent" />
-          <h3 class="text-sm font-semibold text-primary">
-            Mode Allocation & Ctrl+Click Remapping
-          </h3>
-          <p class="text-xs text-muted leading-relaxed">
-            Scarcity-aware allocation preserves scarce pins, flags DMA and shared-resource contention, and surfaces 1-hop fixes, CH32 remap groups and RP PIO windows.
-          </p>
-        </div>
-
-        <div class="rounded-panel border-ui border-hairline bg-surface p-5 space-y-2.5">
-          <FileCode2 class="size-ui-lg text-brand-secondary" />
-          <h3 class="text-sm font-semibold text-primary">
-            Embassy Rust, C Header, CSV & URL Links
-          </h3>
-          <p class="text-xs text-muted leading-relaxed">
-            Export embassy-stm32, embassy-rp or ch32-hal structs, include-guarded C macros, CSV, JSON, or deflate-compressed share links.
-          </p>
-        </div>
-
-        <div class="rounded-panel border-ui border-hairline bg-surface p-5 space-y-2.5">
-          <RefreshCw class="size-ui-lg text-hint" />
-          <h3 class="text-sm font-semibold text-primary">
-            Automated Weekly Open-Data Sync
-          </h3>
-          <p class="text-xs text-muted leading-relaxed">
-            Static per-MCU JSON shards are compiled from ST, WCH and Raspberry Pi upstream data with zero runtime servers.
-          </p>
-        </div>
-      </div>
-    </section>
-
     <!-- Interactive Export Preview Strip (Live-Synced to Hero Demo) -->
     <section id="export-preview" class="space-y-4">
       <div class="flex flex-wrap items-center justify-between gap-3">
@@ -441,7 +381,7 @@
             Live Export Preview
           </h2>
           <p class="text-sm text-muted">
-            Synchronized in real time with the {heroChipId} chip above — switch vendors or edit any hero pin to watch the generated code update.
+            Generated from the {heroChipId} demo above. Changing the vendor or a hero pin assignment updates this output.
           </p>
         </div>
 

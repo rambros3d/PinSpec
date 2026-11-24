@@ -52,6 +52,17 @@ No feature work starts from an ad-hoc list.
   change unarchived for someone else to close.
 - Commit and push only after archive. Report validation, test, build, and
   archive output as evidence.
+- **Small edits are exempt.** Copy tweaks, removing a section, one-line fixes,
+  and other self-contained changes do not need a new change. Use judgment:
+  feature work and multi-file behavior changes still use OpenSpec.
+
+### Writing style
+
+Use professional, clear wording in UI copy, documentation, commit messages,
+and code comments. Avoid marketing and promotional language, slogans, hype
+adjectives, and claims that cannot be verified from the code or generated
+data. Describe what the software does and how it behaves, not why it is
+supposed to be desirable.
 
 ### Inspect before coding
 
@@ -518,9 +529,11 @@ Pages. Runtime fetches must use `import.meta.env.BASE_URL` through the pure
 
 ## Do not
 
-- Do not bypass OpenSpec: every planning and implementation task must be
-  tracked as a change, and the implementation agent must archive its own
-  change after verification.
+- Do not bypass OpenSpec for feature work or multi-file behavior changes;
+  the implementation agent must archive its own change after verification.
+  Small self-contained edits are exempt.
+- Do not use marketing or promotional language in UI copy, documentation,
+  or commit messages.
 - Do not use emojis in any file.
 - Do not introduce a backend, server routes, API keys, or GenAI/Gemini calls.
 - Do not import Svelte or DOM APIs into `src/core/`.

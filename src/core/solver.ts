@@ -70,6 +70,17 @@ export const PERIPHERAL_MODE_TEMPLATES: Record<PeripheralKind, PeripheralModeTem
     { id: 'swd', label: 'Serial Wire Debug (SWD)', required: ['SWDIO', 'SWCLK'] },
     { id: 'jtag', label: 'JTAG (5-Pin)', required: ['JTMS', 'JTCK', 'JTDI', 'JTDO', 'NJTRST'] },
   ],
+  // Forward-looking kinds scaffolded for multi-vendor data (RP PWM slices /
+  // PIO). No current chip emits them, but the map must stay exhaustive so
+  // PeripheralKind remains a closed, type-safe set.
+  pwm: [
+    { id: 'disabled', label: 'Disabled', required: [], isChannelBased: true },
+    { id: 'channels', label: 'Individual Channels', required: [], isChannelBased: true },
+  ],
+  pio: [
+    { id: 'disabled', label: 'Disabled', required: [], isChannelBased: true },
+    { id: 'custom', label: 'Manual Signals', required: [], isChannelBased: true },
+  ],
   other: [
     { id: 'disabled', label: 'Disabled', required: [], isChannelBased: true },
     { id: 'custom', label: 'Manual Signals', required: [], isChannelBased: true },

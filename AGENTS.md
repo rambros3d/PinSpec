@@ -15,11 +15,15 @@ workspace, and an automated build-time catalog generator.
 ### Current implementation status
 
 The STM32 pipeline, core engine, renderers, workspace, landing page, exporters,
-and GitHub Pages deployment are implemented and passing CI. The multi-vendor
-types (`VendorId`, `MuxModel`, `PinTag`, `remaps`, `pio`, `resourceId`) are
-**declared but not yet emitted or consumed**. Treat the multi-vendor section of
-this document as a roadmap, not as shipped behavior. Any change to those fields
-must preserve STM32 behavior exactly.
+and GitHub Pages deployment are implemented and passing CI. The generator has
+been refactored into a CI-native adapter pipeline (Phase 0) and the CH32
+device-data adapter (Phase 1) is implemented. The RP adapter and the remaining
+vendor-aware solver, exporter, UI, and gate phases are tracked as OpenSpec
+changes under `openspec/changes/` and must be implemented in order.
+
+Backward compatibility with legacy `version: 1` share links and project files
+is explicitly NOT required for the multi-vendor expansion. STM32 behavior,
+routes, and generated output must still remain stable.
 
 ---
 
@@ -28,6 +32,26 @@ must preserve STM32 behavior exactly.
 Agents have full architectural and implementation authority to execute work in
 this repository end-to-end without pausing for confirmation, subject to the
 guardrails below.
+
+### OpenSpec workflow (mandatory)
+
+All planning and all implementation in this repository shall use OpenSpec.
+No feature work starts from an ad-hoc list.
+
+- **Planning:** create a spec-driven change with `openspec new change <name>`,
+  then produce proposal, delta spec(s), design, and tracked tasks. Validate
+  every change with `openspec validate <name> --strict` before implementation.
+- **Implementation:** work from the change's `tasks.md` using
+  `openspec instructions apply --change <name> --json`. Mark each checkbox
+  complete only after its stated verification passes.
+- **Closeout by the implementation agent:** after all tasks pass and all
+  verification is green, the implementation agent itself MUST run
+  `openspec archive <name> -y`. This syncs the delta specs into
+  `openspec/specs/` and moves the change into `openspec/changes/archive/`.
+  Include those files in the implementation commit. Never leave a completed
+  change unarchived for someone else to close.
+- Commit and push only after archive. Report validation, test, build, and
+  archive output as evidence.
 
 ### Inspect before coding
 
@@ -45,9 +69,9 @@ guardrails below.
    - `src/state/*.svelte.ts`
    Adapt names and conventions from the plan to the existing code rather than
    duplicating modules.
-4. Preserve backward compatibility: existing `#/mcu/<PART>` deep links,
-   `#/s/<PAYLOAD>` share links, `localStorage` sessions, and `version: 1`
-   `pinout.json` files must keep loading identically.
+4. Preserve STM32 behavior and generated output stability. Backward
+   compatibility with older share-link or project-file versions is not
+   required for the multi-vendor expansion.
 
 ### Autonomous blocker resolution
 
@@ -464,6 +488,9 @@ to `main`, on manual dispatch, and weekly, then deploys `dist` to GitHub Pages.
 
 ## Do not
 
+- Do not bypass OpenSpec: every planning and implementation task must be
+  tracked as a change, and the implementation agent must archive its own
+  change after verification.
 - Do not use emojis in any file.
 - Do not introduce a backend, server routes, API keys, or GenAI/Gemini calls.
 - Do not import Svelte or DOM APIs into `src/core/`.

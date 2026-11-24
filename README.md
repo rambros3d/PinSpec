@@ -10,7 +10,9 @@ npm run gen-data
 npm run dev
 ```
 
-`npm run gen-data` shallow-clones `STMicroelectronics/STM32_open_pin_data` and `embassy-rs/stm32-data-generated` into the gitignored `.cache/` directory and emits lazy-loaded static JSON files into `public/data/`.
+`npm run gen-data` shallow-clones `STMicroelectronics/STM32_open_pin_data` and `embassy-rs/stm32-data-generated` into the gitignored `.cache/` directory and emits lazy-loaded static JSON files into `public/data/`. Sources may also be fetched on their own with `npm run acquire-sources`. An existing checkout is never refreshed automatically; delete the relevant `.cache/` subdirectory first to update upstream data.
+
+Generation is orchestrated by `tools/data-gen/index.ts`, which resolves sources, registers vendor adapters, collects attributed warnings, evaluates per-vendor gates, and writes all artifacts exactly once. STM32 parsing lives in `tools/data-gen/adapters/stm32.ts`.
 
 ## Verification Commands
 
@@ -62,3 +64,26 @@ in the vendored theme CSS file.
 
 - Physical package geometry and pinouts: [STMicroelectronics/STM32_open_pin_data](https://github.com/STMicroelectronics/STM32_open_pin_data) (BSD-3-Clause)
 - Normalized peripheral signals, alternate function indices, and DMA tables: [embassy-rs/stm32-data-generated](https://github.com/embassy-rs/stm32-data-generated) (MIT / Apache-2.0)
+
+## Generated Data Provenance
+
+`public/data/meta.json` records the resolved revision, license, and emitted chip count for every generated vendor under `sources`. The current STM32 entry has the shape below; the legacy top-level `openPinDataCommit`, `stm32DataCommit`, `chipCount`, `matchRate`, and `families` fields remain for existing consumers. The landing footer renders provenance directly from `meta.json.sources`.
+
+```json
+{
+  "sources": {
+    "stm32": {
+      "commit": "embassy short SHA",
+      "openPinDataCommit": "ST open pin data short SHA",
+      "license": "BSD-3-Clause; MIT / Apache-2.0",
+      "chipCount": 2699,
+      "repositories": [
+        { "id": "stm32-open-pin-data", "commit": "45c0459", "license": "BSD-3-Clause" },
+        { "id": "embassy-stm32-data", "commit": "5de055b", "license": "MIT / Apache-2.0" }
+      ]
+    }
+  }
+}
+```
+
+`public/data/build-warnings.json` is always written (even with zero warnings). Each record carries `vendor`, optional `file` / `refName`, and `reason`; `warningCount` and `warningsByVendor` aggregate the totals printed in the generation log. A revision that cannot be resolved is recorded as the literal `unknown`.

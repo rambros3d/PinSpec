@@ -35,7 +35,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Generate STM32 catalog from upstream ST and Embassy repos
+      - name: Acquire all configured upstream sources
+        run: npm run acquire-sources
+
+      - name: Generate catalog from upstream sources via vendor adapters
         run: npm run gen-data
 
       - name: Run unit tests

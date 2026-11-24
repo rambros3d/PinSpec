@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "openPinDataCommit": "45c0459",
+  "stm32DataCommit": "5de055b",
+  "chipCount": 2699,
+  "chipsAggregateSha256": "601a7f4a2fe8a5e7dd7275cd902263bd8fcf1a03303a4255605e5cc512e45726",
+  "indexSha256": "bd8e1372e4209b6bc1c350bbd1dd9f75ad1a212deca66bc4914edc0bdf8a0fdb",
+  "referenceChips": {
+    "STM32F411CEU6": "0664ff89c3e92ce497a878dfa0e11d762ffcc61015401e2d78bdb1755dd86fa2",
+    "STM32G431CBU6": "b383ef988c3c0a883e4659e68dd87e0f4a9837e247146d32cf7e34b7b66aad93",
+    "STM32F103C8T6": "2b6fe2b2226e4c8594d3e49be6c1b715f297ebd3473d72f5d2546bd9ea6b81c3",
+    "STM32H743VIT6": "0e63b5b39ccac62b40eb95554b6f5ea864e3465a17c1807134bf7e145e065146",
+    "STM32U575RIT6": "f942fc4bdd67cdb33c6047175fb79094e0e89b16db7ea55a8fb269144d9dea5b",
+    "STM32H743XIH6": "0eeae02e809e3237eae66ec16740408be424688a74af5d410f407898c8bcf33c"
+  }
+}

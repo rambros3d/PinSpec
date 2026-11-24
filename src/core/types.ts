@@ -100,11 +100,22 @@ export interface ChipData {
   pio?: ChipPioConfig;
 }
 
+/** One upstream repository contributing data to a vendor. */
+export interface CatalogVendorRepository {
+  id: string;
+  url?: string;
+  commit: string;
+  license: string;
+}
+
+/** Per-vendor provenance written to `meta.json.sources`. */
 export interface CatalogVendorSource {
   commit?: string;
   openPinDataCommit?: string;
   version?: string;
+  license?: string;
   chipCount: number;
+  repositories?: CatalogVendorRepository[];
 }
 
 export interface CatalogMeta {
@@ -114,11 +125,8 @@ export interface CatalogMeta {
   chipCount: number;
   matchRate?: number;
   families: string[];
-  sources?: {
-    stm32: CatalogVendorSource;
-    ch32: CatalogVendorSource;
-    rp: CatalogVendorSource;
-  };
+  /** Vendors actually emitted in this build; absent vendors are not generated yet. */
+  sources?: Partial<Record<VendorId, CatalogVendorSource>>;
 }
 
 export interface CatalogPeripheralCounts {

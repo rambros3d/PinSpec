@@ -1,3 +1,7 @@
+import { execSync } from 'node:child_process';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   buildPackageInfo,
@@ -10,6 +14,13 @@ import {
   normalizeSysSignals,
   parseXmlSignalName,
 } from '../tools/data-gen/helpers';
+import {
+  acquireSource,
+  LICENSE_EMBASSY_STM32,
+  LICENSE_OPEN_PIN_DATA,
+  resolveRevision,
+  stm32SourceSpecs,
+} from '../tools/data-gen/sources';
 
 describe('data-gen helpers', () => {
   it('expands parenthesized RefName variants cleanly', () => {
@@ -75,5 +86,57 @@ describe('data-gen helpers', () => {
       signal: 'DM',
     });
     expect(normalizeSysSignals('JTMS-SWDIO')).toEqual(['SWDIO', 'JTMS']);
+  });
+});
+
+describe('data-gen source acquisition', () => {
+  it('declares ST and Embassy sources with their licenses', () => {
+    const specs = stm32SourceSpecs('/tmp/pincraft-cache');
+    expect(specs.map((s) => s.id)).toEqual(['stm32-open-pin-data', 'embassy-stm32-data']);
+    expect(specs[0].license).toBe(LICENSE_OPEN_PIN_DATA);
+    expect(specs[1].license).toBe(LICENSE_EMBASSY_STM32);
+    expect(specs[0].dir).toBe('/tmp/pincraft-cache/STM32_open_pin_data');
+  });
+
+  it('resolves a short SHA from a real git checkout', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pincraft-src-'));
+    try {
+      execSync('git init -q', { cwd: dir });
+      fs.writeFileSync(path.join(dir, 'README.md'), 'fixture\n');
+      execSync('git add README.md', { cwd: dir });
+      execSync(
+        'git -c user.name=Fixture -c user.email=fixture@example.invalid commit -q -m fixture',
+        { cwd: dir },
+      );
+      const sha = resolveRevision(dir);
+      expect(sha).toMatch(/^[0-9a-f]{7,}$/);
+      expect(sha).not.toBe('unknown');
+      const acquired = acquireSource({
+        id: 'fixture',
+        url: 'unused://local',
+        dir,
+        license: 'Test License',
+      });
+      expect(acquired.commit).toBe(sha);
+      expect(acquired.license).toBe('Test License');
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('falls back to the literal unknown when no revision exists', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pincraft-nogit-'));
+    try {
+      expect(resolveRevision(dir)).toBe('unknown');
+      const acquired = acquireSource({
+        id: 'fixture',
+        url: 'unused://local',
+        dir,
+        license: 'Test License',
+      });
+      expect(acquired.commit).toBe('unknown');
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

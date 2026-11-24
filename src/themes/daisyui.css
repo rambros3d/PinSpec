@@ -1,57 +1,25 @@
 /*
  * Vendored daisyUI theme variable blocks.
  * Source: https://github.com/saadeghi/daisyui/tree/master/packages/daisyui/src/themes
- * Files: lofi.css, forest.css, caramellatte.css, halloween.css (master branch)
+ * Files: fantasy.css (light), halloween.css (dark) (master branch)
  * License: MIT (saadeghi/daisyUI) - https://github.com/saadeghi/daisyui/blob/master/LICENSE
  * Copied verbatim from upstream; wrapped in data-theme selectors for daisyUI convention.
  * This is the only file in the app allowed to contain raw color literals.
  */
-[data-theme="lofi"] {
+[data-theme="fantasy"] {
   color-scheme: light;
   --color-base-100: oklch(100% 0 0);
-  --color-base-200: oklch(97% 0 0);
-  --color-base-300: oklch(94% 0 0);
-  --color-base-content: oklch(0% 0 0);
-  --color-primary: oklch(15.906% 0 0);
-  --color-primary-content: oklch(100% 0 0);
-  --color-secondary: oklch(21.455% 0.001 17.278);
-  --color-secondary-content: oklch(100% 0 0);
-  --color-accent: oklch(26.861% 0 0);
-  --color-accent-content: oklch(100% 0 0);
-  --color-neutral: oklch(0% 0 0);
-  --color-neutral-content: oklch(100% 0 0);
-  --color-info: oklch(79.54% 0.103 205.9);
-  --color-info-content: oklch(15.908% 0.02 205.9);
-  --color-success: oklch(90.13% 0.153 164.14);
-  --color-success-content: oklch(18.026% 0.03 164.14);
-  --color-warning: oklch(88.37% 0.135 79.94);
-  --color-warning-content: oklch(17.674% 0.027 79.94);
-  --color-error: oklch(78.66% 0.15 28.47);
-  --color-error-content: oklch(15.732% 0.03 28.47);
-  --radius-selector: 2rem;
-  --radius-field: 0.25rem;
-  --radius-box: 0.5rem;
-  --size-selector: 0.25rem;
-  --size-field: 0.25rem;
-  --border: 1px;
-  --depth: 0;
-  --noise: 0;
-}
-
-[data-theme="forest"] {
-  color-scheme: dark;
-  --color-base-100: oklch(20.84% 0.008 17.911);
-  --color-base-200: oklch(18.522% 0.007 17.911);
-  --color-base-300: oklch(16.203% 0.007 17.911);
-  --color-base-content: oklch(83.768% 0.001 17.911);
-  --color-primary: oklch(68.628% 0.185 148.958);
-  --color-primary-content: oklch(0% 0 0);
-  --color-secondary: oklch(69.776% 0.135 168.327);
-  --color-secondary-content: oklch(13.955% 0.027 168.327);
-  --color-accent: oklch(70.628% 0.119 185.713);
-  --color-accent-content: oklch(14.125% 0.023 185.713);
-  --color-neutral: oklch(30.698% 0.039 171.364);
-  --color-neutral-content: oklch(86.139% 0.007 171.364);
+  --color-base-200: oklch(93% 0 0);
+  --color-base-300: oklch(86% 0 0);
+  --color-base-content: oklch(27.807% 0.029 256.847);
+  --color-primary: oklch(37.45% 0.189 325.02);
+  --color-primary-content: oklch(87.49% 0.037 325.02);
+  --color-secondary: oklch(53.92% 0.162 241.36);
+  --color-secondary-content: oklch(90.784% 0.032 241.36);
+  --color-accent: oklch(75.98% 0.204 56.72);
+  --color-accent-content: oklch(15.196% 0.04 56.72);
+  --color-neutral: oklch(27.807% 0.029 256.847);
+  --color-neutral-content: oklch(85.561% 0.005 256.847);
   --color-info: oklch(72.06% 0.191 231.6);
   --color-info-content: oklch(0% 0 0);
   --color-success: oklch(64.8% 0.15 160);
@@ -61,45 +29,13 @@
   --color-error: oklch(71.76% 0.221 22.18);
   --color-error-content: oklch(0% 0 0);
   --radius-selector: 1rem;
-  --radius-field: 2rem;
-  --radius-box: 1rem;
-  --size-selector: 0.25rem;
-  --size-field: 0.25rem;
-  --border: 1px;
-  --depth: 0;
-  --noise: 0;
-}
-
-[data-theme="caramellatte"] {
-  color-scheme: light;
-  --color-base-100: oklch(98% 0.016 73.684);
-  --color-base-200: oklch(95% 0.038 75.164);
-  --color-base-300: oklch(90% 0.076 70.697);
-  --color-base-content: oklch(40% 0.123 38.172);
-  --color-primary: oklch(0% 0 0);
-  --color-primary-content: oklch(100% 0 0);
-  --color-secondary: oklch(22.45% 0.075 37.85);
-  --color-secondary-content: oklch(90% 0.076 70.697);
-  --color-accent: oklch(46.44% 0.111 37.85);
-  --color-accent-content: oklch(90% 0.076 70.697);
-  --color-neutral: oklch(55% 0.195 38.402);
-  --color-neutral-content: oklch(98% 0.016 73.684);
-  --color-info: oklch(42% 0.199 265.638);
-  --color-info-content: oklch(90% 0.076 70.697);
-  --color-success: oklch(43% 0.095 166.913);
-  --color-success-content: oklch(90% 0.076 70.697);
-  --color-warning: oklch(82% 0.189 84.429);
-  --color-warning-content: oklch(41% 0.112 45.904);
-  --color-error: oklch(70% 0.191 22.216);
-  --color-error-content: oklch(39% 0.141 25.723);
-  --radius-selector: 2rem;
   --radius-field: 0.5rem;
   --radius-box: 1rem;
   --size-selector: 0.25rem;
   --size-field: 0.25rem;
-  --border: 2px;
+  --border: 1px;
   --depth: 1;
-  --noise: 1;
+  --noise: 0;
 }
 
 [data-theme="halloween"] {
@@ -133,4 +69,3 @@
   --depth: 1;
   --noise: 0;
 }
-

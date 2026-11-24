@@ -128,7 +128,7 @@ describe('peripheral configuration detail and RP PIO panel', () => {
 
     const categories = readSource('src/core/vendor-view.ts');
     expect(categories).toContain("kinds: ['pwm', 'pio']");
-    expect(categories).toContain("label: 'Other peripherals'");
+    expect(categories).toContain("label: 'Others'");
 
     const ch32 = readChip('CH32V203C8T6');
     expect(ch32.peripherals.SPI1.remaps?.length).toBeGreaterThan(1);
@@ -334,10 +334,17 @@ describe('theme and color safety', () => {
     expect(offenders).toEqual([]);
   });
 
-  it('preserves all four daisyUI themes', () => {
+  it('preserves exactly the two vendored daisyUI themes', () => {
     const themes = readSource('src/themes/daisyui.css');
-    for (const name of ['lofi', 'forest', 'caramellatte', 'halloween']) {
+    for (const name of ['fantasy', 'halloween']) {
       expect(themes).toContain(`[data-theme="${name}"]`);
+    }
+    expect(themes.match(/\[data-theme="[^"]+"\]/g)).toEqual([
+      '[data-theme="fantasy"]',
+      '[data-theme="halloween"]',
+    ]);
+    for (const removed of ['lofi', 'forest', 'caramellatte']) {
+      expect(themes).not.toContain(removed);
     }
   });
 });

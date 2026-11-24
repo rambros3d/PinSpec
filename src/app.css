@@ -8,7 +8,7 @@
 
 /*
  * Font aliases are the only theme-inline declarations. Color, radius and size
- * values come from the four vendored [data-theme] blocks in
+ * values come from the two vendored [data-theme] blocks in
  * src/themes/daisyui.css and are consumed through daisyUI component classes.
  */
 @theme inline {

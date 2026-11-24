@@ -63,8 +63,12 @@ describe('document viewport lock', () => {
       expect(block).toContain('overflow: hidden');
       expect(block).toContain('overscroll-behavior: none');
     }
-    for (const name of ['lofi', 'forest', 'caramellatte', 'halloween']) {
-      expect(readSource('src/themes/daisyui.css')).toContain(`[data-theme="${name}"]`);
+    const themes = readSource('src/themes/daisyui.css');
+    for (const name of ['fantasy', 'halloween']) {
+      expect(themes).toContain(`[data-theme="${name}"]`);
+    }
+    for (const removed of ['lofi', 'forest', 'caramellatte']) {
+      expect(themes).not.toContain(removed);
     }
     expect(css).toContain("@import './themes/daisyui.css'");
   });

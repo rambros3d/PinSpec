@@ -95,18 +95,20 @@ mapper with no DOM or Svelte imports; UI handoff reuses
 
 ## Themes
 
-PinCraft uses four vendored [daisyUI](https://github.com/saadeghi/daisyui) theme
-variable blocks (`src/themes/daisyui.css`). daisyUI is licensed under MIT
+PinCraft uses two vendored [daisyUI](https://github.com/saadeghi/daisyui) theme
+variable blocks (`src/themes/daisyui.css`): `fantasy` for light mode and
+`halloween` for dark mode. daisyUI is licensed under MIT
 (https://github.com/saadeghi/daisyui/blob/master/LICENSE); its component layer
-is registered as a build-time plugin. The available theme
-ids are `lofi` (light), `forest` (dark), `caramellatte` (light), and `halloween`
-(dark). `forest` is the dark-first default; when no theme has been saved and the
-system prefers a light color scheme, `lofi` is used instead. The compact theme
-picker in the landing nav and workspace toolbar selects any of the four themes
-and writes the chosen id to `localStorage` under `pincraft:theme`. Legacy `light`
-and `dark` values are migrated to `lofi` and `forest` respectively. An inline
-bootstrap in `index.html` reads the same key and sets `data-theme` on `<html>`
-before paint to avoid a flash of unthemed content.
+is registered as a build-time plugin. The theme button in the landing nav and
+workspace toolbar cycles through System, Light, and Dark, and writes the chosen
+mode to `localStorage` under `pincraft:theme`. System mode reads the operating
+system color scheme once at load; no live change listener is registered. With no
+saved mode and no OS preference, light mode is the baseline. Saved values outside
+the three mode values, including theme ids from the previous picker, are ignored
+and resolved as System. An inline bootstrap in `index.html` reads the same key
+and sets `data-theme` on `<html>` before paint to avoid a flash of unthemed
+content. The mode is a UI preference and is not included in share URLs or
+project files.
 
 Non-SVG surfaces use daisyUI component classes and semantic color utilities;
 `text-foreground` is the application's foreground text utility, distinct from

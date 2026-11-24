@@ -1,82 +1,111 @@
-/** Identifier of one of the four vendored daisyUI themes. */
-export type ThemeId = 'lofi' | 'forest' | 'caramellatte' | 'halloween';
+/**
+ * Appearance mode for the interface.
+ *
+ * The mode is a UI preference stored only in localStorage under
+ * `pincraft:theme`. It is never serialized into share URLs, project files, or
+ * exports. The operating system color scheme is read once at load; no live
+ * `matchMedia` listener is registered.
+ */
 
-/** Human-readable theme metadata used by the compact theme picker. */
-export interface ThemeOption {
-  id: ThemeId;
-  label: string;
+/** User-selectable appearance modes, in picker cycle order. */
+export const THEME_MODES = ['system', 'light', 'dark'] as const;
+export type ThemeMode = (typeof THEME_MODES)[number];
+
+/** The two vendored daisyUI blocks that back the appearance modes. */
+export type ThemeId = 'fantasy' | 'halloween';
+
+/** localStorage key for the persisted mode. */
+export const THEME_STORAGE_KEY = 'pincraft:theme';
+
+/** Short labels for the three modes. */
+export const MODE_LABELS: Record<ThemeMode, string> = {
+  system: 'System',
+  light: 'Light',
+  dark: 'Dark',
+};
+
+/** Any value outside the three mode values resolves to system mode. */
+export function normalizeThemeMode(value: unknown): ThemeMode {
+  return typeof value === 'string' && (THEME_MODES as readonly string[]).includes(value)
+    ? (value as ThemeMode)
+    : 'system';
 }
 
-const STORAGE_KEY = 'pincraft:theme';
-const DEFAULT_THEME: ThemeId = 'forest';
-
-/** All selectable themes, in cycle order. */
-export const themes: readonly ThemeOption[] = [
-  { id: 'lofi', label: 'Lo-fi' },
-  { id: 'forest', label: 'Forest' },
-  { id: 'caramellatte', label: 'Caramel Latte' },
-  { id: 'halloween', label: 'Halloween' },
-];
-
-function isThemeId(value: string | null): value is ThemeId {
-  return themes.some((theme) => theme.id === value);
+/** Map one mode to a vendored theme, using the load-time OS preference for system. */
+export function resolveThemeId(mode: ThemeMode, prefersDark: boolean): ThemeId {
+  return mode === 'dark' || (mode === 'system' && prefersDark) ? 'halloween' : 'fantasy';
 }
 
-function resolveInitialTheme(): ThemeId {
-  if (typeof window === 'undefined') return DEFAULT_THEME;
+/** Read the saved mode; missing, legacy, and unknown values all mean system. */
+function readInitialMode(): ThemeMode {
+  if (typeof window === 'undefined') return 'system';
   try {
-    const saved = window.localStorage.getItem(STORAGE_KEY);
-    // Legacy light/dark preferences map onto the closest new themes.
-    if (saved === 'dark') return 'forest';
-    if (saved === 'light') return 'lofi';
-    if (isThemeId(saved)) return saved;
+    return normalizeThemeMode(window.localStorage?.getItem(THEME_STORAGE_KEY));
   } catch {
-    // ignore storage errors
+    return 'system';
   }
-  if (
-    typeof window.matchMedia === 'function' &&
-    window.matchMedia('(prefers-color-scheme: light)').matches
-  ) {
-    return 'lofi';
-  }
-  return DEFAULT_THEME;
 }
 
-function applyThemeToDom(id: ThemeId): void {
+/** Sample `prefers-color-scheme` once. No change listener is installed. */
+function readPrefersDark(): boolean {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
+  try {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+  } catch {
+    return false;
+  }
+}
+
+function applyThemeToDom(theme: ThemeId): void {
   if (typeof document === 'undefined') return;
-  document.documentElement.dataset.theme = id;
+  document.documentElement.dataset.theme = theme;
 }
 
-class ThemeStore {
-  id = $state<ThemeId>(resolveInitialTheme());
+function persistMode(mode: ThemeMode): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage?.setItem(THEME_STORAGE_KEY, mode);
+  } catch {
+    // Storage unavailable: the in-memory mode still applies.
+  }
+}
+
+/**
+ * Runes-backed appearance mode. Each instance resolves the saved mode and the
+ * load-time color scheme on construction so a reload restores the same theme.
+ */
+export class ThemeStore {
+  mode = $state<ThemeMode>(readInitialMode());
+  private readonly prefersDark = readPrefersDark();
 
   constructor() {
-    applyThemeToDom(this.id);
+    applyThemeToDom(this.theme);
   }
 
-  /** Human-readable label of the active theme. */
+  /** Vendored theme block selected by the current mode. */
+  get theme(): ThemeId {
+    return resolveThemeId(this.mode, this.prefersDark);
+  }
+
+  /** Short label of the active mode. */
   get label(): string {
-    return themes.find((theme) => theme.id === this.id)?.label ?? this.id;
+    return MODE_LABELS[this.mode];
   }
 
-  /** Select a theme and persist it for the no-FOUC bootstrap. */
-  set(next: ThemeId): void {
-    this.id = next;
-    applyThemeToDom(next);
-    try {
-      window.localStorage.setItem(STORAGE_KEY, next);
-    } catch {
-      // ignore storage errors
-    }
+  /** Select a mode and persist it for the no-FOUC bootstrap. */
+  set(next: ThemeMode): void {
+    this.mode = normalizeThemeMode(next);
+    applyThemeToDom(this.theme);
+    persistMode(this.mode);
   }
 
-  /** Advance to the next theme in picker order. */
+  /** Advance one step in System -> Light -> Dark -> System order. */
   cycle(): void {
-    const index = themes.findIndex((theme) => theme.id === this.id);
-    this.set(themes[(index + 1) % themes.length].id);
+    const index = THEME_MODES.indexOf(this.mode);
+    this.set(THEME_MODES[(index + 1) % THEME_MODES.length]);
   }
 
-  /** Backwards-compatible alias for callers that used the old toggle API. */
+  /** Alias retained for callers that used the previous toggle API. */
   toggle(): void {
     this.cycle();
   }

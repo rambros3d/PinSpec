@@ -35,11 +35,19 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Acquire all configured upstream sources
+      - name: Force-refresh ignored source cache on weekly schedule
+        if: github.event_name == 'schedule'
+        run: rm -rf .cache
+
+      - name: Acquire all seven upstream sources and record their revisions
         run: npm run acquire-sources
 
-      - name: Generate catalog from upstream sources via vendor adapters
+      - name: Generate catalog from upstream sources via vendor adapters and gates
         run: npm run gen-data
+
+      - name: Record upstream source revisions and per-vendor counts from meta.json
+        run: |
+          node -e "const fs=require('fs'); const m=JSON.parse(fs.readFileSync('public/data/meta.json','utf8')); console.log('generatedAt',m.generatedAt); for (const [id,r] of Object.entries(m.sources)) console.log(id, r.sha ?? r.commit ?? '', r.chipCount ?? '');"
 
       - name: Run unit tests
         run: npm test
@@ -51,6 +59,29 @@ jobs:
         env:
           BASE_PATH: /${{ github.event.repository.name }}/
         run: npm run build
+
+      - name: Verify subpath runtime fetches
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/pincraft-site
+          mkdir -p /tmp/pincraft-site/pincraft
+          cp -r dist/. /tmp/pincraft-site/pincraft/
+          python3 -m http.server 8099 --directory /tmp/pincraft-site >/tmp/pincraft-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          for _ in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8099/pincraft/index.html -o /dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:8099/pincraft/index.html -o /dev/null
+          curl -fsS http://127.0.0.1:8099/pincraft/data/index.json -o /dev/null
+          SAMPLE=$(node -e "const fs=require('fs'); const i=JSON.parse(fs.readFileSync('dist/data/index.json','utf8')); process.stdout.write(i[0].id)")
+          curl -fsS "http://127.0.0.1:8099/pincraft/data/chips/${SAMPLE}.json" -o /dev/null
+          if grep -Eq '(src|href)="/(data|assets)/' dist/index.html; then
+            echo "Subpath check failed: root-absolute data or asset URL in dist/index.html" >&2
+            exit 1
+          fi
+          echo "Subpath fetches OK for index.html, data/index.json and data/chips/${SAMPLE}.json"
 
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v5

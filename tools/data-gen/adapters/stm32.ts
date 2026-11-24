@@ -605,6 +605,12 @@ function assertReferenceChip(
   if (chip.package.kind !== expectedKind) {
     errors.push(`STM32 gate failed: ${id} expected kind ${expectedKind}, got ${chip.package.kind}`);
   }
+  if (chip.vendor && chip.vendor !== 'stm32') {
+    errors.push(`STM32 gate failed: ${id} expected vendor stm32, got ${chip.vendor}`);
+  }
+  if (chip.muxModel && chip.muxModel !== 'af') {
+    errors.push(`STM32 gate failed: ${id} expected muxModel af, got ${chip.muxModel}`);
+  }
   const powerPins = chip.pins.filter((p) => p.type === 'power');
   if (powerPins.length === 0) {
     errors.push(`STM32 gate failed: ${id} has zero power pins`);

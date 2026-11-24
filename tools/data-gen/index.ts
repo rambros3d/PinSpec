@@ -2,15 +2,16 @@
  * Catalog generation orchestrator.
  *
  * Resolves upstream sources, resets outputs, delegates to registered vendor
- * adapters, and writes every artifact exactly once. No vendor-specific parsing
- * lives here; see `adapters/stm32.ts` and `adapters/ch32.ts` for the vendor
- * implementations.
+ * adapters, evaluates per-vendor and global gates, and writes every artifact
+ * exactly once. No vendor-specific parsing lives here; see `adapters/stm32.ts`,
+ * `adapters/ch32.ts`, and `adapters/rp/` for the vendor implementations.
  */
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import type {
   CatalogIndexEntry,
   CatalogMeta,
+  CatalogMetaSources,
   CatalogVendorSource,
   ChipData,
   VendorId,
@@ -20,15 +21,18 @@ import { rpAdapter } from './adapters/rp';
 import { stm32Adapter } from './adapters/stm32';
 import {
   buildMetaDocument,
+  buildSourceRegistry,
   buildWarningsDocument,
+  canonicalSourceId,
+  prepareChipShards,
   resetOutputDir,
-  writeChipShards,
   writeIndexFile,
   writeMetaFile,
+  writePreparedShards,
   writeWarningsFile,
   type WarningsDocument,
 } from './artifacts';
-import { evaluateGates } from './gates';
+import { createGlobalGates, runGateSuite } from './gates';
 import { acquireSources } from './sources';
 import type {
   AdapterResult,
@@ -80,10 +84,19 @@ export function buildVendorSourcesMeta(
     );
     const primary =
       vendorSources.find((s) => s.id === adapter.primarySourceId) ?? vendorSources[0];
+    const result = results.find((r) => r.vendor === adapter.vendor);
+    const matchRate =
+      result && result.totalVariants > 0
+        ? (result.matchedVariants / result.totalVariants) * 100
+        : 0;
     const entry: CatalogVendorSource = {
       commit: primary?.commit ?? 'unknown',
       license: Array.from(new Set(vendorSources.map((s) => s.license))).join('; ') || 'unknown',
-      chipCount: results.find((r) => r.vendor === adapter.vendor)?.index.length ?? 0,
+      chipCount: result?.index.length ?? 0,
+      ratios: {
+        match: Number(matchRate.toFixed(2)),
+        coverage: Number(matchRate.toFixed(2)),
+      },
       repositories: vendorSources.map((s) => ({
         id: s.id,
         url: s.url,
@@ -139,14 +152,17 @@ export function generateCatalog(
     }
   }
 
-  const bytesByVendor = writeChipShards(paths, chipsByVendor);
+  // Serialize in memory first: a failing gate must never publish a partial
+  // catalog, so all writes happen only after the global gate suite passes.
+  const prepared = prepareChipShards(chipsByVendor);
   const index: CatalogIndexEntry[] = results
     .flatMap((r) => r.index)
     .sort((a, b) => a.id.localeCompare(b.id));
-  const indexBytes = writeIndexFile(paths, index);
-  const totalBytes = Array.from(bytesByVendor.values()).reduce((a, b) => a + b, 0) + indexBytes;
+  const indexBytes = Buffer.byteLength(JSON.stringify(index), 'utf8');
+  const totalBytes = Array.from(prepared.bytesByVendor.values()).reduce((a, b) => a + b, 0) + indexBytes;
 
-  // Per-vendor gates: strict vendors fail, lenient vendors record notes as warnings.
+  // Per-vendor gates: strict vendors abort; lenient vendors record notes and
+  // errors as attributed warnings so a missing upstream source stays non-fatal.
   const gateResults: GateResult[] = [];
   const errors: string[] = [];
   const vendorStats: GenerationSummary['vendorStats'] = [];
@@ -164,10 +180,8 @@ export function generateCatalog(
       totalBytes,
       warnings: warnings.all(),
     };
-    const evaluated = evaluateGates(adapter.gates, gateCtx);
+    const evaluated = runGateSuite(adapter.gates, gateCtx);
     gateResults.push(...evaluated.results);
-    // Gate notes are warnings for every vendor: strict vendors still fail on
-    // errors, but a missing upstream source must not abort the whole catalog.
     for (const note of evaluated.notes) {
       warnings.add({ vendor: adapter.vendor, reason: note });
     }
@@ -183,8 +197,11 @@ export function generateCatalog(
       chipCount: result.index.length,
       matchRate,
       warnings: warnings.countFor(adapter.vendor),
-      bytes: bytesByVendor.get(adapter.vendor) ?? 0,
+      bytes: prepared.bytesByVendor.get(adapter.vendor) ?? 0,
     });
+  }
+  if (errors.length > 0) {
+    throw new Error(`Catalog generation failed gate checks:\n  ${errors.join('\n  ')}`);
   }
 
   const generatedAt = new Date().toISOString();
@@ -195,6 +212,10 @@ export function generateCatalog(
     legacyResult.totalVariants > 0
       ? (legacyResult.matchedVariants / legacyResult.totalVariants) * 100
       : 0;
+  const metaSources: CatalogMetaSources = {
+    ...buildVendorSourcesMeta(adapters, sources, results),
+    ...buildSourceRegistry(sources),
+  } as CatalogMetaSources;
   const meta = buildMetaDocument(
     generatedAt,
     {
@@ -210,24 +231,45 @@ export function generateCatalog(
       matchRate: legacyRate,
       families: Array.from(new Set(results.flatMap((r) => r.families))).sort(),
     },
-    buildVendorSourcesMeta(adapters, sources, results),
+    metaSources,
   );
-  writeMetaFile(paths, meta);
-
-  const warningsDoc = buildWarningsDocument(generatedAt, warnings.all(), {
+  const warningDoc = buildWarningsDocument(generatedAt, warnings.all(), {
     totalVariants,
     matchedVariants,
     matchRate: meta.matchRate ?? 0,
   });
-  writeWarningsFile(paths, warningsDoc);
 
-  logSummary(startedAt, vendorStats, warningsDoc, meta, totalBytes, indexBytes);
-
-  if (errors.length > 0) {
-    throw new Error(`Catalog generation failed gate checks:\n  ${errors.join('\n  ')}`);
+  const expectedSourceIds = Array.from(new Set(sourceSpecs.map((spec) => canonicalSourceId(spec.id))));
+  const globalCtx: GateContext = {
+    paths,
+    chips: allChips,
+    index,
+    totalVariants,
+    matchedVariants,
+    matchRate: meta.matchRate ?? 0,
+    totalBytes,
+    warnings: warnings.all(),
+    meta,
+    warningDoc,
+    serializedShards: prepared.all,
+  };
+  const globalOutcome = runGateSuite(createGlobalGates(expectedSourceIds), globalCtx);
+  gateResults.push(...globalOutcome.results);
+  if (globalOutcome.errors.length > 0) {
+    throw new Error(`Catalog generation failed gate checks:\n  ${globalOutcome.errors.join('\n  ')}`);
+  }
+  for (const note of globalOutcome.notes) {
+    warnings.add({ vendor: 'stm32', reason: note });
   }
 
-  return { meta, warnings: warningsDoc, gateResults, vendorStats, totalBytes };
+  writePreparedShards(paths, prepared);
+  writeIndexFile(paths, index);
+  writeMetaFile(paths, meta);
+  writeWarningsFile(paths, warningDoc);
+
+  logSummary(startedAt, vendorStats, warningDoc, meta, totalBytes, indexBytes);
+
+  return { meta, warnings: warningDoc, gateResults, vendorStats, totalBytes };
 }
 
 function logSummary(

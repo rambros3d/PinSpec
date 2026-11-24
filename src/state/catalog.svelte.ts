@@ -1,3 +1,4 @@
+import { dataUrl } from '../core/data-url';
 import type { CatalogIndexEntry, CatalogMeta, ChipData, VendorId } from '../core/types';
 
 export interface CatalogFilter {
@@ -100,8 +101,7 @@ class CatalogStore {
   private indexPromise: Promise<void> | null = null;
 
   private dataUrl(relPath: string): string {
-    const base = import.meta.env.BASE_URL || '/';
-    return `${base.endsWith('/') ? base : `${base}/`}data/${relPath}`;
+    return dataUrl(import.meta.env.BASE_URL || '/', relPath);
   }
 
   async ensureLoaded(): Promise<void> {

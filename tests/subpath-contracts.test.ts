@@ -1,0 +1,123 @@
+import fs from 'node:fs';
+import http from 'node:http';
+import path from 'node:path';
+import { describe, expect, it } from 'vitest';
+import { dataUrl } from '../src/core/data-url';
+
+const ROOT = process.cwd();
+
+describe('GitHub Pages-safe data URLs', () => {
+  it('builds data URLs from BASE_URL for root and subpath deployments', () => {
+    expect(dataUrl('/', 'index.json')).toBe('/data/index.json');
+    expect(dataUrl('/pincraft/', 'index.json')).toBe('/pincraft/data/index.json');
+    expect(dataUrl('/pincraft', 'chips/STM32G431CBU6.json')).toBe(
+      '/pincraft/data/chips/STM32G431CBU6.json',
+    );
+    expect(dataUrl('/pincraft/', '/meta.json')).toBe('/pincraft/data/meta.json');
+  });
+
+  it('contains no root-absolute data or asset literal in application source', () => {
+    const sources: string[] = [];
+    const walk = (dir: string): void => {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) walk(full);
+        else if (/\.(ts|svelte)$/.test(entry.name)) sources.push(full);
+      }
+    };
+    walk(path.join(ROOT, 'src'));
+    expect(sources.length).toBeGreaterThan(0);
+    const offenders = sources.filter((file) => {
+      const text = fs.readFileSync(file, 'utf8');
+      return /["'`]\/(data|assets)\//.test(text);
+    });
+    expect(offenders).toEqual([]);
+  });
+});
+
+describe('deploy workflow contract', () => {
+  const workflow = fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'deploy.yml'), 'utf8');
+
+  it('preserves triggers and the Pages actions', () => {
+    expect(workflow).toContain('branches: [main]');
+    expect(workflow).toContain('workflow_dispatch:');
+    expect(workflow).toContain("cron: '0 4 * * 1'");
+    expect(workflow).toContain('actions/upload-pages-artifact@v5');
+    expect(workflow).toContain('actions/deploy-pages@v4');
+  });
+
+  it('refreshes sources weekly, acquires all sources, and records SHAs', () => {
+    expect(workflow).toContain("if: github.event_name == 'schedule'");
+    expect(workflow).toContain('rm -rf .cache');
+    expect(workflow).toContain('npm run acquire-sources');
+    expect(workflow).toContain('meta.json');
+    expect(workflow).toContain('generatedAt');
+  });
+
+  it('runs generation before tests, types, and subpath build', () => {
+    const at = (needle: string): number => {
+      const index = workflow.indexOf(needle);
+      expect(index, needle).toBeGreaterThan(-1);
+      return index;
+    };
+    expect(at('npm ci')).toBeLessThan(at('npm run gen-data'));
+    expect(at('npm run gen-data')).toBeLessThan(at('npm test'));
+    expect(at('npm test')).toBeLessThan(at('npm run check'));
+    expect(at('npm run check')).toBeLessThan(at('BASE_PATH: /'));
+    expect(at('Verify subpath runtime fetches')).toBeLessThan(at('Upload GitHub Pages artifact'));
+  });
+
+  it('smoke-checks the page, index, and a chip shard under /pincraft/', () => {
+    expect(workflow).toContain('/pincraft/index.html');
+    expect(workflow).toContain('/pincraft/data/index.json');
+    expect(workflow).toContain('/pincraft/data/chips/');
+    expect(workflow).toContain('(src|href)="/(data|assets)/');
+  });
+});
+
+describe('local subpath smoke reproduction', () => {
+  it('serves the built site under /pincraft/ and rejects root-absolute fetches', async () => {
+    const dist = path.join(ROOT, 'dist');
+    if (!fs.existsSync(path.join(dist, 'index.html'))) return;
+    const server = http.createServer((req, res) => {
+      const requestPath = (req.url ?? '').split('?')[0];
+      if (!requestPath.startsWith('/pincraft/')) {
+        res.writeHead(404, { Connection: 'close' });
+        res.end('not found');
+        return;
+      }
+      const rel = requestPath.slice('/pincraft/'.length) || 'index.html';
+      const file = path.join(dist, rel);
+      if (!file.startsWith(dist) || !fs.existsSync(file) || !fs.statSync(file).isFile()) {
+        res.writeHead(404, { Connection: 'close' });
+        res.end('not found');
+        return;
+      }
+      res.writeHead(200, { 'Content-Type': 'application/octet-stream', Connection: 'close' });
+      fs.createReadStream(file).pipe(res);
+    });
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+    const address = server.address();
+    const port = typeof address === 'object' && address ? address.port : 0;
+    try {
+      const index: Array<{ id: string }> = JSON.parse(
+        fs.readFileSync(path.join(dist, 'data', 'index.json'), 'utf8'),
+      );
+      for (const url of [
+        '/pincraft/index.html',
+        '/pincraft/data/index.json',
+        `/pincraft/data/chips/${index[0].id}.json`,
+      ]) {
+        const response = await fetch(`http://127.0.0.1:${port}${url}`);
+        expect(response.status, url).toBe(200);
+      }
+      const absolute = await fetch(`http://127.0.0.1:${port}/data/index.json`);
+      expect(absolute.status).toBe(404);
+      const html = fs.readFileSync(path.join(dist, 'index.html'), 'utf8');
+      expect(/(src|href)="\/(data|assets)\//.test(html)).toBe(false);
+    } finally {
+      server.closeAllConnections();
+      await new Promise<void>((resolve, reject) => server.close((err) => (err ? reject(err) : resolve())));
+    }
+  }, 15_000);
+});

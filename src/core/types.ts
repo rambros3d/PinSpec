@@ -122,8 +122,47 @@ export interface CatalogVendorSource {
   version?: string;
   license?: string;
   chipCount: number;
+  /** Match and coverage percentages for this vendor, both in the range 0-100. */
+  ratios?: { match: number; coverage: number };
   repositories?: CatalogVendorRepository[];
 }
+
+/** Stable identifiers of the seven upstream sources recorded by the gate. */
+export type CatalogSourceId =
+  | 'st-open-pin-data'
+  | 'stm32-data-generated'
+  | 'ch32-device-data'
+  | 'kicad'
+  | 'pico-sdk'
+  | 'zephyr'
+  | 'raspberry-pi-docs';
+
+/** The seven upstream source identifiers in deterministic order. */
+export const CATALOG_SOURCE_IDS: readonly CatalogSourceId[] = [
+  'st-open-pin-data',
+  'stm32-data-generated',
+  'ch32-device-data',
+  'kicad',
+  'pico-sdk',
+  'zephyr',
+  'raspberry-pi-docs',
+];
+
+/** One upstream source record keyed by a stable `CatalogSourceId`. */
+export interface CatalogSourceRecord {
+  /** Short git SHA or SHA-256 content hash of the fetched files. */
+  sha: string;
+  url: string;
+  license: string;
+}
+
+/**
+ * `meta.json.sources` holds both per-vendor summaries (legacy consumers) and
+ * the seven canonical source records keyed by `CatalogSourceId`. The key sets
+ * are disjoint, so both views coexist without ambiguity.
+ */
+export type CatalogMetaSources = Partial<Record<VendorId, CatalogVendorSource>> &
+  Partial<Record<CatalogSourceId, CatalogSourceRecord>>;
 
 export interface CatalogMeta {
   generatedAt: string;
@@ -132,8 +171,8 @@ export interface CatalogMeta {
   chipCount: number;
   matchRate?: number;
   families: string[];
-  /** Vendors actually emitted in this build; absent vendors are not generated yet. */
-  sources?: Partial<Record<VendorId, CatalogVendorSource>>;
+  /** Vendors actually emitted in this build plus the seven source records. */
+  sources?: CatalogMetaSources;
 }
 
 export interface CatalogPeripheralCounts {

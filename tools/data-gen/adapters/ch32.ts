@@ -517,17 +517,25 @@ export const CH32_REFERENCES: readonly Ch32Reference[] = [
   { id: 'CH32X035G8U6', pkg: 'QFN28', pins: 28, hasExposedPad: true },
 ];
 
-/** Per-part package, bonding, and mux assertions for the CH32 catalog gate. */
+/** Per-part package, bonding, mux, remap, and tag assertions for the CH32 gate. */
 export const ch32ReferenceGate: Gate = {
   name: 'ch32-reference-parts',
   evaluate(ctx: GateContext): GateResult {
     const errors: string[] = [];
+    let groupedRemaps = 0;
+    let sdiTaggedPd1 = 0;
     for (const ref of CH32_REFERENCES) {
       const errorCountBefore = errors.length;
       const chip = ctx.chips.get(ref.id);
       if (!chip) {
         errors.push(`CH32 gate failed: missing reference part ${ref.id}.`);
         continue;
+      }
+      if (chip.vendor !== 'ch32' || chip.muxModel !== 'remap-group') {
+        errors.push(
+          `CH32 gate failed: ${ref.id} expected vendor ch32 and muxModel remap-group, ` +
+          `got ${chip.vendor}/${chip.muxModel}.`,
+        );
       }
       if (chip.package.name !== ref.pkg) {
         errors.push(
@@ -549,12 +557,35 @@ export const ch32ReferenceGate: Gate = {
       if (ref.bonded && !chip.pins.some((p) => (p.bondedNames?.length ?? 0) > 1)) {
         errors.push(`CH32 gate failed: ${ref.id} has no bonded physical lead.`);
       }
+      if (ref.bonded && !chip.pins.some((p) => p.tags?.includes('bonded'))) {
+        errors.push(`CH32 gate failed: ${ref.id} bonded lead is missing the bonded tag.`);
+      }
       if (chip.pins.some((p) => p.signals.some((s) => s.af !== null))) {
         errors.push(`CH32 gate failed: ${ref.id} has a signal with a non-null AF index.`);
+      }
+      for (const peripheral of Object.values(chip.peripherals)) {
+        for (const remap of peripheral.remaps ?? []) {
+          groupedRemaps += 1;
+          if (!Number.isInteger(remap.id) || Object.keys(remap.signals).length === 0) {
+            errors.push(`CH32 gate failed: ${ref.id} has an empty or unnumbered remap group.`);
+          }
+        }
+      }
+      if (chip.pins.some((p) =>
+        (p.name.includes('PD1') || (p.bondedNames ?? []).includes('PD1')) &&
+        p.tags?.includes('debug-sdi'),
+      )) {
+        sdiTaggedPd1 += 1;
       }
       if (errors.length === errorCountBefore) {
         console.log(`  ch32 reference: ${ref.id} ${ref.pins} pins OK`);
       }
+    }
+    if (groupedRemaps === 0) {
+      errors.push('CH32 gate failed: no priority part contains grouped remaps[].');
+    }
+    if (sdiTaggedPd1 === 0) {
+      errors.push('CH32 gate failed: no priority part carries a debug-sdi tag on PD1.');
     }
     return { vendor: 'ch32', name: 'ch32-reference-parts', errors, notes: [] };
   },

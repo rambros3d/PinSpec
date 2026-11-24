@@ -532,6 +532,7 @@ export const rpReferenceGate: Gate = {
   evaluate(ctx: GateContext): GateResult {
     const errors: string[] = [];
     const notes: string[] = [];
+    let chipsWithPioSignals = 0;
     for (const ref of RP_REFERENCES) {
       const chip = ctx.chips.get(ref.id);
       if (!chip) {
@@ -575,6 +576,11 @@ export const rpReferenceGate: Gate = {
         chip.pins.flatMap((p) => p.signals.map((s) => s.resourceId ?? '')).filter((id) => /^PWM\d+[AB]$/.test(id)),
       );
       const maxSlice = Math.max(0, ...Array.from(sliceIds).map((id) => Number.parseInt(/^PWM(\d+)/.exec(id)![1], 10)));
+      const invalidSlice = Array.from(sliceIds).find((id) => {
+        const index = Number.parseInt(/^PWM(\d+)/.exec(id)![1], 10);
+        return index < 0 || index > 11;
+      });
+      if (invalidSlice) fail(`invalid PWM slice resource ${invalidSlice}`);
       if (ref.slices8to11) {
         for (const id of ['PWM8A', 'PWM11B']) {
           if (!sliceIds.has(id)) fail(`missing RP2350B-exclusive resource ${id}`);
@@ -590,6 +596,16 @@ export const rpReferenceGate: Gate = {
         .sort((a, b) => a - b);
       if (JSON.stringify(adcPins) !== JSON.stringify(ref.adcGpios.slice().sort((a, b) => a - b))) {
         fail(`ADC pins ${JSON.stringify(adcPins)} do not match expected ${JSON.stringify(ref.adcGpios)}`);
+      }
+      if (!chip.pins.some((p) => p.tags?.includes('qspi'))) {
+        fail('no QSPI-tagged flash pins');
+      }
+      const swdPins = chip.pins.filter((p) => p.name === 'SWCLK' || p.name === 'SWDIO');
+      if (swdPins.length < 2 || !swdPins.every((p) => p.tags?.includes('debug-swd'))) {
+        fail('SWCLK/SWDIO pins are missing the debug-swd tag');
+      }
+      if (chip.pins.some((p) => p.signals.some((s) => /^PIO\d+$/.test(s.peripheral)))) {
+        chipsWithPioSignals += 1;
       }
       if (ref.hstx) {
         const hstxPins = chip.pins.filter((p) => /^GPIO1[2-9]$/.test(p.name));
@@ -614,6 +630,9 @@ export const rpReferenceGate: Gate = {
       if (chip.pio && JSON.stringify(chip.pio.gpioBaseOptions) !== JSON.stringify(ref.gpioBaseOptions)) {
         fail(`expected GPIOBASE options ${JSON.stringify(ref.gpioBaseOptions)}`);
       }
+    }
+    if (chipsWithPioSignals === 0) {
+      errors.push('RP gate: no reference chip carries PIO instance FUNCSEL signals.');
     }
     return { vendor: 'rp', name: 'rp-reference-parts', errors, notes };
   },

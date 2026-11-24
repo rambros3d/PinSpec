@@ -21,13 +21,76 @@
   import { exportEmbassyRust } from '../core/exporters/embassy-rust';
   import { exportPinoutJson, parsePinoutJson } from '../core/exporters/json';
   import { createEmptyWorkspace } from '../core/solver';
-  import { getChipVendor, type ChipData, type VendorId, type WorkspaceState } from '../core/types';
+  import {
+    getChipVendor,
+    type CatalogSourceId,
+    type ChipData,
+    type VendorId,
+    type WorkspaceState,
+  } from '../core/types';
   import { HERO_CHIPS } from '../core/vendor-view';
   import { catalogStore } from '../state/catalog.svelte';
   import { router } from '../state/router.svelte';
   import { workspaceStore } from '../state/workspace.svelte';
 
   const HERO_CHIP_ID = 'STM32G431CBU6';
+
+  /** Seven canonical upstream sources credited in the technical footer. */
+  const PROVENANCE_SOURCES: ReadonlyArray<{
+    id: CatalogSourceId;
+    label: string;
+    url: string;
+    license: string;
+  }> = [
+    {
+      id: 'st-open-pin-data',
+      label: 'STMicroelectronics/STM32_open_pin_data',
+      url: 'https://github.com/STMicroelectronics/STM32_open_pin_data',
+      license: 'BSD-3-Clause',
+    },
+    {
+      id: 'stm32-data-generated',
+      label: 'embassy-rs/stm32-data-generated',
+      url: 'https://github.com/embassy-rs/stm32-data-generated',
+      license: 'MIT / Apache-2.0',
+    },
+    {
+      id: 'ch32-device-data',
+      label: 'ch32-riscv-ug/ch32-device-data',
+      url: 'https://github.com/ch32-riscv-ug/ch32-device-data',
+      license: 'MIT',
+    },
+    {
+      id: 'kicad',
+      label: 'KiCad symbols and footprints',
+      url: 'https://gitlab.com/kicad/libraries/kicad-symbols',
+      license: 'CC-BY-SA-4.0 (generated-file exception)',
+    },
+    {
+      id: 'pico-sdk',
+      label: 'pico-sdk and picotool',
+      url: 'https://github.com/raspberrypi/pico-sdk',
+      license: 'BSD-3-Clause',
+    },
+    {
+      id: 'zephyr',
+      label: 'Zephyr',
+      url: 'https://github.com/zephyrproject-rtos/zephyr',
+      license: 'Apache-2.0',
+    },
+    {
+      id: 'raspberry-pi-docs',
+      label: 'raspberrypi/documentation',
+      url: 'https://github.com/raspberrypi/documentation',
+      license: 'CC-BY-SA-4.0',
+    },
+  ];
+
+  const PROVENANCE_VENDORS: ReadonlyArray<{ id: VendorId; label: string }> = [
+    { id: 'stm32', label: 'STM32' },
+    { id: 'ch32', label: 'CH32' },
+    { id: 'rp', label: 'RP' },
+  ];
 
   let heroChip = $state<ChipData | null>(null);
   let heroVendor = $state<VendorId>('stm32');
@@ -427,7 +490,7 @@
 
   <!-- Technical Attribution Footer -->
   <footer id="provenance" class="border-t border-hairline bg-surface">
-    <div class="max-w-7xl mx-auto px-6 py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs text-muted">
+    <div class="max-w-7xl mx-auto px-6 py-6 flex flex-col lg:flex-row items-start justify-between gap-6 text-xs text-muted">
       <div class="font-mono-tabular space-y-1">
         <div class="font-semibold text-primary">Per-vendor chip counts and source revisions</div>
         <div>
@@ -438,66 +501,38 @@
             Catalog metadata loading...
           {/if}
         </div>
-        {#if catalogStore.meta?.sources?.stm32}
-          {@const stm32Source = catalogStore.meta.sources.stm32}
-          <div class="text-[11px] text-faint space-y-0.5">
-            {#if stm32Source.repositories}
-              {#each stm32Source.repositories as repo (repo.id)}
-                <div>{repo.id} {repo.commit} ({repo.license}) · {stm32Source.chipCount.toLocaleString()} chips</div>
-              {/each}
-            {:else}
+        {#each PROVENANCE_VENDORS as vendor (vendor.id)}
+          {@const vendorSource = catalogStore.meta?.sources?.[vendor.id]}
+          {#if vendorSource}
+            {@const repoCount = vendorSource.repositories?.length ?? 0}
+            <div class="text-[11px] text-faint space-y-0.5">
               <div>
-                Upstream commits: open-pin-data {stm32Source.openPinDataCommit ?? catalogStore.meta.openPinDataCommit} · stm32-data {stm32Source.commit ?? catalogStore.meta.stm32DataCommit}
+                {vendor.label}: {vendorSource.chipCount.toLocaleString()} chips · primary revision {vendorSource.commit ?? 'unknown'}
+                {#if vendorSource.ratios}
+                  · match {vendorSource.ratios.match.toFixed(1)}% · coverage {vendorSource.ratios.coverage.toFixed(1)}%
+                {/if}
               </div>
-            {/if}
-          </div>
-        {:else if catalogStore.meta}
-          <div class="text-[11px] text-faint">
-            Upstream commits: open-pin-data {catalogStore.meta.openPinDataCommit} · stm32-data {catalogStore.meta.stm32DataCommit}
-          </div>
-        {/if}
-        {#if catalogStore.meta?.sources?.ch32}
-          {@const ch32Source = catalogStore.meta.sources.ch32}
-          <div class="text-[11px] text-faint space-y-0.5">
-            {#if ch32Source.repositories}
-              {#each ch32Source.repositories as repo (repo.id)}
-                <div>{repo.id} {repo.commit} ({repo.license}) · {ch32Source.chipCount.toLocaleString()} chips</div>
-              {/each}
-            {:else}
-              <div>ch32-device-data {ch32Source.commit} · {ch32Source.chipCount.toLocaleString()} chips</div>
-            {/if}
-          </div>
-        {/if}
-        {#if catalogStore.meta?.sources?.rp}
-          {@const rpSource = catalogStore.meta.sources.rp}
-          <div class="text-[11px] text-faint space-y-0.5">
-            {#if rpSource.repositories}
-              {#each rpSource.repositories as repo (repo.id)}
-                <div>{repo.id} {repo.commit} ({repo.license}) · {rpSource.chipCount.toLocaleString()} chips</div>
-              {/each}
-            {:else}
-              <div>RP upstream {rpSource.commit} · {rpSource.chipCount.toLocaleString()} chips</div>
-            {/if}
-          </div>
-        {/if}
+              {#if repoCount > 0}
+                {#each vendorSource.repositories ?? [] as repo (repo.id)}
+                  <div>{repo.id} {repo.commit} ({repo.license})</div>
+                {/each}
+              {:else}
+                <div>open-pin-data {vendorSource.openPinDataCommit ?? catalogStore.meta?.openPinDataCommit ?? 'unknown'}</div>
+              {/if}
+            </div>
+          {/if}
+        {/each}
       </div>
 
-      <div class="text-[11px] space-y-1 sm:text-right">
+      <div class="text-[11px] space-y-1 lg:text-right">
         <div class="font-semibold text-primary">Upstream data sources and licenses</div>
-        <div>
-          Pinout geometry: <a class="underline hover:text-primary" href="https://github.com/STMicroelectronics/STM32_open_pin_data" target="_blank" rel="noreferrer">STMicroelectronics/STM32_open_pin_data</a> (BSD-3-Clause)
-        </div>
-        <div>
-          AF & DMA tables: <a class="underline hover:text-primary" href="https://github.com/embassy-rs/stm32-data-generated" target="_blank" rel="noreferrer">embassy-rs/stm32-data-generated</a> (MIT / Apache-2.0)
-        </div>
-        <div>
-          CH32 pinouts: <a class="underline hover:text-primary" href="https://github.com/ch32-riscv-ug/ch32-device-data" target="_blank" rel="noreferrer">ch32-riscv-ug/ch32-device-data</a> (MIT)
-        </div>
-        <div>
-          RP pins: <a class="underline hover:text-primary" href="https://gitlab.com/kicad/libraries/kicad-symbols" target="_blank" rel="noreferrer">KiCad symbols</a> (CC-BY-SA-4.0, generated-file exception) ·
-          <a class="underline hover:text-primary" href="https://github.com/raspberrypi/picotool" target="_blank" rel="noreferrer">picotool</a> / <a class="underline hover:text-primary" href="https://github.com/raspberrypi/pico-sdk" target="_blank" rel="noreferrer">pico-sdk</a> (BSD-3-Clause) ·
-          <a class="underline hover:text-primary" href="https://github.com/zephyrproject-rtos/zephyr" target="_blank" rel="noreferrer">Zephyr</a> (Apache-2.0)
-        </div>
+        {#each PROVENANCE_SOURCES as source (source.id)}
+          {@const record = catalogStore.meta?.sources?.[source.id]}
+          <div>
+            <a class="underline hover:text-primary" href={source.url} target="_blank" rel="noreferrer">{source.label}</a>
+            ({source.license}) · {record?.sha ?? 'loading'}
+          </div>
+        {/each}
       </div>
     </div>
   </footer>

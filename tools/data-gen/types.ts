@@ -6,9 +6,11 @@
  */
 import type {
   CatalogIndexEntry,
+  CatalogMeta,
   ChipData,
   VendorId,
 } from '../../src/core/types';
+import type { WarningsDocument } from './artifacts';
 
 /** One file fetched directly from an upstream host into a `.cache` directory. */
 export interface RawSourceFile {
@@ -44,9 +46,13 @@ export interface DataGenPaths {
   chipsOutDir: string;
 }
 
-/** A build warning attributed to the vendor that produced it. */
+/** A deferred or unmapped part attributed to its vendor and upstream source. */
 export interface BuildWarning {
+  /** Stable identifier of the deferred part (normally its upstream part id). */
+  id?: string;
   vendor: VendorId;
+  /** Canonical upstream source id (for example `ch32-device-data`). */
+  source?: string;
   file?: string;
   refName?: string;
   reason: string;
@@ -86,6 +92,11 @@ export interface GateContext {
   matchRate: number;
   totalBytes: number;
   warnings: BuildWarning[];
+  /** Filled by the orchestrator for the global provenance and artifact gates. */
+  meta?: CatalogMeta;
+  warningDoc?: WarningsDocument;
+  /** Serialized shard payloads keyed by part id, used by shard-integrity checks. */
+  serializedShards?: Map<string, string>;
 }
 
 /** Result of one gate. Errors block strict vendors; notes become warnings. */

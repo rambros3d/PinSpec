@@ -1,6 +1,6 @@
 # AGENTS.md
 
-## Project: PinCraft (STM32 Pinout Configurator)
+## Project: PinCraft (STM32 / CH32 / RP Pinout Configurator)
 
 PinCraft is a fast, static, CubeMX-style pinout planning web application. It is a
 browser-native alternative to STM32CubeMX: no backend, no install, no cloud
@@ -14,12 +14,12 @@ workspace, and an automated build-time catalog generator.
 
 ### Current implementation status
 
-The STM32 pipeline, core engine, renderers, workspace, landing page, exporters,
-and GitHub Pages deployment are implemented and passing CI. The generator has
-been refactored into a CI-native adapter pipeline (Phase 0) and the CH32
-device-data adapter (Phase 1) is implemented. The RP adapter and the remaining
-vendor-aware solver, exporter, UI, and gate phases are tracked as OpenSpec
-changes under `openspec/changes/` and must be implemented in order.
+All STM32, CH32, and RP pipeline phases are shipped: the CI-native adapter
+generator, CH32 and RP adapters, vendor-aware core solver, exporters/state,
+workspace UI, and the `multi-vendor-ci-gates` gate/documentation phase. The
+landing page, exporters, and GitHub Pages deployment are green for all three
+vendors. The gate suite is the single release contract shared by local
+generation and CI; its delta spec lives in `openspec/specs/multi-vendor-ci-gates/`.
 
 Backward compatibility with legacy `version: 1` share links and project files
 is explicitly NOT required for the multi-vendor expansion. STM32 behavior,
@@ -144,8 +144,12 @@ fetches resolve relative to `import.meta.env.BASE_URL`, e.g.
 
 ```
 PinCraft/
-+-- tools/data-gen/            # STM32_open_pin_data + stm32-data-generated joiner
-|   +-- index.ts               # CLI entry point, emitters, Gate 1 assertions
++-- tools/data-gen/            # STM32 + CH32 + RP adapter orchestrator
+|   +-- index.ts               # CLI entry point, emitters, gate invocation
+|   +-- gates.ts               # Pure per-vendor and global gate helpers
+|   +-- artifacts.ts           # In-memory shard preparation and artifact writers
+|   +-- adapters/{stm32,ch32,rp}  # Vendor source parsing and assertions
+|   +-- sources.ts             # Source declarations and license constants
 |   +-- helpers.ts             # Pure normalization helpers
 +-- src/
 |   +-- main.ts
@@ -185,12 +189,19 @@ PinCraft/
 |---|---|---|
 | `STMicroelectronics/STM32_open_pin_data` | BSD-3-Clause | `mcu/*.xml` - package, physical position, pin name/type, Flash/RAM, `SYS`/`DEBUG`/`RCC` signals |
 | `embassy-rs/stm32-data-generated` | MIT / Apache-2.0 | `data/chips/*.json` - normalized peripherals, AF indices, DMA/DMAMUX, cores, memory |
+| `ch32-riscv-ug/ch32-device-data` | MIT | manifest-verified `index/` CSV - part list, packages, pins, remaps |
+| KiCad symbols and footprints | CC-BY-SA-4.0 (generated-file exception) | RP package symbols and QFN EP geometry |
+| `raspberrypi/picotool` and `raspberrypi/pico-sdk` | BSD-3-Clause | RP FUNCSEL tables and GPIO function macros |
+| `zephyrproject-rtos/zephyr` | Apache-2.0 | RP SRAM, GPIO counts, and variant device trees |
+| `raspberrypi/documentation` | CC-BY-SA-4.0 | RP flash/package variant tables |
 
-`npm run gen-data` shallow-clones both into `.cache/`. The generator records
-short SHAs in `meta.json`, and the landing footer displays them. The cache
-check is existence-only: it does not refresh an existing clone. When upstream
-data must be updated, delete the relevant `.cache/` directory first, then
-re-run generation.
+`npm run gen-data` (or `npm run acquire-sources` on its own) shallow-clones the
+git sources and fetches the raw reference files into the gitignored `.cache/`.
+The generator records a short SHA (or SHA-256 for raw files), license, and URL
+for each of the seven canonical sources in `meta.json`, and the landing footer
+displays them. The local cache check is existence-only: it does not refresh an
+existing checkout. The weekly CI schedule deletes `.cache/` before acquisition
+so SHAs advance; to update locally, delete the relevant `.cache/` entry first.
 
 ### Join and normalization rules
 
@@ -217,26 +228,36 @@ re-run generation.
 
 ### Emitted artifacts
 
-- `public/data/meta.json` - generated timestamp, both upstream SHAs, chip
-  count, match rate, families.
-- `public/data/index.json` - compact search index: `id`, `family`, `core`,
-  `package`, `pinCount`, `flashKb`, `ramKb`, peripheral counts.
+- `public/data/meta.json` - generated timestamp, per-vendor counts and
+  match/coverage ratios, the seven canonical source records (`sha`, `url`,
+  `license`), and legacy STM32 top-level fields.
+- `public/data/index.json` - compact search index with `vendor`, `id`, `family`,
+  `core`, `package`, `pinCount`, `flashKb`, `ramKb`, and peripheral counts.
 - `public/data/chips/<MCU>.json` - full `ChipData` for one part.
-- `public/data/build-warnings.json` - unmatched/parse-failure records.
+- `public/data/build-warnings.json` - always present; `{ id, vendor, source,
+  reason }[]` plus aggregate counts for every deferred/unmapped part.
 - `src/data/hero-chip.json` - checked-in `STM32G431CBU6` snapshot; its absence
   aborts generation.
 
-### Gate 1 (build-blocking)
+### Release gates (`multi-vendor-ci-gates`, build-blocking)
 
-`npm run gen-data` must:
+`npm run gen-data` runs per-vendor gates followed by four global gates
+(`artifact-budget`, `shard-integrity`, `provenance`, `warnings-contract`) before
+writing anything, so a failure exits non-zero with no partial catalog. It must:
 
-- Emit at least 1000 MCUs.
-- Achieve at least 95% Embassy match rate.
-- Keep total generated JSON under 150 MB.
-- Pass reference assertions on `STM32F411CEU6`, `STM32G431CBU6`,
+- Emit at least 1000 STM32 MCUs with at least a 95% Embassy match rate.
+- Keep total generated JSON under 150 MB and make every index entry resolve to
+  a consistent, parseable shard with no `NaN`/`undefined` values.
+- Pass STM32 reference assertions on `STM32F411CEU6`, `STM32G431CBU6`,
   `STM32F103C8T6` (AFIO), `STM32H743VIT6`, `STM32U575RIT6` (DMA), and
   `STM32H743XIH6` (TFBGA grid), verifying package name, pin count, power pins,
   key AF mappings, SYS signals, and DMA entries.
+- Emit all 105 CH32 parts and assert the four priority packages, their grouped
+  `remaps[]`, bonded names/tags, and the PD1 `debug-sdi` tag.
+- Assert RP2040/RP2350A/RP2350B pin and GPIO counts, QFN exposed pads, the
+  `PWM0A`..`PWM11B` slice range, and HSTX/ADC/QSPI/SWD/PIO tags.
+- Record all seven source SHAs and per-vendor counts/ratios in `meta.json`, and
+  attribute every deferred part in `build-warnings.json` without failing.
 
 ---
 
@@ -288,7 +309,7 @@ Non-blocking warnings:
 - `tim`: `pwm_1ch`..`pwm_4ch`, `pwm_3phase_comp`, `encoder`.
 - `adc`/`dac`: individual channel toggles.
 - `sys`: `swd`, `jtag`.
-- `pwm`/`pio`: neutral channel-based placeholders for upcoming vendors;
+- `pwm`/`pio`: neutral channel-based templates used by CH32 and RP;
   templates must remain exhaustive for `PeripheralKind`.
 
 ### Allocation and remap
@@ -304,15 +325,17 @@ Non-blocking warnings:
 
 ### URL state and exporters
 
-- `url-state.ts`: serialize `{ v: 1, m, a, l, k, p }`, deflate with `fflate`,
-  Base64URL encode into `#/s/<payload>`. Malformed or outdated links must show
-  a dismissible banner, never crash.
-- `embassy-rust.ts`: `BoardPins` struct plus `from_peripherals()`, labels
+- `url-state.ts`: serialize `{ v: 2, m, a, l, k, p }` (the schema has no v1
+  import path), deflate with `fflate`, Base64URL encode into `#/s/<payload>`.
+  Malformed or outdated links must show a dismissible banner, never crash.
+- `embassy-rust.ts`: dispatch to `embassy-stm32`, `embassy-rp`, or `ch32-hal`
+  crate names by vendor; `BoardPins` struct plus `from_peripherals()`, labels
   sanitized to snake_case.
-- `c-header.ts`: include guard and `<NAME>_GPIO_PORT/_PIN/_AF` macros.
-- `csv.ts`: `Position,Pin,Type,Peripheral,Signal,AF,Label,Locked`.
-- `json.ts`: versioned, deterministically key-sorted project file with import
-  parser.
+- `c-header.ts`: STM32 PORT/PIN/AF macros, RP Pico SDK `GPIO_FUNC_*` and PWM
+  slice macros, or CH32/ch32v003fun macros with a remap summary.
+- `csv.ts`: `Vendor,Position,Pin,Type,Peripheral,Signal,Mux,Resource,Label,Locked`.
+- `json.ts`: version-2, deterministically key-sorted project file with import
+  parser; empty `activeRemaps`/`pioAssignments` are omitted from share links.
 
 ---
 
@@ -365,14 +388,14 @@ Ctrl+Click remap, Ctrl+Z/Y undo/redo, `0` fit view, Escape cancel.
 
 ---
 
-## Multi-vendor expansion (roadmap)
+## Multi-vendor architecture (shipped)
 
-Adding WCH CH32 and Raspberry Pi RP2040/RP235x. Execute only after the STM32
-baseline stays green. Zero STM32 regressions is mandatory.
+WCH CH32 and Raspberry Pi RP2040/RP235x support is implemented for all three
+vendors. Zero STM32 regressions remains mandatory.
 
 ### Schema generalization
 
-Extend `src/core/types.ts` backward-compatibly:
+`src/core/types.ts` carries the generalized schema:
 
 - `VendorId = 'stm32' | 'ch32' | 'rp'`
 - `MuxModel = 'af' | 'remap-group' | 'funcsel-pio'`
@@ -382,27 +405,28 @@ Extend `src/core/types.ts` backward-compatibly:
 - `ChipData.vendor`, `muxModel`, `pio`, `PackageInfo.hasExposedPad`,
   `PinInfo.bondedNames/tags/note`, `PeripheralInfo.remaps`
 - `WorkspaceState.activeRemaps`, `pioAssignments`
-- `index.json` entries gain `vendor`; `meta.json` gains per-vendor `sources`
+- `index.json` entries carry `vendor`; `meta.json` carries per-vendor `sources`
+  and the seven canonical source records
 - Legacy state without these fields defaults to `vendor: 'stm32'`
 
 ### Data adapters
 
-Refactor `tools/data-gen/` into orchestrator plus `adapters/stm32`,
-`adapters/ch32`, `adapters/rp`, with `static/rp` and `static/ch32-packages`
-verified overlays.
+The orchestrator in `tools/data-gen/index.ts` registers `adapters/stm32`,
+`adapters/ch32`, and `adapters/rp`, collects vendor-attributed warnings, runs
+all gates, and writes artifacts once.
 
 - **RP:** datasheet-verified QFN-56/60/80 specs for RP2040, RP2350A/B,
-  RP2354A/B. Encode FUNCSEL tables with `funcLabel`, `resourceId` PWM slice
-  keys (`PWM0A`..`PWM11B`), ADC/HSTX/USB/QSPI/SWD tags, PIO instances, and
+  RP2354A/B from KiCad, pico-sdk/picotool, Zephyr, and Raspberry Pi docs.
+  FUNCSEL signals carry `funcLabel`, `resourceId` PWM slice keys
+  (`PWM0A`..`PWM11B`), ADC/HSTX/USB/QSPI/SWD tags, PIO instances, and
   `gpioBaseOptions` (`[0]` or `[0, 16]`).
-- **CH32:** shallow-clone `ch32-rs/ch32-data` into `.cache/ch32-data` and
-  inspect its real schema before parsing. Group signals by remap index into
-  `remaps[]`; merge peripheral signals onto physical pins by GPIO name; use
-  curated overlays for priority packages (CH32V003 F4P6/F4U6/A4M6/J4M6,
-  CH32V006, CH32V203, CH32V307, CH32X035, CH32L103). Multi-bonded SOP8 pins
-  merge all bonded pads, populate `bondedNames`, and tag `bonded`.
-  Tag PD1 with `debug-sdi`, SWD pairs with `debug-swd`, USB/PD pins with `usb`.
-  Unmapped variants go to `build-warnings.json`, never to a hard failure.
+- **CH32:** `ch32-riscv-ug/ch32-device-data` is shallow-cloned to
+  `.cache/ch32-device-data`; only manifest-verified `index/` CSV is consumed.
+  Signals are grouped by remap index into `remaps[]` and merged onto physical
+  pins by GPIO name. Multi-bonded SOP8 pins merge all bonded pads, populate
+  `bondedNames`, and tag `bonded`. PD1 carries `debug-sdi`, SWD pairs
+  `debug-swd`, and USB/PD pins `usb`. Unmapped variants are deferred to
+  `build-warnings.json`, never to a hard failure.
 
 ### Solver extensions
 
@@ -424,8 +448,8 @@ verified overlays.
 - C header: STM32 PORT/PIN/AF macros; RP Pico SDK `GPIO_FUNC_*`, PWM slice and
   channel macros; CH32/ch32v003fun macros plus remap summary.
 - CSV columns: `Vendor,Position,Pin,Type,Peripheral,Signal,Mux,Resource,Label,Locked`.
-- JSON/URL schema bump to `version: 2` with full `version: 1` import
-  compatibility; omit empty `activeRemaps`/`pioAssignments` from share links.
+- JSON/URL schema uses `version: 2`; there is no v1 import path, and empty
+  `activeRemaps`/`pioAssignments` are omitted from share links.
 - UI: 2-sided package rendering, exposed thermal pad, bonded pin labels,
   remap dropdown, RP PIO panel, mux/hazard badges, vendor filter tabs,
   cross-vendor presets, hero vendor switcher.
@@ -438,14 +462,15 @@ verified overlays.
   CH32X035G8U6 (28), STM32G431CBU6 (48).
 - **Gate 2:** all unit tests pass, including CH32 atomic remap, locked/occupied
   remap blocks, bonded-pin exclusion, SWIO warning, RP PWM slice collision,
-  RP2350B GPIOBASE error vs valid shifted window, vendor exporters, and
-  version 1 import compatibility.
+  RP2350B GPIOBASE error vs valid shifted window, vendor exporters, gate
+  helpers, provenance schemas, and warning contracts.
 - **Gate 3:** clean SVG rendering for SOP8, TSSOP20, LQFP48, QFN-56, QFN-80 in
   both themes at multiple zooms; share URLs round-trip remaps and PIO
   assignments.
 - **Gate 4:** `npm test && npm run check && BASE_PATH="/pincraft/" npm run build`
   succeed with zero warnings, no broken subpath requests, and no STM32
-  regressions.
+  regressions. CI additionally forces a weekly source refresh and smoke-tests
+  `index.html`, `data/index.json`, and a sample chip shard under `/pincraft/`.
 
 ---
 
@@ -453,7 +478,8 @@ verified overlays.
 
 ```bash
 npm ci                                   # clean install from package-lock.json
-npm run gen-data                         # clone upstreams, emit static catalog
+npm run acquire-sources                  # fetch all seven upstream sources
+npm run gen-data                         # emit shards and run all release gates
 npm test                                 # Vitest unit tests
 npm run check                            # tsc --noEmit (strict)
 BASE_PATH="/pincraft/" npm run build     # production subpath build check
@@ -463,7 +489,11 @@ npm run preview                          # preview dist on port 4173
 
 Every phase must end with `npm test`, `npm run check`, and the production build
 passing. Fix warnings before moving on. CI runs the same sequence on every push
-to `main`, on manual dispatch, and weekly, then deploys `dist` to GitHub Pages.
+to `main`, on manual dispatch, and weekly (with a forced `.cache/` refresh),
+then smoke-tests the built site under `/pincraft/` and deploys `dist` to GitHub
+Pages. Runtime fetches must use `import.meta.env.BASE_URL` through the pure
+`dataUrl()` helper in `src/core/data-url.ts`; no root-absolute `/data/` or
+`/assets/` URL is permitted.
 
 ---
 

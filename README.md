@@ -17,10 +17,41 @@ Generation is orchestrated by `tools/data-gen/index.ts`, which resolves sources,
 ## Verification Commands
 
 ```bash
-npm test                                    # Vitest unit tests for core solver, URL codec, exporters, and data-gen helpers
-npm run check                               # svelte-check and TypeScript strict validation
+npm run acquire-sources                      # Fetch all seven upstream sources into .cache/
+npm run gen-data                             # Emit shards and run every generation gate
+npm test                                     # Vitest unit tests for core, exporters, gates, and data-gen helpers
+npm run check                                # svelte-check and TypeScript strict validation
 BASE_PATH="/pincraft/" npm run build         # Production subpath build check
+npm run dev                                  # Local dev server on port 3000
+npm run preview                              # Preview dist on port 4173
 ```
+
+## Generation Gates
+
+`npm run gen-data` runs one shared gate suite locally and in CI, so the two
+environments cannot disagree. Adapters contribute strict per-vendor assertions;
+the orchestrator appends four global gates before any artifact is written, so a
+failure exits non-zero without publishing a partial catalog:
+
+- **STM32:** at least 1000 MCUs, at least 95% Embassy match rate, plus field
+  assertions on `STM32F411CEU6`, `STM32G431CBU6`, `STM32F103C8T6` (AFIO),
+  `STM32H743VIT6`, `STM32U575RIT6` (DMA), and `STM32H743XIH6` (TFBGA grid).
+- **CH32:** all 105 covered parts plus structural assertions on
+  `CH32V003F4P6` (20 pins), `CH32V003J4M6` (8 bonded leads), `CH32V203C8T6` (48
+  pins), and `CH32X035G8U6` (28 pins), including grouped `remaps[]`, `bonded`
+  names/tags, and the `debug-sdi` tag on PD1.
+- **RP:** `RP2040` (56 pins/30 GPIO), `RP2350A` (60/30), and `RP2350B` (80/48),
+  QFN exposed pads, `funcsel-pio` with `funcLabel`/`PWM0A`..`PWM11B`
+  `resourceId` keys, and HSTX, ADC, QSPI, SWD, and PIO tags.
+- **Global:** a 150 MB uncompressed JSON budget, shard integrity and index
+  consistency, complete provenance (all seven source SHAs and per-vendor
+  counts/ratios), and the `build-warnings.json` attribution contract.
+
+Deferred or unmapped parts are recorded as vendor-attributed warnings and never
+fail generation. The GitHub Pages workflow acquires all sources, force-refreshes
+`.cache/` on the weekly schedule, records SHAs from `meta.json`, and runs the
+generation, test, type-check, subpath build, and subpath fetch smoke checks in
+order before uploading an artifact.
 
 ## Architecture Overview
 
@@ -71,7 +102,7 @@ in the vendored theme CSS file.
 
 ## Generated Data Provenance
 
-`public/data/meta.json` records the resolved revision, license, and emitted chip count for every generated vendor under `sources`. STM32, CH32 and RP entries have the shape below; for raw-file sources (RP) the revision is the short SHA-256 of the fetched files. The legacy top-level `openPinDataCommit`, `stm32DataCommit`, `chipCount`, `matchRate`, and `families` fields remain for existing consumers. The landing footer renders provenance directly from `meta.json.sources`.
+`public/data/meta.json` records `generatedAt`, the resolved revision, license, emitted chip count, and match/coverage ratios for every generated vendor under `sources`. The same map also carries seven canonical source records keyed by `st-open-pin-data`, `stm32-data-generated`, `ch32-device-data`, `kicad`, `pico-sdk`, `zephyr`, and `raspberry-pi-docs`, each with `sha`, `url`, and `license`. For raw-file sources (RP) the SHA is a short SHA-256 of the fetched files. The legacy top-level `openPinDataCommit`, `stm32DataCommit`, `chipCount`, `matchRate`, and `families` fields remain for existing consumers. The landing footer renders provenance directly from `meta.json.sources`.
 
 ```json
 {
@@ -108,4 +139,4 @@ in the vendored theme CSS file.
 }
 ```
 
-`public/data/build-warnings.json` is always written (even with zero warnings). Each record carries `vendor`, optional `file` / `refName`, and `reason`; `warningCount` and `warningsByVendor` aggregate the totals printed in the generation log. A revision that cannot be resolved is recorded as the literal `unknown`.
+`public/data/build-warnings.json` is always written (even with zero warnings). Each record carries `{ id, vendor, source, reason }` with optional `file` / `refName` detail; `warningCount` and `warningsByVendor` aggregate the totals printed in the generation log. A revision that cannot be resolved is recorded as the literal `unknown`. The seven upstream sources are credited in the landing footer with ST open pin data (BSD-3-Clause), Embassy stm32-data-generated (MIT / Apache-2.0), ch32-device-data (MIT), KiCad (CC-BY-SA-4.0, generated-file exception), pico-sdk and picotool (BSD-3-Clause), Zephyr (Apache-2.0), and Raspberry Pi documentation (CC-BY-SA-4.0).

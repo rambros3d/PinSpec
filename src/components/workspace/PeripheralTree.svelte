@@ -135,9 +135,7 @@
               <ChevronRight class="size-3.5 text-base-content/40" />
             {/if}
             <span class="truncate">
-              {category.id === 'other'
-                ? `${category.label} (${category.names.length})`
-                : category.label}
+              {category.label}
             </span>
           </span>
           <span class="font-mono-tabular text-[11px] text-base-content/60 shrink-0">

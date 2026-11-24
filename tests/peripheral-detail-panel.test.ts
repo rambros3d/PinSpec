@@ -110,13 +110,12 @@ describe('compact configured-first tree', () => {
     expect(tree).toContain('No mode selected');
   });
 
-  it('sorts configured work first and keeps the catch-all count in its label', () => {
+  it('sorts configured work first and shows the catch-all count on the right', () => {
     expect(tree).toContain('partitionPeripherals(peripheralStatus, peripheralModes)');
     expect(tree).toContain('orderPeripheralNames(names, partition)');
-    expect(tree).toContain("category.id === 'other'");
     expect(tree).toContain('category.label');
-    expect(tree).toContain('${category.names.length}');
-    expect(readSource('src/core/vendor-view.ts')).toContain("label: 'Other peripherals'");
+    expect(tree).toContain('{category.names.length}');
+    expect(readSource('src/core/vendor-view.ts')).toContain("label: 'Others'");
     expect(DEFAULT_CATEGORY_EXPANSION.other).toBe(false);
     expect(DEFAULT_CATEGORY_EXPANSION.system).toBe(true);
   });

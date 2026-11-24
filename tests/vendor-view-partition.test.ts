@@ -99,7 +99,7 @@ describe('pure peripheral partition', () => {
       'pio',
     ]);
     expect(PERIPHERAL_CATEGORIES.find((category) => category.id === 'other')?.label).toBe(
-      'Other peripherals',
+      'Others',
     );
     expect(peripheralCategoryForKind('pio').id).toBe('programmable');
     expect(peripheralCategoryForKind('sys').id).toBe('system');

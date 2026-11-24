@@ -39,7 +39,7 @@ export const PERIPHERAL_CATEGORIES: readonly PeripheralCategory[] = [
   { id: 'timers', label: 'Timers', kinds: ['tim'] },
   { id: 'programmable', label: 'Programmable I/O', kinds: ['pwm', 'pio'] },
   { id: 'connectivity', label: 'Connectivity', kinds: ['spi', 'i2c', 'usart', 'can', 'usb'] },
-  { id: 'other', label: 'Other peripherals', kinds: ['other'] },
+  { id: 'other', label: 'Others', kinds: ['other'] },
 ];
 
 /** Resolve the category that owns a peripheral kind. */

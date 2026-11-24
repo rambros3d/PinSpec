@@ -75,6 +75,17 @@ change that introduces it. Pin configuration without URL/JSON persistence is
 incomplete; UI preferences placed in share URLs or project files are out of
 scope for sharing.
 
+### No handwritten MCU data
+
+All MCU facts (packages, physical pin numbers, pin names and types, peripheral
+signals, mux values, DMA channels, memory sizes, strapping and capability
+metadata) MUST be generated from machine-readable upstream sources by a GitHub
+Actions job. Hand-curated chip tables, static overlays, and transcribed
+datasheet values are forbidden. If a family lacks suitable machine-readable
+data, defer the family and record the reason in `build-warnings.json`; never
+invent or manually transcribe chip data. Parser code and source declarations
+are allowed; literal chip facts are not.
+
 ### Writing style
 
 Use professional, clear wording in UI copy, documentation, commit messages,

@@ -38,6 +38,47 @@ describe('GitHub Pages-safe data URLs', () => {
 describe('deploy workflow contract', () => {
   const workflow = fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'deploy.yml'), 'utf8');
 
+  const jobBlocks = (): Record<string, string> => {
+    const blocks: Record<string, string> = {};
+    const lines = workflow.split('\n');
+    const jobsIndex = lines.indexOf('jobs:');
+    expect(jobsIndex, 'jobs:').toBeGreaterThan(-1);
+    let current: string | null = null;
+    let block: string[] = [];
+    for (const line of lines.slice(jobsIndex + 1)) {
+      if (line && !/^\s/.test(line)) break;
+      const heading = /^  ([a-z][a-z0-9-]*):\s*$/.exec(line);
+      if (heading) {
+        if (current) blocks[current] = block.join('\n');
+        current = heading[1];
+        block = [];
+      } else if (current) {
+        block.push(line);
+      }
+    }
+    if (current) blocks[current] = block.join('\n');
+    return blocks;
+  };
+
+  it('separates build and deploy into dependent jobs', () => {
+    const jobs = jobBlocks();
+    expect(Object.keys(jobs).sort()).toEqual(['build', 'deploy']);
+    expect(jobs.build).toContain('runs-on: ubuntu-latest');
+    expect(jobs.build).toContain('actions/upload-pages-artifact@v4');
+    expect(jobs.build).toContain('path: dist');
+    expect(jobs.build).not.toContain('actions/deploy-pages@v4');
+    expect(jobs.build).not.toContain('environment:');
+    expect(jobs.deploy).toContain('needs: build');
+    expect(jobs.deploy).toContain('runs-on: ubuntu-latest');
+    expect(jobs.deploy).toContain('name: github-pages');
+    expect(jobs.deploy).toContain('url: ${{ steps.deployment.outputs.page_url }}');
+    expect(jobs.deploy).toContain('id: deployment');
+    expect(jobs.deploy).toContain('uses: actions/deploy-pages@v4');
+    expect(jobs.deploy).not.toContain('actions/upload-pages-artifact@v4');
+    expect(jobs.deploy.match(/- name:/g)).toHaveLength(1);
+    expect(workflow.match(/actions\/deploy-pages@v4/g)).toHaveLength(1);
+  });
+
   it('preserves triggers and the Pages actions', () => {
     expect(workflow).toContain('branches: [main]');
     expect(workflow).toContain('workflow_dispatch:');

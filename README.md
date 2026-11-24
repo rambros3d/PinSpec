@@ -60,6 +60,37 @@ order before uploading an artifact.
 - `src/state/`: Reactive Svelte 5 runes stores for hash routing (`#/`, `#/mcu/<MCU>`, `#/s/<PAYLOAD>`), catalog fetching/caching, workspace persistence in `localStorage`, and daisyUI theme preference.
 - `src/components/` & `src/pages/`: Engineering landing page with interactive `STM32G431CBU6` preview and three-pane CubeMX-style workspace featuring parametric perimeter (LQFP/QFN/UFQFPN/TSSOP) and zoom-adaptive grid (UFBGA/TFBGA/WLCSP) SVG renderers.
 
+## Importing `.ioc` Files and Board Presets
+
+The workspace accepts STM32CubeMX / CubeIDE `.ioc` project files. Drop a `.ioc`
+file anywhere over the workspace or use the **Import .ioc** control in the
+center pane. The importer parses the flat `key=value` format, maps ST signal
+names (`GPIO_EXTI13`, `SYS_JTMS-SWDIO`, `GPIO_Output`, and others) to the
+normalized PinCraft vocabulary, and joins signals to physical positions by pin
+name. `.ioc` files do not carry package coordinates, so pin names are the only
+join key. Virtual `VP_` entries are ignored.
+
+Part identifiers with parenthesized flash-size variants and temperature
+wildcards are expanded and resolved against `index.json`. When more than one
+catalog MCU matches, the app lists the candidates and waits for an explicit
+selection before opening a workspace. A malformed file reports an error and
+leaves the current workspace unchanged. Imports produce the same version-2
+`WorkspaceState` used by share links and project files, so the result is saved
+in recent sessions and round-trips through both codecs.
+
+The **Board preset** control opens a curated set of official ST board
+configurations (Nucleo boards) checked into `src/data/boards.ts`. Selecting one
+opens the matching MCU with its assignments, labels, and lock flags applied.
+A preset whose MCU is absent from the catalog reports a message without opening
+a broken workspace. Presets are transcribed from the official ST board `.ioc`
+files in `STMicroelectronics/STM32_open_pin_data` (BSD-3-Clause); that source is
+already credited in the footer. RP and CH32 board presets are not included:
+their upstream board files do not provide comparable pin-level maps.
+
+Implementation: `src/core/importers/ioc.ts` is a pure TypeScript parser and
+mapper with no DOM or Svelte imports; UI handoff reuses
+`workspaceStore.setPendingHandoff()` and `openMcu()`.
+
 ## Themes
 
 PinCraft uses four vendored [daisyUI](https://github.com/saadeghi/daisyui) theme

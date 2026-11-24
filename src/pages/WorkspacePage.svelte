@@ -1,13 +1,25 @@
 <script lang="ts">
-  import { AlertCircle, PanelLeft, PanelRight, X } from 'lucide-svelte';
+  import { AlertCircle, CircuitBoard, FileUp, PanelLeft, PanelRight, X } from 'lucide-svelte';
   import { onMount } from 'svelte';
+  import BoardSelectorModal from '../components/workspace/BoardSelectorModal.svelte';
   import ExportModal from '../components/workspace/ExportModal.svelte';
   import McuSwitcherModal from '../components/workspace/McuSwitcherModal.svelte';
   import PackageCanvas from '../components/workspace/PackageCanvas.svelte';
   import PeripheralTree from '../components/workspace/PeripheralTree.svelte';
   import SummaryDrawer from '../components/workspace/SummaryDrawer.svelte';
   import TopToolbar from '../components/workspace/TopToolbar.svelte';
+  import {
+    buildWorkspaceFromPins,
+    prepareIocImport,
+    type IocRawRecord,
+  } from '../core/importers/ioc';
   import type { WorkspaceState } from '../core/types';
+  import {
+    BOARD_PRESETS,
+    buildBoardPresetState,
+    resolveBoardPreset,
+    type BoardPreset,
+  } from '../data/boards';
   import { catalogStore } from '../state/catalog.svelte';
   import { router } from '../state/router.svelte';
   import { workspaceStore } from '../state/workspace.svelte';
@@ -25,6 +37,10 @@
   let rightCollapsed = $state(false);
   let showSwitcher = $state(false);
   let showExport = $state(false);
+  let showBoardSelector = $state(false);
+  let iocDropActive = $state(false);
+  let iocFileInput = $state<HTMLInputElement | null>(null);
+  let ambiguousImport = $state<{ record: IocRawRecord; candidates: string[] } | null>(null);
 
   let canvasRef = $state<{ fitView: () => void } | null>(null);
   let searchInputRef = $state<HTMLInputElement | null>(null);
@@ -94,6 +110,96 @@
     workspaceStore.showToast(`Imported pinout for ${imported.mcuId}.`, 'success');
   }
 
+  /** Hand a prepared state to the existing MCU-open handoff path. */
+  function applyImportedState(
+    state: WorkspaceState,
+    message: string,
+    tone: 'info' | 'success' | 'warning' = 'success',
+  ): void {
+    workspaceStore.setPendingHandoff(state);
+    if (workspaceStore.chip && state.mcuId.toUpperCase() === workspaceStore.chip.id.toUpperCase()) {
+      workspaceStore.openMcu(state.mcuId, state);
+    } else {
+      router.navigateMcu(state.mcuId);
+    }
+    workspaceStore.showToast(message, tone);
+  }
+
+  async function applyIocRecord(record: IocRawRecord, mcuId: string): Promise<void> {
+    try {
+      const chip = await catalogStore.loadChip(mcuId);
+      const built = buildWorkspaceFromPins(record.pins, { chip, mcuId: chip.id });
+      if (!built.ok) {
+        workspaceStore.showToast(built.error, 'warning');
+        return;
+      }
+      const label = record.board || mcuId;
+      const message =
+        built.warnings.length > 0
+          ? `Imported ${label} with ${built.warnings.length} warning(s): ${built.warnings[0]}`
+          : `Imported ${label} pinout.`;
+      applyImportedState(
+        built.state,
+        message,
+        built.warnings.length > 0 ? 'warning' : 'success',
+      );
+    } catch (err) {
+      workspaceStore.showToast(
+        err instanceof Error ? err.message : 'Unable to load the imported MCU.',
+        'warning',
+      );
+    }
+  }
+
+  async function handleIocFile(file: File): Promise<void> {
+    if (catalogStore.index.length === 0) await catalogStore.ensureLoaded();
+    if (catalogStore.indexError) {
+      workspaceStore.showToast(catalogStore.indexError, 'warning');
+      return;
+    }
+    const text = await file.text();
+    const prepared = prepareIocImport(text, catalogStore.index);
+    if (prepared.kind === 'error') {
+      workspaceStore.showToast(prepared.error, 'warning');
+      return;
+    }
+    if (prepared.kind === 'ambiguous') {
+      ambiguousImport = { record: prepared.record, candidates: prepared.candidates };
+      return;
+    }
+    await applyIocRecord(prepared.record, prepared.mcuId);
+  }
+
+  async function handleAmbiguousSelect(mcuId: string): Promise<void> {
+    const pending = ambiguousImport;
+    ambiguousImport = null;
+    if (pending) await applyIocRecord(pending.record, mcuId);
+  }
+
+  async function handleBoardSelect(preset: BoardPreset): Promise<void> {
+    await catalogStore.ensureLoaded();
+    const resolved = resolveBoardPreset(preset, catalogStore.index);
+    if (!resolved.ok) {
+      workspaceStore.showToast(resolved.error, 'warning');
+      return;
+    }
+    showBoardSelector = false;
+    try {
+      const chip = await catalogStore.loadChip(resolved.mcuId);
+      const built = buildBoardPresetState(preset, chip);
+      if (!built.ok) {
+        workspaceStore.showToast(built.error, 'warning');
+        return;
+      }
+      applyImportedState(built.state, `Loaded ${preset.board} board preset.`);
+    } catch (err) {
+      workspaceStore.showToast(
+        err instanceof Error ? err.message : 'Unable to load the selected board MCU.',
+        'warning',
+      );
+    }
+  }
+
   onMount(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
@@ -119,8 +225,34 @@
         workspaceStore.redo();
       }
     };
+    const onDragOver = (e: DragEvent) => {
+      if (!e.dataTransfer?.types.includes('Files')) return;
+      e.preventDefault();
+      iocDropActive = true;
+    };
+    const onDragLeave = (e: DragEvent) => {
+      if (!e.relatedTarget) iocDropActive = false;
+    };
+    const onDrop = (e: DragEvent) => {
+      iocDropActive = false;
+      const iocFile = Array.from(e.dataTransfer?.files ?? []).find((file) =>
+        file.name.toLowerCase().endsWith('.ioc'),
+      );
+      if (!iocFile) return;
+      e.preventDefault();
+      void handleIocFile(iocFile);
+    };
+
     window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    window.addEventListener('dragover', onDragOver);
+    window.addEventListener('dragleave', onDragLeave);
+    window.addEventListener('drop', onDrop);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('dragover', onDragOver);
+      window.removeEventListener('dragleave', onDragLeave);
+      window.removeEventListener('drop', onDrop);
+    };
   });
 </script>
 
@@ -255,6 +387,40 @@
           <PanelRight class="size-ui-md" />
         </button>
 
+        <div class="absolute top-3 left-12 z-20 flex items-center gap-1">
+          <button
+            type="button"
+            onclick={() => iocFileInput?.click()}
+            title="Import an STM32CubeIDE .ioc project file"
+            aria-label="Import .ioc project file"
+            class="flex items-center gap-1.5 px-2 py-1.5 rounded-control border-ui border-hairline bg-surface-alpha text-muted hover:border-hint hover:text-primary shadow-xs"
+          >
+            <FileUp class="size-ui-md" />
+            <span class="hidden xl:inline text-[11px] font-medium">Import .ioc</span>
+          </button>
+          <button
+            type="button"
+            onclick={() => (showBoardSelector = true)}
+            title="Start from an official ST board preset"
+            aria-label="Open board preset selector"
+            class="flex items-center gap-1.5 px-2 py-1.5 rounded-control border-ui border-hairline bg-surface-alpha text-muted hover:border-hint hover:text-primary shadow-xs"
+          >
+            <CircuitBoard class="size-ui-md" />
+            <span class="hidden xl:inline text-[11px] font-medium">Board preset</span>
+          </button>
+        </div>
+        <input
+          bind:this={iocFileInput}
+          type="file"
+          accept=".ioc"
+          class="hidden"
+          onchange={(e) => {
+            const file = (e.currentTarget as HTMLInputElement).files?.[0];
+            if (file) void handleIocFile(file);
+            (e.currentTarget as HTMLInputElement).value = '';
+          }}
+        />
+
         <PackageCanvas
           bind:this={canvasRef}
           chip={workspaceStore.chip}
@@ -323,6 +489,63 @@
     </div>
   {/if}
 
+  {#if iocDropActive}
+    <div class="pointer-events-none fixed inset-0 z-40 flex items-center justify-center bg-overlay/70">
+      <div class="px-8 py-6 rounded-panel border-ui border-dashed border-hint bg-surface text-center shadow-lg">
+        <FileUp class="w-8 h-8 mx-auto text-hint" />
+        <p class="mt-2 text-sm font-semibold text-primary">Drop an .ioc file to import</p>
+        <p class="text-xs text-muted mt-1">Pins are matched by name against the loaded catalog.</p>
+      </div>
+    </div>
+  {/if}
+
+  <!-- Ambiguous part ID confirmation -->
+  {#if ambiguousImport}
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div
+      class="fixed inset-0 z-50 bg-overlay flex items-center justify-center p-4"
+      onclick={() => (ambiguousImport = null)}
+    >
+      <div
+        class="w-full max-w-md rounded-panel border-ui border-hairline bg-surface shadow-2xl overflow-hidden"
+        onclick={(e) => e.stopPropagation()}
+        role="dialog"
+        tabindex="-1"
+        aria-label="Confirm MCU for .ioc import"
+      >
+        <div class="flex items-center justify-between px-5 py-3.5 border-ui-b border-hairline">
+          <h2 class="text-sm font-semibold text-primary">Confirm MCU for Import</h2>
+          <button
+            type="button"
+            onclick={() => (ambiguousImport = null)}
+            class="p-1 rounded-control hover:bg-elevated text-muted"
+            title="Cancel import"
+          >
+            <X class="size-ui" />
+          </button>
+        </div>
+        <div class="px-5 py-4 space-y-3">
+          <p class="text-xs text-muted">
+            The part ID in this file matches more than one catalog MCU. Select the part used by your board.
+          </p>
+          <p class="font-mono text-xs text-primary break-all">{ambiguousImport.record.mcuName}</p>
+          <div class="flex flex-wrap gap-2">
+            {#each ambiguousImport.candidates as candidate (candidate)}
+              <button
+                type="button"
+                onclick={() => handleAmbiguousSelect(candidate)}
+                class="px-3 py-1.5 rounded-control border-ui border-strong bg-subtle hover:bg-elevated font-mono text-xs font-medium text-primary"
+              >
+                {candidate}
+              </button>
+            {/each}
+          </div>
+        </div>
+      </div>
+    </div>
+  {/if}
+
   <!-- Modals -->
   {#if showSwitcher}
     <McuSwitcherModal
@@ -339,6 +562,14 @@
       shareUrl={workspaceStore.buildShareUrl()}
       onImportState={handleImportState}
       onClose={() => (showExport = false)}
+    />
+  {/if}
+
+  {#if showBoardSelector}
+    <BoardSelectorModal
+      presets={BOARD_PRESETS}
+      onSelect={handleBoardSelect}
+      onClose={() => (showBoardSelector = false)}
     />
   {/if}
 </div>

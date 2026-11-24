@@ -187,7 +187,7 @@
       <div class="lg:col-span-6 space-y-6 pt-2">
         <div class="text-xs font-mono-tabular text-muted">
           {#if catalogStore.meta}
-            {catalogStore.meta.chipCount.toLocaleString()} STM32 MCUs indexed · {catalogStore.meta.families.length} families · Static & offline-ready
+            {catalogStore.meta.chipCount.toLocaleString()} MCUs indexed · {catalogStore.meta.families.length} families · Static & offline-ready
           {:else}
             STM32 pinout planning · Open ST & Embassy datasets
           {/if}
@@ -425,6 +425,18 @@
             {/if}
           </div>
         {/if}
+        {#if catalogStore.meta?.sources?.rp}
+          {@const rpSource = catalogStore.meta.sources.rp}
+          <div class="text-[11px] text-faint space-y-0.5">
+            {#if rpSource.repositories}
+              {#each rpSource.repositories as repo (repo.id)}
+                <div>{repo.id} {repo.commit} ({repo.license}) · {rpSource.chipCount.toLocaleString()} chips</div>
+              {/each}
+            {:else}
+              <div>RP upstream {rpSource.commit} · {rpSource.chipCount.toLocaleString()} chips</div>
+            {/if}
+          </div>
+        {/if}
       </div>
 
       <div class="text-[11px] space-y-1 sm:text-right">
@@ -436,6 +448,11 @@
         </div>
         <div>
           CH32 pinouts: <a class="underline hover:text-primary" href="https://github.com/ch32-riscv-ug/ch32-device-data" target="_blank" rel="noreferrer">ch32-riscv-ug/ch32-device-data</a> (MIT)
+        </div>
+        <div>
+          RP pins: <a class="underline hover:text-primary" href="https://gitlab.com/kicad/libraries/kicad-symbols" target="_blank" rel="noreferrer">KiCad symbols</a> (CC-BY-SA-4.0, generated-file exception) ·
+          <a class="underline hover:text-primary" href="https://github.com/raspberrypi/picotool" target="_blank" rel="noreferrer">picotool</a> / <a class="underline hover:text-primary" href="https://github.com/raspberrypi/pico-sdk" target="_blank" rel="noreferrer">pico-sdk</a> (BSD-3-Clause) ·
+          <a class="underline hover:text-primary" href="https://github.com/zephyrproject-rtos/zephyr" target="_blank" rel="noreferrer">Zephyr</a> (Apache-2.0)
         </div>
       </div>
     </div>

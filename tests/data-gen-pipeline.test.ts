@@ -323,9 +323,12 @@ describe('metadata and warnings', () => {
     expect(doc.warningCount).toBe(doc.warnings.length);
     expect(doc.warnings.every((w: { vendor: string }) => typeof w.vendor === 'string')).toBe(true);
     const ch32Warnings = doc.warningsByVendor.ch32 ?? 0;
-    expect(doc.warningsByVendor.stm32).toBe(doc.warningCount - ch32Warnings);
+    const rpWarnings = doc.warningsByVendor.rp ?? 0;
+    expect(doc.warningsByVendor.stm32).toBe(doc.warningCount - ch32Warnings - rpWarnings);
     expect(meta.sources.stm32.chipCount).toBeLessThanOrEqual(meta.chipCount);
-    expect(meta.sources.ch32?.chipCount ?? 0).toBe(meta.chipCount - meta.sources.stm32.chipCount);
+    expect(meta.sources.ch32?.chipCount ?? 0).toBe(
+      meta.chipCount - meta.sources.stm32.chipCount - (meta.sources.rp?.chipCount ?? 0),
+    );
     expect(meta.sources.stm32.commit).toBe(meta.stm32DataCommit);
     expect(meta.sources.stm32.openPinDataCommit).toBe(meta.openPinDataCommit);
   });

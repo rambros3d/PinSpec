@@ -17,10 +17,26 @@ import {
 import {
   acquireSource,
   LICENSE_EMBASSY_STM32,
+  LICENSE_KICAD,
   LICENSE_OPEN_PIN_DATA,
+  LICENSE_PICOTOOL,
+  LICENSE_RPI_DOCS,
+  LICENSE_ZEPHYR,
+  resolveRawRevision,
   resolveRevision,
+  rpSourceSpecs,
   stm32SourceSpecs,
 } from '../tools/data-gen/sources';
+import {
+  parseKiCadFootprint,
+  parseKiCadSymbolFile,
+  resolveKiCadSymbol,
+} from '../tools/data-gen/adapters/rp/kicad';
+import {
+  parsePicotoolFuncsel,
+  parsePicoSdkFuncsel,
+  selectFuncTables,
+} from '../tools/data-gen/adapters/rp/funcsel';
 
 describe('data-gen helpers', () => {
   it('expands parenthesized RefName variants cleanly', () => {
@@ -138,5 +154,128 @@ describe('data-gen source acquisition', () => {
     } finally {
       fs.rmSync(dir, { recursive: true, force: true });
     }
+  });
+});
+
+describe('RP source declarations and synthetic parser fixtures', () => {
+  const SYMBOL_FIXTURE = `
+(kicad_symbol_lib
+  (version 20251024)
+  (symbol "RP2040"
+    (property "Footprint" "Package_DFN_QFN:QFN-56-1EP_7x7mm_P0.4mm_EP3.2x3.2mm")
+    (symbol "RP2040_1_1"
+      (pin power_in line (at 0 1 270) (length 1) (name "IOVDD") (number "1"))
+      (pin bidirectional line (at 1 0 180) (length 1) (name "GPIO0") (number "2"))
+      (pin bidirectional line (at 1 0 180) (length 1) (name "GPIO26/ADC0") (number "3"))
+      (pin power_in line (at 0 -1 90) (length 1) (name "GND") (number "4"))
+    )
+  )
+  (symbol "RP2354A"
+    (extends "RP2040")
+    (property "Footprint" "Package_DFN_QFN:QFN-60-1EP_7x7mm_P0.4mm_EP3.4x3.4mm")
+  )
+)`;
+
+  const FOOTPRINT_FIXTURE = `
+(footprint "QFN-56"
+  (pad "1" smd rect (at -1 0) (size 0.2 0.8))
+  (pad "2" smd rect (at 1 0) (size 0.2 0.8))
+  (pad "3" smd rect (at 0 -1) (size 0.8 0.2))
+  (pad "4" smd rect (at 0 1) (size 0.8 0.2))
+  (pad "5" smd rect (at 0 0) (size 2 2) (property pad_prop_heatsink))
+)`;
+
+  const PICOTOOL_FIXTURE = `
+std::array<std::array<string, 2>, 3> pin_functions_rp2040{{
+    {"", ""},
+    {"SPI0 SCK", "SPI0 RX"},
+    {"PWM7 B", "UART0 TX"},
+}};
+`;
+
+  const PICO_SDK_FIXTURE = `
+ * | GPIO | F0   | F1       | F2     |
+ * |------|------|----------|--------|
+ * | 0    | HSTX | SPI0 SCK | PWM7 B |
+ * | 1    |      | UART0 TX | PWM0 A |
+`;
+
+  it('declares KiCad, FUNCSEL, Zephyr and documentation sources with SHAs', () => {
+    const specs = rpSourceSpecs('/tmp/pincraft-rp-cache');
+    expect(specs.map((s) => s.id)).toEqual([
+      'kicad-symbols',
+      'kicad-footprints',
+      'picotool',
+      'pico-sdk',
+      'zephyr',
+      'raspberrypi-documentation',
+    ]);
+    expect(specs.every((s) => (s.rawFiles?.length ?? 0) > 0)).toBe(true);
+    expect(specs[0].license).toBe(LICENSE_KICAD);
+    expect(specs[2].license).toBe(LICENSE_PICOTOOL);
+    expect(specs[4].license).toBe(LICENSE_ZEPHYR);
+    expect(specs[5].license).toBe(LICENSE_RPI_DOCS);
+    expect(specs[0].dir).toBe('/tmp/pincraft-rp-cache/kicad-symbols');
+  });
+
+  it('resolves raw-file sources from content without modifying cached files', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pincraft-raw-'));
+    try {
+      const spec = {
+        id: 'fixture-raw',
+        url: 'unused://local',
+        dir,
+        license: 'Test License',
+        rawFiles: [{ url: 'unused://local/file', path: 'nested/file.txt' }],
+      };
+      fs.mkdirSync(path.join(dir, 'nested'), { recursive: true });
+      fs.writeFileSync(path.join(dir, 'nested', 'file.txt'), 'fixture content\n');
+      const acquired = acquireSource(spec);
+      expect(acquired.commit).toMatch(/^[0-9a-f]{12}$/);
+      expect(resolveRawRevision(spec)).toBe(acquired.commit);
+      expect(fs.readFileSync(path.join(dir, 'nested', 'file.txt'), 'utf8')).toBe('fixture content\n');
+      fs.writeFileSync(path.join(dir, 'nested', 'other.txt'), 'unrelated\n');
+      expect(resolveRawRevision(spec)).toBe(acquired.commit);
+      fs.rmSync(path.join(dir, 'nested', 'file.txt'));
+      expect(resolveRawRevision(spec)).toBe('unknown');
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('parses KiCad pad numbers, multi-name pads, electrical types and extends', () => {
+    const symbols = parseKiCadSymbolFile(SYMBOL_FIXTURE);
+    const rp2040 = symbols.get('RP2040')!;
+    expect(symbols.size).toBe(2);
+    expect(rp2040.pins.map((p) => p.number)).toEqual(['1', '2', '3', '4']);
+    expect(rp2040.pins.find((p) => p.number === '3')?.name).toBe('GPIO26/ADC0');
+    expect(rp2040.pins.find((p) => p.number === '1')?.electricalType).toBe('power_in');
+    expect(rp2040.pins[4 - 1]?.name).toBe('GND');
+    const inherited = resolveKiCadSymbol(symbols, 'RP2354A')!;
+    expect(inherited.pins).toHaveLength(4);
+    expect(inherited.footprint).toContain('QFN-60');
+  });
+
+  it('parses footprint pad geometry including the exposed pad', () => {
+    const geometry = parseKiCadFootprint(FOOTPRINT_FIXTURE)!;
+    expect(geometry.sides).toEqual([1, 1, 1, 1]);
+    expect(geometry.hasExposedPad).toBe(true);
+  });
+
+  it('parses both picotool arrays and pico-sdk Doxygen FUNCSEL tables', () => {
+    const fromPicotool = parsePicotoolFuncsel(PICOTOOL_FIXTURE).get('rp2040')!;
+    expect(fromPicotool.gpioCount).toBe(2);
+    expect(fromPicotool.functionCount).toBe(3);
+    expect(fromPicotool.byGpio.get(0)?.get(1)).toBe('SPI0 SCK');
+    expect(fromPicotool.byGpio.get(0)?.get(2)).toBe('PWM7 B');
+
+    const fromSdk = parsePicoSdkFuncsel(PICO_SDK_FIXTURE).get('rp2350')!;
+    expect(fromSdk.byGpio.get(0)?.get(0)).toBe('HSTX');
+    expect(fromSdk.byGpio.get(0)?.get(2)).toBe('PWM7 B');
+    expect(fromSdk.byGpio.get(1)?.get(1)).toBe('UART0 TX');
+
+    const selected = selectFuncTables(PICOTOOL_FIXTURE, PICO_SDK_FIXTURE);
+    expect(selected.get('rp2040')?.byGpio.get(0)?.get(1)).toBe('SPI0 SCK');
+    expect(selected.get('rp2350')?.byGpio.get(0)?.get(0)).toBe('HSTX');
   });
 });

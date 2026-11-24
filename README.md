@@ -1,6 +1,6 @@
 # PinCraft
 
-Static, zero-backend STM32 pinout configurator built with Svelte 5 (Runes), TypeScript, Vite, and Tailwind CSS v4.
+Static, zero-backend STM32 / CH32 / RP pinout configurator built with Svelte 5 (Runes), TypeScript, Vite, and Tailwind CSS v4.
 
 ## Local Setup
 
@@ -10,9 +10,9 @@ npm run gen-data
 npm run dev
 ```
 
-`npm run gen-data` shallow-clones `STMicroelectronics/STM32_open_pin_data`, `embassy-rs/stm32-data-generated`, and `ch32-riscv-ug/ch32-device-data` into the gitignored `.cache/` directory and emits lazy-loaded static JSON files into `public/data/`. Sources may also be fetched on their own with `npm run acquire-sources`. An existing checkout is never refreshed automatically; delete the relevant `.cache/` subdirectory first to update upstream data.
+`npm run gen-data` shallow-clones `STMicroelectronics/STM32_open_pin_data`, `embassy-rs/stm32-data-generated`, and `ch32-riscv-ug/ch32-device-data` into the gitignored `.cache/` directory, fetches individual RP reference files (KiCad symbols/footprints, picotool/pico-sdk FUNCSEL tables, Zephyr device trees and Raspberry Pi documentation), and emits lazy-loaded static JSON files into `public/data/`. Sources may also be fetched on their own with `npm run acquire-sources`. An existing checkout or fetched file is never refreshed automatically; delete the relevant `.cache/` entry first to update upstream data.
 
-Generation is orchestrated by `tools/data-gen/index.ts`, which resolves sources, registers vendor adapters, collects attributed warnings, evaluates per-vendor gates, and writes all artifacts exactly once. STM32 parsing lives in `tools/data-gen/adapters/stm32.ts`; CH32 parsing lives in `tools/data-gen/adapters/ch32.ts`. The CH32 adapter reads only the upstream `index/` CSV surface and verifies every consumed file against `index/manifest.csv` SHA-256 digests before parsing.
+Generation is orchestrated by `tools/data-gen/index.ts`, which resolves sources, registers vendor adapters, collects attributed warnings, evaluates per-vendor gates, and writes all artifacts exactly once. STM32 parsing lives in `tools/data-gen/adapters/stm32.ts`; CH32 parsing lives in `tools/data-gen/adapters/ch32.ts`; RP parsing lives in `tools/data-gen/adapters/rp/` (KiCad s-expression pins, FUNCSEL join, and Zephyr/documentation variant facts). The CH32 adapter reads only the upstream `index/` CSV surface and verifies every consumed file against `index/manifest.csv` SHA-256 digests before parsing. RP parts carry `vendor: 'rp'` and `muxModel: 'funcsel-pio'`.
 
 ## Verification Commands
 
@@ -24,7 +24,7 @@ BASE_PATH="/pincraft/" npm run build         # Production subpath build check
 
 ## Architecture Overview
 
-- `tools/data-gen/`: Build-time CLI joining ST open pin XML geometry with Embassy peripheral AF and DMA metadata, plus manifest-verified WCH CH32 CSV tables, into compact sharded JSONs (`meta.json`, `index.json`, `chips/<MCU>.json`). CH32 entries carry `vendor: 'ch32'` and `muxModel: 'remap-group'`.
+- `tools/data-gen/`: Build-time CLI joining ST open pin XML geometry with Embassy peripheral AF and DMA metadata, manifest-verified WCH CH32 CSV tables, and CI-fetched KiCad/pico-sdk/Zephyr RP references into compact sharded JSONs (`meta.json`, `index.json`, `chips/<MCU>.json`). CH32 entries carry `vendor: 'ch32'` and `muxModel: 'remap-group'`; RP entries carry `vendor: 'rp'` and `muxModel: 'funcsel-pio'`.
 - `src/core/`: 100% pure TypeScript domain engine (zero Svelte or DOM imports) containing normalized types, declarative peripheral mode templates, scarcity-aware backtracking auto-allocation, 1-hop remap discovery, fixed-channel DMA contention detection, undo/redo history, `fflate` Base64URL state codec, and exporters (`Embassy Rust`, `C Header`, `CSV`, deterministic `JSON`).
 - `src/state/`: Reactive Svelte 5 runes stores for hash routing (`#/`, `#/mcu/<MCU>`, `#/s/<PAYLOAD>`), catalog fetching/caching, workspace persistence in `localStorage`, and daisyUI theme preference.
 - `src/components/` & `src/pages/`: Engineering landing page with interactive `STM32G431CBU6` preview and three-pane CubeMX-style workspace featuring parametric perimeter (LQFP/QFN/UFQFPN/TSSOP) and zoom-adaptive grid (UFBGA/TFBGA/WLCSP) SVG renderers.
@@ -65,10 +65,13 @@ in the vendored theme CSS file.
 - Physical package geometry and pinouts: [STMicroelectronics/STM32_open_pin_data](https://github.com/STMicroelectronics/STM32_open_pin_data) (BSD-3-Clause)
 - Normalized peripheral signals, alternate function indices, and DMA tables: [embassy-rs/stm32-data-generated](https://github.com/embassy-rs/stm32-data-generated) (MIT / Apache-2.0)
 - CH32 part, package, pinout, and remap CSV tables: [ch32-riscv-ug/ch32-device-data](https://github.com/ch32-riscv-ug/ch32-device-data) (MIT). Only the documented `index/` surface is consumed, pinned by commit and verified against `index/manifest.csv`.
+- RP physical pins and packages: [KiCad symbols](https://gitlab.com/kicad/libraries/kicad-symbols) and [footprints](https://gitlab.com/kicad/libraries/kicad-footprints) (CC-BY-SA-4.0, generated-file exception).
+- RP FUNCSEL tables: [raspberrypi/picotool](https://github.com/raspberrypi/picotool) and [raspberrypi/pico-sdk](https://github.com/raspberrypi/pico-sdk) (BSD-3-Clause).
+- RP memory and variant facts: [Zephyr](https://github.com/zephyrproject-rtos/zephyr) (Apache-2.0) and [raspberrypi/documentation](https://github.com/raspberrypi/documentation) (CC-BY-SA-4.0).
 
 ## Generated Data Provenance
 
-`public/data/meta.json` records the resolved revision, license, and emitted chip count for every generated vendor under `sources`. STM32 and CH32 entries have the shape below; the legacy top-level `openPinDataCommit`, `stm32DataCommit`, `chipCount`, `matchRate`, and `families` fields remain for existing consumers. The landing footer renders provenance directly from `meta.json.sources`.
+`public/data/meta.json` records the resolved revision, license, and emitted chip count for every generated vendor under `sources`. STM32, CH32 and RP entries have the shape below; for raw-file sources (RP) the revision is the short SHA-256 of the fetched files. The legacy top-level `openPinDataCommit`, `stm32DataCommit`, `chipCount`, `matchRate`, and `families` fields remain for existing consumers. The landing footer renders provenance directly from `meta.json.sources`.
 
 ```json
 {
@@ -89,6 +92,16 @@ in the vendored theme CSS file.
       "chipCount": 105,
       "repositories": [
         { "id": "ch32-device-data", "commit": "ch32-device-data short SHA", "license": "MIT" }
+      ]
+    },
+    "rp": {
+      "commit": "kicad-symbols content SHA",
+      "license": "CC-BY-SA-4.0 (generated-file exception); BSD-3-Clause; Apache-2.0; CC-BY-SA-4.0",
+      "chipCount": 5,
+      "repositories": [
+        { "id": "kicad-symbols", "commit": "content SHA", "license": "CC-BY-SA-4.0 (generated-file exception)" },
+        { "id": "picotool", "commit": "content SHA", "license": "BSD-3-Clause" },
+        { "id": "zephyr", "commit": "content SHA", "license": "Apache-2.0" }
       ]
     }
   }

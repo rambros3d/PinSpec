@@ -10,12 +10,25 @@ import type {
   VendorId,
 } from '../../src/core/types';
 
+/** One file fetched directly from an upstream host into a `.cache` directory. */
+export interface RawSourceFile {
+  /** Absolute HTTP(S) URL of the file. */
+  url: string;
+  /** Path relative to the source's `dir` where the file is stored. */
+  path: string;
+}
+
 /** Declaration of an upstream checkout before its revision is resolved. */
 export interface SourceSpec {
   id: string;
   url: string;
   dir: string;
   license: string;
+  /**
+   * When present, these files are fetched individually instead of cloning `url`.
+   * `url` then names the upstream project (used for provenance only).
+   */
+  rawFiles?: RawSourceFile[];
 }
 
 /** A source checkout with a resolved revision (or the literal `unknown`). */

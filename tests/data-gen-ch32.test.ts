@@ -24,6 +24,7 @@ import { resolveRevision } from '../tools/data-gen/sources';
 import type { GateContext, ResolvedSource, VendorAdapter } from '../tools/data-gen/types';
 import { createWarningCollector } from '../tools/data-gen/warnings';
 import { stm32Adapter } from '../tools/data-gen/adapters/stm32';
+import { rpAdapter } from '../tools/data-gen/adapters/rp';
 
 const TEMP_ROOTS: string[] = [];
 function tempRoot(prefix: string): string {
@@ -502,10 +503,11 @@ describe('CH32 deferral, gates, provenance, and registration', () => {
     }
   });
 
-  it('registers both adapters without changing the STM32 adapter contract', () => {
-    expect(DEFAULT_ADAPTERS.map((a) => a.vendor)).toEqual(['stm32', 'ch32']);
+  it('registers all three adapters without changing the STM32 adapter contract', () => {
+    expect(DEFAULT_ADAPTERS.map((a) => a.vendor)).toEqual(['stm32', 'ch32', 'rp']);
     expect(DEFAULT_ADAPTERS[0]).toBe(stm32Adapter);
     expect(DEFAULT_ADAPTERS[1]).toBe(ch32Adapter);
+    expect(DEFAULT_ADAPTERS[2]).toBe(rpAdapter);
     expect(stm32Adapter.gates).toHaveLength(2);
     expect(stm32Adapter.sourceSpecs.map((s) => s.id)).toEqual([
       'stm32-open-pin-data', 'embassy-stm32-data',

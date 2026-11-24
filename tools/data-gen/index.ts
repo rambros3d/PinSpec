@@ -16,6 +16,7 @@ import type {
   VendorId,
 } from '../../src/core/types';
 import { ch32Adapter } from './adapters/ch32';
+import { rpAdapter } from './adapters/rp';
 import { stm32Adapter } from './adapters/stm32';
 import {
   buildMetaDocument,
@@ -39,7 +40,7 @@ import type {
 import { createWarningCollector } from './warnings';
 
 /** Adapters registered for this build. New vendors are added here only. */
-export const DEFAULT_ADAPTERS: VendorAdapter[] = [stm32Adapter, ch32Adapter];
+export const DEFAULT_ADAPTERS: VendorAdapter[] = [stm32Adapter, ch32Adapter, rpAdapter];
 
 /** End-of-run view used for logging and tests. */
 export interface GenerationSummary {
@@ -165,12 +166,14 @@ export function generateCatalog(
     };
     const evaluated = evaluateGates(adapter.gates, gateCtx);
     gateResults.push(...evaluated.results);
+    // Gate notes are warnings for every vendor: strict vendors still fail on
+    // errors, but a missing upstream source must not abort the whole catalog.
+    for (const note of evaluated.notes) {
+      warnings.add({ vendor: adapter.vendor, reason: note });
+    }
     if (adapter.strict) {
       errors.push(...evaluated.errors);
     } else {
-      for (const note of evaluated.notes) {
-        warnings.add({ vendor: adapter.vendor, reason: note });
-      }
       for (const err of evaluated.errors) {
         warnings.add({ vendor: adapter.vendor, reason: err });
       }

@@ -5,12 +5,11 @@
     Copy,
     Cpu,
     FileCode2,
-    Moon,
     RefreshCw,
-    Sun,
     Upload,
   } from 'lucide-svelte';
   import { onMount } from 'svelte';
+  import ThemePicker from '../components/ThemePicker.svelte';
   import HeroChipPreview from '../components/landing/HeroChipPreview.svelte';
   import PresetGrid from '../components/landing/PresetGrid.svelte';
   import QuickSearchBar from '../components/landing/QuickSearchBar.svelte';
@@ -23,7 +22,6 @@
   import heroChipRaw from '../data/hero-chip.json';
   import { catalogStore } from '../state/catalog.svelte';
   import { router } from '../state/router.svelte';
-  import { themeStore } from '../state/theme.svelte';
   import { workspaceStore } from '../state/workspace.svelte';
 
   const heroChip = heroChipRaw as unknown as ChipData;
@@ -107,16 +105,16 @@
   });
 </script>
 
-<div class="min-h-screen flex flex-col bg-[#f8fafc] dark:bg-[#0b0e14] text-slate-900 dark:text-slate-100">
+<div class="min-h-screen flex flex-col bg-canvas text-primary">
   <!-- Clean 3-Zone Top Navigation Bar -->
-  <header class="sticky top-0 z-30 border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-[#0b0e14]/95 backdrop-blur-xs">
+  <header class="sticky top-0 z-30 border-b border-hairline bg-surface-alpha backdrop-blur-xs">
     <div class="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between gap-8">
       <!-- Zone 1: Geometric IC Logo + Wordmark -->
       <a
         href="#/"
-        class="flex items-center gap-2 text-base font-bold tracking-tight text-slate-900 dark:text-slate-100 whitespace-nowrap shrink-0"
+        class="flex items-center gap-2 text-base font-bold tracking-tight text-primary whitespace-nowrap shrink-0"
       >
-        <svg class="w-5 h-5 text-sky-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <svg class="w-5 h-5 text-hint" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
           <rect x="6" y="6" width="12" height="12" rx="2" />
           <rect x="9.5" y="9.5" width="5" height="5" rx="0.5" />
           <path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4" />
@@ -125,44 +123,33 @@
       </a>
 
       <!-- Zone 2: Concise Single-Line Navigation Links -->
-      <nav class="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600 dark:text-slate-400">
-        <a href="#presets" class="hover:text-slate-900 dark:hover:text-slate-100 transition-colors whitespace-nowrap shrink-0">
+      <nav class="hidden md:flex items-center gap-6 text-sm font-medium text-muted">
+        <a href="#presets" class="hover:text-primary transition-colors whitespace-nowrap shrink-0">
           Starter Chips
         </a>
-        <a href="#capabilities" class="hover:text-slate-900 dark:hover:text-slate-100 transition-colors whitespace-nowrap shrink-0">
+        <a href="#capabilities" class="hover:text-primary transition-colors whitespace-nowrap shrink-0">
           Capabilities
         </a>
-        <a href="#export-preview" class="hover:text-slate-900 dark:hover:text-slate-100 transition-colors whitespace-nowrap shrink-0">
+        <a href="#export-preview" class="hover:text-primary transition-colors whitespace-nowrap shrink-0">
           Exports
         </a>
         <a
           href="https://github.com/STMicroelectronics/STM32_open_pin_data"
           target="_blank"
           rel="noreferrer"
-          class="hover:text-slate-900 dark:hover:text-slate-100 transition-colors whitespace-nowrap shrink-0"
+          class="hover:text-primary transition-colors whitespace-nowrap shrink-0"
         >
           Open Data
         </a>
       </nav>
 
-      <!-- Zone 3: Primary Action + Theme Toggle -->
+      <!-- Zone 3: Primary Action + Theme Picker -->
       <div class="flex items-center gap-2.5 shrink-0">
-        <button
-          type="button"
-          onclick={() => themeStore.toggle()}
-          title="Toggle dark/light theme"
-          class="p-2 rounded-md text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-        >
-          {#if themeStore.mode === 'dark'}
-            <Sun class="w-4 h-4" />
-          {:else}
-            <Moon class="w-4 h-4" />
-          {/if}
-        </button>
+        <ThemePicker />
         <button
           type="button"
           onclick={() => openHeroInWorkspace(demoState)}
-          class="px-4 py-2 rounded-lg bg-sky-500 hover:bg-sky-600 text-xs font-semibold text-white whitespace-nowrap shrink-0 transition-colors"
+          class="px-4 py-2 rounded-lg bg-action hover:bg-action-hover text-xs font-semibold text-on-action whitespace-nowrap shrink-0 transition-colors"
         >
           Workspace
         </button>
@@ -171,11 +158,11 @@
   </header>
 
   <!-- Split Hero Section with Faint SVG Dot-Grid -->
-  <section class="relative border-b border-slate-200 dark:border-slate-800 bg-dot-grid">
+  <section class="relative border-b border-hairline bg-dot-grid">
     <div class="max-w-7xl mx-auto px-6 py-12 lg:py-16 grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
       <!-- Left Column -->
       <div class="lg:col-span-6 space-y-6 pt-2">
-        <div class="text-xs font-mono-tabular text-slate-500 dark:text-slate-400">
+        <div class="text-xs font-mono-tabular text-muted">
           {#if catalogStore.meta}
             {catalogStore.meta.chipCount.toLocaleString()} STM32 MCUs indexed · {catalogStore.meta.families.length} families · Static & offline-ready
           {:else}
@@ -183,12 +170,12 @@
           {/if}
         </div>
 
-        <h1 class="text-3xl sm:text-4xl lg:text-[2.75rem] font-bold tracking-tight leading-[1.12] text-slate-900 dark:text-slate-100 [text-wrap:balance]">
+        <h1 class="text-3xl sm:text-4xl lg:text-[2.75rem] font-bold tracking-tight leading-[1.12] text-primary [text-wrap:balance]">
           Fast STM32 pinout planning, directly in your browser.
         </h1>
 
-        <p class="text-base text-slate-600 dark:text-slate-400 leading-relaxed max-w-xl">
-          Zero-install CubeMX-style pin allocation backed by official ST open pin geometry and Embassy peripheral tables. Check signal and DMA conflicts in real time, remap alternate pins with <kbd class="px-1.5 py-0.5 text-xs font-mono rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#121722]">Ctrl+Click</kbd>, and export clean Embassy Rust, C headers, CSV, or shareable URLs.
+        <p class="text-base text-muted leading-relaxed max-w-xl">
+          Zero-install CubeMX-style pin allocation backed by official ST open pin geometry and Embassy peripheral tables. Check signal and DMA conflicts in real time, remap alternate pins with <kbd class="px-1.5 py-0.5 text-xs font-mono rounded border border-strong bg-surface">Ctrl+Click</kbd>, and export clean Embassy Rust, C headers, CSV, or shareable URLs.
         </p>
 
         <!-- Instant Fuzzy MCU Search -->
@@ -199,9 +186,9 @@
           <button
             type="button"
             onclick={() => fileInputEl?.click()}
-            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#121722] hover:border-sky-500/60 text-xs font-medium text-slate-800 dark:text-slate-200 transition-colors whitespace-nowrap"
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-strong bg-surface hover:border-hint text-xs font-medium text-primary transition-colors whitespace-nowrap"
           >
-            <Upload class="w-3.5 h-3.5 text-sky-500" />
+            <Upload class="w-3.5 h-3.5 text-hint" />
             <span>Import pinout.json</span>
           </button>
           <input
@@ -211,13 +198,13 @@
             class="hidden"
             onchange={handleJsonImport}
           />
-          <span class="text-xs text-slate-500 dark:text-slate-400">
+          <span class="text-xs text-muted">
             No account or backend required — all state stays local or in your URL hash.
           </span>
         </div>
 
         {#if importError}
-          <p class="text-xs text-red-500">{importError}</p>
+          <p class="text-xs text-danger">{importError}</p>
         {/if}
       </div>
 
@@ -244,51 +231,51 @@
     <!-- Core Capabilities Grid (4 Engineering Cards) -->
     <section id="capabilities" class="space-y-4">
       <div>
-        <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+        <h2 class="text-lg font-semibold text-primary">
           Built for Real Hardware Workflows
         </h2>
-        <p class="text-sm text-slate-500 dark:text-slate-400">
+        <p class="text-sm text-muted">
           Deterministic constraint solving and accurate package layouts without desktop bloat.
         </p>
       </div>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#121722] p-5 space-y-2.5">
-          <Cpu class="w-5 h-5 text-sky-500" />
-          <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+        <div class="rounded-lg border border-hairline bg-surface p-5 space-y-2.5">
+          <Cpu class="w-5 h-5 text-hint" />
+          <h3 class="text-sm font-semibold text-primary">
             Parametric Perimeter & BGA Renderers
           </h3>
-          <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+          <p class="text-xs text-muted leading-relaxed">
             Accurate counter-clockwise LQFP, QFN, UFQFPN, and TSSOP layouts alongside zoom-adaptive JEDEC UFBGA, TFBGA, and WLCSP ball matrices.
           </p>
         </div>
 
-        <div class="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#121722] p-5 space-y-2.5">
-          <ArrowLeftRight class="w-5 h-5 text-emerald-500" />
-          <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+        <div class="rounded-lg border border-hairline bg-surface p-5 space-y-2.5">
+          <ArrowLeftRight class="w-5 h-5 text-pin-success" />
+          <h3 class="text-sm font-semibold text-primary">
             Mode Allocation & Ctrl+Click Remapping
           </h3>
-          <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+          <p class="text-xs text-muted leading-relaxed">
             Scarcity-aware backtracking preserves USB, HSE, and SWD pins, flags DMA contention, and surfaces 1-hop remap fixes in one click.
           </p>
         </div>
 
-        <div class="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#121722] p-5 space-y-2.5">
-          <FileCode2 class="w-5 h-5 text-amber-500" />
-          <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+        <div class="rounded-lg border border-hairline bg-surface p-5 space-y-2.5">
+          <FileCode2 class="w-5 h-5 text-pin-power" />
+          <h3 class="text-sm font-semibold text-primary">
             Embassy Rust, C Header, CSV & URL Links
           </h3>
-          <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+          <p class="text-xs text-muted leading-relaxed">
             Export idiomatic Embassy peripheral structs, include-guarded C macros, KiCad/EasyEDA CSV cross-checks, or deflate-compressed share links.
           </p>
         </div>
 
-        <div class="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#121722] p-5 space-y-2.5">
-          <RefreshCw class="w-5 h-5 text-sky-500" />
-          <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+        <div class="rounded-lg border border-hairline bg-surface p-5 space-y-2.5">
+          <RefreshCw class="w-5 h-5 text-hint" />
+          <h3 class="text-sm font-semibold text-primary">
             Automated Weekly Open-Data Sync
           </h3>
-          <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+          <p class="text-xs text-muted leading-relaxed">
             Static per-MCU JSON shards are compiled directly from ST open pin XMLs and Embassy stm32-data with zero runtime servers.
           </p>
         </div>
@@ -299,16 +286,16 @@
     <section id="export-preview" class="space-y-4">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+          <h2 class="text-lg font-semibold text-primary">
             Live Export Preview
           </h2>
-          <p class="text-sm text-slate-500 dark:text-slate-400">
+          <p class="text-sm text-muted">
             Synchronized in real time with the {heroChip.id} chip above — edit any hero pin to watch the generated code update.
           </p>
         </div>
 
         <div class="flex items-center gap-2">
-          <div class="flex items-center gap-1 p-1 rounded-lg bg-slate-200/75 dark:bg-[#121722] border border-slate-200 dark:border-slate-800">
+          <div class="flex items-center gap-1 p-1 rounded-lg bg-elevated border border-hairline">
             {#each [
               { id: 'rust', label: 'Embassy Rust' },
               { id: 'c', label: 'C Header' },
@@ -319,8 +306,8 @@
                 onclick={() => (exportTab = tab.id as 'rust' | 'c' | 'csv')}
                 class={`px-3 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-colors ${
                   exportTab === tab.id
-                    ? 'bg-white dark:bg-[#1b2435] text-slate-900 dark:text-slate-100 shadow-xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                    ? 'bg-surface text-primary shadow-xs'
+                    : 'text-muted hover:text-primary'
                 }`}
               >
                 {tab.label}
@@ -331,10 +318,10 @@
           <button
             type="button"
             onclick={copyPreview}
-            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#121722] hover:border-sky-500/60 text-xs font-medium text-slate-800 dark:text-slate-200 whitespace-nowrap"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-hairline bg-surface hover:border-hint text-xs font-medium text-primary whitespace-nowrap"
           >
             {#if copiedExport}
-              <Check class="w-3.5 h-3.5 text-emerald-500" />
+              <Check class="w-3.5 h-3.5 text-pin-success" />
               <span>Copied</span>
             {:else}
               <Copy class="w-3.5 h-3.5" />
@@ -344,15 +331,15 @@
         </div>
       </div>
 
-      <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#121722] overflow-hidden">
-        <pre class="p-5 font-mono text-xs leading-relaxed text-slate-800 dark:text-slate-200 overflow-x-auto max-h-[340px]">{exportPreview}</pre>
+      <div class="rounded-xl border border-hairline bg-surface overflow-hidden">
+        <pre class="p-5 font-mono text-xs leading-relaxed text-primary overflow-x-auto max-h-[340px]">{exportPreview}</pre>
       </div>
     </section>
   </main>
 
   <!-- Technical Attribution Footer -->
-  <footer class="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0e131d]">
-    <div class="max-w-7xl mx-auto px-6 py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs text-slate-500 dark:text-slate-400">
+  <footer class="border-t border-hairline bg-surface">
+    <div class="max-w-7xl mx-auto px-6 py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs text-muted">
       <div class="font-mono-tabular space-y-1">
         <div>
           PinCraft ·
@@ -363,7 +350,7 @@
           {/if}
         </div>
         {#if catalogStore.meta}
-          <div class="text-[11px] text-slate-400 dark:text-slate-500">
+          <div class="text-[11px] text-faint">
             Upstream commits: open-pin-data {catalogStore.meta.openPinDataCommit} · stm32-data {catalogStore.meta.stm32DataCommit}
           </div>
         {/if}
@@ -371,10 +358,10 @@
 
       <div class="text-[11px] space-y-1 sm:text-right">
         <div>
-          Pinout geometry: <a class="underline hover:text-slate-800 dark:hover:text-slate-200" href="https://github.com/STMicroelectronics/STM32_open_pin_data" target="_blank" rel="noreferrer">STMicroelectronics/STM32_open_pin_data</a> (BSD-3-Clause)
+          Pinout geometry: <a class="underline hover:text-primary" href="https://github.com/STMicroelectronics/STM32_open_pin_data" target="_blank" rel="noreferrer">STMicroelectronics/STM32_open_pin_data</a> (BSD-3-Clause)
         </div>
         <div>
-          AF & DMA tables: <a class="underline hover:text-slate-800 dark:hover:text-slate-200" href="https://github.com/embassy-rs/stm32-data-generated" target="_blank" rel="noreferrer">embassy-rs/stm32-data-generated</a> (MIT / Apache-2.0)
+          AF & DMA tables: <a class="underline hover:text-primary" href="https://github.com/embassy-rs/stm32-data-generated" target="_blank" rel="noreferrer">embassy-rs/stm32-data-generated</a> (MIT / Apache-2.0)
         </div>
       </div>
     </div>

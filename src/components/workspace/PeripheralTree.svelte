@@ -84,13 +84,13 @@
   function statusColor(status: PeripheralStatus): string {
     switch (status) {
       case 'active':
-        return 'bg-emerald-500';
+        return 'bg-pin-success';
       case 'partial':
-        return 'bg-orange-500';
+        return 'bg-pin-partial';
       case 'error':
-        return 'bg-red-500';
+        return 'bg-pin-conflict';
       default:
-        return 'bg-slate-400/50 dark:bg-slate-600';
+        return 'bg-pin-unused';
     }
   }
 
@@ -116,22 +116,22 @@
   }
 </script>
 
-<aside class="h-full flex flex-col bg-white dark:bg-[#121722] border-r border-slate-200 dark:border-slate-800 select-none overflow-hidden">
+<aside class="h-full flex flex-col bg-surface border-r border-hairline select-none overflow-hidden">
   <!-- Header + Filter -->
-  <div class="p-2.5 border-b border-slate-200 dark:border-slate-800 space-y-2">
+  <div class="p-2.5 border-b border-hairline space-y-2">
     <div class="flex items-center justify-between">
-      <h2 class="text-xs font-semibold text-slate-900 dark:text-slate-100">Peripherals</h2>
-      <span class="font-mono-tabular text-[11px] text-slate-500 dark:text-slate-400">
+      <h2 class="text-xs font-semibold text-primary">Peripherals</h2>
+      <span class="font-mono-tabular text-[11px] text-muted">
         {Object.keys(chip.peripherals).length} blocks
       </span>
     </div>
     <div class="relative flex items-center">
-      <Search class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 pointer-events-none" />
+      <Search class="w-3.5 h-3.5 text-faint absolute left-2.5 pointer-events-none" />
       <input
         bind:value={filterText}
         type="text"
         placeholder="Filter SPI, TIM, USART..."
-        class="w-full pl-8 pr-2.5 py-1.5 rounded-md bg-slate-100 dark:bg-[#0b0e14] border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-sky-500"
+        class="w-full pl-8 pr-2.5 py-1.5 rounded-md bg-elevated border border-hairline text-xs text-primary placeholder:text-faint focus:outline-none focus:border-hint"
       />
     </div>
   </div>
@@ -140,21 +140,21 @@
   <div class="flex-1 overflow-y-auto py-1">
     {#each grouped as cat (cat.id)}
       {@const isCatOpen = filterText.trim().length > 0 || openCategories[cat.id]}
-      <div class="border-b border-slate-100 dark:border-slate-800/60 last:border-b-0">
+      <div class="border-b border-hairline last:border-b-0">
         <button
           type="button"
           onclick={() => toggleCategory(cat.id)}
-          class="w-full flex items-center justify-between px-3 py-2 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/40"
+          class="w-full flex items-center justify-between px-3 py-2 text-left text-xs font-semibold text-primary hover:bg-elevated"
         >
           <span class="flex items-center gap-1.5">
             {#if isCatOpen}
-              <ChevronDown class="w-3.5 h-3.5 text-slate-400" />
+              <ChevronDown class="w-3.5 h-3.5 text-faint" />
             {:else}
-              <ChevronRight class="w-3.5 h-3.5 text-slate-400" />
+              <ChevronRight class="w-3.5 h-3.5 text-faint" />
             {/if}
             <span>{cat.label}</span>
           </span>
-          <span class="font-mono-tabular text-[11px] text-slate-400 dark:text-slate-500">
+          <span class="font-mono-tabular text-[11px] text-faint">
             {cat.names.length}
           </span>
         </button>
@@ -174,15 +174,15 @@
                   onclick={() => togglePeripheral(pName)}
                   class={`w-full flex items-center justify-between px-4 py-1.5 text-left text-xs transition-colors ${
                     isOpen
-                      ? 'bg-slate-100/80 dark:bg-slate-800/60 text-slate-900 dark:text-slate-100'
-                      : 'hover:bg-slate-50 dark:hover:bg-slate-800/35 text-slate-800 dark:text-slate-200'
+                      ? 'bg-elevated text-primary'
+                      : 'hover:bg-elevated text-primary'
                   }`}
                 >
                   <span class="flex items-center gap-2 min-w-0">
                     {#if isOpen}
-                      <ChevronDown class="w-3 h-3 text-slate-400 shrink-0" />
+                      <ChevronDown class="w-3 h-3 text-faint shrink-0" />
                     {:else}
-                      <ChevronRight class="w-3 h-3 text-slate-400 shrink-0" />
+                      <ChevronRight class="w-3 h-3 text-faint shrink-0" />
                     {/if}
                     <span class="font-mono font-medium truncate">{pName}</span>
                   </span>
@@ -191,10 +191,10 @@
                       <span
                         class={`text-[10px] font-medium ${
                           pStatus === 'active'
-                            ? 'text-emerald-600 dark:text-emerald-400'
+                            ? 'text-pin-success'
                             : pStatus === 'partial'
-                              ? 'text-orange-600 dark:text-orange-400'
-                              : 'text-red-600 dark:text-red-400'
+                              ? 'text-pin-partial'
+                              : 'text-danger'
                         }`}
                       >
                         {statusLabel(pStatus)}
@@ -205,13 +205,13 @@
                 </button>
 
                 {#if isOpen}
-                  <div class="px-4 py-2 bg-slate-50/70 dark:bg-[#0d111a] border-y border-slate-100 dark:border-slate-800/70 space-y-2">
+                  <div class="px-4 py-2 bg-subtle border-y border-hairline space-y-2">
                     <!-- Mode Selector Dropdown -->
                     {#if modes.length > 1}
                       <div class="space-y-1">
                         <label
                           for={`mode-${pName}`}
-                          class="block text-[10px] font-medium text-slate-500 dark:text-slate-400"
+                          class="block text-[10px] font-medium text-muted"
                         >
                           Mode
                         </label>
@@ -220,7 +220,7 @@
                           value={activeMode}
                           onchange={(e) =>
                             onModeChange(pName, (e.currentTarget as HTMLSelectElement).value)}
-                          class="w-full px-2 py-1.5 rounded bg-white dark:bg-[#121722] border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-sky-500"
+                          class="w-full px-2 py-1.5 rounded bg-surface border border-hairline text-xs text-primary focus:outline-none focus:border-hint"
                         >
                           {#each modes as m (m.id)}
                             <option value={m.id}>{m.label}</option>
@@ -234,12 +234,12 @@
                       {#each pInfo.signals as sig (sig)}
                         {@const assigned = assignedLookup.get(`${pName}:${sig}`)}
                         <div class="flex items-center justify-between gap-2 py-0.5">
-                          <label class="flex items-center gap-2 min-w-0 cursor-pointer text-[11px] text-slate-700 dark:text-slate-300">
+                          <label class="flex items-center gap-2 min-w-0 cursor-pointer text-[11px] text-primary">
                             <input
                               type="checkbox"
                               checked={Boolean(assigned)}
                               onchange={() => onToggleSignal(pName, sig)}
-                              class="rounded border-slate-300 dark:border-slate-600 text-sky-500 focus:ring-sky-500/40"
+                              class="rounded border-strong text-hint focus:ring-hint"
                             />
                             <span class="font-mono truncate">{sig}</span>
                           </label>
@@ -248,7 +248,7 @@
                               type="button"
                               onclick={() => onFocusPin(assigned.pos)}
                               title="Locate pin on package"
-                              class="font-mono-tabular text-[10px] text-emerald-600 dark:text-emerald-400 hover:underline shrink-0"
+                              class="font-mono-tabular text-[10px] text-pin-success hover:underline shrink-0"
                             >
                               {assigned.pinName}{assigned.af !== null ? ` / AF${assigned.af}` : ''}
                             </button>

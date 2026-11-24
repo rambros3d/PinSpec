@@ -124,7 +124,7 @@
   });
 </script>
 
-<div class="h-screen w-screen flex flex-col overflow-hidden bg-[#f8fafc] dark:bg-[#0b0e14] text-slate-900 dark:text-slate-100">
+<div class="h-screen w-screen flex flex-col overflow-hidden bg-canvas text-primary">
   <TopToolbar
     chip={workspaceStore.chip}
     globalSearch={workspaceStore.globalSearch}
@@ -147,7 +147,7 @@
 
   <!-- Dismissible Error Banner (e.g. malformed #/s/... link) -->
   {#if workspaceStore.bannerError}
-    <div class="flex items-center justify-between gap-3 px-4 py-2 bg-red-500/15 border-b border-red-500/35 text-xs text-red-700 dark:text-red-300 shrink-0">
+    <div class="flex items-center justify-between gap-3 px-4 py-2 bg-danger-soft border-b border-danger text-xs text-danger shrink-0">
       <div class="flex items-center gap-2">
         <AlertCircle class="w-4 h-4 shrink-0" />
         <span>{workspaceStore.bannerError}</span>
@@ -156,14 +156,14 @@
         <button
           type="button"
           onclick={() => router.navigateHome()}
-          class="underline font-medium hover:text-red-500"
+          class="underline font-medium hover:text-danger"
         >
           Browse Catalog
         </button>
         <button
           type="button"
           onclick={() => workspaceStore.dismissBanner()}
-          class="p-0.5 rounded hover:bg-red-500/20"
+          class="p-0.5 rounded hover:bg-danger-soft-strong"
         >
           <X class="w-3.5 h-3.5" />
         </button>
@@ -175,32 +175,32 @@
   {#if workspaceStore.loading}
     <div class="flex-1 flex items-center justify-center">
       <div class="text-center space-y-2">
-        <div class="w-8 h-8 border-2 border-sky-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-        <p class="text-xs font-mono text-slate-500 dark:text-slate-400">
+        <div class="w-8 h-8 border-2 border-hint border-t-transparent rounded-full animate-spin mx-auto"></div>
+        <p class="text-xs font-mono text-muted">
           Loading {mcuId ?? 'shared pinout'}...
         </p>
       </div>
     </div>
   {:else if workspaceStore.loadError || !workspaceStore.chip || !workspaceStore.report}
     <div class="flex-1 flex items-center justify-center p-6">
-      <div class="max-w-md w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#121722] p-6 text-center space-y-3">
-        <AlertCircle class="w-8 h-8 text-red-500 mx-auto" />
+      <div class="max-w-md w-full rounded-xl border border-hairline bg-surface p-6 text-center space-y-3">
+        <AlertCircle class="w-8 h-8 text-danger mx-auto" />
         <h2 class="text-base font-semibold">Unable to Open MCU</h2>
-        <p class="text-xs text-slate-500 dark:text-slate-400">
+        <p class="text-xs text-muted">
           {workspaceStore.loadError ?? 'The requested STM32 part could not be loaded.'}
         </p>
         <div class="flex justify-center gap-2 pt-2">
           <button
             type="button"
             onclick={() => router.navigateHome()}
-            class="px-3.5 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-medium hover:bg-slate-100 dark:hover:bg-slate-800"
+            class="px-3.5 py-2 rounded-lg border border-hairline text-xs font-medium hover:bg-elevated"
           >
             Back to Home
           </button>
           <button
             type="button"
             onclick={() => (showSwitcher = true)}
-            class="px-3.5 py-2 rounded-lg bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold"
+            class="px-3.5 py-2 rounded-lg bg-action hover:bg-action-hover text-on-action text-xs font-semibold"
           >
             Choose Another MCU
           </button>
@@ -224,7 +224,7 @@
         </div>
         <!-- Left Drag Resizer -->
         <div
-          class="hidden md:block w-1 cursor-col-resize hover:bg-sky-500/60 transition-colors shrink-0"
+          class="hidden md:block w-1 cursor-col-resize hover:bg-action/60 transition-colors shrink-0"
           onpointerdown={(e) => startResize('left', e)}
           role="separator"
           aria-orientation="vertical"
@@ -239,7 +239,7 @@
           type="button"
           onclick={() => (leftCollapsed = !leftCollapsed)}
           title={leftCollapsed ? 'Show Peripherals' : 'Hide Peripherals'}
-          class="hidden md:flex absolute top-3 left-3 z-20 p-1.5 rounded-md border border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-[#121722]/95 text-slate-600 dark:text-slate-300 hover:border-sky-500/60 shadow-xs"
+          class="hidden md:flex absolute top-3 left-3 z-20 p-1.5 rounded-md border border-hairline bg-surface-alpha text-muted hover:border-hint shadow-xs"
         >
           <PanelLeft class="w-3.5 h-3.5" />
         </button>
@@ -248,7 +248,7 @@
           type="button"
           onclick={() => (rightCollapsed = !rightCollapsed)}
           title={rightCollapsed ? 'Show Summary Drawer' : 'Hide Summary Drawer'}
-          class="hidden lg:flex absolute top-14 right-3 z-20 p-1.5 rounded-md border border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-[#121722]/95 text-slate-600 dark:text-slate-300 hover:border-sky-500/60 shadow-xs"
+          class="hidden lg:flex absolute top-14 right-3 z-20 p-1.5 rounded-md border border-hairline bg-surface-alpha text-muted hover:border-hint shadow-xs"
         >
           <PanelRight class="w-3.5 h-3.5" />
         </button>
@@ -280,7 +280,7 @@
       {#if !rightCollapsed}
         <!-- Right Drag Resizer -->
         <div
-          class="hidden lg:block w-1 cursor-col-resize hover:bg-sky-500/60 transition-colors shrink-0"
+          class="hidden lg:block w-1 cursor-col-resize hover:bg-action/60 transition-colors shrink-0"
           onpointerdown={(e) => startResize('right', e)}
           role="separator"
           aria-orientation="vertical"
@@ -309,10 +309,10 @@
     <div
       class={`fixed bottom-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-lg border text-xs font-medium shadow-lg ${
         workspaceStore.toast.tone === 'success'
-          ? 'bg-emerald-950/95 border-emerald-500/50 text-emerald-100'
+          ? 'bg-toast-success border-pin-success text-primary'
           : workspaceStore.toast.tone === 'warning'
-            ? 'bg-amber-950/95 border-amber-500/50 text-amber-100'
-            : 'bg-slate-900/95 border-slate-700 text-slate-100'
+            ? 'bg-toast-warning border-pin-power text-primary'
+            : 'bg-toast-info border-hairline text-primary'
       }`}
     >
       {workspaceStore.toast.text}

@@ -104,16 +104,16 @@
   }
 </script>
 
-<aside class="h-full flex flex-col bg-white dark:bg-[#121722] border-l border-slate-200 dark:border-slate-800 overflow-hidden">
+<aside class="h-full flex flex-col bg-surface border-l border-hairline overflow-hidden">
   <!-- Tabs -->
-  <div class="flex items-center border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#0f141e] px-2 pt-1.5 gap-1 shrink-0 text-xs">
+  <div class="flex items-center border-b border-hairline bg-subtle px-2 pt-1.5 gap-1 shrink-0 text-xs">
     <button
       type="button"
       onclick={() => (activeTab = 'pins')}
       class={`px-2.5 py-1.5 rounded-t-md font-medium whitespace-nowrap transition-colors ${
         activeTab === 'pins'
-          ? 'bg-white dark:bg-[#121722] text-slate-900 dark:text-slate-100 border-t border-x border-slate-200 dark:border-slate-800 -mb-px'
-          : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+          ? 'bg-surface text-primary border-t border-x border-hairline -mb-px'
+          : 'text-muted hover:text-primary'
       }`}
     >
       Pin Table <span class="font-mono-tabular text-[11px] opacity-75">({Object.keys(assignments).length})</span>
@@ -124,18 +124,18 @@
       onclick={() => (activeTab = 'diagnostics')}
       class={`px-2.5 py-1.5 rounded-t-md font-medium whitespace-nowrap transition-colors flex items-center gap-1.5 ${
         activeTab === 'diagnostics'
-          ? 'bg-white dark:bg-[#121722] text-slate-900 dark:text-slate-100 border-t border-x border-slate-200 dark:border-slate-800 -mb-px'
-          : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+          ? 'bg-surface text-primary border-t border-x border-hairline -mb-px'
+          : 'text-muted hover:text-primary'
       }`}
     >
       <span>Diagnostics</span>
       {#if report.errorCount > 0}
-        <span class="font-mono-tabular text-[11px] font-semibold text-red-500">
+        <span class="font-mono-tabular text-[11px] font-semibold text-danger">
           {report.errorCount}E
         </span>
       {/if}
       {#if report.warningCount > 0}
-        <span class="font-mono-tabular text-[11px] font-semibold text-orange-500">
+        <span class="font-mono-tabular text-[11px] font-semibold text-pin-partial">
           {report.warningCount}W
         </span>
       {/if}
@@ -146,8 +146,8 @@
       onclick={() => (activeTab = 'dma')}
       class={`px-2.5 py-1.5 rounded-t-md font-medium whitespace-nowrap transition-colors ${
         activeTab === 'dma'
-          ? 'bg-white dark:bg-[#121722] text-slate-900 dark:text-slate-100 border-t border-x border-slate-200 dark:border-slate-800 -mb-px'
-          : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+          ? 'bg-surface text-primary border-t border-x border-hairline -mb-px'
+          : 'text-muted hover:text-primary'
       }`}
     >
       DMA <span class="font-mono-tabular text-[11px] opacity-75">({report.dmaAnalysis.length})</span>
@@ -156,40 +156,40 @@
 
   <!-- Tab 1: Pin Table -->
   {#if activeTab === 'pins'}
-    <div class="p-2 border-b border-slate-200 dark:border-slate-800 shrink-0">
+    <div class="p-2 border-b border-hairline shrink-0">
       <div class="relative flex items-center">
-        <Search class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 pointer-events-none" />
+        <Search class="w-3.5 h-3.5 text-faint absolute left-2.5 pointer-events-none" />
         <input
           bind:value={tableFilter}
           type="text"
           placeholder="Filter assigned pins or labels..."
-          class="w-full pl-8 pr-2.5 py-1.5 rounded-md bg-slate-100 dark:bg-[#0b0e14] border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-sky-500"
+          class="w-full pl-8 pr-2.5 py-1.5 rounded-md bg-elevated border border-hairline text-xs text-primary placeholder:text-faint focus:outline-none focus:border-hint"
         />
       </div>
     </div>
 
     <div class="flex-1 overflow-y-auto">
       {#if rows.length === 0}
-        <div class="p-6 text-center text-xs text-slate-500 dark:text-slate-400 space-y-1">
-          <p class="font-medium text-slate-700 dark:text-slate-300">No assigned pins yet</p>
+        <div class="p-6 text-center text-xs text-muted space-y-1">
+          <p class="font-medium text-primary">No assigned pins yet</p>
           <p>Enable a peripheral mode on the left or left-click any I/O pin on the package.</p>
         </div>
       {:else}
         <table class="w-full text-left border-collapse text-[11px]">
-          <thead class="sticky top-0 bg-slate-50 dark:bg-[#0f141e] border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400">
+          <thead class="sticky top-0 bg-subtle border-b border-hairline text-muted">
             <tr>
               <th class="py-1.5 pl-2.5 pr-1 font-medium">
-                <button type="button" onclick={() => toggleSort('pos')} class="inline-flex items-center gap-0.5 hover:text-slate-900 dark:hover:text-slate-100">
+                <button type="button" onclick={() => toggleSort('pos')} class="inline-flex items-center gap-0.5 hover:text-primary">
                   Pos <ArrowUpDown class="w-2.5 h-2.5" />
                 </button>
               </th>
               <th class="py-1.5 px-1 font-medium">
-                <button type="button" onclick={() => toggleSort('pin')} class="inline-flex items-center gap-0.5 hover:text-slate-900 dark:hover:text-slate-100">
+                <button type="button" onclick={() => toggleSort('pin')} class="inline-flex items-center gap-0.5 hover:text-primary">
                   Pin <ArrowUpDown class="w-2.5 h-2.5" />
                 </button>
               </th>
               <th class="py-1.5 px-1 font-medium">
-                <button type="button" onclick={() => toggleSort('signal')} class="inline-flex items-center gap-0.5 hover:text-slate-900 dark:hover:text-slate-100">
+                <button type="button" onclick={() => toggleSort('signal')} class="inline-flex items-center gap-0.5 hover:text-primary">
                   Signal <ArrowUpDown class="w-2.5 h-2.5" />
                 </button>
               </th>
@@ -197,30 +197,30 @@
               <th class="py-1.5 pr-2 text-right font-medium">Act</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60">
+          <tbody class="divide-y divide-hairline">
             {#each rows as row (row.pos)}
               <tr
-                class="hover:bg-slate-50 dark:hover:bg-slate-800/40 cursor-pointer"
+                class="hover:bg-elevated cursor-pointer"
                 onclick={() => onFocusPin(row.pos)}
               >
-                <td class="py-1.5 pl-2.5 pr-1 font-mono-tabular text-slate-500 dark:text-slate-400">
+                <td class="py-1.5 pl-2.5 pr-1 font-mono-tabular text-muted">
                   {row.pos}
                 </td>
-                <td class="py-1.5 px-1 font-mono font-medium text-slate-900 dark:text-slate-100 whitespace-nowrap">
+                <td class="py-1.5 px-1 font-mono font-medium text-primary whitespace-nowrap">
                   {row.pinName}
                 </td>
                 <td class="py-1.5 px-1 font-mono whitespace-nowrap">
                   <span
                     class={row.status === 'conflict'
-                      ? 'text-red-500 font-semibold'
+                      ? 'text-danger font-semibold'
                       : row.status === 'partial'
-                        ? 'text-orange-500'
-                        : 'text-emerald-600 dark:text-emerald-400'}
+                        ? 'text-pin-partial'
+                        : 'text-pin-success'}
                   >
                     {row.signalFull}
                   </span>
                   {#if row.af !== null}
-                    <span class="text-slate-400 dark:text-slate-500 ml-1">AF{row.af}</span>
+                    <span class="text-faint ml-1">AF{row.af}</span>
                   {/if}
                 </td>
                 <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -232,7 +232,7 @@
                     placeholder="—"
                     onchange={(e) =>
                       onSetLabel(row.pos, (e.currentTarget as HTMLInputElement).value)}
-                    class="w-full min-w-[68px] px-1.5 py-0.5 rounded bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-white dark:focus:bg-[#0b0e14] border border-transparent focus:border-sky-500 font-mono text-[11px] text-slate-800 dark:text-slate-200 focus:outline-none"
+                    class="w-full min-w-[68px] px-1.5 py-0.5 rounded bg-transparent hover:bg-elevated focus:bg-elevated border border-transparent focus:border-hint font-mono text-[11px] text-primary focus:outline-none"
                   />
                 </td>
                 <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -242,10 +242,10 @@
                     type="button"
                     onclick={() => onToggleLock(row.pos)}
                     title={row.isLocked ? 'Unlock pin' : 'Lock pin'}
-                    class="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500"
+                    class="p-1 rounded hover:bg-elevated text-muted"
                   >
                     {#if row.isLocked}
-                      <Lock class="w-3 h-3 text-amber-500" />
+                      <Lock class="w-3 h-3 text-pin-power" />
                     {:else}
                       <Unlock class="w-3 h-3" />
                     {/if}
@@ -255,7 +255,7 @@
                     disabled={row.isLocked}
                     onclick={() => onClearPin(row.pos)}
                     title="Clear pin"
-                    class="p-1 rounded hover:bg-red-500/15 text-slate-400 hover:text-red-500 disabled:opacity-30"
+                    class="p-1 rounded hover:bg-danger-soft text-faint hover:text-danger disabled:opacity-30"
                   >
                     <Trash2 class="w-3 h-3" />
                   </button>
@@ -271,9 +271,9 @@
   {:else if activeTab === 'diagnostics'}
     <div class="flex-1 overflow-y-auto p-2.5 space-y-2">
       {#if report.diagnostics.length === 0}
-        <div class="p-6 text-center text-xs text-slate-500 dark:text-slate-400 space-y-1.5">
-          <CheckCircle2 class="w-6 h-6 text-emerald-500 mx-auto" />
-          <p class="font-medium text-slate-800 dark:text-slate-200">No conflicts or warnings</p>
+        <div class="p-6 text-center text-xs text-muted space-y-1.5">
+          <CheckCircle2 class="w-6 h-6 text-pin-success mx-auto" />
+          <p class="font-medium text-primary">No conflicts or warnings</p>
           <p>All active peripherals and pin assignments satisfy hardware invariants.</p>
         </div>
       {:else}
@@ -281,34 +281,34 @@
           <div
             class={`rounded-lg border p-2.5 text-xs space-y-2 ${
               diag.severity === 'error'
-                ? 'border-red-500/40 bg-red-500/8'
-                : 'border-orange-500/35 bg-orange-500/8'
+                ? 'border-danger bg-danger-soft'
+                : 'border-pin-partial bg-warning-soft'
             }`}
           >
             <div class="flex items-start gap-2">
               {#if diag.severity === 'error'}
-                <XCircle class="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                <XCircle class="w-4 h-4 text-danger shrink-0 mt-0.5" />
               {:else}
-                <AlertTriangle class="w-4 h-4 text-orange-500 shrink-0 mt-0.5" />
+                <AlertTriangle class="w-4 h-4 text-pin-partial shrink-0 mt-0.5" />
               {/if}
               <div class="min-w-0 flex-1 space-y-1">
                 <div class="flex items-center justify-between gap-2">
                   <span
                     class={`font-semibold text-[11px] ${
                       diag.severity === 'error'
-                        ? 'text-red-600 dark:text-red-400'
-                        : 'text-orange-600 dark:text-orange-400'
+                        ? 'text-danger'
+                        : 'text-pin-partial'
                     }`}
                   >
                     {diag.severity === 'error' ? 'Error' : 'Warning'}
                   </span>
                   {#if diag.peripheral}
-                    <span class="font-mono text-[11px] text-slate-500 dark:text-slate-400">
+                    <span class="font-mono text-[11px] text-muted">
                       {diag.peripheral}
                     </span>
                   {/if}
                 </div>
-                <p class="text-slate-800 dark:text-slate-200 leading-relaxed">
+                <p class="text-primary leading-relaxed">
                   {diag.message}
                 </p>
               </div>
@@ -319,7 +319,7 @@
                 <button
                   type="button"
                   onclick={() => onFocusPin(pPos)}
-                  class="px-2 py-0.5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#121722] hover:border-sky-500 font-mono text-[11px] text-slate-700 dark:text-slate-300"
+                  class="px-2 py-0.5 rounded border border-strong bg-surface hover:border-hint font-mono text-[11px] text-primary"
                 >
                   Inspect {pinMap.get(pPos)?.name ?? pPos}
                 </button>
@@ -329,7 +329,7 @@
                 <button
                   type="button"
                   onclick={() => onApplyFix(diag.fix!)}
-                  class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-sky-500 hover:bg-sky-600 text-white font-medium text-[11px]"
+                  class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-action hover:bg-action-hover text-on-action font-medium text-[11px]"
                 >
                   <Wrench class="w-3 h-3" />
                   <span>Apply 1-Hop Remap</span>
@@ -345,8 +345,8 @@
   {:else}
     <div class="flex-1 overflow-y-auto p-2.5 space-y-2">
       {#if report.dmaAnalysis.length === 0}
-        <div class="p-6 text-center text-xs text-slate-500 dark:text-slate-400 space-y-1">
-          <p class="font-medium text-slate-700 dark:text-slate-300">No active DMA requests</p>
+        <div class="p-6 text-center text-xs text-muted space-y-1">
+          <p class="font-medium text-primary">No active DMA requests</p>
           <p>Enable peripherals like SPI, USART, ADC, or TIM to inspect DMA streams and DMAMUX mappings.</p>
         </div>
       {:else}
@@ -354,21 +354,21 @@
           <div
             class={`rounded-lg border p-2.5 text-xs space-y-1 ${
               item.status === 'contention'
-                ? 'border-orange-500/45 bg-orange-500/8'
-                : 'border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-[#0e131d]'
+                ? 'border-pin-partial bg-warning-soft'
+                : 'border-hairline bg-subtle'
             }`}
           >
             <div class="flex items-center justify-between gap-2">
-              <span class="font-mono font-semibold text-slate-900 dark:text-slate-100">
+              <span class="font-mono font-semibold text-primary">
                 {item.peripheral}_{item.signal}
               </span>
               <span
                 class={`text-[10px] font-medium ${
                   item.status === 'contention'
-                    ? 'text-orange-600 dark:text-orange-400'
+                    ? 'text-pin-partial'
                     : item.status === 'shared'
-                      ? 'text-amber-600 dark:text-amber-400'
-                      : 'text-emerald-600 dark:text-emerald-400'
+                      ? 'text-pin-power'
+                      : 'text-pin-success'
                 }`}
               >
                 {item.status === 'contention'
@@ -380,11 +380,11 @@
                       : 'Available'}
               </span>
             </div>
-            <div class="font-mono-tabular text-[11px] text-slate-600 dark:text-slate-400 break-words">
+            <div class="font-mono-tabular text-[11px] text-muted break-words">
               {item.channels.join(', ')}
             </div>
             {#if item.contendingWith.length > 0}
-              <div class="text-[11px] text-orange-600 dark:text-orange-400">
+              <div class="text-[11px] text-pin-partial">
                 Shares channel with: {item.contendingWith.join(', ')}
               </div>
             {/if}

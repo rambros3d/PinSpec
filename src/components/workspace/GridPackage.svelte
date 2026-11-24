@@ -83,24 +83,24 @@
 
   function getBallColors(pos: string): { fill: string; stroke: string } {
     if (remapSourcePos === pos) {
-      return { fill: '#0284c7', stroke: '#38bdf8' };
+      return { fill: 'var(--pin-selected-fill)', stroke: 'var(--pin-remap)' };
     }
     if (highlightedPins.has(pos)) {
-      return { fill: 'rgba(56, 189, 248, 0.34)', stroke: '#38bdf8' };
+      return { fill: 'var(--pin-remap-fill)', stroke: 'var(--pin-remap)' };
     }
     const status = pinStatus[pos] ?? 'unused';
     const isSelected = selectedPinPos === pos;
     switch (status) {
       case 'power':
-        return { fill: 'rgba(234, 179, 8, 0.24)', stroke: '#eab308' };
+        return { fill: 'var(--pin-power-fill)', stroke: 'var(--pin-power)' };
       case 'assigned':
-        return { fill: 'rgba(16, 185, 129, 0.30)', stroke: isSelected ? '#38bdf8' : '#10b981' };
+        return { fill: 'var(--pin-assigned-fill)', stroke: isSelected ? 'var(--pin-remap)' : 'var(--pin-assigned)' };
       case 'partial':
-        return { fill: 'rgba(249, 115, 22, 0.30)', stroke: isSelected ? '#38bdf8' : '#f97316' };
+        return { fill: 'var(--pin-partial-fill)', stroke: isSelected ? 'var(--pin-remap)' : 'var(--pin-partial)' };
       case 'conflict':
-        return { fill: 'rgba(239, 68, 68, 0.34)', stroke: '#ef4444' };
+        return { fill: 'var(--pin-conflict-fill)', stroke: 'var(--pin-conflict)' };
       default:
-        return { fill: 'rgba(71, 85, 105, 0.22)', stroke: isSelected ? '#38bdf8' : '#475569' };
+        return { fill: 'var(--pin-unused-fill)', stroke: isSelected ? 'var(--pin-remap)' : 'var(--pin-unused)' };
     }
   }
 
@@ -113,7 +113,7 @@
   viewBox={`0 0 ${layout.totalWidth} ${layout.totalHeight}`}
   width={layout.totalWidth}
   height={layout.totalHeight}
-  class="select-none text-slate-800 dark:text-slate-100 overflow-visible"
+  class="select-none text-primary overflow-visible"
   role="img"
   aria-label={`${chip.id} ${chip.package.name} BGA matrix diagram`}
 >
@@ -124,21 +124,21 @@
     width={layout.gridWidth + 16}
     height={layout.gridHeight + 16}
     rx="8"
-    class="fill-slate-100 dark:fill-[#131924] stroke-slate-300 dark:stroke-slate-700"
+    class="fill-elevated stroke-hairline"
     stroke-width="2"
   />
 
   <!-- Pin A1 Corner Chamfer Indicator -->
   <path
     d={`M ${layout.outerPad + layout.headerPad - 8} ${layout.outerPad + layout.headerPad + 16} L ${layout.outerPad + layout.headerPad + 16} ${layout.outerPad + layout.headerPad - 8}`}
-    class="stroke-amber-500 dark:stroke-amber-400"
+    class="stroke-pin-power"
     stroke-width="2.5"
   />
   <text
     x={layout.outerPad + layout.headerPad - 12}
     y={layout.outerPad + layout.headerPad - 14}
     text-anchor="end"
-    class="font-mono font-semibold fill-amber-600 dark:fill-amber-400"
+    class="font-mono font-semibold fill-pin-power"
     font-size="10"
   >
     A1
@@ -150,7 +150,7 @@
       x={layout.outerPad + layout.headerPad + ci * layout.cellSize + layout.cellSize / 2}
       y={layout.outerPad + layout.headerPad - 16}
       text-anchor="middle"
-      class="font-mono fill-slate-500 dark:fill-slate-400 font-medium"
+      class="font-mono fill-muted font-medium"
       font-size="11"
     >
       {col}
@@ -163,7 +163,7 @@
       x={layout.outerPad + layout.headerPad - 18}
       y={layout.outerPad + layout.headerPad + ri * layout.cellSize + layout.cellSize / 2 + 4}
       text-anchor="end"
-      class="font-mono fill-slate-500 dark:fill-slate-400 font-medium"
+      class="font-mono fill-muted font-medium"
       font-size="11"
     >
       {row}
@@ -202,7 +202,7 @@
           cy={ball.cy}
           r={r + 3}
           fill="none"
-          stroke="#38bdf8"
+          stroke="var(--pin-remap)"
           stroke-width="2"
           class="animate-pin-pulse"
         />
@@ -223,7 +223,7 @@
           x={ball.cx}
           y={ball.cy + 3.5}
           text-anchor="middle"
-          class="font-mono font-medium fill-slate-900 dark:fill-slate-100 pointer-events-none"
+          class="font-mono font-medium fill-primary pointer-events-none"
           font-size="8.5"
         >
           {compactLabel(ball.pin.name, 5)}
@@ -234,7 +234,7 @@
           x={ball.cx}
           y={asgn ? ball.cy - 2 : ball.cy + 3}
           text-anchor="middle"
-          class="font-mono font-semibold fill-slate-900 dark:fill-slate-100 pointer-events-none"
+          class="font-mono font-semibold fill-primary pointer-events-none"
           font-size="8.5"
         >
           {compactLabel(ball.pin.name, 6)}
@@ -244,7 +244,7 @@
             x={ball.cx}
             y={ball.cy + 8.5}
             text-anchor="middle"
-            class="font-mono fill-slate-700 dark:fill-emerald-200 pointer-events-none"
+            class="font-mono fill-pin-text pointer-events-none"
             font-size="6.8"
           >
             {compactLabel(`${asgn.peripheral}_${asgn.signal}`, 9)}
@@ -256,7 +256,7 @@
           x={ball.cx}
           y={ball.cy - 8.5}
           text-anchor="middle"
-          class="font-mono fill-slate-500 dark:fill-slate-400 pointer-events-none"
+          class="font-mono fill-muted pointer-events-none"
           font-size="6"
         >
           {ball.pin.pos}
@@ -265,7 +265,7 @@
           x={ball.cx}
           y={ball.cy - 0.5}
           text-anchor="middle"
-          class="font-mono font-semibold fill-slate-900 dark:fill-slate-100 pointer-events-none"
+          class="font-mono font-semibold fill-primary pointer-events-none"
           font-size="7.5"
         >
           {compactLabel(ball.pin.name, 7)}
@@ -275,7 +275,7 @@
             x={ball.cx}
             y={ball.cy + 7.5}
             text-anchor="middle"
-            class="font-mono fill-slate-700 dark:fill-emerald-200 pointer-events-none"
+            class="font-mono fill-pin-text pointer-events-none"
             font-size="6"
           >
             {compactLabel(`${asgn.peripheral}_${asgn.signal}`, 10)}
@@ -286,7 +286,7 @@
             x={ball.cx}
             y={ball.cy + 14}
             text-anchor="middle"
-            class="font-mono fill-sky-700 dark:fill-sky-300 pointer-events-none"
+            class="font-mono fill-hint pointer-events-none"
             font-size="5.5"
           >
             {compactLabel(lbl, 10)}
@@ -299,7 +299,7 @@
           cx={ball.cx + r - 3}
           cy={ball.cy - r + 3}
           r="3.2"
-          fill="#f59e0b"
+          fill="var(--pin-power)"
           class="pointer-events-none"
         />
       {/if}
@@ -311,7 +311,7 @@
     x={layout.outerPad + layout.headerPad + layout.gridWidth / 2}
     y={layout.totalHeight - 8}
     text-anchor="middle"
-    class="font-mono fill-slate-500 dark:fill-slate-400"
+    class="font-mono fill-muted"
     font-size="12"
   >
     {chip.id} · {chip.package.name} ({chip.package.pinCount} balls) · {chip.core}

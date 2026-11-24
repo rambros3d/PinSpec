@@ -101,38 +101,38 @@
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
-  class="fixed inset-0 z-50 bg-slate-950/65 flex items-center justify-center p-4"
+  class="fixed inset-0 z-50 bg-overlay flex items-center justify-center p-4"
   onclick={onClose}
 >
   <div
-    class="w-full max-w-3xl max-h-[84vh] flex flex-col rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#121722] shadow-2xl overflow-hidden"
+    class="w-full max-w-3xl max-h-[84vh] flex flex-col rounded-xl border border-hairline bg-surface shadow-2xl overflow-hidden"
     onclick={(e) => e.stopPropagation()}
     role="dialog"
     tabindex="-1"
     aria-label="Export and import pinout"
   >
     <!-- Header -->
-    <div class="flex items-center justify-between px-5 py-3.5 border-b border-slate-200 dark:border-slate-800">
+    <div class="flex items-center justify-between px-5 py-3.5 border-b border-hairline">
       <div>
-        <h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+        <h2 class="text-sm font-semibold text-primary">
           Export & Share Pinout
         </h2>
-        <p class="text-xs font-mono text-slate-500 dark:text-slate-400">
+        <p class="text-xs font-mono text-muted">
           {chip.id} · {chip.package.name} · {Object.keys(wsState.assignments).length} assigned pins
         </p>
       </div>
       <button
         type="button"
         onclick={onClose}
-        class="p-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500"
+        class="p-1.5 rounded-md hover:bg-elevated text-muted"
       >
         <X class="w-4 h-4" />
       </button>
     </div>
 
     <!-- Format Tabs -->
-    <div class="flex flex-wrap items-center justify-between gap-2 px-5 py-2.5 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#0e131d]">
-      <div class="flex items-center gap-1 p-0.5 rounded-lg bg-slate-200/70 dark:bg-[#0b0e14]">
+    <div class="flex flex-wrap items-center justify-between gap-2 px-5 py-2.5 border-b border-hairline bg-subtle">
+      <div class="flex items-center gap-1 p-0.5 rounded-lg bg-elevated">
         {#each [
           { id: 'rust', label: 'Embassy Rust' },
           { id: 'c', label: 'C Header' },
@@ -145,8 +145,8 @@
             onclick={() => (activeTab = tab.id as TabId)}
             class={`px-3 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-colors ${
               activeTab === tab.id
-                ? 'bg-white dark:bg-[#1a2233] text-slate-900 dark:text-slate-100 shadow-xs'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                ? 'bg-surface text-primary shadow-xs'
+                : 'text-muted hover:text-primary'
             }`}
           >
             {tab.label}
@@ -156,7 +156,7 @@
 
       <div class="flex items-center gap-2">
         {#if activeTab === 'csv'}
-          <label class="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer mr-1">
+          <label class="flex items-center gap-1.5 text-xs text-muted cursor-pointer mr-1">
             <input type="checkbox" bind:checked={includeUnassignedCsv} class="rounded" />
             <span>Include unassigned</span>
           </label>
@@ -165,10 +165,10 @@
         <button
           type="button"
           onclick={copyContent}
-          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-medium text-slate-800 dark:text-slate-200 whitespace-nowrap"
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-hairline hover:bg-elevated text-xs font-medium text-primary whitespace-nowrap"
         >
           {#if copied}
-            <Check class="w-3.5 h-3.5 text-emerald-500" />
+            <Check class="w-3.5 h-3.5 text-pin-success" />
             <span>Copied</span>
           {:else}
             <Copy class="w-3.5 h-3.5" />
@@ -180,7 +180,7 @@
           <button
             type="button"
             onclick={downloadFile}
-            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-sky-500 hover:bg-sky-600 text-xs font-semibold text-white whitespace-nowrap"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-action hover:bg-action-hover text-xs font-semibold text-on-action whitespace-nowrap"
           >
             <Download class="w-3.5 h-3.5" />
             <span>Download</span>
@@ -194,8 +194,8 @@
       <div
         class={`mx-5 mt-3 p-3 rounded-lg border border-dashed text-xs flex items-center justify-between gap-3 transition-colors ${
           draggingFile
-            ? 'border-sky-500 bg-sky-500/10'
-            : 'border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-[#0e131d]'
+            ? 'border-hint bg-info-soft'
+            : 'border-strong bg-subtle'
         }`}
         ondragover={(e) => {
           e.preventDefault();
@@ -209,14 +209,14 @@
           if (file) handleFile(file);
         }}
       >
-        <div class="flex items-center gap-2 text-slate-600 dark:text-slate-300">
-          <Upload class="w-4 h-4 text-sky-500 shrink-0" />
+        <div class="flex items-center gap-2 text-muted">
+          <Upload class="w-4 h-4 text-hint shrink-0" />
           <span>Drag and drop a <code class="font-mono">pinout.json</code> file here to import, or choose a file.</span>
         </div>
         <button
           type="button"
           onclick={() => fileInput?.click()}
-          class="px-2.5 py-1 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#121722] hover:border-sky-500 font-medium text-slate-800 dark:text-slate-200 whitespace-nowrap"
+          class="px-2.5 py-1 rounded border border-strong bg-surface hover:border-hint font-medium text-primary whitespace-nowrap"
         >
           Browse JSON
         </button>
@@ -232,13 +232,13 @@
         />
       </div>
       {#if importError}
-        <p class="mx-5 mt-2 text-xs text-red-500">{importError}</p>
+        <p class="mx-5 mt-2 text-xs text-danger">{importError}</p>
       {/if}
     {/if}
 
     <!-- Monospace Code Preview -->
     <div class="flex-1 overflow-auto p-5">
-      <pre class="p-4 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#0b0e14] font-mono text-xs leading-relaxed text-slate-800 dark:text-slate-200 overflow-x-auto whitespace-pre-wrap break-all">{previewContent}</pre>
+      <pre class="p-4 rounded-lg border border-hairline bg-subtle font-mono text-xs leading-relaxed text-primary overflow-x-auto whitespace-pre-wrap break-all">{previewContent}</pre>
     </div>
   </div>
 </div>

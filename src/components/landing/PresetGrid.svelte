@@ -77,27 +77,27 @@
   {#if recentSessions.length > 0}
     <div class="space-y-4">
       <div class="flex items-baseline justify-between">
-        <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+        <h2 class="text-lg font-semibold text-primary">
           Recent Local Sessions
         </h2>
-        <span class="text-xs text-slate-500 dark:text-slate-400">
+        <span class="text-xs text-muted">
           Stored in browser localStorage
         </span>
       </div>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {#each recentSessions.slice(0, 6) as session (session.mcuId)}
-          <div class="group rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#121722] p-4 hover:border-sky-500/60 transition-colors flex flex-col justify-between gap-3">
+          <div class="group rounded-lg border border-hairline bg-surface p-4 hover:border-hint transition-colors flex flex-col justify-between gap-3">
             <div class="flex items-start justify-between gap-2">
               <button
                 type="button"
                 onclick={() => onOpenMcu(session.mcuId)}
                 class="text-left min-w-0 flex-1"
               >
-                <div class="font-mono font-semibold text-sm text-slate-900 dark:text-slate-100 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors">
+                <div class="font-mono font-semibold text-sm text-primary group-hover:text-hint transition-colors">
                   {session.mcuId}
                 </div>
-                <div class="mt-1 font-mono-tabular text-xs text-slate-500 dark:text-slate-400">
+                <div class="mt-1 font-mono-tabular text-xs text-muted">
                   {session.packageName} · {session.assignedCount}/{session.pinCount} pins assigned
                 </div>
               </button>
@@ -105,21 +105,21 @@
                 type="button"
                 onclick={() => onDeleteRecent(session.mcuId)}
                 title="Remove session"
-                class="p-1.5 rounded hover:bg-red-500/10 text-slate-400 hover:text-red-500"
+                class="p-1.5 rounded hover:bg-danger-soft text-faint hover:text-danger"
               >
                 <Trash2 class="w-3.5 h-3.5" />
               </button>
             </div>
 
-            <div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800/80 text-xs">
-              <span class="inline-flex items-center gap-1 text-slate-400 dark:text-slate-500 font-mono-tabular">
+            <div class="flex items-center justify-between pt-2 border-t border-hairline text-xs">
+              <span class="inline-flex items-center gap-1 text-faint font-mono-tabular">
                 <Clock class="w-3 h-3" />
                 {formatRelativeTime(session.updatedAt)}
               </span>
               <button
                 type="button"
                 onclick={() => onOpenMcu(session.mcuId)}
-                class="inline-flex items-center gap-1 font-medium text-sky-600 dark:text-sky-400 hover:underline"
+                class="inline-flex items-center gap-1 font-medium text-hint hover:underline"
               >
                 <span>Reopen</span>
                 <ArrowRight class="w-3 h-3" />
@@ -135,10 +135,10 @@
   <div class="space-y-4">
     <div class="flex items-baseline justify-between gap-4">
       <div>
-        <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+        <h2 class="text-lg font-semibold text-primary">
           Popular Starter Chips
         </h2>
-        <p class="text-sm text-slate-500 dark:text-slate-400">
+        <p class="text-sm text-muted">
           Jump straight into major STM32 families across perimeter QFN/LQFP and matrix BGA packages.
         </p>
       </div>
@@ -149,25 +149,25 @@
         <button
           type="button"
           onclick={() => onOpenMcu(item.id)}
-          class="group text-left rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#121722] p-4 hover:border-sky-500/60 transition-colors flex flex-col justify-between gap-3"
+          class="group text-left rounded-lg border border-hairline bg-surface p-4 hover:border-hint transition-colors flex flex-col justify-between gap-3"
         >
           <div class="space-y-1.5">
             <div class="flex items-center justify-between gap-2">
-              <span class="font-mono font-semibold text-sm text-slate-900 dark:text-slate-100 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors">
+              <span class="font-mono font-semibold text-sm text-primary group-hover:text-hint transition-colors">
                 {item.id}
               </span>
-              <span class="font-mono text-[11px] text-slate-500 dark:text-slate-400">
+              <span class="font-mono text-[11px] text-muted">
                 {item.pkg} · {item.renderer}
               </span>
             </div>
-            <div class="font-mono-tabular text-xs text-slate-500 dark:text-slate-400">
+            <div class="font-mono-tabular text-xs text-muted">
               {item.core} · {item.memory}
             </div>
-            <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed pt-1">
+            <p class="text-xs text-muted leading-relaxed pt-1">
               {item.note}
             </p>
           </div>
-          <div class="flex items-center justify-end text-xs font-medium text-sky-600 dark:text-sky-400">
+          <div class="flex items-center justify-end text-xs font-medium text-hint">
             <span class="inline-flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
               Open workspace <ArrowRight class="w-3.5 h-3.5" />
             </span>

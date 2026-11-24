@@ -164,55 +164,55 @@
 
     if (isRemapSrc) {
       return {
-        fill: '#0284c7',
-        stroke: '#38bdf8',
-        text: '#ffffff',
-        tagBg: 'rgba(14, 165, 233, 0.22)',
+        fill: 'var(--pin-selected-fill)',
+        stroke: 'var(--pin-remap)',
+        text: 'var(--pin-selected-text)',
+        tagBg: 'var(--pin-remap-tag)',
       };
     }
 
     if (isHighlighted) {
       return {
-        fill: 'rgba(56, 189, 248, 0.28)',
-        stroke: '#38bdf8',
-        text: '#e0f2fe',
-        tagBg: 'rgba(56, 189, 248, 0.2)',
+        fill: 'var(--pin-remap-fill)',
+        stroke: 'var(--pin-remap)',
+        text: 'var(--pin-text)',
+        tagBg: 'var(--pin-remap-tag)',
       };
     }
 
     switch (status) {
       case 'power':
         return {
-          fill: 'rgba(234, 179, 8, 0.22)',
-          stroke: '#eab308',
-          text: '#fde047',
-          tagBg: 'rgba(234, 179, 8, 0.14)',
+          fill: 'var(--pin-power-fill)',
+          stroke: 'var(--pin-power)',
+          text: 'var(--pin-text)',
+          tagBg: 'var(--pin-power-tag)',
         };
       case 'assigned':
         return {
-          fill: 'rgba(16, 185, 129, 0.26)',
-          stroke: isSelected ? '#38bdf8' : '#10b981',
-          text: '#d1fae5',
-          tagBg: 'rgba(16, 185, 129, 0.18)',
+          fill: 'var(--pin-assigned-fill)',
+          stroke: isSelected ? 'var(--pin-remap)' : 'var(--pin-assigned)',
+          text: 'var(--pin-text)',
+          tagBg: 'var(--pin-assigned-tag)',
         };
       case 'partial':
         return {
-          fill: 'rgba(249, 115, 22, 0.26)',
-          stroke: isSelected ? '#38bdf8' : '#f97316',
-          text: '#ffedd5',
-          tagBg: 'rgba(249, 115, 22, 0.18)',
+          fill: 'var(--pin-partial-fill)',
+          stroke: isSelected ? 'var(--pin-remap)' : 'var(--pin-partial)',
+          text: 'var(--pin-text)',
+          tagBg: 'var(--pin-partial-tag)',
         };
       case 'conflict':
         return {
-          fill: 'rgba(239, 68, 68, 0.3)',
-          stroke: '#ef4444',
-          text: '#fee2e2',
-          tagBg: 'rgba(239, 68, 68, 0.22)',
+          fill: 'var(--pin-conflict-fill)',
+          stroke: 'var(--pin-conflict)',
+          text: 'var(--pin-text)',
+          tagBg: 'var(--pin-conflict-tag)',
         };
       default:
         return {
-          fill: 'rgba(71, 85, 105, 0.24)',
-          stroke: isSelected ? '#38bdf8' : '#475569',
+          fill: 'var(--pin-unused-fill)',
+          stroke: isSelected ? 'var(--pin-remap)' : 'var(--pin-unused)',
           text: 'currentColor',
           tagBg: 'transparent',
         };
@@ -241,7 +241,7 @@
   viewBox={`0 0 ${layout.totalWidth} ${layout.totalHeight}`}
   width={layout.totalWidth}
   height={layout.totalHeight}
-  class="select-none text-slate-800 dark:text-slate-100 overflow-visible"
+  class="select-none text-primary overflow-visible"
   role="img"
   aria-label={`${chip.id} ${chip.package.name} pinout diagram`}
 >
@@ -253,7 +253,7 @@
       width={layout.bodyWidth}
       height={layout.bodyHeight}
       rx="6"
-      class="fill-slate-100 dark:fill-[#151c28] stroke-slate-300 dark:stroke-slate-700"
+      class="fill-elevated stroke-hairline"
       stroke-width="2"
     />
     <!-- Subtle inner die outline -->
@@ -264,21 +264,21 @@
       height={layout.bodyHeight - 24}
       rx="3"
       fill="none"
-      class="stroke-slate-200 dark:stroke-slate-800"
+      class="stroke-hairline"
       stroke-width="1"
     />
 
     <!-- Pin 1 Chamfer + Orientation Dot at Top-Left -->
     <path
       d={`M ${layout.originX} ${layout.originY + 20} L ${layout.originX + 20} ${layout.originY}`}
-      class="stroke-slate-400 dark:stroke-slate-600"
+      class="stroke-strong"
       stroke-width="1.5"
     />
     <circle
       cx={layout.originX + 22}
       cy={layout.originY + 22}
       r="5"
-      class="fill-amber-500/80 dark:fill-amber-400/80"
+      class="fill-pin-power"
     />
 
     <!-- Center IC Marking -->
@@ -286,7 +286,7 @@
       x={layout.originX + layout.bodyWidth / 2}
       y={layout.originY + layout.bodyHeight / 2 - 10}
       text-anchor="middle"
-      class="font-mono fill-slate-900 dark:fill-slate-100 font-semibold"
+      class="font-mono fill-primary font-semibold"
       font-size={compact ? 14 : 16}
     >
       {chip.id}
@@ -295,7 +295,7 @@
       x={layout.originX + layout.bodyWidth / 2}
       y={layout.originY + layout.bodyHeight / 2 + 12}
       text-anchor="middle"
-      class="font-mono fill-slate-500 dark:fill-slate-400"
+      class="font-mono fill-muted"
       font-size={compact ? 11 : 12}
     >
       {chip.package.name} · {chip.core}
@@ -304,7 +304,7 @@
       x={layout.originX + layout.bodyWidth / 2}
       y={layout.originY + layout.bodyHeight / 2 + 29}
       text-anchor="middle"
-      class="font-mono fill-slate-400 dark:fill-slate-500"
+      class="font-mono fill-faint"
       font-size="10"
     >
       {chip.flashKb} KB Flash · {chip.ramKb} KB RAM
@@ -357,7 +357,7 @@
           x={cx}
           y={cy + 3.5}
           text-anchor="middle"
-          class="font-mono font-medium pointer-events-none fill-slate-900 dark:fill-slate-100"
+          class="font-mono font-medium pointer-events-none fill-primary"
           font-size={layout.pitch < 24 ? 8.5 : 10}
         >
           {shortPinName(item.pin.name)}
@@ -368,7 +368,7 @@
           y={cy + 3.5}
           text-anchor="middle"
           transform={`rotate(-90 ${cx} ${cy})`}
-          class="font-mono font-medium pointer-events-none fill-slate-900 dark:fill-slate-100"
+          class="font-mono font-medium pointer-events-none fill-primary"
           font-size={layout.pitch < 24 ? 8.5 : 10}
         >
           {shortPinName(item.pin.name)}
@@ -381,7 +381,7 @@
           x={layout.originX + 6}
           y={cy + 3}
           text-anchor="start"
-          class="font-mono fill-slate-400 dark:fill-slate-500 pointer-events-none"
+          class="font-mono fill-faint pointer-events-none"
           font-size="8.5"
         >
           {item.pin.pos}
@@ -391,7 +391,7 @@
           x={layout.originX + layout.bodyWidth - 6}
           y={cy + 3}
           text-anchor="end"
-          class="font-mono fill-slate-400 dark:fill-slate-500 pointer-events-none"
+          class="font-mono fill-faint pointer-events-none"
           font-size="8.5"
         >
           {item.pin.pos}
@@ -401,7 +401,7 @@
           x={cx}
           y={layout.originY + layout.bodyHeight - 6}
           text-anchor="middle"
-          class="font-mono fill-slate-400 dark:fill-slate-500 pointer-events-none"
+          class="font-mono fill-faint pointer-events-none"
           font-size="8.5"
         >
           {item.pin.pos}
@@ -411,7 +411,7 @@
           x={cx}
           y={layout.originY + 13}
           text-anchor="middle"
-          class="font-mono fill-slate-400 dark:fill-slate-500 pointer-events-none"
+          class="font-mono fill-faint pointer-events-none"
           font-size="8.5"
         >
           {item.pin.pos}
@@ -436,11 +436,11 @@
           })`}
           class="pointer-events-none"
         >
-          <rect x="0" y="3.5" width="8" height="5.5" rx="1" fill="#f59e0b" />
+          <rect x="0" y="3.5" width="8" height="5.5" rx="1" fill="var(--pin-power)" />
           <path
             d="M 2 3.5 V 2 A 2 2 0 0 1 6 2 V 3.5"
             fill="none"
-            stroke="#f59e0b"
+            stroke="var(--pin-power)"
             stroke-width="1.3"
           />
         </g>
@@ -475,7 +475,7 @@
             x={item.x - 13}
             y={cy + 3.5}
             text-anchor="end"
-            class="font-mono font-medium fill-slate-900 dark:fill-slate-100 pointer-events-none"
+            class="font-mono font-medium fill-primary pointer-events-none"
             font-size={layout.pitch < 24 ? 8.5 : 9.5}
           >
             {displayTag}
@@ -503,7 +503,7 @@
             x={item.x + item.width + 13}
             y={cy + 3.5}
             text-anchor="start"
-            class="font-mono font-medium fill-slate-900 dark:fill-slate-100 pointer-events-none"
+            class="font-mono font-medium fill-primary pointer-events-none"
             font-size={layout.pitch < 24 ? 8.5 : 9.5}
           >
             {displayTag}
@@ -532,7 +532,7 @@
               x="6"
               y="3.5"
               text-anchor="start"
-              class="font-mono font-medium fill-slate-900 dark:fill-slate-100 pointer-events-none"
+              class="font-mono font-medium fill-primary pointer-events-none"
               font-size={layout.pitch < 24 ? 8.5 : 9.5}
             >
               {displayTag}
@@ -562,7 +562,7 @@
               x="-6"
               y="3.5"
               text-anchor="end"
-              class="font-mono font-medium fill-slate-900 dark:fill-slate-100 pointer-events-none"
+              class="font-mono font-medium fill-primary pointer-events-none"
               font-size={layout.pitch < 24 ? 8.5 : 9.5}
             >
               {displayTag}

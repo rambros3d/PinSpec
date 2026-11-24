@@ -100,21 +100,21 @@
 <div class="fixed inset-0 z-40" onclick={onClose}></div>
 
 <div
-  class="fixed z-50 w-[310px] max-h-[410px] flex flex-col rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#121722] shadow-xl overflow-hidden text-xs"
+  class="fixed z-50 w-[310px] max-h-[410px] flex flex-col rounded-lg border border-hairline bg-surface shadow-xl overflow-hidden text-xs"
   style={`left: ${clampedPos.left}px; top: ${clampedPos.top}px;`}
   role="dialog"
   aria-label={`Assign signal to ${pin.name}`}
 >
   <!-- Header -->
-  <div class="flex items-center justify-between gap-2 px-3 py-2 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#0f141e]">
+  <div class="flex items-center justify-between gap-2 px-3 py-2 border-b border-hairline bg-subtle">
     <div class="min-w-0">
-      <div class="flex items-center gap-1.5 font-mono-tabular font-semibold text-slate-900 dark:text-slate-100">
+      <div class="flex items-center gap-1.5 font-mono-tabular font-semibold text-primary">
         <span>{pin.name}</span>
-        <span class="text-slate-400 dark:text-slate-500">·</span>
-        <span class="text-slate-500 dark:text-slate-400">Pin {pin.pos}</span>
+        <span class="text-faint">·</span>
+        <span class="text-muted">Pin {pin.pos}</span>
       </div>
       {#if currentLabel}
-        <div class="text-[11px] font-mono text-sky-600 dark:text-sky-400 truncate">
+        <div class="text-[11px] font-mono text-hint truncate">
           {currentLabel}
         </div>
       {/if}
@@ -124,10 +124,10 @@
         type="button"
         onclick={onToggleLock}
         title={isLocked ? 'Unlock pin' : 'Lock pin'}
-        class="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300"
+        class="p-1.5 rounded hover:bg-elevated text-muted"
       >
         {#if isLocked}
-          <Lock class="w-3.5 h-3.5 text-amber-500" />
+          <Lock class="w-3.5 h-3.5 text-pin-power" />
         {:else}
           <Unlock class="w-3.5 h-3.5" />
         {/if}
@@ -141,7 +141,7 @@
           }}
           disabled={isLocked}
           title="Clear assignment"
-          class="p-1.5 rounded hover:bg-red-500/15 text-red-500 disabled:opacity-40"
+          class="p-1.5 rounded hover:bg-danger-soft text-danger disabled:opacity-40"
         >
           <Trash2 class="w-3.5 h-3.5" />
         </button>
@@ -150,7 +150,7 @@
         type="button"
         onclick={onClose}
         title="Close"
-        class="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500"
+        class="p-1.5 rounded hover:bg-elevated text-muted"
       >
         <X class="w-3.5 h-3.5" />
       </button>
@@ -158,19 +158,19 @@
   </div>
 
   <!-- Search Input -->
-  <div class="px-2.5 py-2 border-b border-slate-200 dark:border-slate-800">
+  <div class="px-2.5 py-2 border-b border-hairline">
     <div class="relative flex items-center">
-      <Search class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 pointer-events-none" />
+      <Search class="w-3.5 h-3.5 text-faint absolute left-2.5 pointer-events-none" />
       <input
         bind:this={searchInput}
         bind:value={query}
         type="text"
         placeholder="Filter signals, peripheral, AF..."
-        class="w-full pl-8 pr-2.5 py-1.5 rounded-md bg-slate-100 dark:bg-[#0b0e14] border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-sky-500 text-xs"
+        class="w-full pl-8 pr-2.5 py-1.5 rounded-md bg-elevated border border-hairline text-primary placeholder:text-faint focus:outline-none focus:border-hint text-xs"
       />
     </div>
     {#if isLocked}
-      <p class="mt-1.5 text-[11px] text-amber-600 dark:text-amber-400">
+      <p class="mt-1.5 text-[11px] text-pin-power">
         Pin is locked. Unlock above to change assignment.
       </p>
     {/if}
@@ -180,7 +180,7 @@
   <div class="flex-1 overflow-y-auto p-1.5 space-y-2">
     {#if filteredGpio.length > 0}
       <div>
-        <div class="px-2 py-1 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+        <div class="px-2 py-1 text-[11px] font-medium text-muted">
           GPIO
         </div>
         <div class="grid grid-cols-2 gap-1">
@@ -196,8 +196,8 @@
               }}
               class={`flex items-center justify-between px-2 py-1.5 rounded text-left transition-colors disabled:opacity-40 ${
                 isActive
-                  ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-medium'
-                  : 'hover:bg-slate-100 dark:hover:bg-slate-800/80 text-slate-800 dark:text-slate-200'
+                  ? 'bg-success-soft text-pin-success font-medium'
+                  : 'hover:bg-elevated text-primary'
               }`}
             >
               <span class="font-mono">GPIO_{mode}</span>
@@ -212,7 +212,7 @@
 
     {#each groupedSignals as [peripheral, sigs] (peripheral)}
       <div>
-        <div class="px-2 py-1 text-[11px] font-semibold text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800/70">
+        <div class="px-2 py-1 text-[11px] font-semibold text-muted border-t border-hairline">
           {peripheral}
         </div>
         <div class="space-y-0.5">
@@ -234,22 +234,22 @@
               }}
               class={`w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded text-left transition-colors disabled:opacity-40 ${
                 isActive
-                  ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-medium'
-                  : 'hover:bg-slate-100 dark:hover:bg-slate-800/80 text-slate-800 dark:text-slate-200'
+                  ? 'bg-success-soft text-pin-success font-medium'
+                  : 'hover:bg-elevated text-primary'
               }`}
             >
               <span class="font-mono truncate">{sig.peripheral}_{sig.signal}</span>
               <span class="flex items-center gap-1.5 shrink-0 font-mono-tabular text-[11px]">
                 {#if conflictPin}
-                  <span class="text-red-500 dark:text-red-400" title={`Already assigned on ${conflictPin}`}>
+                  <span class="text-danger" title={`Already assigned on ${conflictPin}`}>
                     on {conflictPin}
                   </span>
                 {/if}
-                <span class="text-slate-500 dark:text-slate-400">
+                <span class="text-muted">
                   {sig.af !== null ? `AF${sig.af}` : 'AFIO'}
                 </span>
                 {#if isActive}
-                  <Check class="w-3 h-3 text-emerald-500" />
+                  <Check class="w-3 h-3 text-pin-success" />
                 {/if}
               </span>
             </button>
@@ -259,7 +259,7 @@
     {/each}
 
     {#if filteredGpio.length === 0 && groupedSignals.length === 0}
-      <div class="py-6 text-center text-slate-500 dark:text-slate-400">
+      <div class="py-6 text-center text-muted">
         No matching signals for "{query}".
       </div>
     {/if}

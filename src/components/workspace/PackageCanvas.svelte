@@ -252,7 +252,7 @@
 
 <div
   bind:this={stageEl}
-  class={`relative flex-1 h-full overflow-hidden bg-[#f8fafc] dark:bg-[#0b0e14] bg-dot-grid select-none ${
+  class={`relative flex-1 h-full overflow-hidden bg-canvas bg-dot-grid select-none ${
     dragging ? 'cursor-grabbing' : 'cursor-grab'
   }`}
   onwheel={handleWheel}
@@ -308,14 +308,14 @@
 
   <!-- Remap Mode Top-Center Banner -->
   {#if remapSourcePos}
-    <div class="absolute top-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3 px-3.5 py-2 rounded-lg border border-sky-500/60 bg-sky-950/90 text-sky-100 text-xs shadow-lg">
+    <div class="absolute top-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3 px-3.5 py-2 rounded-lg border border-hint bg-remap-panel text-primary text-xs shadow-lg">
       <span class="font-mono font-medium">
         Remap Mode: click any pulsing cyan pin to move {remapSourceLabel}
       </span>
       <button
         type="button"
         onclick={onCancelRemap}
-        class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-sky-500/25 hover:bg-sky-500/40 text-sky-100 whitespace-nowrap"
+        class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-action-soft-strong hover:bg-action-soft-strong text-primary whitespace-nowrap"
       >
         <X class="w-3 h-3" />
         <span>Cancel (Esc)</span>
@@ -324,32 +324,32 @@
   {/if}
 
   <!-- Top-Right Canvas HUD Controls -->
-  <div class="absolute top-3 right-3 z-20 flex items-center gap-1 p-1 rounded-lg border border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-[#121722]/95 shadow-sm text-xs">
+  <div class="absolute top-3 right-3 z-20 flex items-center gap-1 p-1 rounded-lg border border-hairline bg-surface-alpha shadow-sm text-xs">
     <button
       type="button"
       onclick={() => zoomBy(1 / 1.2)}
       title="Zoom Out"
-      class="p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
+      class="p-1.5 rounded hover:bg-elevated text-primary"
     >
       <Minus class="w-3.5 h-3.5" />
     </button>
-    <span class="px-1.5 font-mono-tabular text-slate-600 dark:text-slate-300 min-w-[44px] text-center">
+    <span class="px-1.5 font-mono-tabular text-muted min-w-[44px] text-center">
       {Math.round(zoom * 100)}%
     </span>
     <button
       type="button"
       onclick={() => zoomBy(1.2)}
       title="Zoom In"
-      class="p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
+      class="p-1.5 rounded hover:bg-elevated text-primary"
     >
       <Plus class="w-3.5 h-3.5" />
     </button>
-    <div class="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-0.5"></div>
+    <div class="w-px h-4 bg-elevated mx-0.5"></div>
     <button
       type="button"
       onclick={fitView}
       title="Fit View (0)"
-      class="p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
+      class="p-1.5 rounded hover:bg-elevated text-primary"
     >
       <Maximize2 class="w-3.5 h-3.5" />
     </button>
@@ -357,7 +357,7 @@
       type="button"
       onclick={onRotate}
       title="Rotate Package 90 deg"
-      class="inline-flex items-center gap-1 px-1.5 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono-tabular"
+      class="inline-flex items-center gap-1 px-1.5 py-1 rounded hover:bg-elevated text-primary font-mono-tabular"
     >
       <RotateCw class="w-3.5 h-3.5" />
       <span>{rotation}°</span>
@@ -365,35 +365,35 @@
   </div>
 
   <!-- Bottom-Left Semantic Legend -->
-  <div class="absolute bottom-3 left-3 z-20 flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-[#121722]/90 text-[11px] text-slate-600 dark:text-slate-400">
+  <div class="absolute bottom-3 left-3 z-20 flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-1.5 rounded-lg border border-hairline bg-surface-alpha text-[11px] text-muted">
     <span class="inline-flex items-center gap-1.5">
-      <span class="w-2.5 h-2.5 rounded-xs bg-[#475569]"></span>
+      <span class="w-2.5 h-2.5 rounded-xs bg-pin-unused"></span>
       Unused
     </span>
     <span class="inline-flex items-center gap-1.5">
-      <span class="w-2.5 h-2.5 rounded-xs bg-[#eab308]"></span>
+      <span class="w-2.5 h-2.5 rounded-xs bg-pin-power"></span>
       Power / Reset
     </span>
     <span class="inline-flex items-center gap-1.5">
-      <span class="w-2.5 h-2.5 rounded-xs bg-[#10b981]"></span>
+      <span class="w-2.5 h-2.5 rounded-xs bg-pin-success"></span>
       Assigned
     </span>
     <span class="inline-flex items-center gap-1.5">
-      <span class="w-2.5 h-2.5 rounded-xs bg-[#f97316]"></span>
+      <span class="w-2.5 h-2.5 rounded-xs bg-pin-partial"></span>
       Partial
     </span>
     <span class="inline-flex items-center gap-1.5">
-      <span class="w-2.5 h-2.5 rounded-xs bg-[#ef4444]"></span>
+      <span class="w-2.5 h-2.5 rounded-xs bg-pin-conflict"></span>
       Conflict
     </span>
     <span class="inline-flex items-center gap-1.5">
-      <span class="w-2.5 h-2.5 rounded-xs bg-[#38bdf8]"></span>
+      <span class="w-2.5 h-2.5 rounded-xs bg-pin-remap"></span>
       Remap / Search
     </span>
   </div>
 
   <!-- Bottom-Right Interaction Hint -->
-  <div class="hidden xl:flex absolute bottom-3 right-3 z-20 items-center gap-2 px-2.5 py-1 rounded-md border border-slate-200 dark:border-slate-800 bg-white/85 dark:bg-[#121722]/85 text-[11px] text-slate-500 dark:text-slate-400">
+  <div class="hidden xl:flex absolute bottom-3 right-3 z-20 items-center gap-2 px-2.5 py-1 rounded-md border border-hairline bg-surface-alpha text-[11px] text-muted">
     <span>Left-click: Assign</span>
     <span aria-hidden="true">·</span>
     <span>Right-click: Label / Lock</span>
@@ -407,22 +407,22 @@
     {@const hAsgn = assignments[hPin.pos]}
     {@const hLabel = labels[hPin.pos]}
     <div
-      class="fixed z-30 w-[268px] pointer-events-none rounded-lg border border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-[#121722]/95 shadow-lg p-2.5 text-xs"
+      class="fixed z-30 w-[268px] pointer-events-none rounded-lg border border-hairline bg-surface-alpha shadow-lg p-2.5 text-xs"
       style={`left: ${tooltipPos.left}px; top: ${tooltipPos.top}px;`}
     >
-      <div class="flex items-center justify-between gap-2 pb-1.5 border-b border-slate-200 dark:border-slate-800">
-        <span class="font-mono font-semibold text-slate-900 dark:text-slate-100">
+      <div class="flex items-center justify-between gap-2 pb-1.5 border-b border-hairline">
+        <span class="font-mono font-semibold text-primary">
           {hPin.name}
         </span>
-        <span class="font-mono-tabular text-[11px] text-slate-500 dark:text-slate-400">
+        <span class="font-mono-tabular text-[11px] text-muted">
           Pin {hPin.pos} · {hPin.type.toUpperCase()}
         </span>
       </div>
 
       {#if hAsgn}
         <div class="mt-1.5 flex items-center justify-between text-[11px]">
-          <span class="text-slate-500 dark:text-slate-400">Active</span>
-          <span class="font-mono font-medium text-emerald-600 dark:text-emerald-400">
+          <span class="text-muted">Active</span>
+          <span class="font-mono font-medium text-pin-success">
             {hAsgn.peripheral}_{hAsgn.signal}{hAsgn.af !== null ? ` (AF${hAsgn.af})` : ''}
           </span>
         </div>
@@ -430,36 +430,36 @@
 
       {#if hLabel}
         <div class="mt-1 flex items-center justify-between text-[11px]">
-          <span class="text-slate-500 dark:text-slate-400">Label</span>
-          <span class="font-mono text-sky-600 dark:text-sky-400">{hLabel}</span>
+          <span class="text-muted">Label</span>
+          <span class="font-mono text-hint">{hLabel}</span>
         </div>
       {/if}
 
       {#if hPin.signals.length > 0}
-        <div class="mt-2 pt-1.5 border-t border-slate-200 dark:border-slate-800">
-          <div class="text-[10px] font-medium text-slate-500 dark:text-slate-400 mb-1">
+        <div class="mt-2 pt-1.5 border-t border-hairline">
+          <div class="text-[10px] font-medium text-muted mb-1">
             Alternate Functions ({hPin.signals.length})
           </div>
           <div class="grid grid-cols-1 gap-0.5 max-h-[140px] overflow-hidden">
             {#each hPin.signals.slice(0, 10) as sig}
               <div class="flex items-center justify-between font-mono-tabular text-[11px]">
-                <span class="text-slate-700 dark:text-slate-300 truncate">
+                <span class="text-primary truncate">
                   {sig.peripheral}_{sig.signal}
                 </span>
-                <span class="text-slate-400 dark:text-slate-500 ml-2 shrink-0">
+                <span class="text-faint ml-2 shrink-0">
                   {sig.af !== null ? `AF${sig.af}` : 'AFIO'}
                 </span>
               </div>
             {/each}
             {#if hPin.signals.length > 10}
-              <div class="text-[10px] text-slate-400 dark:text-slate-500">
+              <div class="text-[10px] text-faint">
                 +{hPin.signals.length - 10} more signals (click to inspect)
               </div>
             {/if}
           </div>
         </div>
       {:else}
-        <div class="mt-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+        <div class="mt-1.5 text-[11px] text-muted">
           Dedicated {hPin.type} pin.
         </div>
       {/if}

@@ -90,15 +90,15 @@
   }
 </script>
 
-<div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#121722] overflow-hidden flex flex-col">
+<div class="rounded-xl border border-hairline bg-surface overflow-hidden flex flex-col">
   <!-- Top Interactive Control Bar -->
-  <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#0e131d]">
+  <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 border-b border-hairline bg-subtle">
     <div class="flex items-center gap-2 text-xs font-mono-tabular">
-      <span class="font-semibold text-slate-900 dark:text-slate-100">{chip.id}</span>
-      <span class="text-slate-400">·</span>
-      <span class="text-slate-500 dark:text-slate-400">{chip.package.name}</span>
-      <span class="text-slate-400">·</span>
-      <span class="text-emerald-600 dark:text-emerald-400">
+      <span class="font-semibold text-primary">{chip.id}</span>
+      <span class="text-faint">·</span>
+      <span class="text-muted">{chip.package.name}</span>
+      <span class="text-faint">·</span>
+      <span class="text-pin-success">
         {Object.keys(demoState.assignments).length} pins assigned
       </span>
     </div>
@@ -108,14 +108,14 @@
         type="button"
         onclick={resetDemo}
         title="Reset hero demo pinout"
-        class="p-1.5 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400"
+        class="p-1.5 rounded-md border border-hairline hover:bg-elevated text-muted"
       >
         <RotateCcw class="w-3.5 h-3.5" />
       </button>
       <button
         type="button"
         onclick={() => onOpenWorkspace(demoState)}
-        class="inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-sky-500 hover:bg-sky-600 text-xs font-semibold text-white whitespace-nowrap transition-colors"
+        class="inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-action hover:bg-action-hover text-xs font-semibold text-on-action whitespace-nowrap transition-colors"
       >
         <span>Open in Full Workspace</span>
         <ArrowUpRight class="w-3.5 h-3.5" />
@@ -124,9 +124,9 @@
   </div>
 
   <!-- Quick Peripheral Toggles -->
-  <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-2 border-b border-slate-200 dark:border-slate-800 text-xs">
+  <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-2 border-b border-hairline text-xs">
     <div class="flex flex-wrap items-center gap-1.5">
-      <span class="text-slate-500 dark:text-slate-400 text-[11px] mr-0.5">Live modes:</span>
+      <span class="text-muted text-[11px] mr-0.5">Live modes:</span>
       {#each [
         { p: 'SYS', m: 'swd', label: 'SWD' },
         { p: 'SPI1', m: 'full_duplex', label: 'SPI1' },
@@ -139,19 +139,19 @@
           onclick={() => handleToggleDemoPeripheral(item.p, item.m)}
           class={`px-2 py-0.5 rounded font-mono text-[11px] transition-colors border ${
             active
-              ? 'bg-emerald-500/15 border-emerald-500/45 text-emerald-700 dark:text-emerald-300 font-medium'
-              : 'bg-transparent border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              ? 'bg-success-soft border-pin-success text-pin-success font-medium'
+              : 'bg-transparent border-hairline text-muted hover:text-primary'
           }`}
         >
           {item.label}
         </button>
       {/each}
     </div>
-    <span class="text-[11px] text-slate-400 dark:text-slate-500">Click any pin to edit</span>
+    <span class="text-[11px] text-faint">Click any pin to edit</span>
   </div>
 
   <!-- Live Interactive SVG Chip -->
-  <div class="relative bg-[#f8fafc] dark:bg-[#0b0e14] bg-dot-grid flex items-center justify-center p-3 overflow-hidden min-h-[380px]">
+  <div class="relative bg-canvas bg-dot-grid flex items-center justify-center p-3 overflow-hidden min-h-[380px]">
     <div class="w-full max-w-[540px] flex items-center justify-center">
       <div class="w-full [&_svg]:w-full [&_svg]:h-auto">
         <PerimeterPackage
@@ -174,21 +174,21 @@
   </div>
 
   <!-- Live Hover Inspector Bar -->
-  <div class="px-4 py-2 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#0e131d] text-[11px] font-mono-tabular flex items-center justify-between gap-3 min-h-[34px]">
+  <div class="px-4 py-2 border-t border-hairline bg-subtle text-[11px] font-mono-tabular flex items-center justify-between gap-3 min-h-[34px]">
     {#if hoveredPin}
       {@const hAsgn = demoState.assignments[hoveredPin.pos]}
       <div class="flex items-center gap-2 min-w-0 truncate">
-        <span class="font-semibold text-slate-900 dark:text-slate-100 shrink-0">
+        <span class="font-semibold text-primary shrink-0">
           Pin {hoveredPin.pos} ({hoveredPin.name})
         </span>
-        <span class="text-slate-400">·</span>
+        <span class="text-faint">·</span>
         {#if hAsgn}
-          <span class="text-emerald-600 dark:text-emerald-400 shrink-0">
+          <span class="text-pin-success shrink-0">
             {hAsgn.peripheral}_{hAsgn.signal}{hAsgn.af !== null ? ` AF${hAsgn.af}` : ''}
           </span>
-          <span class="text-slate-400">·</span>
+          <span class="text-faint">·</span>
         {/if}
-        <span class="text-slate-500 dark:text-slate-400 truncate">
+        <span class="text-muted truncate">
           {hoveredPin.signals.length > 0
             ? hoveredPin.signals
                 .slice(0, 4)
@@ -198,16 +198,16 @@
         </span>
       </div>
     {:else}
-      <span class="text-slate-500 dark:text-slate-400">
+      <span class="text-muted">
         Hover any pin to inspect alternate functions, or click a pin to assign a signal.
       </span>
     {/if}
     {#if report.warningCount > 0 || report.errorCount > 0}
-      <span class="shrink-0 text-orange-500">
+      <span class="shrink-0 text-pin-partial">
         {report.errorCount}E / {report.warningCount}W
       </span>
     {:else}
-      <span class="shrink-0 text-emerald-600 dark:text-emerald-400">0 conflicts</span>
+      <span class="shrink-0 text-pin-success">0 conflicts</span>
     {/if}
   </div>
 

@@ -19,14 +19,21 @@ import {
   orderPeripheralsByPlacement,
   parsePinPlacementPreference,
   placementAffinityForPin,
+  isMatrixCandidateLegal,
+  matrixElectricalPenalty,
+  rankMatrixAlternates,
+  MATRIX_ALTERNATE_CAP,
 } from '../src/core/placement';
 import {
   allocatePeripheralMode,
   computePinScarcityScore,
   createEmptyWorkspace,
   findOneHopFixForSignal,
+  reallocateMatrixPlacement,
   reallocatePeripheralPlacement,
   reallocatePlacementOrdered,
+  searchBacktracking,
+  validateMatrixPlan,
   togglePeripheralSignal,
 } from '../src/core/solver';
 import {
@@ -34,7 +41,10 @@ import {
   PLACEMENT_RING_RANK,
   PLACEMENT_RINGS,
   type ChipData,
+  type PinInfo,
   type PinPlacementPreference,
+  type PinSignal,
+  type PinTag,
   type WorkspaceState,
 } from '../src/core/types';
 import { decodeWorkspaceState, encodeWorkspaceState } from '../src/core/url-state';
@@ -521,6 +531,8 @@ describe('placement overlay wiring', () => {
     expect(overlay).not.toContain('type="number"');
     expect(overlay).not.toContain('pointer-events-auto absolute top-16');
     expect(canvas).toContain('setPlacementOverlayRotation(overlayRotation + 90)');
+    expect(canvas).toContain('Rotate placement Rings');
+    expect(canvas).toContain('<Orbit class="size-3.5" />');
     expect(canvas).not.toContain('handlePlacementRing');
   });
 
@@ -531,7 +543,7 @@ describe('placement overlay wiring', () => {
     );
     expect(canvas).toContain('rotation: PackageRotation');
     expect(canvas).toContain('{rotation}');
-    expect(canvas).toContain('rotation === -90');
+    expect(canvas).toContain('rotation === 90 || rotation === 270');
     const store = fs.readFileSync(
       path.join(ROOT, 'src/state/workspace.svelte.ts'),
       'utf8',
@@ -564,7 +576,7 @@ describe('placement overlay interaction refresh', () => {
   it('uses tighter ring spacing with a larger outer ring', () => {
     const overlay = readOverlay();
     expect(overlay).toContain('high: 0.8');
-    expect(overlay).toContain('medium: 0.84');
+    expect(overlay).toContain('medium: 0.89');
     expect(overlay).toContain('low: 0.98');
     expect(overlay).not.toContain('0.34');
     expect(overlay).not.toContain('0.66');
@@ -739,7 +751,7 @@ describe('priority ring identifiers', () => {
       'utf8',
     );
     expect(overlay).toContain('high: 0.8');
-    expect(overlay).toContain('medium: 0.84');
+    expect(overlay).toContain('medium: 0.89');
     expect(overlay).toContain('low: 0.98');
     const panel = fs.readFileSync(
       path.join(ROOT, 'src/components/workspace/PlacementPanel.svelte'),
@@ -871,5 +883,329 @@ describe('priority ring identifiers', () => {
       measuredSafeRadius(Number.NaN, 300, { left: 0, top: 0, width: 0, height: 0 }, [], 40),
     ).toBe(40);
     expect(measuredSafeRadius(400, 300, bounds, [])).toBe(300);
+  });
+});
+
+/** Synthetic matrix chip: 30 GPIOs carrying the same matrix routes. */
+function matrixChip(withHazards = true): ChipData {
+  const pins: PinInfo[] = [];
+  for (let i = 1; i <= 30; i++) {
+    const tags: PinTag[] = [];
+    if (withHazards) {
+      if (i === 1) tags.push('strapping', 'cap-restricted');
+      if (i === 2) tags.push('input-only');
+      if (i === 3) tags.push('flash');
+      if (i === 4) tags.push('psram');
+      if (i === 5) tags.push('adc');
+    }
+    const signals: PinSignal[] = [
+      {
+        peripheral: 'SPI2',
+        signal: 'SCK',
+        af: null,
+        direction: 'output',
+        ...(i <= 8 ? { resourceId: `LEDC${i}` } : {}),
+      },
+      {
+        peripheral: 'SPI2',
+        signal: 'MOSI',
+        af: null,
+        direction: 'output',
+        ...(i <= 8 ? { resourceId: `RMT${i}` } : {}),
+      },
+      { peripheral: 'SPI2', signal: 'MISO', af: null, direction: 'input' },
+    ];
+    if (i === 5) {
+      signals.push({ peripheral: 'ADC2', signal: 'CH0', af: null, direction: 'input' });
+    }
+    pins.push({ pos: String(i), name: `GPIO${i}`, type: 'io', tags, signals });
+  }
+  return {
+    id: 'MATRIX30TEST',
+    vendor: 'esp32',
+    muxModel: 'gpio-matrix',
+    family: 'MATRIX',
+    core: 'Synthetic',
+    flashKb: 0,
+    ramKb: 520,
+    matrixRouteCapacity: 100,
+    package: { name: 'QFN-40', kind: 'perimeter', pinCount: 30, sides: [8, 7, 8, 7] },
+    pins,
+    peripherals: {
+      SPI2: { kind: 'spi', signals: ['SCK', 'MOSI', 'MISO'] },
+      ADC2: { kind: 'adc', signals: ['CH0'] },
+      WIFI: { kind: 'other', signals: ['STA'] },
+    },
+  };
+}
+
+describe('matrix placement helpers', () => {
+  it('derives finite geometry for every synthetic matrix pin', () => {
+    for (const candidate of [matrixChip(), matrixChip(false)]) {
+      const geometry = buildPinGeometryMap(candidate);
+      expect(geometry.byPos.size).toBe(candidate.pins.length);
+      for (const pin of candidate.pins) {
+        const point = geometry.byPos.get(pin.pos)!;
+        expect(Number.isFinite(point.angle)).toBe(true);
+        expect(Number.isFinite(point.radius)).toBe(true);
+      }
+    }
+  });
+
+  it('derives electrical penalties from tags and radio state, zero when absent', () => {
+    const c = matrixChip();
+    const state = createEmptyWorkspace(c.id);
+    const byPos = (pos: string) => c.pins.find((p) => p.pos === pos)!;
+    expect(matrixElectricalPenalty(byPos('1'), c, state, 'SPI2', 'SCK')).toBe(40);
+    expect(matrixElectricalPenalty(byPos('2'), c, state, 'SPI2', 'SCK')).toBe(60);
+    expect(matrixElectricalPenalty(byPos('3'), c, state, 'SPI2', 'SCK')).toBe(80);
+    expect(matrixElectricalPenalty(byPos('4'), c, state, 'SPI2', 'SCK')).toBe(80);
+    expect(matrixElectricalPenalty(byPos('6'), c, state, 'SPI2', 'SCK')).toBe(0);
+    expect(matrixElectricalPenalty(byPos('5'), c, state, 'ADC2', 'CH0')).toBe(0);
+    state.peripheralModes.WIFI = 'sta';
+    expect(matrixElectricalPenalty(byPos('5'), c, state, 'ADC2', 'CH0')).toBe(60);
+
+    const plain = matrixChip(false);
+    expect(
+      matrixElectricalPenalty(
+        plain.pins[0],
+        plain,
+        createEmptyWorkspace(plain.id),
+        'SPI2',
+        'SCK',
+      ),
+    ).toBe(0);
+  });
+
+  it('ranks electrical penalty ahead of geometry affinity', () => {
+    const c: ChipData = {
+      ...matrixChip(false),
+      id: 'PENALTYGEOM',
+      package: { name: 'SOP2', kind: 'perimeter', pinCount: 2, sides: [1, 0, 1, 0] },
+      // The first pin maps to the left edge (180 deg) and the second to the
+      // right edge (0 deg). Put the hazard on the angle-aligned pin.
+      pins: [c1('2', [], 'CH0', 'ADC2'), c1('1', ['strapping', 'adc'], 'CH0', 'ADC2')],
+    };
+    const state = createEmptyWorkspace(c.id);
+    state.peripheralModes.WIFI = 'sta';
+    state.placement = { ADC2: { angle: 0, ring: 'high', enabled: true } };
+    const alternates = rankMatrixAlternates(
+      c.pins,
+      c,
+      state,
+      'ADC2',
+      'CH0',
+      new Set(),
+      new Set(),
+    );
+    expect(alternates.map((a) => a.pos)).toEqual(['2', '1']);
+    expect(alternates[1].penalty).toBeGreaterThan(alternates[0].penalty);
+    expect(alternates[1].affinity).toBeLessThan(alternates[0].affinity);
+  });
+
+  it('filters illegal and locked candidates and caps matrix alternates deterministically', () => {
+    const c = matrixChip();
+    const state = createEmptyWorkspace(c.id);
+    state.locked['7'] = true;
+    state.assignments['8'] = { peripheral: 'GPIO', signal: 'Input', af: null };
+    const usedResources = new Set(['LEDC6']);
+    const first = rankMatrixAlternates(
+      c.pins,
+      c,
+      state,
+      'SPI2',
+      'SCK',
+      new Set(),
+      usedResources,
+    );
+    const second = rankMatrixAlternates(
+      c.pins,
+      c,
+      state,
+      'SPI2',
+      'SCK',
+      new Set(),
+      usedResources,
+    );
+    expect(first).toHaveLength(MATRIX_ALTERNATE_CAP);
+    expect(first).toEqual(second);
+    for (const pos of ['2', '3', '4', '6', '7', '8']) {
+      expect(first.some((a) => a.pos === pos), pos).toBe(false);
+    }
+    const legal = isMatrixCandidateLegal(
+      c.pins.find((p) => p.pos === '2')!,
+      {
+        chip: c,
+        state,
+        peripheral: 'SPI2',
+        signal: 'SCK',
+        usedSignals: new Set(),
+        usedPins: new Set(),
+        usedResources: new Set(),
+      },
+    );
+    expect(legal).toBe(false);
+  });
+});
+
+function c1(pos: string, tags: PinTag[], signal = 'SCK', peripheral = 'SPI2'): PinInfo {
+  return {
+    pos,
+    name: `GPIO${pos}`,
+    type: 'io',
+    tags,
+    signals: [{ peripheral, signal, af: null, direction: 'input' }],
+  };
+}
+
+describe('matrix placement reallocation', () => {
+  it('uses backtracking to prefer a complete plan over a greedy first choice', () => {
+    const search = searchBacktracking([
+      {
+        signal: 'AAA',
+        options: [
+          { key: 'p1', score: 0, item: 'a1' },
+          { key: 'p2', score: 10, item: 'a2' },
+        ],
+      },
+      { signal: 'BBB', options: [{ key: 'p1', score: 0, item: 'b1' }] },
+    ]);
+    expect(search.assignedCount).toBe(2);
+    expect(search.picks.map((pick) => pick.option?.item)).toEqual(['a2', 'b1']);
+
+    const solverSource = fs.readFileSync(path.join(ROOT, 'src/core/solver.ts'), 'utf8');
+    expect(solverSource).toContain('searchBacktracking(');
+    expect(solverSource).toContain('reallocateMatrixPlacement(');
+  });
+
+  it('assigns every required signal to a distinct legal pin', () => {
+    const c = matrixChip();
+    const state = createEmptyWorkspace(c.id);
+    const next = reallocateMatrixPlacement(c, state, 'SPI2', null, ['SCK', 'MOSI', 'MISO']);
+    const assigned = Object.entries(next.assignments);
+    expect(assigned).toHaveLength(3);
+    expect(new Set(assigned.map(([pos]) => pos)).size).toBe(3);
+    for (const [pos] of assigned) expect(['1', '2', '3', '4']).not.toContain(pos);
+    expect(validateMatrixPlan(c, next)).toEqual([]);
+  });
+
+  it('keeps locked pins fixed and satisfies their signals', () => {
+    const c = matrixChip();
+    const state = createEmptyWorkspace(c.id);
+    state.assignments['5'] = { peripheral: 'SPI2', signal: 'SCK', af: null };
+    state.locked['5'] = true;
+    const next = reallocateMatrixPlacement(c, state, 'SPI2', null, ['SCK', 'MOSI', 'MISO']);
+    expect(next.assignments['5']).toEqual(state.assignments['5']);
+    expect(next.locked['5']).toBe(true);
+    expect(Object.keys(next.assignments).length).toBe(3);
+    expect(validateMatrixPlan(c, next)).toEqual([]);
+  });
+
+  it('leaves a signal unallocated when its only legal candidate is locked', () => {
+    const c = matrixChip(false);
+    c.pins = c.pins.filter((p) => p.pos === '1');
+    c.peripherals = { SPI2: { kind: 'spi', signals: ['SCK'] } };
+    c.pins[0].signals = [{ peripheral: 'SPI2', signal: 'SCK', af: null, direction: 'output' }];
+    const state = createEmptyWorkspace(c.id);
+    state.locked['1'] = true;
+    const next = reallocateMatrixPlacement(c, state, 'SPI2', null, ['SCK']);
+    expect(next.assignments['1']).toBeUndefined();
+    expect(next.locked['1']).toBe(true);
+  });
+
+  it('validates duplicates and resource collisions without mutating the state', () => {
+    const c = matrixChip(false);
+    const state = createEmptyWorkspace(c.id);
+    state.assignments = {
+      '9': { peripheral: 'SPI2', signal: 'MISO', af: null, resourceId: 'LEDC1' },
+      '10': { peripheral: 'SPI2', signal: 'MISO', af: null, resourceId: 'LEDC1' },
+    };
+    const before = structuredClone(state);
+    const diagnostics = validateMatrixPlan(c, state);
+    expect(state).toEqual(before);
+    expect(diagnostics.some((d) => d.code === 'DUPLICATE_SIGNAL')).toBe(true);
+    const conflict = diagnostics.find((d) => d.code === 'RESOURCE_CONFLICT');
+    expect(conflict?.pins).toEqual(expect.arrayContaining(['9', '10']));
+  });
+
+  it('reports adapter hazard evidence as a diagnostic without changing assignments', () => {
+    const c = matrixChip();
+    const state = createEmptyWorkspace(c.id);
+    state.assignments['1'] = { peripheral: 'GPIO', signal: 'Output', af: null };
+    state.peripheralModes.WIFI = 'sta';
+    state.assignments['5'] = { peripheral: 'ADC2', signal: 'CH0', af: null };
+    const before = structuredClone(state.assignments);
+    const diagnostics = validateMatrixPlan(c, state);
+    expect(state.assignments).toEqual(before);
+    expect(diagnostics.some((d) => d.code === 'STRAPPING_REPURPOSED')).toBe(true);
+    expect(diagnostics.some((d) => d.code === 'ADC2_WIFI_CONFLICT')).toBe(true);
+  });
+
+  it('allocates a matrix chip with no hazard fields without penalty or error', () => {
+    const c = matrixChip(false);
+    const state = createEmptyWorkspace(c.id);
+    for (const pin of c.pins) {
+      expect(matrixElectricalPenalty(pin, c, state, 'SPI2', 'SCK')).toBe(0);
+    }
+    const next = reallocateMatrixPlacement(c, state, 'SPI2', null, ['SCK', 'MOSI', 'MISO']);
+    expect(Object.keys(next.assignments)).toHaveLength(3);
+    expect(validateMatrixPlan(c, next)).toEqual([]);
+  });
+});
+
+describe('matrix placement store dispatch', () => {
+  it('previews legal matrix drags with one undo entry only on commit', async () => {
+    const storage = new Map<string, string>();
+    vi.stubGlobal('window', {
+      localStorage: {
+        getItem: (key: string) => storage.get(key) ?? null,
+        setItem: (key: string, value: string) => storage.set(key, value),
+      },
+    });
+    vi.resetModules();
+    const { workspaceStore } = await import('../src/state/workspace.svelte.ts');
+    const { catalogStore } = await import('../src/state/catalog.svelte.ts');
+    const c = matrixChip();
+    const initial = createEmptyWorkspace(c.id);
+    initial.assignments = {
+      '5': { peripheral: 'SPI2', signal: 'SCK', af: null },
+      '6': { peripheral: 'SPI2', signal: 'MOSI', af: null },
+      '7': { peripheral: 'SPI2', signal: 'MISO', af: null },
+    };
+    catalogStore.primeChip(c);
+    await workspaceStore.openMcu(c.id, initial);
+    const preference: PinPlacementPreference = { angle: 90, ring: 'high', enabled: true };
+
+    workspaceStore.previewPlacement('SPI2', preference);
+    expect(workspaceStore.canUndo).toBe(false);
+    expect(Object.keys(workspaceStore.state.assignments)).toHaveLength(3);
+    expect(validateMatrixPlan(c, workspaceStore.state)).toEqual([]);
+
+    const preview = structuredClone(workspaceStore.state.assignments);
+    workspaceStore.previewPlacement('SPI2', { ...preference, angle: 180 });
+    expect(validateMatrixPlan(c, workspaceStore.state)).toEqual([]);
+    expect(workspaceStore.canUndo).toBe(false);
+
+    workspaceStore.cancelPlacementPreview();
+    expect(workspaceStore.state.assignments).toEqual(initial.assignments);
+
+    workspaceStore.previewPlacement('SPI2', preference);
+    workspaceStore.commitPlacement('SPI2', preference);
+    expect(workspaceStore.canUndo).toBe(true);
+    expect(Object.keys(workspaceStore.state.assignments)).toHaveLength(3);
+    expect(validateMatrixPlan(c, workspaceStore.state)).toEqual([]);
+    workspaceStore.undo();
+    expect(workspaceStore.state.assignments).toEqual(initial.assignments);
+    vi.unstubAllGlobals();
+  });
+
+  it('keeps non-matrix chips on the greedy reallocation path', () => {
+    const store = fs.readFileSync(path.join(ROOT, 'src/state/workspace.svelte.ts'), 'utf8');
+    expect(store).toContain("getChipMuxModel(this.chip) === 'gpio-matrix'");
+    expect(store).toContain('reallocateMatrixPlacement(this.chip, next, peripheral, preference)');
+    expect(store).toContain('reallocatePeripheralPlacement(this.chip, next, peripheral, preference)');
+    const baseline = reallocatePeripheralPlacement(chip, empty, 'SPI1', null);
+    expect(baseline.assignments).toEqual({});
+    expect(validateMatrixPlan(chip, baseline)).toEqual([]);
   });
 });

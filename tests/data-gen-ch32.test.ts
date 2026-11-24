@@ -346,7 +346,7 @@ describe('CH32 parts, packages, and physical pins', () => {
     expect(result.chips.size).toBe(105);
     expect(result.index.every((entry) => entry.vendor === 'ch32')).toBe(true);
     expect(Array.from(result.chips.values()).every((chip) =>
-      chip.vendor === 'ch32' && chip.muxModel === 'remap-group' && chip.flashKb > 0 && chip.ramKb > 0,
+      chip.vendor === 'ch32' && chip.muxModel === 'remap-group' && (chip.flashKb ?? 0) > 0 && chip.ramKb > 0,
     )).toBe(true);
     expect(result.families).toEqual(['CH32V003']);
   });
@@ -629,7 +629,7 @@ describe('CH32 deferral, gates, provenance, and registration', () => {
   });
 
   it('registers all three adapters without changing the STM32 adapter contract', () => {
-    expect(DEFAULT_ADAPTERS.map((a) => a.vendor)).toEqual(['stm32', 'ch32', 'rp']);
+    expect(DEFAULT_ADAPTERS.map((a) => a.vendor)).toEqual(['stm32', 'ch32', 'rp', 'esp32']);
     expect(DEFAULT_ADAPTERS[0]).toBe(stm32Adapter);
     expect(DEFAULT_ADAPTERS[1]).toBe(ch32Adapter);
     expect(DEFAULT_ADAPTERS[2]).toBe(rpAdapter);

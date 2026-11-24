@@ -254,6 +254,46 @@ function formatCh32(chip: ChipData, state: WorkspaceState, guard: string): strin
   return lines.join('\n') + '\n';
 }
 
+/** ESP32 header: GPIO-number macros and matrix function comments, no `_AF`. */
+function formatEsp32(chip: ChipData, state: WorkspaceState, guard: string): string {
+  const pinMap = new Map<string, PinInfo>(chip.pins.map((p) => [p.pos, p]));
+  const positions = sortedAssignments(state);
+  if (positions.length === 0) return emptyHeader(chip, guard);
+
+  const lines = [
+    ...headerPreamble(chip, guard),
+    `/* ESP32 GPIO matrix routes (direct IO_MUX or routed matrix) */`,
+    ``,
+  ];
+  const muxModel = getChipMuxModel(chip);
+  const usedMacros = new Map<string, number>();
+
+  for (const pos of positions) {
+    const asgn = state.assignments[pos];
+    const pin = pinMap.get(pos);
+    if (!pin) continue;
+
+    const rawLabel = state.labels[pos]?.trim();
+    const baseMacro = rawLabel
+      ? toUpperSnakeCase(rawLabel)
+      : toUpperSnakeCase(`${asgn.peripheral}_${asgn.signal}`);
+    const count = usedMacros.get(baseMacro) ?? 0;
+    usedMacros.set(baseMacro, count + 1);
+    const macro = count === 0 ? baseMacro : `${baseMacro}_${count + 1}`;
+
+    const gpionum = parseGpionum(pin.name);
+    const muxLabel = formatMuxLabel(asgn, muxModel);
+    lines.push(`/* Pin ${pos}: ${pin.name} -> ${asgn.peripheral}_${asgn.signal} [${muxLabel}] */`);
+    lines.push(`#define ${macro}_GPIO ${gpionum === null ? 0 : gpionum}U`);
+    lines.push(`/* Matrix function: ${muxLabel} */`);
+    lines.push(...gpioMacroLines(macro, state.gpioConfig?.[pos]));
+    lines.push(``);
+  }
+
+  lines.push(`#endif /* ${guard} */`);
+  return lines.join('\n') + '\n';
+}
+
 /**
  * Generate a guarded C pinout header for the chip's vendor.
  * All mux comments come from `formatMuxLabel`, so non-AF mux models never
@@ -266,6 +306,8 @@ export function exportCHeader(chip: ChipData, state: WorkspaceState): string {
       return formatRp(chip, state, guard);
     case 'ch32':
       return formatCh32(chip, state, guard);
+    case 'esp32':
+      return formatEsp32(chip, state, guard);
     default:
       return formatStm32(chip, state, guard);
   }

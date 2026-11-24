@@ -134,7 +134,7 @@ describe('export failure feedback', () => {
     expect(modal.indexOf('click()')).toBeLessThan(modal.indexOf('revokeObjectURL'));
     expect(modal).toContain('copyContent');
     expect(modal).toContain('downloadFile');
-    for (const crate of ['embassy-stm32', 'embassy-rp', 'ch32-hal']) {
+    for (const crate of ['embassy-stm32', 'embassy-rp', 'ch32-hal', 'esp-hal']) {
       expect(modal, crate).toContain(crate);
     }
     expect(readSource('src/pages/LandingPage.svelte')).not.toContain('id="export-preview"');

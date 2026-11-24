@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Crosshair, Maximize2, Minus, Plus, RotateCw, X } from 'lucide-svelte';
+  import { Crosshair, Maximize2, Minus, Orbit, Plus, RotateCw, X } from 'lucide-svelte';
   import { onMount } from 'svelte';
   import {
     configuredPeripheralNames,
@@ -225,9 +225,13 @@
     if (!svg) return;
     const sw = Number(svg.getAttribute('width')) || 700;
     const sh = Number(svg.getAttribute('height')) || 700;
-    const isRotated = rotation === -90;
-    const effW = isRotated ? sh : sw;
-    const effH = isRotated ? sw : sh;
+    // Quarter-turn renderers declare the swapped extents in both width/height
+    // and viewBox. Read those declared extents once so the 90/270 case is not
+    // compensated a second time here.
+    const quarterTurn = rotation === 90 || rotation === 270;
+    const viewBoxDims = (svg.getAttribute('viewBox') ?? '').trim().split(/\s+/).map(Number);
+    const effW = quarterTurn ? viewBoxDims[2] || sh : sw;
+    const effH = quarterTurn ? viewBoxDims[3] || sw : sh;
 
     const rect = stageEl.getBoundingClientRect();
     if (rect.width <= 0 || rect.height <= 0) return;
@@ -238,8 +242,8 @@
     const nextZoom = Math.max(0.4, Math.min(1.6, Math.min(scaleX, scaleY)));
 
     zoom = Number(nextZoom.toFixed(3));
-    panX = (rect.width - sw * zoom) / 2;
-    panY = (rect.height - sh * zoom) / 2;
+    panX = (rect.width - effW * zoom) / 2;
+    panY = (rect.height - effH * zoom) / 2;
   }
 
   function zoomBy(factor: number, clientX?: number, clientY?: number): void {
@@ -606,11 +610,12 @@
         <button
           type="button"
           onclick={() => workspaceStore.setPlacementOverlayRotation(overlayRotation + 90)}
-          title="Rotate placement rings"
-          aria-label="Rotate placement rings"
-          class="btn btn-ghost btn-sm btn-square"
+          title="Rotate placement Rings"
+          aria-label="Rotate placement Rings"
+          class="btn btn-ghost btn-sm gap-1"
         >
-          <RotateCw class="size-3.5" />
+          <Orbit class="size-3.5" />
+          <span class="hidden xl:inline">Rings</span>
         </button>
       {/if}
     </div>
@@ -666,7 +671,8 @@
     <button
       type="button"
       onclick={onRotate}
-      title={rotation === -90 ? 'Restore package orientation' : 'Rotate package counter-clockwise'}
+      title={`Rotate package clockwise, now ${rotation} degrees`}
+      aria-label={`Rotate package clockwise, now ${rotation} degrees`}
       class="btn btn-ghost btn-sm gap-1 font-mono-tabular"
     >
       <RotateCw class="size-3.5" />
@@ -700,15 +706,6 @@
       <span class="size-2.5 rounded-xs bg-info"></span>
       Remap / Search
     </span>
-  </div>
-
-  <!-- Bottom-Right Interaction Hint -->
-  <div data-placement-furniture class="card card-border hidden xl:flex absolute bottom-3 right-3 z-20 items-center gap-2 px-2.5 py-1 bg-base-100/95 text-[11px] text-base-content/60">
-    <span>Left-click: Assign</span>
-    <span aria-hidden="true">·</span>
-    <span>Right-click: Label / Lock</span>
-    <span aria-hidden="true">·</span>
-    <span>Ctrl+Click: Remap</span>
   </div>
 
   <!-- Hover Floating AF Table Tooltip -->

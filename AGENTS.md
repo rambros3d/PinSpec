@@ -1,6 +1,6 @@
 # AGENTS.md
 
-## Project: PinCraft (STM32 / CH32 / RP Pinout Configurator)
+## Project: PinCraft (STM32 / CH32 / RP / ESP32 Pinout Configurator)
 
 PinCraft is a fast, static, CubeMX-style pinout planning web application. It is a
 browser-native alternative to STM32CubeMX: no backend, no install, no cloud
@@ -14,11 +14,11 @@ workspace, and an automated build-time catalog generator.
 
 ### Current implementation status
 
-All STM32, CH32, and RP pipeline phases are shipped: the CI-native adapter
-generator, CH32 and RP adapters, vendor-aware core solver, exporters/state,
-workspace UI, and the `multi-vendor-ci-gates` gate/documentation phase. The
-landing page, exporters, and GitHub Pages deployment are green for all three
-vendors. The gate suite is the single release contract shared by local
+All STM32, CH32, RP, and ESP32 pipeline phases are shipped: the CI-native
+adapter generator, CH32/RP/ESP32 adapters, vendor-aware core solver,
+exporters/state, workspace UI, and the `multi-vendor-ci-gates`
+gate/documentation phase. The landing page, exporters, and GitHub Pages
+deployment are green for all four vendors. The gate suite is the single release contract shared by local
 generation and CI; its delta spec lives in `openspec/specs/multi-vendor-ci-gates/`.
 
 Backward compatibility with legacy `version: 1` share links and project files
@@ -189,7 +189,7 @@ PinCraft/
 |   +-- index.ts               # CLI entry point, emitters, gate invocation
 |   +-- gates.ts               # Pure per-vendor and global gate helpers
 |   +-- artifacts.ts           # In-memory shard preparation and artifact writers
-|   +-- adapters/{stm32,ch32,rp}  # Vendor source parsing and assertions
+|   +-- adapters/{stm32,ch32,rp,esp32}  # Vendor source parsing and assertions
 |   +-- sources.ts             # Source declarations and license constants
 |   +-- helpers.ts             # Pure normalization helpers
 +-- src/
@@ -235,11 +235,15 @@ PinCraft/
 | `raspberrypi/picotool` and `raspberrypi/pico-sdk` | BSD-3-Clause | RP FUNCSEL tables and GPIO function macros |
 | `zephyrproject-rtos/zephyr` | Apache-2.0 | RP SRAM, GPIO counts, and variant device trees |
 | `raspberrypi/documentation` | CC-BY-SA-4.0 | RP flash/package variant tables |
+| `espressif/esp-gpio-tool` | Apache-2.0 | ESP32 GPIO capabilities, strapping, at-reset pull, MPN reserved pins, SRAM, ADC2 Wi-Fi conflict |
+| `esp-rs/esp-hal` `esp-metadata` | MIT / Apache-2.0 | ESP32 IO_MUX functions, matrix signal ids, limitations, DMA, SoC facts |
+| `espressif/kicad-libraries` | CC-BY-SA-4.0 (generated-file exception) | ESP32 symbol pins, footprint pad numbers, exposed-pad geometry |
+| `espressif/esp-idf` | Apache-2.0 | Pinned `gpio_sig_map.h`, `soc_caps.h`, and `io_mux_reg.h` matrix evidence |
 
 `npm run gen-data` (or `npm run acquire-sources` on its own) shallow-clones the
 git sources and fetches the raw reference files into the gitignored `.cache/`.
 The generator records a short SHA (or SHA-256 for raw files), license, and URL
-for each of the seven canonical sources in `meta.json`, and the landing footer
+for each of the eleven canonical sources in `meta.json`, and the landing footer
 displays them. The local cache check is existence-only: it does not refresh an
 existing checkout. The weekly CI schedule deletes `.cache/` before acquisition
 so SHAs advance; to update locally, delete the relevant `.cache/` entry first.
@@ -270,7 +274,7 @@ so SHAs advance; to update locally, delete the relevant `.cache/` entry first.
 ### Emitted artifacts
 
 - `public/data/meta.json` - generated timestamp, per-vendor counts and
-  match/coverage ratios, the seven canonical source records (`sha`, `url`,
+  match/coverage ratios, the eleven canonical source records (`sha`, `url`,
   `license`), and legacy STM32 top-level fields.
 - `public/data/index.json` - compact search index with `vendor`, `id`, `family`,
   `core`, `package`, `pinCount`, `flashKb`, `ramKb`, and peripheral counts.
@@ -297,7 +301,7 @@ writing anything, so a failure exits non-zero with no partial catalog. It must:
   `remaps[]`, bonded names/tags, and the PD1 `debug-sdi` tag.
 - Assert RP2040/RP2350A/RP2350B pin and GPIO counts, QFN exposed pads, the
   `PWM0A`..`PWM11B` slice range, and HSTX/ADC/QSPI/SWD/PIO tags.
-- Record all seven source SHAs and per-vendor counts/ratios in `meta.json`, and
+- Record all eleven source SHAs and per-vendor counts/ratios in `meta.json`, and
   attribute every deferred part in `build-warnings.json` without failing.
 
 ---
@@ -369,7 +373,7 @@ Non-blocking warnings:
 - `url-state.ts`: serialize `{ v: 2, m, a, l, k, p }` (the schema has no v1
   import path), deflate with `fflate`, Base64URL encode into `#/s/<payload>`.
   Malformed or outdated links must show a dismissible banner, never crash.
-- `embassy-rust.ts`: dispatch to `embassy-stm32`, `embassy-rp`, or `ch32-hal`
+- `embassy-rust.ts`: dispatch to `embassy-stm32`, `embassy-rp`, `ch32-hal`, or `esp-hal`
   crate names by vendor; `BoardPins` struct plus `from_peripherals()`, labels
   sanitized to snake_case.
 - `c-header.ts`: STM32 PORT/PIN/AF macros, RP Pico SDK `GPIO_FUNC_*` and PWM
@@ -447,7 +451,7 @@ vendors. Zero STM32 regressions remains mandatory.
   `PinInfo.bondedNames/tags/note`, `PeripheralInfo.remaps`
 - `WorkspaceState.activeRemaps`, `pioAssignments`
 - `index.json` entries carry `vendor`; `meta.json` carries per-vendor `sources`
-  and the seven canonical source records
+  and the eleven canonical source records
 - Legacy state without these fields defaults to `vendor: 'stm32'`
 
 ### Data adapters
@@ -468,6 +472,12 @@ all gates, and writes artifacts once.
   `bondedNames`, and tag `bonded`. PD1 carries `debug-sdi`, SWD pairs
   `debug-swd`, and USB/PD pins `usb`. Unmapped variants are deferred to
   `build-warnings.json`, never to a hard failure.
+- **ESP32:** `tools/data-gen/adapters/esp32/` joins first-party `esp-gpio-tool`
+  YAML with `esp-hal` `esp-metadata` TOML by GPIO number, maps joined records
+  to `espressif/kicad-libraries` pad numbers, and cross-checks matrix counts
+  against pinned ESP-IDF headers. Bare dies carry `flashKb: null`; named
+  modules and MPNs carry first-party flash evidence. Unavailable records are
+  deferred with vendor attribution.
 
 ### Solver extensions
 
@@ -485,22 +495,31 @@ all gates, and writes artifacts once.
 ### Vendor-aware exporters and UI
 
 - Rust exporter dispatches by vendor: `embassy-stm32`, `embassy-rp`,
-  `ch32-hal`.
+  `ch32-hal`, `esp-hal`. ESP32 exports use `GPIO<n>` pad identifiers and
+  matrix-route comments.
 - C header: STM32 PORT/PIN/AF macros; RP Pico SDK `GPIO_FUNC_*`, PWM slice and
-  channel macros; CH32/ch32v003fun macros plus remap summary.
+  channel macros; CH32/ch32v003fun macros plus remap summary; ESP32 `GPIO<n>`
+  macros with matrix function comments and no `_AF` macro.
 - CSV columns: `Vendor,Position,Pin,Type,Peripheral,Signal,Mux,Resource,Label,Locked`.
 - JSON/URL schema uses `version: 2`; there is no v1 import path, and empty
   `activeRemaps`/`pioAssignments` are omitted from share links.
+- Starter chips include ESP32 module shards such as `ESP32-C3FH4` and
+  `ESP32-WROOM-E`. Board presets and `.ioc` import remain STM32-only.
 - UI: 2-sided package rendering, exposed thermal pad, bonded pin labels,
   remap dropdown, RP PIO panel, mux/hazard badges, vendor filter tabs,
   cross-vendor presets, hero vendor switcher.
 
 ### Multi-vendor gates
 
-- **Gate 1:** `gen-data` succeeds for all three vendors; `meta.json` records
+- **Gate 1:** `gen-data` succeeds for all four vendors; `meta.json` records
   counts and SHAs; assertions pass for RP2040 (56), RP2350A (60), RP2350B (80),
   CH32V003F4P6 (20), CH32V003J4M6 (8 bonded), CH32V203C8T6 (48),
   CH32X035G8U6 (28), STM32G431CBU6 (48).
+- **Gate 1 (ESP32):** all twelve families emit shards; ESP32-C3 QFN32 has 32
+  pads and an exposed pad with GPIO2 strapping at pad 6; ESP32-C3FH4 reserves
+  GPIO12-17 for flash; ESP32-WROOM-E has GPIO0/BOOT at pad 25 and EN at pad 3;
+  ESP32 GPIO34-39 are input-only; matrix counts match the pinned
+  `gpio_sig_map.h`.
 - **Gate 2:** all unit tests pass, including CH32 atomic remap, locked/occupied
   remap blocks, bonded-pin exclusion, SWIO warning, RP PWM slice collision,
   RP2350B GPIOBASE error vs valid shifted window, vendor exporters, gate
@@ -519,7 +538,7 @@ all gates, and writes artifacts once.
 
 ```bash
 npm ci                                   # clean install from package-lock.json
-npm run acquire-sources                  # fetch all seven upstream sources
+npm run acquire-sources                  # fetch all eleven upstream sources
 npm run gen-data                         # emit shards and run all release gates
 npm test                                 # Vitest unit tests
 npm run check                            # tsc --noEmit (strict)

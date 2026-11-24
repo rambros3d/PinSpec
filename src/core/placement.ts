@@ -3,11 +3,14 @@ import {
   PLACEMENT_RING_RANK,
   type ChipData,
   type LegacyPlacementRing,
+  type AlternatePinCandidate,
   type PackageInfo,
   type PeripheralStatus,
   type PinAssignment,
   type PinInfo,
   type PinPlacementPreference,
+  type PinSignal,
+  type PinTag,
   type PlacementRing,
   type WorkspaceState,
 } from './types';
@@ -217,6 +220,156 @@ export function placementAffinityForPin(
   const angularPenalty = (angularGap(angle, preference.angle) / 180) * 60;
   const radialPenalty = (1 - Math.min(1, radius / Math.max(1e-6, geometry.maxRadius))) * 30;
   return rank * 10000 + angularPenalty + radialPenalty;
+}
+
+/** Fixed cap for matrix alternate lists after legality filtering. */
+export const MATRIX_ALTERNATE_CAP = 12;
+
+function pinHasTag(pin: PinInfo, tag: PinTag): boolean {
+  return Boolean(pin.tags?.includes(tag));
+}
+
+/** True when a declared Wi-Fi or Bluetooth peripheral is active. */
+function radioActive(chip: ChipData, state: WorkspaceState): boolean {
+  return Object.entries(chip.peripherals).some(([name]) => {
+    if (!/WIFI|BLUETOOTH|BLE|(^|_)BT($|_)/i.test(name)) return false;
+    const mode = state.peripheralModes[name];
+    if (mode !== undefined) return mode !== 'disabled';
+    return Object.values(state.assignments).some((asgn) => asgn.peripheral === name);
+  });
+}
+
+/** The matrix signal matching a request, using the emitted pin signal list. */
+function matrixSignal(pin: PinInfo, peripheral: string, signal: string): PinSignal | null {
+  return (
+    pin.signals.find((s) => s.peripheral === peripheral && s.signal === signal) ?? null
+  );
+}
+
+/**
+ * Deterministic electrical penalty derived from chip shard hazard facts.
+ * Missing hazard data yields zero, so chips without ESP32 tags are unaffected.
+ */
+export function matrixElectricalPenalty(
+  pin: PinInfo,
+  chip: ChipData,
+  state: WorkspaceState,
+  peripheral: string,
+  signal: string,
+): number {
+  if (!pinHasTag(pin, 'strapping') && !pinHasTag(pin, 'input-only') && !pinHasTag(pin, 'adc') &&
+      !pinHasTag(pin, 'flash') && !pinHasTag(pin, 'psram')) {
+    return 0;
+  }
+  const match = matrixSignal(pin, peripheral, signal);
+  const drives = peripheral === 'GPIO' ? signal === 'Output' : match?.direction === 'output';
+  let penalty = 0;
+  if (pinHasTag(pin, 'strapping')) penalty += 40;
+  if (drives && pinHasTag(pin, 'input-only')) penalty += 60;
+  if (
+    radioActive(chip, state) &&
+    (peripheral === 'ADC2' || /^ADC2/.test(signal)) &&
+    (pinHasTag(pin, 'adc') || pinHasTag(pin, 'adc-only'))
+  ) {
+    penalty += 60;
+  }
+  if (pinHasTag(pin, 'flash') || pinHasTag(pin, 'psram')) penalty += 80;
+  return penalty;
+}
+
+/** Inputs used by a matrix legality check and its search state. */
+export interface MatrixLegalityContext {
+  chip: ChipData;
+  state: WorkspaceState;
+  peripheral: string;
+  signal: string;
+  /** Signals already claimed from another pin; matrix outputs are exempt. */
+  usedSignals: ReadonlySet<string>;
+  /** Pins already claimed by the search or by an existing assignment. */
+  usedPins: ReadonlySet<string>;
+  /** Exclusive channel resources already claimed. */
+  usedResources: ReadonlySet<string>;
+}
+
+/**
+ * Pure matrix candidate legality. Rejects occupied or locked pins, duplicated
+ * inputs, repeated channel resources, input-only output roles, and pins
+ * reserved for flash or PSRAM. Geometry is never part of legality.
+ */
+export function isMatrixCandidateLegal(
+  pin: PinInfo,
+  context: MatrixLegalityContext,
+): boolean {
+  if (pin.type !== 'io') return false;
+  if (context.state.locked[pin.pos] || context.usedPins.has(pin.pos)) return false;
+  if (context.state.assignments[pin.pos]) return false;
+  const match = matrixSignal(pin, context.peripheral, context.signal);
+  if (!match) return false;
+  const drives =
+    context.peripheral === 'GPIO' ? context.signal === 'Output' : match.direction === 'output';
+  if (drives && pinHasTag(pin, 'input-only')) return false;
+  if (pinHasTag(pin, 'flash') || pinHasTag(pin, 'psram')) return false;
+  if (match.resourceId && context.usedResources.has(match.resourceId)) return false;
+  if (match.direction !== 'output' && context.usedSignals.has(`${context.peripheral}:${context.signal}`)) {
+    return false;
+  }
+  return true;
+}
+
+/** Matrix alternate with the ranking inputs exposed for diagnostics and tests. */
+export interface MatrixAlternateCandidate extends AlternatePinCandidate {
+  penalty: number;
+  affinity: number;
+}
+
+/**
+ * Rank matrix alternates by legality, electrical penalty, unchanged geometry
+ * affinity, then physical position, and cap the result deterministically.
+ */
+export function rankMatrixAlternates(
+  pins: readonly PinInfo[],
+  chip: ChipData,
+  state: WorkspaceState,
+  peripheral: string,
+  signal: string,
+  usedSignals: ReadonlySet<string>,
+  usedResources: ReadonlySet<string>,
+  geometry?: PinGeometryMap,
+): MatrixAlternateCandidate[] {
+  const usedPins = new Set(Object.keys(state.assignments));
+  const context: MatrixLegalityContext = {
+    chip,
+    state,
+    peripheral,
+    signal,
+    usedSignals,
+    usedPins,
+    usedResources,
+  };
+  const preference = state.placement?.[peripheral];
+  const affinityContext: PlacementAffinityContext = { preference, geometry };
+  const candidates: MatrixAlternateCandidate[] = [];
+  for (const pin of pins) {
+    if (!isMatrixCandidateLegal(pin, context)) continue;
+    const match = matrixSignal(pin, peripheral, signal)!;
+    candidates.push({
+      pos: pin.pos,
+      pinName: pin.name,
+      af: match.af,
+      ...(match.funcLabel !== undefined ? { funcLabel: match.funcLabel } : {}),
+      ...(match.resourceId !== undefined ? { resourceId: match.resourceId } : {}),
+      status: 'free',
+      penalty: matrixElectricalPenalty(pin, chip, state, peripheral, signal),
+      affinity: placementAffinityForPin(pin, chip, preference, affinityContext),
+    });
+  }
+  candidates.sort(
+    (a, b) =>
+      a.penalty - b.penalty ||
+      a.affinity - b.affinity ||
+      a.pos.localeCompare(b.pos, undefined, { numeric: true }),
+  );
+  return candidates.slice(0, MATRIX_ALTERNATE_CAP);
 }
 
 /**

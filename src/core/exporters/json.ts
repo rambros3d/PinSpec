@@ -5,6 +5,7 @@ import {
   type GpioConfig,
   type PinAssignment,
   type PinPlacementPreference,
+  type PackageRotation,
   type PioPinAssignment,
   type VendorId,
   type WorkspaceState,
@@ -30,8 +31,8 @@ export interface PinCraftProjectFile {
   gpioConfig?: Record<string, GpioConfig>;
   placement?: Record<string, PinPlacementPreference>;
   placementOverlayVisible?: boolean;
-  /** Package rotation, emitted only for the non-default -90 value. */
-  packageRotation?: 0 | -90;
+  /** Package rotation, emitted only for non-default clockwise values. */
+  packageRotation?: PackageRotation;
   /** Display-only placement overlay rotation, omitted at zero. */
   placementOverlayRotation?: number;
 }

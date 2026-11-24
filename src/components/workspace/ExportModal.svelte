@@ -36,6 +36,7 @@
   const rustTabLabel = $derived.by(() => {
     if (vendor === 'rp') return 'Rust · embassy-rp';
     if (vendor === 'ch32') return 'Rust · ch32-hal';
+    if (vendor === 'esp32') return 'Rust · esp-hal';
     return 'Rust · embassy-stm32';
   });
 

@@ -256,7 +256,7 @@
                     </span>
                   </div>
                   <div class="font-mono-tabular text-[11px] text-base-content/60 truncate">
-                    {entry.family} · {entry.core} · {entry.flashKb} KB Flash · {entry.ramKb} KB RAM
+                    {entry.family} · {entry.core} · {entry.flashKb ?? '—'} KB Flash · {entry.ramKb} KB RAM
                   </div>
                 </div>
               </div>

@@ -38,7 +38,7 @@ export interface CompatibilitySignature {
   mcuId: string;
   vendor: VendorId;
   muxModel: MuxModel;
-  flashKb: number;
+  flashKb: number | null;
   ramKb: number;
   pins: SignaturePin[];
   powerPins: Array<{ name: string; type: PinType }>;
@@ -199,7 +199,7 @@ export function scoreCandidate(
     exactPinMatches,
     functionalMatches,
     missingSignals: Array.from(missingSignals).sort(compareKeys),
-    flashDeltaKb: chip.flashKb - signature.flashKb,
+    flashDeltaKb: (chip.flashKb ?? 0) - (signature.flashKb ?? 0),
     ramDeltaKb: chip.ramKb - signature.ramKb,
   };
 }

@@ -7,6 +7,7 @@ export const DEFAULT_WARNING_SOURCE: Record<VendorId, string> = {
   stm32: 'stm32-data-generated',
   ch32: 'ch32-device-data',
   rp: 'kicad',
+  esp32: 'esp-gpio-tool',
 };
 
 /** Creates a fresh collector that preserves insertion order. */

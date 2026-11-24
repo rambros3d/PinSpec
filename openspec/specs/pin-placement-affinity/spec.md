@@ -141,6 +141,16 @@ reallocation, and their assignments SHALL remain unchanged throughout the drag.
 - **WHEN** a peripheral indicator is dragged past pins that the user has locked
 - **THEN** the locked pins keep their existing assignments and are never reassigned or cleared
 
+#### Scenario: Matrix drag previews are electrically legal
+
+- **WHEN** the user drags a peripheral indicator on a matrix-mux chip through angles and radii whose highest-affinity candidate pins are electrically illegal
+- **THEN** every previewed assignment set is electrically legal and no illegal plan is rendered at any point during the drag
+
+#### Scenario: Matrix drag keeps locks as hard constraints
+
+- **WHEN** the user drags a peripheral indicator on a matrix-mux chip past pins that the user has locked
+- **THEN** reallocation treats those locked pins as fixed satisfied signals, excludes them from the candidate set, and never moves or clears them
+
 ### Requirement: Placement toggle is an independent top-centre control
 
 The placement overlay toggle SHALL be an independent bottom-centre canvas

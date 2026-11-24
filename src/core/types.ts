@@ -5,12 +5,13 @@
  */
 export const PINCRAFT_STATE_VERSION = 2;
 
-export type VendorId = 'stm32' | 'ch32' | 'rp';
+export type VendorId = 'stm32' | 'ch32' | 'rp' | 'esp32';
 
 export type MuxModel =
   | 'af' // Independent per-pin alternate functions (most STM32)
   | 'remap-group' // Coupled peripheral AFIO remap slots (CH32)
-  | 'funcsel-pio'; // Per-pin FUNCSEL + shared PWM slices + flexible PIO (RP2040/RP235x)
+  | 'funcsel-pio' // Per-pin FUNCSEL + shared PWM slices + flexible PIO (RP2040/RP235x)
+  | 'gpio-matrix'; // ESP32 GPIO matrix: output fan-out, single-source inputs
 
 export type PinTag =
   | 'debug-swd' // SWDIO / SWCLK
@@ -21,7 +22,16 @@ export type PinTag =
   | 'qspi' // Dedicated flash QSPI pins
   | 'bonded' // Multiple internal GPIO pads bonded to one physical pin (e.g., CH32V003 SOP8)
   | '5v-tolerant'
-  | 'boot';
+  | 'boot'
+  | 'strapping' // Latched at reset; repurposing changes boot or startup behavior
+  | 'input-only' // GPIO input pad with no output driver
+  | 'adc-only' // Analog-only pad with no digital input path
+  | 'rtc' // RTC-domain pad
+  | 'lp' // Low-power pad retained in light or deep sleep
+  | 'jtag' // JTAG tap pin
+  | 'flash' // Reserved by the external flash interface
+  | 'psram' // Reserved by external PSRAM
+  | 'cap-restricted'; // Load capacitance restricts high-speed use
 
 export type PinType = 'io' | 'power' | 'reset' | 'boot' | 'nc' | 'mono';
 
@@ -46,6 +56,12 @@ export interface PinSignal {
   funcLabel?: string; // Display override: e.g., "F1", "RM2", "AF7"
   remapId?: number; // Remap group index (0 = default, 1..N = remaps)
   resourceId?: string; // Shared hardware conflict key (e.g., "PWM0A", "EXTI0")
+  /** Matrix route direction; absent means the conservative single-source rule. */
+  direction?: 'input' | 'output';
+  /** True when the signal reaches the pad through the direct IO_MUX path. */
+  directRoute?: boolean;
+  /** True when timing requires the direct IO_MUX path over a matrix route. */
+  speedCritical?: boolean;
 }
 
 export interface PeripheralRemapOption {
@@ -99,12 +115,15 @@ export interface ChipData {
   muxModel?: MuxModel;
   family: string;
   core: string;
-  flashKb: number;
+  /** Null for bare dies with no module flash capacity; never a guessed number. */
+  flashKb: number | null;
   ramKb: number;
   package: PackageInfo;
   pins: PinInfo[];
   peripherals: Record<string, PeripheralInfo>;
   pio?: ChipPioConfig;
+  /** Declared GPIO-matrix route capacity; absent means no limit is enforced. */
+  matrixRouteCapacity?: number;
 }
 
 /** One upstream repository contributing data to a vendor. */
@@ -140,7 +159,7 @@ export interface CatalogVendorSource {
   evidenceFiles?: CatalogEvidenceFile[];
 }
 
-/** Stable identifiers of the seven upstream sources recorded by the gate. */
+/** Stable identifiers of the eleven upstream sources recorded by the gate. */
 export type CatalogSourceId =
   | 'st-open-pin-data'
   | 'stm32-data-generated'
@@ -148,9 +167,13 @@ export type CatalogSourceId =
   | 'kicad'
   | 'pico-sdk'
   | 'zephyr'
-  | 'raspberry-pi-docs';
+  | 'raspberry-pi-docs'
+  | 'esp-gpio-tool'
+  | 'esp-hal-metadata'
+  | 'espressif-kicad'
+  | 'esp-idf';
 
-/** The seven upstream source identifiers in deterministic order. */
+/** The eleven upstream source identifiers in deterministic order. */
 export const CATALOG_SOURCE_IDS: readonly CatalogSourceId[] = [
   'st-open-pin-data',
   'stm32-data-generated',
@@ -159,6 +182,10 @@ export const CATALOG_SOURCE_IDS: readonly CatalogSourceId[] = [
   'pico-sdk',
   'zephyr',
   'raspberry-pi-docs',
+  'esp-gpio-tool',
+  'esp-hal-metadata',
+  'espressif-kicad',
+  'esp-idf',
 ];
 
 /** One upstream source record keyed by a stable `CatalogSourceId`. */
@@ -171,7 +198,7 @@ export interface CatalogSourceRecord {
 
 /**
  * `meta.json.sources` holds both per-vendor summaries (legacy consumers) and
- * the seven canonical source records keyed by `CatalogSourceId`. The key sets
+ * the eleven canonical source records keyed by `CatalogSourceId`. The key sets
  * are disjoint, so both views coexist without ambiguity.
  */
 export type CatalogMetaSources = Partial<Record<VendorId, CatalogVendorSource>> &
@@ -184,7 +211,7 @@ export interface CatalogMeta {
   chipCount: number;
   matchRate?: number;
   families: string[];
-  /** Vendors actually emitted in this build plus the seven source records. */
+  /** Vendors actually emitted in this build plus the eleven source records. */
   sources?: CatalogMetaSources;
 }
 
@@ -205,7 +232,8 @@ export interface CatalogIndexEntry {
   core: string;
   package: string;
   pinCount: number;
-  flashKb: number;
+  /** Mirrors the shard value; null only for bare dies without module flash. */
+  flashKb: number | null;
   ramKb: number;
   peripherals: CatalogPeripheralCounts;
 }
@@ -309,14 +337,19 @@ export function normalizeSummaryTab(value: unknown): SummaryTab {
 }
 
 /**
- * Package view rotation. Only counter-clockwise 90 degrees is a selectable
- * non-default value; absent or unrecognized values normalize to 0.
+ * Package view rotation in clockwise degrees. Four quarter turns are
+ * selectable; absent or unrecognized values normalize to 0.
  */
-export type PackageRotation = 0 | -90;
+export type PackageRotation = 0 | 90 | 180 | 270;
 
-/** Normalize an untrusted persisted rotation to the supported two-state union. */
+/**
+ * Normalize an untrusted persisted rotation to the four-value clockwise domain.
+ * The legacy counter-clockwise value -90 maps to 270 so earlier persisted and
+ * shared states keep their visual orientation.
+ */
 export function normalizePackageRotation(value: unknown): PackageRotation {
-  return value === -90 ? -90 : 0;
+  if (value === -90) return 270;
+  return value === 0 || value === 90 || value === 180 || value === 270 ? value : 0;
 }
 
 /** Priority rings for the optional pin-placement overlay, high priority first. */
@@ -429,7 +462,11 @@ export interface DiagnosticItem {
     | 'REMAP_LOCKED'
     | 'PIO_GPIOBASE_CONFLICT'
     | 'BONDED_PIN_NOTE'
-    | 'RP_HARDWARE_HINT';
+    | 'RP_HARDWARE_HINT'
+    | 'STRAPPING_REPURPOSED'
+    | 'INPUT_ONLY_OUTPUT'
+    | 'ADC2_WIFI_CONFLICT'
+    | 'MATRIX_ROUTE_LIMIT';
   message: string;
   pins: string[];
   peripheral?: string;
@@ -487,6 +524,7 @@ export function getChipMuxModel(chip: Pick<ChipData, 'muxModel' | 'vendor'>): Mu
   const vendor = chip.vendor ?? 'stm32';
   if (vendor === 'ch32') return 'remap-group';
   if (vendor === 'rp') return 'funcsel-pio';
+  if (vendor === 'esp32') return 'gpio-matrix';
   return 'af';
 }
 
@@ -504,5 +542,6 @@ export function formatMuxLabel(
     if (sig.remapId !== undefined) return `RM${sig.remapId}`;
     return 'AFIO';
   }
+  if (muxModel === 'gpio-matrix') return sig.signal;
   return sig.af !== null ? `AF${sig.af}` : 'AFIO';
 }

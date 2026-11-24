@@ -5,6 +5,7 @@
     Download,
     GitCompare,
     Redo2,
+    RotateCw,
     Search,
     SearchCheck,
     Share2,
@@ -12,7 +13,7 @@
     Undo2,
     X,
   } from 'lucide-svelte';
-  import type { ChipData } from '../../core/types';
+  import type { ChipData, PackageRotation } from '../../core/types';
   import { shouldShowScrollAffordance } from '../../core/scroll-affordance';
   import ThemePicker from '../ThemePicker.svelte';
 
@@ -22,12 +23,14 @@
     searchMatchCount: number;
     canUndo: boolean;
     canRedo: boolean;
+    rotation: PackageRotation;
     searchInputRef?: HTMLInputElement | null;
     onHome: () => void;
     onOpenSwitcher: () => void;
     onSearchChange: (val: string) => void;
     onUndo: () => void;
     onRedo: () => void;
+    onRotate: () => void;
     onClearAll: () => void;
     onShare: () => void;
     onOpenExport: () => void;
@@ -41,12 +44,14 @@
     searchMatchCount,
     canUndo,
     canRedo,
+    rotation,
     searchInputRef = $bindable(null),
     onHome,
     onOpenSwitcher,
     onSearchChange,
     onUndo,
     onRedo,
+    onRotate,
     onClearAll,
     onShare,
     onOpenExport,
@@ -107,7 +112,7 @@
           {chip.id}
         </span>
         <span class="hidden lg:inline font-mono-tabular text-[11px] text-base-content/60">
-          {chip.core} - {chip.flashKb}KB/{chip.ramKb}KB - {chip.package.name} ({chip.package.pinCount})
+          {chip.core} - {chip.flashKb ?? '—'}KB/{chip.ramKb}KB - {chip.package.name} ({chip.package.pinCount})
         </span>
         <ChevronDown class="size-3.5 text-base-content/40 shrink-0" />
       </button>
@@ -170,6 +175,17 @@
       class="btn btn-ghost btn-sm btn-square hover:text-error"
     >
       <Trash2 class="size-4" />
+    </button>
+
+    <button
+      type="button"
+      onclick={onRotate}
+      title={`Rotate package clockwise, now ${rotation} degrees`}
+      aria-label={`Rotate package clockwise, now ${rotation} degrees`}
+      class="btn btn-ghost btn-sm gap-1.5"
+    >
+      <RotateCw class="size-4" />
+      <span class="hidden lg:inline font-mono-tabular">Rotate</span>
     </button>
 
     <div class="w-px h-5 bg-base-300 mx-1"></div>

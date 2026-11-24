@@ -1,8 +1,12 @@
 import { cloneWorkspaceState } from './history';
 import {
   buildPinGeometryMap,
+  isMatrixCandidateLegal,
+  matrixElectricalPenalty,
   orderPeripheralsByPlacement,
   placementAffinityForPin,
+  rankMatrixAlternates,
+  type MatrixLegalityContext,
   type PlacementAffinityContext,
 } from './placement';
 import type {
@@ -174,14 +178,8 @@ export function resolveCanonicalSignal(
   return null;
 }
 
-export function pinSupportsSignal(
-  pin: PinInfo,
-  peripheral: string,
-  signal: string,
-): PinSignal | null {
-  if (peripheral === 'GPIO') {
-    return pin.type === 'io' ? { peripheral: 'GPIO', signal, af: null } : null;
-  }
+/** Look up an emitted pin signal, including the existing signal aliases. */
+function findPinSignal(pin: PinInfo, peripheral: string, signal: string): PinSignal | null {
   const exact = pin.signals.find(
     (s) => s.peripheral === peripheral && s.signal === signal,
   );
@@ -197,6 +195,32 @@ export function pinSupportsSignal(
     }
   }
   return null;
+}
+
+/**
+ * Resolve whether a pin supports a requested role. Pins tagged `input-only`
+ * reject output roles; allocation, remapping, one-hop fixes, and alternate
+ * discovery all share this gate.
+ */
+export function pinSupportsSignal(
+  pin: PinInfo,
+  peripheral: string,
+  signal: string,
+): PinSignal | null {
+  const match =
+    peripheral === 'GPIO'
+      ? pin.type === 'io'
+        ? { peripheral: 'GPIO', signal, af: null }
+        : null
+      : findPinSignal(pin, peripheral, signal);
+  if (!match) return null;
+
+  if (pinHasTag(pin, 'input-only')) {
+    const drives =
+      peripheral === 'GPIO' ? signal === 'Output' : match.direction === 'output';
+    if (drives) return null;
+  }
+  return match;
 }
 
 function buildPinMap(chip: ChipData): Map<string, PinInfo> {
@@ -302,10 +326,21 @@ function computeSignalPinCounts(chip: ChipData): Map<string, number> {
   return counts;
 }
 
+/** True when chip data marks any signal of a peripheral as timing-critical. */
+function hasSpeedCriticalSignal(chip: ChipData, peripheral: string): boolean {
+  return chip.pins.some((pin) =>
+    pin.signals.some((sig) => sig.peripheral === peripheral && sig.speedCritical === true),
+  );
+}
+
+/** Maximum number of matrix alternates shown after deterministic sorting. */
+export const MATRIX_ALTERNATE_LIMIT = 12;
+
 /**
  * Scarcity score for one candidate pin. The optional placement context adds a
  * term that is exactly zero when no preference is enabled, so the default
- * allocator path keeps its original scores and assignments.
+ * allocator path keeps its original scores and assignments. The matrix term is
+ * gated on `gpio-matrix` and is exactly zero for every existing vendor.
  */
 export function computePinScarcityScore(
   pin: PinInfo,
@@ -364,6 +399,20 @@ export function computePinScarcityScore(
 
   const preference = affinity ? affinity.preference : state.placement?.[targetPeripheral];
   score += placementAffinityForPin(pin, chip, preference, affinity ?? {});
+
+  if (getChipMuxModel(chip) === 'gpio-matrix') {
+    // Speed-critical routes prefer the direct IO_MUX path over the matrix.
+    if (hasSpeedCriticalSignal(chip, targetPeripheral)) {
+      const direct = pin.signals.some(
+        (sig) => sig.peripheral === targetPeripheral && sig.directRoute === true,
+      );
+      score += direct ? -12 : 6;
+    }
+    if (pinHasTag(pin, 'strapping')) score += 18;
+    if (pinHasTag(pin, 'input-only')) score += 30;
+    if (pinHasTag(pin, 'cap-restricted')) score += 12;
+    if (pinHasTag(pin, 'flash') || pinHasTag(pin, 'psram')) score += 22;
+  }
   return score;
 }
 
@@ -374,6 +423,27 @@ export function findAlternatePins(
 ): AlternatePinCandidate[] {
   const current = state.assignments[pos];
   if (!current || current.peripheral === 'GPIO') return [];
+
+  if (getChipMuxModel(chip) === 'gpio-matrix') {
+    const usedSignals = new Set<string>();
+    const usedResources = new Set<string>();
+    for (const asgn of Object.values(state.assignments)) {
+      if (asgn.peripheral !== 'GPIO') usedSignals.add(`${asgn.peripheral}:${asgn.signal}`);
+      if (asgn.resourceId) usedResources.add(asgn.resourceId);
+    }
+    // The source pin is being changed, so it must not block its own alternates.
+    usedSignals.delete(`${current.peripheral}:${current.signal}`);
+    if (current.resourceId) usedResources.delete(current.resourceId);
+    return rankMatrixAlternates(
+      chip.pins,
+      chip,
+      state,
+      current.peripheral,
+      current.signal,
+      usedSignals,
+      usedResources,
+    );
+  }
 
   const candidates: AlternatePinCandidate[] = [];
   for (const pin of chip.pins) {
@@ -403,11 +473,12 @@ export function findAlternatePins(
     });
   }
 
-  return candidates.sort((a, b) => {
+  const sorted = candidates.sort((a, b) => {
     const rank = { free: 0, occupied: 1, locked: 2 };
     if (rank[a.status] !== rank[b.status]) return rank[a.status] - rank[b.status];
     return a.pinName.localeCompare(b.pinName, undefined, { numeric: true });
   });
+  return sorted;
 }
 
 export function remapPinAssignment(
@@ -778,6 +849,95 @@ export function applyOneHopFix(state: WorkspaceState, fix: OneHopFix): Workspace
   return next;
 }
 
+/** One scored option in a pure backtracking search. */
+export interface BacktrackingOption<T> {
+  key: string; // physical pin position, enforces one assignment per pin
+  resource?: string; // optional exclusive hardware channel
+  score: number;
+  item: T;
+}
+
+/** One aligned result of a backtracking search. */
+export interface BacktrackingPick<T> {
+  signal: string;
+  option: BacktrackingOption<T> | null;
+}
+
+/** Result of a pure backtracking search over signal groups. */
+export interface BacktrackingSearchResult<T> {
+  picks: Array<BacktrackingPick<T>>;
+  assignedCount: number;
+  score: number;
+}
+
+/**
+ * Shared MRV-ordered backtracking search. Callers order groups by candidate
+ * count and supply their own scores; node and branch caps, the partial
+ * allocation fallback, and score tie-breaks are identical for every mux model.
+ */
+export function searchBacktracking<T>(
+  groups: readonly { signal: string; options: readonly BacktrackingOption<T>[] }[],
+  options: {
+    maxNodes?: number;
+    branchLimit?: number;
+    legal?: (option: BacktrackingOption<T>) => boolean;
+  } = {},
+): BacktrackingSearchResult<T> {
+  const maxNodes = options.maxNodes ?? 2500;
+  const branchLimit = options.branchLimit ?? 8;
+  const usedKeys = new Set<string>();
+  const usedResources = new Set<string>();
+  const currentPick: Array<BacktrackingPick<T>> = [];
+  let bestCount = -1;
+  let bestScore = Infinity;
+  let bestPick: Array<BacktrackingPick<T>> = [];
+  let nodesVisited = 0;
+
+  function backtrack(idx: number, assignedCount: number, totalScore: number): void {
+    if (nodesVisited >= maxNodes) return;
+    nodesVisited++;
+
+    const remaining = groups.length - idx;
+    if (assignedCount + remaining < bestCount) return;
+
+    if (idx === groups.length) {
+      if (assignedCount > bestCount || (assignedCount === bestCount && totalScore < bestScore)) {
+        bestCount = assignedCount;
+        bestScore = totalScore;
+        bestPick = currentPick.map((entry) => ({ ...entry }));
+      }
+      return;
+    }
+
+    const group = groups[idx];
+    let triedAny = false;
+    const limit = Math.min(group.options.length, branchLimit);
+    for (let i = 0; i < limit; i++) {
+      const opt = group.options[i];
+      if (usedKeys.has(opt.key)) continue;
+      if (opt.resource && usedResources.has(opt.resource)) continue;
+      if (options.legal && !options.legal(opt)) continue;
+      triedAny = true;
+      usedKeys.add(opt.key);
+      if (opt.resource) usedResources.add(opt.resource);
+      currentPick.push({ signal: group.signal, option: opt });
+      backtrack(idx + 1, assignedCount + 1, totalScore + opt.score);
+      currentPick.pop();
+      if (opt.resource) usedResources.delete(opt.resource);
+      usedKeys.delete(opt.key);
+    }
+
+    if (!triedAny || assignedCount + remaining - 1 >= bestCount) {
+      currentPick.push({ signal: group.signal, option: null });
+      backtrack(idx + 1, assignedCount, totalScore);
+      currentPick.pop();
+    }
+  }
+
+  backtrack(0, 0, 0);
+  return { picks: bestPick, assignedCount: bestCount, score: bestScore };
+}
+
 export interface AllocationResult {
   state: WorkspaceState;
   allocated: Array<{ pos: string; signal: string; af: number | null }>;
@@ -883,73 +1043,33 @@ export function allocatePeripheralMode(
   candidatesBySignal.sort((a, b) => a.options.length - b.options.length);
 
   // Backtracking search maximizing assigned count, minimizing total scarcity score
-  const usedPins = new Set<string>();
-  const currentPick: Array<{ signal: string; option: CandidateOption | null }> = [];
-  let bestCount = -1;
-  let bestScore = Infinity;
-  let bestPick: Array<{ signal: string; option: CandidateOption | null }> = [];
-  let nodesVisited = 0;
-  const MAX_NODES = 2500;
-
-  function backtrack(idx: number, assignedCount: number, totalScore: number): void {
-    if (nodesVisited >= MAX_NODES) return;
-    nodesVisited++;
-
-    const remaining = candidatesBySignal.length - idx;
-    if (assignedCount + remaining < bestCount) return;
-
-    if (idx === candidatesBySignal.length) {
-      if (
-        assignedCount > bestCount ||
-        (assignedCount === bestCount && totalScore < bestScore)
-      ) {
-        bestCount = assignedCount;
-        bestScore = totalScore;
-        bestPick = currentPick.map((entry) => ({ ...entry }));
-      }
-      return;
-    }
-
-    const { signal, options } = candidatesBySignal[idx];
-    let triedAny = false;
-    // Limit branching factor to top 8 best-scored pins for speed on high-pin-count BGAs
-    const limit = Math.min(options.length, 8);
-    for (let i = 0; i < limit; i++) {
-      const opt = options[i];
-      if (usedPins.has(opt.pin.pos)) continue;
-      triedAny = true;
-      usedPins.add(opt.pin.pos);
-      currentPick.push({ signal, option: opt });
-      backtrack(idx + 1, assignedCount + 1, totalScore + opt.score);
-      currentPick.pop();
-      usedPins.delete(opt.pin.pos);
-    }
-
-    // Allow skipping this signal if no option worked (partial allocation)
-    if (!triedAny || assignedCount + remaining - 1 >= bestCount) {
-      currentPick.push({ signal, option: null });
-      backtrack(idx + 1, assignedCount, totalScore);
-      currentPick.pop();
-    }
-  }
-
-  backtrack(0, 0, 0);
+  const search = searchBacktracking(
+    candidatesBySignal.map((group) => ({
+      signal: group.signal,
+      options: group.options.map((opt) => ({
+        key: opt.pin.pos,
+        score: opt.score,
+        item: opt,
+      })),
+    })),
+  );
 
   const allocated: AllocationResult['allocated'] = [];
   const unallocated: string[] = [];
 
-  for (const item of bestPick) {
-    if (item.option) {
-      next.assignments[item.option.pin.pos] = {
-        ...item.option.sig,
+  for (const item of search.picks) {
+    const option = item.option?.item;
+    if (option) {
+      next.assignments[option.pin.pos] = {
+        ...option.sig,
         peripheral: peripheralName,
-        signal: item.option.sig.signal,
-        af: item.option.sig.af,
+        signal: option.sig.signal,
+        af: option.sig.af,
       };
       allocated.push({
-        pos: item.option.pin.pos,
-        signal: item.option.sig.signal,
-        af: item.option.sig.af,
+        pos: option.pin.pos,
+        signal: option.sig.signal,
+        af: option.sig.af,
       });
     } else {
       unallocated.push(item.signal);
@@ -1095,6 +1215,138 @@ export function reallocatePeripheralPlacement(
       af: match.af,
     };
   }
+  return next;
+}
+
+/**
+ * Read-only post-allocation validation for matrix plans. Reports duplicate
+ * signals, resource collisions, and the ESP32 diagnostics supplied by the
+ * schema without changing assignments or workspace state.
+ */
+export function validateMatrixPlan(chip: ChipData, state: WorkspaceState): DiagnosticItem[] {
+  if (getChipMuxModel(chip) !== 'gpio-matrix') return [];
+  const reported = new Set<DiagnosticItem['code']>([
+    'DUPLICATE_SIGNAL',
+    'RESOURCE_CONFLICT',
+    'STRAPPING_REPURPOSED',
+    'INPUT_ONLY_OUTPUT',
+    'ADC2_WIFI_CONFLICT',
+    'MATRIX_ROUTE_LIMIT',
+  ]);
+  return evaluateWorkspace(chip, state).diagnostics.filter((d) => reported.has(d.code));
+}
+
+/**
+ * Matrix-aware live reallocation. Uses the shared backtracking search over
+ * legality-filtered candidates, treats locked pins as satisfied signals, and
+ * ranks survivors by electrical penalty then the unchanged geometry term.
+ */
+export function reallocateMatrixPlacement(
+  chip: ChipData,
+  state: WorkspaceState,
+  peripheral: string,
+  preference?: PinPlacementPreference | null,
+  signalNames?: readonly string[],
+): WorkspaceState {
+  if (getChipMuxModel(chip) !== 'gpio-matrix') {
+    return reallocatePeripheralPlacement(chip, state, peripheral, preference, signalNames);
+  }
+
+  const next = cloneWorkspaceState(state);
+  const effectivePreference = preference === undefined ? state.placement?.[peripheral] : preference;
+  const affinityContext: PlacementAffinityContext = {
+    preference: effectivePreference,
+    geometry: buildPinGeometryMap(chip),
+  };
+  const signalPinCounts = computeSignalPinCounts(chip);
+
+  const satisfied = new Set<string>();
+  const signals = new Set<string>(signalNames ?? []);
+  for (const [pos, asgn] of Object.entries(state.assignments)) {
+    if (asgn.peripheral !== peripheral) continue;
+    if (next.locked[pos]) {
+      satisfied.add(asgn.signal);
+      continue;
+    }
+    signals.add(asgn.signal);
+    delete next.assignments[pos];
+  }
+  if (signals.size === 0) return next;
+
+  const usedSignals = new Set<string>();
+  const usedResources = new Set<string>();
+  const usedPins = new Set<string>();
+  for (const [pos, asgn] of Object.entries(next.assignments)) {
+    usedPins.add(pos);
+    if (asgn.resourceId) usedResources.add(asgn.resourceId);
+    if (asgn.peripheral !== 'GPIO') usedSignals.add(`${asgn.peripheral}:${asgn.signal}`);
+  }
+  for (const signal of satisfied) usedSignals.add(`${peripheral}:${signal}`);
+
+  interface MatrixCandidate {
+    pin: PinInfo;
+    sig: PinSignal;
+  }
+
+  const groups = [...signals]
+    .filter((signal) => !satisfied.has(signal))
+    .map((signal) => {
+      const options: BacktrackingOption<MatrixCandidate>[] = [];
+      for (const pin of chip.pins) {
+        const legality: MatrixLegalityContext = {
+          chip,
+          state: next,
+          peripheral,
+          signal,
+          usedSignals,
+          usedPins,
+          usedResources,
+        };
+        if (!isMatrixCandidateLegal(pin, legality)) continue;
+        const match = pinSupportsSignal(pin, peripheral, signal);
+        if (!match) continue;
+        const penalty = matrixElectricalPenalty(pin, chip, next, peripheral, signal);
+        const affinity = placementAffinityForPin(pin, chip, effectivePreference, affinityContext);
+        const scarcity = computePinScarcityScore(
+          pin,
+          chip,
+          next,
+          signalPinCounts,
+          peripheral,
+          affinityContext,
+        );
+        const score = penalty + affinity + scarcity;
+        options.push({
+          key: pin.pos,
+          resource: match.resourceId,
+          score,
+          item: { pin, sig: match },
+        });
+      }
+      options.sort(
+        (a, b) => a.score - b.score || a.key.localeCompare(b.key, undefined, { numeric: true }),
+      );
+      return { signal, options };
+    })
+    .sort(
+      (a, b) =>
+        a.options.length - b.options.length || a.signal.localeCompare(b.signal),
+    );
+
+  const search = searchBacktracking(groups);
+  for (const pick of search.picks) {
+    const candidate = pick.option?.item;
+    if (!candidate) continue;
+    next.assignments[candidate.pin.pos] = {
+      ...candidate.sig,
+      peripheral,
+      signal: candidate.sig.signal,
+      af: candidate.sig.af,
+    };
+  }
+
+  // Validation is read-only; the workspace report surfaces its diagnostics.
+  void validateMatrixPlan(chip, next);
   return next;
 }
 
@@ -1501,11 +1753,109 @@ function analyzeActiveRemaps(
   return diagnostics;
 }
 
+/**
+ * GPIO-matrix electrical diagnostics. Every trigger is derived from chip data
+ * (tags, signal direction, peripheral names, declared capacity) and is inert
+ * for STM32, CH32, and RP chips.
+ */
+function analyzeMatrix(
+  chip: ChipData,
+  state: WorkspaceState,
+  pinMap: Map<string, PinInfo>,
+): DiagnosticItem[] {
+  if (getChipMuxModel(chip) !== 'gpio-matrix') return [];
+  const diagnostics: DiagnosticItem[] = [];
+  const wifiEnabled = Object.entries(chip.peripherals).some(([name]) => {
+    if (!/WIFI/i.test(name)) return false;
+    const mode = state.peripheralModes[name];
+    if (mode !== undefined) return mode !== 'disabled';
+    return Object.values(state.assignments).some((asgn) => asgn.peripheral === name);
+  });
+  const outputDrivers = new Map<string, string[]>();
+
+  for (const [pos, asgn] of Object.entries(state.assignments)) {
+    const pin = pinMap.get(pos);
+    if (!pin) continue;
+    const match = pinSupportsSignal(pin, asgn.peripheral, asgn.signal);
+    const drives =
+      asgn.peripheral === 'GPIO' ? asgn.signal === 'Output' : match?.direction === 'output';
+
+    if (drives && pinHasTag(pin, 'strapping')) {
+      diagnostics.push({
+        id: `strapping:${pos}`,
+        severity: 'warning',
+        code: 'STRAPPING_REPURPOSED',
+        pins: [pos],
+        peripheral: asgn.peripheral,
+        message: `Strapping pin ${pin.name} (Pin ${pos}) is driven by ${asgn.peripheral}_${asgn.signal}; boot-time configuration may change.`,
+      });
+    }
+    if (drives && pinHasTag(pin, 'input-only')) {
+      diagnostics.push({
+        id: `input-only:${pos}`,
+        severity: 'error',
+        code: 'INPUT_ONLY_OUTPUT',
+        pins: [pos],
+        peripheral: asgn.peripheral,
+        message: `${pin.name} (Pin ${pos}) is input-only and cannot drive ${asgn.peripheral}_${asgn.signal}.`,
+      });
+    }
+    if (wifiEnabled && (asgn.peripheral === 'ADC2' || /^ADC2/.test(asgn.signal))) {
+      diagnostics.push({
+        id: `adc2-wifi:${pos}`,
+        severity: 'warning',
+        code: 'ADC2_WIFI_CONFLICT',
+        pins: [pos],
+        peripheral: asgn.peripheral,
+        message: `ADC2 channel ${pin.name} (Pin ${pos}) is unavailable while Wi-Fi is enabled.`,
+      });
+    }
+    if (drives && asgn.peripheral !== 'GPIO') {
+      const drivers = outputDrivers.get(pos) ?? [];
+      drivers.push(`${asgn.peripheral}_${asgn.signal}`);
+      outputDrivers.set(pos, drivers);
+    }
+  }
+
+  for (const [pos, drivers] of outputDrivers) {
+    if (drivers.length < 2) continue;
+    diagnostics.push({
+      id: `gpio-output-driver:${pos}`,
+      severity: 'error',
+      code: 'DUPLICATE_SIGNAL',
+      pins: [pos],
+      message: `GPIO output ${pinMap.get(pos)?.name ?? pos} (Pin ${pos}) has multiple drivers: ${drivers.join(', ')}.`,
+    });
+  }
+
+  const capacity = chip.matrixRouteCapacity;
+  if (capacity !== undefined) {
+    const routePins = Object.entries(state.assignments)
+      .filter(([, asgn]) => asgn.peripheral !== 'GPIO')
+      .map(([pos]) => pos);
+    if (routePins.length > capacity) {
+      diagnostics.push({
+        id: 'matrix-route-limit',
+        severity: 'warning',
+        code: 'MATRIX_ROUTE_LIMIT',
+        pins: routePins,
+        message: `${routePins.length} GPIO-matrix routes exceed the declared capacity of ${capacity}.`,
+      });
+    }
+  }
+
+  return diagnostics;
+}
+
 export function evaluateWorkspace(chip: ChipData, state: WorkspaceState): SolverReport {
   const pinMap = buildPinMap(chip);
   const diagnostics: DiagnosticItem[] = [];
   const pinStatus: Record<string, PinVisualStatus> = {};
   const peripheralStatus: Record<string, PeripheralStatus> = {};
+  const isMatrix = getChipMuxModel(chip) === 'gpio-matrix';
+  // Matrix peripheral outputs may fan out; inputs and every other vendor keep
+  // the single-source rule.
+  const matrixOutputSignals = new Set<string>();
 
   // Initialize pin visual states
   for (const pin of chip.pins) {
@@ -1561,6 +1911,7 @@ export function evaluateWorkspace(chip: ChipData, state: WorkspaceState): Solver
       }
 
       const key = `${asgn.peripheral}:${asgn.signal}`;
+      if (isMatrix && valid?.direction === 'output') matrixOutputSignals.add(key);
       const list = signalUsage.get(key) ?? [];
       list.push(pos);
       signalUsage.set(key, list);
@@ -1617,7 +1968,7 @@ export function evaluateWorkspace(chip: ChipData, state: WorkspaceState): Solver
 
   // 3. Duplicate (peripheral, signal) error check
   for (const [key, positions] of signalUsage.entries()) {
-    if (positions.length > 1) {
+    if (positions.length > 1 && !matrixOutputSignals.has(key)) {
       const [peripheral, signal] = key.split(':');
       const pinNames = positions
         .map((p) => `${pinMap.get(p)?.name ?? p} (${p})`)
@@ -1733,14 +2084,22 @@ export function evaluateWorkspace(chip: ChipData, state: WorkspaceState): Solver
   const resourceDiagnostics = analyzeResourceConflicts(state, pinMap);
   const extiDiagnostics = analyzeExtiConflicts(derivedExti, pinMap);
   const pioDiagnostics = analyzePio(chip, state, pinMap);
+  const matrixDiagnostics = analyzeMatrix(chip, state, pinMap);
   diagnostics.push(
     ...remapDiagnostics,
     ...resourceDiagnostics,
     ...extiDiagnostics,
     ...pioDiagnostics,
+    ...matrixDiagnostics,
   );
-  for (const d of [...resourceDiagnostics, ...extiDiagnostics, ...pioDiagnostics]) {
+  for (const d of [
+    ...resourceDiagnostics,
+    ...extiDiagnostics,
+    ...pioDiagnostics,
+    ...matrixDiagnostics,
+  ]) {
     for (const pos of d.pins) {
+      if (d.severity !== 'error') continue;
       pinStatus[pos] = 'conflict';
       if (d.peripheral && peripheralStatus[d.peripheral] !== undefined) {
         peripheralStatus[d.peripheral] = 'error';

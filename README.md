@@ -1,6 +1,6 @@
 # PinCraft
 
-Static, zero-backend STM32 / CH32 / RP pinout configurator built with Svelte 5 (Runes), TypeScript, Vite, and Tailwind CSS v4.
+Static, zero-backend STM32 / CH32 / RP / ESP32 pinout configurator built with Svelte 5 (Runes), TypeScript, Vite, and Tailwind CSS v4.
 
 ## Local Setup
 
@@ -10,14 +10,14 @@ npm run gen-data
 npm run dev
 ```
 
-`npm run gen-data` shallow-clones `STMicroelectronics/STM32_open_pin_data`, `embassy-rs/stm32-data-generated`, and `ch32-riscv-ug/ch32-device-data` into the gitignored `.cache/` directory, fetches individual RP reference files (KiCad symbols/footprints, picotool/pico-sdk FUNCSEL tables, Zephyr device trees and Raspberry Pi documentation), and emits lazy-loaded static JSON files into `public/data/`. Sources may also be fetched on their own with `npm run acquire-sources`. An existing checkout or fetched file is never refreshed automatically; delete the relevant `.cache/` entry first to update upstream data.
+`npm run gen-data` shallow-clones `STMicroelectronics/STM32_open_pin_data`, `embassy-rs/stm32-data-generated`, `ch32-riscv-ug/ch32-device-data`, `espressif/esp-gpio-tool`, and `esp-rs/esp-hal` into the gitignored `.cache/` directory, fetches individual RP and ESP32 reference files (KiCad symbols/footprints, picotool/pico-sdk FUNCSEL tables, Zephyr device trees, Raspberry Pi documentation, and pinned ESP-IDF headers), and emits lazy-loaded static JSON files into `public/data/`. Sources may also be fetched on their own with `npm run acquire-sources`. An existing checkout or fetched file is never refreshed automatically; delete the relevant `.cache/` entry first to update upstream data.
 
 Generation is orchestrated by `tools/data-gen/index.ts`, which resolves sources, registers vendor adapters, collects attributed warnings, evaluates per-vendor gates, and writes all artifacts exactly once. STM32 parsing lives in `tools/data-gen/adapters/stm32.ts`; CH32 parsing lives in `tools/data-gen/adapters/ch32.ts`; RP parsing lives in `tools/data-gen/adapters/rp/` (KiCad s-expression pins, FUNCSEL join, and Zephyr/documentation variant facts). The CH32 adapter verifies every consumed `index/` CSV against `index/manifest.csv` SHA-256 digests before parsing. It also reads the declared `evidence/pins.csv` file for electrical I/O types, requires its `part_number`, `pin`, `pad`, and `type` columns, and records that file's own SHA-256 in provenance; upstream publishes no manifest digest for it. RP parts carry `vendor: 'rp'` and `muxModel: 'funcsel-pio'`.
 
 ## Verification Commands
 
 ```bash
-npm run acquire-sources                      # Fetch all seven upstream sources into .cache/
+npm run acquire-sources                      # Fetch all eleven upstream sources into .cache/
 npm run gen-data                             # Emit shards and run every generation gate
 npm test                                     # Vitest unit tests for core, exporters, gates, and data-gen helpers
 npm run check                                # svelte-check and TypeScript strict validation
@@ -45,9 +45,16 @@ failure exits non-zero without publishing a partial catalog:
 - **RP:** `RP2040` (56 pins/30 GPIO), `RP2350A` (60/30), and `RP2350B` (80/48),
   QFN exposed pads, `funcsel-pio` with `funcLabel`/`PWM0A`..`PWM11B`
   `resourceId` keys, and HSTX, ADC, QSPI, SWD, and PIO tags.
+- **ESP32:** all twelve available families, first-party joins between
+  `esp-gpio-tool` YAML and `esp-hal` `esp-metadata` TOML, KiCad pad mapping,
+  strict assertions on ESP32-C3 QFN32, ESP32-C3FH4 flash reservations,
+  ESP32-WROOM-E pad 25 GPIO0/BOOT and pad 3 EN, ESP32 GPIO34-39 input-only,
+  matrix signal counts against the pinned `gpio_sig_map.h`, and missing-value
+  checks on every emitted shard.
 - **Global:** a 150 MB uncompressed JSON budget, shard integrity and index
-  consistency, complete provenance (all seven source SHAs and per-vendor
-  counts/ratios), and the `build-warnings.json` attribution contract.
+  consistency (including matching `flashKb: null` for bare dies), complete
+  provenance (all eleven source SHAs and per-vendor counts/ratios), and the
+  `build-warnings.json` attribution contract.
 
 Deferred or unmapped parts are recorded as vendor-attributed warnings and never
 fail generation. The GitHub Pages workflow acquires all sources, force-refreshes
@@ -57,8 +64,8 @@ order before uploading an artifact.
 
 ## Architecture Overview
 
-- `tools/data-gen/`: Build-time CLI joining ST open pin XML geometry with Embassy peripheral AF and DMA metadata, manifest-verified WCH CH32 CSV tables, and CI-fetched KiCad/pico-sdk/Zephyr RP references into compact sharded JSONs (`meta.json`, `index.json`, `chips/<MCU>.json`). CH32 entries carry `vendor: 'ch32'` and `muxModel: 'remap-group'`; RP entries carry `vendor: 'rp'` and `muxModel: 'funcsel-pio'`.
-- `src/core/`: 100% pure TypeScript domain engine (zero Svelte or DOM imports) containing normalized types, declarative peripheral mode templates, scarcity-aware backtracking auto-allocation, 1-hop remap discovery, fixed-channel DMA contention detection, undo/redo history, `fflate` Base64URL state codec, and exporters (`Embassy Rust`, `C Header`, `CSV`, deterministic `JSON`).
+- `tools/data-gen/`: Build-time CLI joining ST open pin XML geometry with Embassy peripheral AF and DMA metadata, manifest-verified WCH CH32 CSV tables, CI-fetched KiCad/pico-sdk/Zephyr RP references, and Espressif gpio-tool/esp-metadata/KiCad/ESP-IDF evidence into compact sharded JSONs (`meta.json`, `index.json`, `chips/<MCU>.json`). CH32 entries carry `vendor: 'ch32'` and `muxModel: 'remap-group'`; RP entries carry `vendor: 'rp'` and `muxModel: 'funcsel-pio'`; ESP32 entries carry `vendor: 'esp32'`, `muxModel: 'gpio-matrix'`, and `flashKb: null` for bare dies.
+- `src/core/`: 100% pure TypeScript domain engine (zero Svelte or DOM imports) containing normalized types, declarative peripheral mode templates, scarcity-aware backtracking auto-allocation, 1-hop remap discovery, fixed-channel DMA contention detection, undo/redo history, `fflate` Base64URL state codec, and exporters (`Embassy Rust` with `embassy-stm32` / `embassy-rp` / `ch32-hal` / `esp-hal` dispatch, `C Header`, `CSV`, deterministic `JSON`).
 - `src/state/`: Reactive Svelte 5 runes stores for hash routing (`#/`, `#/mcu/<MCU>`, `#/s/<PAYLOAD>`), catalog fetching/caching, workspace persistence in `localStorage`, and daisyUI theme preference.
 - `src/components/` & `src/pages/`: Engineering landing page with interactive `STM32G431CBU6` preview and three-pane CubeMX-style workspace featuring parametric perimeter (LQFP/QFN/UFQFPN/TSSOP) and zoom-adaptive grid (UFBGA/TFBGA/WLCSP) SVG renderers.
 
@@ -79,6 +86,10 @@ selection before opening a workspace. A malformed file reports an error and
 leaves the current workspace unchanged. Imports produce the same version-2
 `WorkspaceState` used by share links and project files, so the result is saved
 in recent sessions and round-trips through both codecs.
+
+Starter chips include ESP32 module shards such as `ESP32-C3FH4` and
+`ESP32-WROOM-E`; they open generated module data through the same handoff as
+other vendors. No ESP32 board preset or `.ioc` import path is offered.
 
 The **Board preset** control opens a curated set of official ST board
 configurations (Nucleo boards) checked into `src/data/boards.ts`. Selecting one
@@ -136,10 +147,14 @@ color literals exist only in the vendored theme CSS file.
 - RP physical pins and packages: [KiCad symbols](https://gitlab.com/kicad/libraries/kicad-symbols) and [footprints](https://gitlab.com/kicad/libraries/kicad-footprints) (CC-BY-SA-4.0, generated-file exception).
 - RP FUNCSEL tables: [raspberrypi/picotool](https://github.com/raspberrypi/picotool) and [raspberrypi/pico-sdk](https://github.com/raspberrypi/pico-sdk) (BSD-3-Clause).
 - RP memory and variant facts: [Zephyr](https://github.com/zephyrproject-rtos/zephyr) (Apache-2.0) and [raspberrypi/documentation](https://github.com/raspberrypi/documentation) (CC-BY-SA-4.0).
+- ESP32 GPIO capabilities, strapping, pull state, and MPN reserved pins: [espressif/esp-gpio-tool](https://github.com/espressif/esp-gpio-tool) (Apache-2.0).
+- ESP32 IO_MUX functions, matrix signal ids, limitations, and SoC facts: [esp-rs/esp-hal esp-metadata](https://github.com/esp-rs/esp-hal) (MIT / Apache-2.0).
+- ESP32 symbol and footprint pad geometry: [espressif/kicad-libraries](https://github.com/espressif/kicad-libraries) (CC-BY-SA-4.0, generated-file exception).
+- ESP32 matrix signal count evidence: [espressif/esp-idf](https://github.com/espressif/esp-idf) (Apache-2.0), pinned to release `v5.4.1`.
 
 ## Generated Data Provenance
 
-`public/data/meta.json` records `generatedAt`, the resolved revision, license, emitted chip count, and match/coverage ratios for every generated vendor under `sources`. The same map also carries seven canonical source records keyed by `st-open-pin-data`, `stm32-data-generated`, `ch32-device-data`, `kicad`, `pico-sdk`, `zephyr`, and `raspberry-pi-docs`, each with `sha`, `url`, and `license`. For raw-file sources (RP) the SHA is a short SHA-256 of the fetched files. The CH32 vendor record also carries `evidenceFiles` with the full SHA-256, row count, URL, and license of the additional electrical-kind file. The legacy top-level `openPinDataCommit`, `stm32DataCommit`, `chipCount`, `matchRate`, and `families` fields remain for existing consumers. The landing footer renders provenance directly from `meta.json.sources`.
+`public/data/meta.json` records `generatedAt`, the resolved revision, license, emitted chip count, and match/coverage ratios for every generated vendor under `sources`. The same map also carries eleven canonical source records keyed by `st-open-pin-data`, `stm32-data-generated`, `ch32-device-data`, `kicad`, `pico-sdk`, `zephyr`, `raspberry-pi-docs`, `esp-gpio-tool`, `esp-hal-metadata`, `espressif-kicad`, and `esp-idf`, each with `sha`, `url`, and `license`. For raw-file sources (RP) the SHA is a short SHA-256 of the fetched files. The CH32 vendor record also carries `evidenceFiles` with the full SHA-256, row count, URL, and license of the additional electrical-kind file. The legacy top-level `openPinDataCommit`, `stm32DataCommit`, `chipCount`, `matchRate`, and `families` fields remain for existing consumers. The landing footer renders provenance directly from `meta.json.sources`.
 
 ```json
 {
@@ -176,4 +191,4 @@ color literals exist only in the vendored theme CSS file.
 }
 ```
 
-`public/data/build-warnings.json` is always written (even with zero warnings). Each record carries `{ id, vendor, source, reason }` with optional `file` / `refName` detail; `warningCount` and `warningsByVendor` aggregate the totals printed in the generation log. A revision that cannot be resolved is recorded as the literal `unknown`. The seven upstream sources are credited in the landing footer with ST open pin data (BSD-3-Clause), Embassy stm32-data-generated (MIT / Apache-2.0), ch32-device-data (MIT), KiCad (CC-BY-SA-4.0, generated-file exception), pico-sdk and picotool (BSD-3-Clause), Zephyr (Apache-2.0), and Raspberry Pi documentation (CC-BY-SA-4.0).
+`public/data/build-warnings.json` is always written (even with zero warnings). Each record carries `{ id, vendor, source, reason }` with optional `file` / `refName` detail; `warningCount` and `warningsByVendor` aggregate the totals printed in the generation log. A revision that cannot be resolved is recorded as the literal `unknown`. The eleven upstream sources are credited in the landing footer with ST open pin data (BSD-3-Clause), Embassy stm32-data-generated (MIT / Apache-2.0), ch32-device-data (MIT), KiCad (CC-BY-SA-4.0, generated-file exception), pico-sdk and picotool (BSD-3-Clause), Zephyr (Apache-2.0), Raspberry Pi documentation (CC-BY-SA-4.0), esp-gpio-tool (Apache-2.0), esp-hal esp-metadata (MIT / Apache-2.0), espressif/kicad-libraries (CC-BY-SA-4.0, generated-file exception), and esp-idf (Apache-2.0).

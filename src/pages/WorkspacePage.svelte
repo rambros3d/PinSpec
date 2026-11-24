@@ -182,12 +182,14 @@
       searchMatchCount={workspaceStore.searchMatchingPins.length}
       canUndo={workspaceStore.canUndo}
       canRedo={workspaceStore.canRedo}
+      rotation={workspaceStore.rotation}
       bind:searchInputRef
       onHome={() => router.navigateHome()}
       onOpenSwitcher={() => (showSwitcher = true)}
       onSearchChange={(val) => (workspaceStore.globalSearch = val)}
       onUndo={() => workspaceStore.undo()}
       onRedo={() => workspaceStore.redo()}
+      onRotate={() => workspaceStore.toggleRotation()}
       onClearAll={() => workspaceStore.clearAll()}
       onShare={handleShare}
       onOpenExport={() => (showExport = true)}

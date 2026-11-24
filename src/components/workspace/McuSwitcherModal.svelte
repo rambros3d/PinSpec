@@ -200,7 +200,7 @@
                   {/if}
                 </div>
                 <div class="text-[11px] font-mono-tabular text-base-content/60">
-                  {entry.core} · {entry.flashKb} KB Flash · {entry.ramKb} KB RAM
+                  {entry.core} · {entry.flashKb ?? '—'} KB Flash · {entry.ramKb} KB RAM
                 </div>
               </div>
             </div>

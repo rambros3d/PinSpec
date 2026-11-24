@@ -102,6 +102,15 @@ export const PIN_TAG_LABELS: Record<PinTag, string> = {
   bonded: 'BONDED',
   '5v-tolerant': '5V',
   boot: 'BOOT',
+  strapping: 'STRAP',
+  'input-only': 'INPUT',
+  'adc-only': 'ADC ONLY',
+  rtc: 'RTC',
+  lp: 'LP',
+  jtag: 'JTAG',
+  flash: 'FLASH',
+  psram: 'PSRAM',
+  'cap-restricted': 'CAP',
 };
 
 /** Stable display order for tag pills. */
@@ -115,6 +124,15 @@ export const PIN_TAG_ORDER: PinTag[] = [
   'bonded',
   '5v-tolerant',
   'boot',
+  'strapping',
+  'input-only',
+  'adc-only',
+  'rtc',
+  'lp',
+  'jtag',
+  'flash',
+  'psram',
+  'cap-restricted',
 ];
 
 /** Sort and de-duplicate tags for consistent rendering across views. */
@@ -158,7 +176,7 @@ export interface VendorTab {
  * count from the compact index when a vendor is missing from metadata.
  */
 export function buildVendorTabs(meta: CatalogMeta | null, index: CatalogIndexEntry[]): VendorTab[] {
-  const vendors: VendorId[] = ['stm32', 'ch32', 'rp'];
+  const vendors: VendorId[] = ['stm32', 'ch32', 'rp', 'esp32'];
   const allLabel = 'All';
   return [
     { id: 'all', label: allLabel, count: meta?.chipCount ?? index.length },

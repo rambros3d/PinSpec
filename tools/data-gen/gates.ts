@@ -146,6 +146,15 @@ export function createShardIntegrityGate(): Gate {
               `pin count ${chip.pins.length}/${chip.package.pinCount} disagrees with index ${entry.pinCount}`,
             );
           }
+          // A bare die with no module flash carries null in both documents; a
+          // numeric flash size must agree exactly.
+          if (chip.flashKb === null) {
+            if (entry.flashKb !== null) {
+              problems.push(`flashKb null in shard disagrees with index ${entry.flashKb}`);
+            }
+          } else if (chip.flashKb !== entry.flashKb) {
+            problems.push(`flashKb ${chip.flashKb} disagrees with index ${entry.flashKb}`);
+          }
           problems.push(...findInvalidValues(chip, `shard ${entry.id}`));
         }
         const shard = ctx.serializedShards?.get(entry.id);
@@ -195,7 +204,7 @@ export function createProvenanceGate(
           }
         }
       }
-      for (const vendor of ['stm32', 'ch32', 'rp'] as VendorId[]) {
+      for (const vendor of ['stm32', 'ch32', 'rp', 'esp32'] as VendorId[]) {
         const entry = meta.sources?.[vendor];
         if (!entry) continue;
         if (!Number.isFinite(entry.chipCount) || entry.chipCount < 0) {

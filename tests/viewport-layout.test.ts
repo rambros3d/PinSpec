@@ -301,19 +301,46 @@ describe('canvas gesture and rotation input', () => {
     }
   });
 
-  it('renders two-state rotation in SVG without a CSS wrapper', () => {
+  it('renders four clockwise orientations in SVG without a CSS wrapper', () => {
     const canvas = readSource('src/components/workspace/PackageCanvas.svelte');
-    expect(canvas).toContain('rotation === -90');
+    expect(canvas).toContain('rotation === 90 || rotation === 270');
+    expect(canvas).not.toContain('rotation === -90');
     expect(canvas).not.toContain('transform: rotate(${rotation}deg)');
     expect(canvas).toContain('{rotation}');
     for (const file of ['PerimeterPackage.svelte', 'GridPackage.svelte']) {
       const source = readSource(`src/components/workspace/${file}`);
       expect(source, file).toContain('rotation?: PackageRotation');
       expect(source, file).toContain('geometryTransform');
-      expect(source, file).toContain('counterRotation');
-      expect(source, file).toContain('rotate(-90 ${viewCenterX} ${viewCenterY})');
-      expect(source, file).toContain('rotate(${counterRotation}');
+      expect(source, file).toContain('localLabelAngle');
+      expect(source, file).toContain('isQuarterTurn(rotation)');
+      expect(source, file).toContain('rotate(${rotation} ${viewCenterX} ${viewCenterY})');
+      expect(source, file).not.toContain('rotation === -90');
+      expect(source, file).not.toContain('counterRotation');
+      expect(source, file).toContain('viewBox={`0 0 ${svgWidth} ${svgHeight}`}');
+      expect(source, file).toContain('width={svgWidth}');
+      expect(source, file).toContain('height={svgHeight}');
     }
+  });
+
+  it('exposes clockwise rotate controls with orientation labels on toolbar and canvas', () => {
+    for (const file of ['TopToolbar.svelte', 'PackageCanvas.svelte']) {
+      const source = readSource(`src/components/workspace/${file}`);
+      expect(source, file).toContain('onRotate');
+      expect(source, file).toContain('Rotate package clockwise, now ${rotation} degrees');
+      expect(source, file).not.toContain('counter-clockwise');
+      expect(source, file).not.toContain('Restore package orientation');
+    }
+  });
+
+  it('fits a rotated non-square package from the declared extents exactly once', () => {
+    const canvas = readSource('src/components/workspace/PackageCanvas.svelte');
+    const fit = canvas.match(/export function fitView\(\): void \{[\s\S]*?\n  \}/)?.[0] ?? '';
+    expect(fit).toContain("svg.getAttribute('width')");
+    expect(fit).toContain("svg.getAttribute('height')");
+    expect(fit).toContain("svg.getAttribute('viewBox')");
+    expect(fit).not.toContain('effW = isRotated ? sh : sw');
+    expect(fit).toContain('panX = (rect.width - effW * zoom) / 2');
+    expect(fit).toContain('panY = (rect.height - effH * zoom) / 2');
   });
 });
 

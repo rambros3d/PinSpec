@@ -1,6 +1,7 @@
 import { cloneWorkspaceState, createWorkspaceHistory, type HistoryStack } from '../core/history';
+import { cycleRotationClockwise } from '../core/package-rotation';
 import { normalizeAngle } from '../core/placement';
-import { normalizePackageRotation, type PackageRotation } from '../core/types';
+import { getChipMuxModel, normalizePackageRotation, type PackageRotation } from '../core/types';
 import {
   allocatePeripheralMode,
   applyOneHopFix,
@@ -9,6 +10,7 @@ import {
   evaluateWorkspace,
   findAlternatePins,
   pinSupportsSignal,
+  reallocateMatrixPlacement,
   reallocatePeripheralPlacement,
   remapPinAssignment,
   togglePeripheralSignal,
@@ -413,7 +415,9 @@ class WorkspaceStore {
     }
     if (Object.keys(next.placement).length === 0) delete next.placement;
     const result = this.chip
-      ? reallocatePeripheralPlacement(this.chip, next, peripheral, preference)
+      ? getChipMuxModel(this.chip) === 'gpio-matrix'
+        ? reallocateMatrixPlacement(this.chip, next, peripheral, preference)
+        : reallocatePeripheralPlacement(this.chip, next, peripheral, preference)
       : next;
     if (commit) {
       this.commit(result);
@@ -554,12 +558,12 @@ class WorkspaceStore {
     }
   }
 
-  /** Toggle between the two supported orientations as one undoable change. */
+  /** Advance one clockwise quarter turn as one undoable, pin-preserving change. */
   toggleRotation(): void {
-    const next = this.rotation === 0 ? -90 : 0;
+    const next = cycleRotationClockwise(this.rotation);
     const nextState = cloneWorkspaceState(this.state);
-    if (next === -90) nextState.packageRotation = -90;
-    else delete nextState.packageRotation;
+    if (next === 0) delete nextState.packageRotation;
+    else nextState.packageRotation = next;
     this.commit(nextState);
   }
 

@@ -322,12 +322,17 @@ describe('metadata and warnings', () => {
     const meta = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
     expect(doc.warningCount).toBe(doc.warnings.length);
     expect(doc.warnings.every((w: { vendor: string }) => typeof w.vendor === 'string')).toBe(true);
-    const ch32Warnings = doc.warningsByVendor.ch32 ?? 0;
-    const rpWarnings = doc.warningsByVendor.rp ?? 0;
-    expect(doc.warningsByVendor.stm32).toBe(doc.warningCount - ch32Warnings - rpWarnings);
+    const otherWarnings = ['ch32', 'rp', 'esp32'].reduce(
+      (sum, vendor) => sum + (doc.warningsByVendor[vendor] ?? 0),
+      0,
+    );
+    expect(doc.warningsByVendor.stm32).toBe(doc.warningCount - otherWarnings);
     expect(meta.sources.stm32.chipCount).toBeLessThanOrEqual(meta.chipCount);
     expect(meta.sources.ch32?.chipCount ?? 0).toBe(
-      meta.chipCount - meta.sources.stm32.chipCount - (meta.sources.rp?.chipCount ?? 0),
+      meta.chipCount -
+        meta.sources.stm32.chipCount -
+        (meta.sources.rp?.chipCount ?? 0) -
+        (meta.sources.esp32?.chipCount ?? 0),
     );
     expect(meta.sources.stm32.commit).toBe(meta.stm32DataCommit);
     expect(meta.sources.stm32.openPinDataCommit).toBe(meta.openPinDataCommit);
@@ -353,7 +358,7 @@ describe('orchestrator with injected adapters', () => {
             core: 'Cortex-M0+',
             package: 'UFQFPN48',
             pinCount: chip.pins.length,
-            flashKb: 16,
+            flashKb: chip.flashKb,
             ramKb: 2,
             peripherals: { spi: 0, i2c: 0, usart: 0, can: 0, usb: 0, tim: 0, adc: 0 },
           },

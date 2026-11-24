@@ -121,7 +121,7 @@ describe('daisyUI token integration', () => {
         path.join(ROOT, 'src', 'components', 'workspace', name),
         'utf8',
       );
-      expect(source, name).toContain('counterRotation');
+      expect(source, name).toContain('localLabelAngle');
       expect(source, name).toContain('fill-base-content');
       expect(source, name).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
     }

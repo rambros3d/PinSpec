@@ -86,12 +86,37 @@
       url: 'https://github.com/raspberrypi/documentation',
       license: 'CC-BY-SA-4.0',
     },
+    {
+      id: 'esp-gpio-tool',
+      label: 'espressif/esp-gpio-tool',
+      url: 'https://github.com/espressif/esp-gpio-tool',
+      license: 'Apache-2.0',
+    },
+    {
+      id: 'esp-hal-metadata',
+      label: 'esp-rs/esp-hal esp-metadata',
+      url: 'https://github.com/esp-rs/esp-hal',
+      license: 'MIT / Apache-2.0',
+    },
+    {
+      id: 'espressif-kicad',
+      label: 'espressif/kicad-libraries',
+      url: 'https://github.com/espressif/kicad-libraries',
+      license: 'CC-BY-SA-4.0 (generated-file exception)',
+    },
+    {
+      id: 'esp-idf',
+      label: 'espressif/esp-idf',
+      url: 'https://github.com/espressif/esp-idf',
+      license: 'Apache-2.0',
+    },
   ];
 
   const PROVENANCE_VENDORS: ReadonlyArray<{ id: VendorId; label: string }> = [
     { id: 'stm32', label: 'STM32' },
     { id: 'ch32', label: 'CH32' },
     { id: 'rp', label: 'RP' },
+    { id: 'esp32', label: 'ESP32' },
   ];
 
   /** Text-only keyboard reference shown in the right rail. */

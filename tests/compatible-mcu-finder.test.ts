@@ -239,6 +239,12 @@ describe('finder wiring', () => {
     expect(finder).toContain('max-h-[92dvh]');
     expect(finder).toContain('min-h-0 overflow-y-auto');
     expect(finder).toContain('router.navigateMcu(');
+    for (const vendor of ['stm32', 'ch32', 'rp', 'esp32']) {
+      expect(finder, vendor).toContain(`<option value="${vendor}">`);
+    }
+    expect(finder.indexOf('<option value="all">')).toBeLessThan(
+      finder.indexOf('<option value="stm32">'),
+    );
     expect(finder).not.toContain('workspaceStore');
   });
 

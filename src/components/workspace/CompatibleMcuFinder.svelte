@@ -181,6 +181,7 @@
           <option value="stm32">STM32</option>
           <option value="ch32">CH32</option>
           <option value="rp">RP</option>
+          <option value="esp32">ESP32</option>
         </select>
       </label>
       <label class="flex flex-col gap-1 text-[11px] text-base-content/60">

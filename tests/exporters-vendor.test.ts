@@ -98,6 +98,32 @@ const ch32 = chip({
   },
 });
 
+const esp32 = chip({
+  id: 'ESP32-C3FH4',
+  vendor: 'esp32',
+  muxModel: 'gpio-matrix',
+  package: { name: 'QFN-32', kind: 'perimeter', pinCount: 4, sides: [1, 1, 1, 1] },
+  pins: [
+    {
+      pos: '4',
+      name: 'GPIO2',
+      type: 'io',
+      tags: ['strapping'],
+      signals: [
+        {
+          peripheral: 'UART0',
+          signal: 'TX',
+          af: null,
+          funcLabel: 'U0TXD',
+          direction: 'output',
+        },
+      ],
+    },
+    { pos: '5', name: 'GPIO3', type: 'io', signals: [] },
+  ],
+  peripherals: { UART0: { kind: 'usart', signals: ['TX'] } },
+});
+
 const stm32State: WorkspaceState = {
   ...createEmptyWorkspace('STM32G431CBU6'),
   assignments: { '15': { peripheral: 'SPI1', signal: 'SCK', af: 7 } },
@@ -125,6 +151,11 @@ const ch32State: WorkspaceState = {
   activeRemaps: { USART1: 1 },
 };
 
+const esp32State: WorkspaceState = {
+  ...createEmptyWorkspace('ESP32-C3FH4'),
+  assignments: { '4': { peripheral: 'UART0', signal: 'TX', af: null, funcLabel: 'U0TXD' } },
+};
+
 describe('shared mux label', () => {
   it('produces AF, F, RM and GPIO-mode labels', () => {
     expect(formatMuxLabel({ peripheral: 'SPI1', signal: 'SCK', af: 7 }, 'af')).toBe('AF7');
@@ -135,6 +166,12 @@ describe('shared mux label', () => {
       formatMuxLabel({ peripheral: 'USART1', signal: 'TX', af: null, remapId: 1 }, 'remap-group'),
     ).toBe('RM1');
     expect(formatMuxLabel({ peripheral: 'GPIO', signal: 'Output', af: null }, 'af')).toBe('Output');
+    expect(
+      formatMuxLabel(
+        { peripheral: 'UART0', signal: 'TX', af: null, funcLabel: 'U0TXD' },
+        'gpio-matrix',
+      ),
+    ).toBe('U0TXD');
   });
 });
 
@@ -183,8 +220,22 @@ describe('vendor-dispatched Rust exporter', () => {
     expect(rs).not.toContain('[AF1]');
   });
 
+  it('emits esp-hal init, GPIO-number pads and matrix route comments', () => {
+    const rs = exportEmbassyRust(esp32, esp32State);
+    expect(rs).toContain('use esp_hal::peripherals;');
+    expect(rs).toContain('esp_hal::init(Default::default())');
+    expect(rs).toContain('p: esp_hal::Peripherals');
+    expect(rs).toContain('peripherals::GPIO2');
+    expect(rs).toContain('p.GPIO2');
+    expect(rs).toContain('Matrix routes in use:');
+    expect(rs).toContain('[U0TXD]');
+    expect(rs).not.toContain('embassy_stm32');
+    expect(rs).not.toContain('embassy_rp');
+    expect(rs).not.toContain('[AF');
+  });
+
   it('emits a valid empty struct for every vendor', () => {
-    for (const c of [stm32, rp, ch32]) {
+    for (const c of [stm32, rp, ch32, esp32]) {
       const rs = exportEmbassyRust(c, createEmptyWorkspace(c.id));
       expect(rs).toContain('pub struct BoardPins {}');
       expect(rs).toContain('pub fn from_peripherals(');
@@ -221,6 +272,21 @@ describe('vendor-dispatched C header', () => {
     expect(h).toContain('Active remap groups (ch32v003fun)');
     expect(h).toContain('Remap 1 (RM1)');
     expect(h).not.toContain('_AF ');
+  });
+
+  it('emits ESP32 GPIO macros and matrix function comments without AF macros', () => {
+    const h = exportCHeader(esp32, esp32State);
+    expect(h).toContain('#ifndef PINCRAFT_ESP32_C3FH4_PINOUT_H');
+    expect(h).toContain('#define UART0_TX_GPIO 2U');
+    expect(h).toContain('Matrix function: U0TXD');
+    expect(h).not.toContain('_AF ');
+  });
+
+  it('emits a guarded empty header for ESP32', () => {
+    const h = exportCHeader(esp32, createEmptyWorkspace(esp32.id));
+    expect(h).toContain('/* No pins assigned yet. */');
+    expect(h).toContain('#endif /* PINCRAFT_ESP32_C3FH4_PINOUT_H */');
+    expect(h).not.toContain('#define UART0_TX_GPIO');
   });
 });
 

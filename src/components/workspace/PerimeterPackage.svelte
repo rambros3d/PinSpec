@@ -10,6 +10,7 @@
 </script>
 
 <script lang="ts">
+  import { isQuarterTurn, localLabelAngle } from '../../core/package-rotation';
   import {
     formatMuxLabel,
     type ChipData,
@@ -186,14 +187,22 @@
     };
   });
 
-  // Geometry rotates around the viewBox centre; text counter-rotates at its
-  // own anchor so every label stays upright in screen space.
+  // Geometry rotates around the viewBox centre. Each label applies the local
+  // angle for its displayed side so screen text is never upside down. At a
+  // quarter turn the viewBox extents swap, so the rotating group is recentred.
   const viewCenterX = $derived(layout.totalWidth / 2);
   const viewCenterY = $derived(layout.totalHeight / 2);
+  const quarterTurn = $derived(isQuarterTurn(rotation));
+  const svgWidth = $derived(quarterTurn ? layout.totalHeight : layout.totalWidth);
+  const svgHeight = $derived(quarterTurn ? layout.totalWidth : layout.totalHeight);
   const geometryTransform = $derived(
-    rotation === -90 ? `rotate(-90 ${viewCenterX} ${viewCenterY})` : undefined,
+    rotation === 0
+      ? undefined
+      : `${quarterTurn ? `translate(${(svgWidth - layout.totalWidth) / 2} ${(svgHeight - layout.totalHeight) / 2}) ` : ''}rotate(${rotation} ${viewCenterX} ${viewCenterY})`,
   );
-  const counterRotation = $derived(rotation === -90 ? 90 : 0);
+  // Centre markings and the exposed-pad marking have no pin edge; treat them as
+  // left-edge text so they stay readable at every orientation.
+  const centreLabelAngle = $derived(localLabelAngle('left', rotation));
 
   function getColors(pos: string): { fill: string; stroke: string; text: string; tagBg: string } {
     const isHighlighted = highlightedPins.has(pos);
@@ -292,9 +301,9 @@
 </script>
 
 <svg
-  viewBox={`0 0 ${layout.totalWidth} ${layout.totalHeight}`}
-  width={layout.totalWidth}
-  height={layout.totalHeight}
+  viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+  width={svgWidth}
+  height={svgHeight}
   class="select-none text-foreground overflow-visible"
   role="img"
   aria-label={`${chip.id} ${chip.package.name} pinout diagram`}
@@ -384,7 +393,7 @@
         <text
           x={layout.originX + layout.bodyWidth / 2}
           y={layout.originY + layout.bodyHeight - 17}
-          transform={`rotate(${counterRotation} ${layout.originX + layout.bodyWidth / 2} ${layout.originY + layout.bodyHeight - 17})`}
+          transform={`rotate(${centreLabelAngle} ${layout.originX + layout.bodyWidth / 2} ${layout.originY + layout.bodyHeight - 17})`}
           text-anchor="middle"
           class="font-mono fill-base-content/40 pointer-events-none"
           font-size="8"
@@ -411,7 +420,7 @@
     <text
       x={layout.originX + layout.bodyWidth / 2}
       y={layout.originY + layout.bodyHeight / 2 - 10}
-      transform={`rotate(${counterRotation} ${layout.originX + layout.bodyWidth / 2} ${layout.originY + layout.bodyHeight / 2 - 10})`}
+      transform={`rotate(${centreLabelAngle} ${layout.originX + layout.bodyWidth / 2} ${layout.originY + layout.bodyHeight / 2 - 10})`}
       text-anchor="middle"
       class="font-mono fill-base-content font-semibold"
       font-size={compact ? 14 : 16}
@@ -421,7 +430,7 @@
     <text
       x={layout.originX + layout.bodyWidth / 2}
       y={layout.originY + layout.bodyHeight / 2 + 12}
-      transform={`rotate(${counterRotation} ${layout.originX + layout.bodyWidth / 2} ${layout.originY + layout.bodyHeight / 2 + 12})`}
+      transform={`rotate(${centreLabelAngle} ${layout.originX + layout.bodyWidth / 2} ${layout.originY + layout.bodyHeight / 2 + 12})`}
       text-anchor="middle"
       class="font-mono fill-base-content/60"
       font-size={compact ? 11 : 12}
@@ -431,12 +440,12 @@
     <text
       x={layout.originX + layout.bodyWidth / 2}
       y={layout.originY + layout.bodyHeight / 2 + 29}
-      transform={`rotate(${counterRotation} ${layout.originX + layout.bodyWidth / 2} ${layout.originY + layout.bodyHeight / 2 + 29})`}
+      transform={`rotate(${centreLabelAngle} ${layout.originX + layout.bodyWidth / 2} ${layout.originY + layout.bodyHeight / 2 + 29})`}
       text-anchor="middle"
       class="font-mono fill-base-content/40"
       font-size="10"
     >
-      {chip.flashKb} KB Flash · {chip.ramKb} KB RAM
+      {chip.flashKb ?? '—'} KB Flash · {chip.ramKb} KB RAM
     </text>
   </g>
 
@@ -452,6 +461,7 @@
     {@const padLabel = bondedNames.length > 0 ? bondedNames.join('/') : item.pin.name}
     {@const cx = item.x + item.width / 2}
     {@const cy = item.y + item.height / 2}
+    {@const labelAngle = localLabelAngle(item.side, rotation)}
 
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -501,36 +511,23 @@
       {/if}
 
       <!-- Pin Port Name inside pad -->
-      {#if item.side === 'left' || item.side === 'right'}
-        <text
-          x={cx}
-          y={cy + 3.5}
-          text-anchor="middle"
-          transform={`rotate(${counterRotation} ${cx} ${cy + 3.5})`}
-          class="font-mono font-medium pointer-events-none fill-base-content"
-          font-size={layout.pitch < 24 ? 8.5 : 10}
-        >
-          {shortPinName(padLabel)}
-        </text>
-      {:else}
-        <text
-          x={cx}
-          y={cy + 3.5}
-          text-anchor="middle"
-          transform={`rotate(${-90 + counterRotation} ${cx} ${cy})`}
-          class="font-mono font-medium pointer-events-none fill-base-content"
-          font-size={layout.pitch < 24 ? 8.5 : 10}
-        >
-          {shortPinName(padLabel)}
-        </text>
-      {/if}
+      <text
+        x={cx}
+        y={cy + 3.5}
+        text-anchor="middle"
+        transform={`rotate(${labelAngle} ${cx} ${cy + 3.5})`}
+        class="font-mono font-medium pointer-events-none fill-base-content"
+        font-size={layout.pitch < 24 ? 8.5 : 10}
+      >
+        {shortPinName(padLabel)}
+      </text>
 
       <!-- Physical Pin Number just inside IC body edge -->
       {#if item.side === 'left'}
         <text
           x={layout.originX + 6}
           y={cy + 3}
-          transform={`rotate(${counterRotation} ${layout.originX + 6} ${cy + 3})`}
+          transform={`rotate(${labelAngle} ${layout.originX + 6} ${cy + 3})`}
           text-anchor="start"
           class="font-mono fill-base-content/40 pointer-events-none"
           font-size="8.5"
@@ -541,7 +538,7 @@
         <text
           x={layout.originX + layout.bodyWidth - 6}
           y={cy + 3}
-          transform={`rotate(${counterRotation} ${layout.originX + layout.bodyWidth - 6} ${cy + 3})`}
+          transform={`rotate(${labelAngle} ${layout.originX + layout.bodyWidth - 6} ${cy + 3})`}
           text-anchor="end"
           class="font-mono fill-base-content/40 pointer-events-none"
           font-size="8.5"
@@ -552,7 +549,7 @@
         <text
           x={cx}
           y={layout.originY + layout.bodyHeight - 6}
-          transform={`rotate(${counterRotation} ${cx} ${layout.originY + layout.bodyHeight - 6})`}
+          transform={`rotate(${labelAngle} ${cx} ${layout.originY + layout.bodyHeight - 6})`}
           text-anchor="middle"
           class="font-mono fill-base-content/40 pointer-events-none"
           font-size="8.5"
@@ -563,7 +560,7 @@
         <text
           x={cx}
           y={layout.originY + 13}
-          transform={`rotate(${counterRotation} ${cx} ${layout.originY + 13})`}
+          transform={`rotate(${labelAngle} ${cx} ${layout.originY + 13})`}
           text-anchor="middle"
           class="font-mono fill-base-content/40 pointer-events-none"
           font-size="8.5"
@@ -628,7 +625,7 @@
           <text
             x={item.x - 13}
             y={cy + 3.5}
-            transform={`rotate(${counterRotation} ${item.x - 13} ${cy + 3.5})`}
+            transform={`rotate(${labelAngle} ${item.x - 13} ${cy + 3.5})`}
             text-anchor="end"
             class="font-mono font-medium fill-base-content pointer-events-none"
             font-size={layout.pitch < 24 ? 8.5 : 9.5}
@@ -657,7 +654,7 @@
           <text
             x={item.x + item.width + 13}
             y={cy + 3.5}
-            transform={`rotate(${counterRotation} ${item.x + item.width + 13} ${cy + 3.5})`}
+            transform={`rotate(${labelAngle} ${item.x + item.width + 13} ${cy + 3.5})`}
             text-anchor="start"
             class="font-mono font-medium fill-base-content pointer-events-none"
             font-size={layout.pitch < 24 ? 8.5 : 9.5}
@@ -673,7 +670,7 @@
             stroke={colors.stroke}
             stroke-width="1.2"
           />
-          <g transform={`translate(${cx}, ${item.y - 8}) rotate(${-90 + counterRotation})`}>
+          <g transform={`translate(${cx}, ${item.y - 8}) rotate(${labelAngle})`}>
             <rect
               x="0"
               y={-tagH / 2}
@@ -703,7 +700,7 @@
             stroke={colors.stroke}
             stroke-width="1.2"
           />
-          <g transform={`translate(${cx}, ${item.y + item.height + 8}) rotate(${-90 + counterRotation})`}>
+          <g transform={`translate(${cx}, ${item.y + item.height + 8}) rotate(${labelAngle})`}>
             <rect
               x={-tagW}
               y={-tagH / 2}

@@ -10,6 +10,7 @@
 </script>
 
 <script lang="ts">
+  import { isQuarterTurn, localLabelAngle } from '../../core/package-rotation';
   import {
     formatMuxLabel,
     type ChipData,
@@ -102,13 +103,21 @@
   });
 
   // The ball matrix rotates as geometry; headers, ball labels and the footer
-  // counter-rotate at their own anchors so they remain upright on screen.
+  // apply the resolver's local angle at their own anchors so they stay readable.
+  // Quarter turns swap the viewBox extents and recentre the rotating group.
   const viewCenterX = $derived(layout.totalWidth / 2);
   const viewCenterY = $derived(layout.totalHeight / 2);
+  const quarterTurn = $derived(isQuarterTurn(rotation));
+  const svgWidth = $derived(quarterTurn ? layout.totalHeight : layout.totalWidth);
+  const svgHeight = $derived(quarterTurn ? layout.totalWidth : layout.totalHeight);
   const geometryTransform = $derived(
-    rotation === -90 ? `rotate(-90 ${viewCenterX} ${viewCenterY})` : undefined,
+    rotation === 0
+      ? undefined
+      : `${quarterTurn ? `translate(${(svgWidth - layout.totalWidth) / 2} ${(svgHeight - layout.totalHeight) / 2}) ` : ''}rotate(${rotation} ${viewCenterX} ${viewCenterY})`,
   );
-  const counterRotation = $derived(rotation === -90 ? 90 : 0);
+  // Grid text has no single pin edge; treat it as left-edge text so it renders
+  // horizontally in the default orientation and never upside down.
+  const gridLabelAngle = $derived(localLabelAngle('left', rotation));
 
   function getBallColors(pos: string): { fill: string; stroke: string } {
     if (remapSourcePos === pos) {
@@ -139,9 +148,9 @@
 </script>
 
 <svg
-  viewBox={`0 0 ${layout.totalWidth} ${layout.totalHeight}`}
-  width={layout.totalWidth}
-  height={layout.totalHeight}
+  viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+  width={svgWidth}
+  height={svgHeight}
   class="select-none text-foreground overflow-visible"
   role="img"
   aria-label={`${chip.id} ${chip.package.name} BGA matrix diagram`}
@@ -212,7 +221,7 @@
   <text
     x={layout.outerPad + layout.headerPad - 12}
     y={layout.outerPad + layout.headerPad - 14}
-    transform={`rotate(${counterRotation} ${layout.outerPad + layout.headerPad - 12} ${layout.outerPad + layout.headerPad - 14})`}
+    transform={`rotate(${gridLabelAngle} ${layout.outerPad + layout.headerPad - 12} ${layout.outerPad + layout.headerPad - 14})`}
     text-anchor="end"
     class="font-mono font-semibold fill-warning"
     font-size="10"
@@ -225,7 +234,7 @@
     <text
       x={layout.outerPad + layout.headerPad + ci * layout.cellSize + layout.cellSize / 2}
       y={layout.outerPad + layout.headerPad - 16}
-      transform={`rotate(${counterRotation} ${layout.outerPad + layout.headerPad + ci * layout.cellSize + layout.cellSize / 2} ${layout.outerPad + layout.headerPad - 16})`}
+      transform={`rotate(${gridLabelAngle} ${layout.outerPad + layout.headerPad + ci * layout.cellSize + layout.cellSize / 2} ${layout.outerPad + layout.headerPad - 16})`}
       text-anchor="middle"
       class="font-mono fill-base-content/60 font-medium"
       font-size="11"
@@ -239,7 +248,7 @@
     <text
       x={layout.outerPad + layout.headerPad - 18}
       y={layout.outerPad + layout.headerPad + ri * layout.cellSize + layout.cellSize / 2 + 4}
-      transform={`rotate(${counterRotation} ${layout.outerPad + layout.headerPad - 18} ${layout.outerPad + layout.headerPad + ri * layout.cellSize + layout.cellSize / 2 + 4})`}
+      transform={`rotate(${gridLabelAngle} ${layout.outerPad + layout.headerPad - 18} ${layout.outerPad + layout.headerPad + ri * layout.cellSize + layout.cellSize / 2 + 4})`}
       text-anchor="end"
       class="font-mono fill-base-content/60 font-medium"
       font-size="11"
@@ -300,7 +309,7 @@
         <text
           x={ball.cx}
           y={ball.cy + 3.5}
-          transform={`rotate(${counterRotation} ${ball.cx} ${ball.cy + 3.5})`}
+          transform={`rotate(${gridLabelAngle} ${ball.cx} ${ball.cy + 3.5})`}
           text-anchor="middle"
           class="font-mono font-medium fill-base-content pointer-events-none"
           font-size="8.5"
@@ -312,7 +321,7 @@
         <text
           x={ball.cx}
           y={asgn ? ball.cy - 2 : ball.cy + 3}
-          transform={`rotate(${counterRotation} ${ball.cx} ${asgn ? ball.cy - 2 : ball.cy + 3})`}
+          transform={`rotate(${gridLabelAngle} ${ball.cx} ${asgn ? ball.cy - 2 : ball.cy + 3})`}
           text-anchor="middle"
           class="font-mono font-semibold fill-base-content pointer-events-none"
           font-size="8.5"
@@ -323,7 +332,7 @@
           <text
             x={ball.cx}
             y={ball.cy + 8.5}
-            transform={`rotate(${counterRotation} ${ball.cx} ${ball.cy + 8.5})`}
+            transform={`rotate(${gridLabelAngle} ${ball.cx} ${ball.cy + 8.5})`}
             text-anchor="middle"
             class="font-mono fill-base-content pointer-events-none"
             font-size="6.8"
@@ -336,7 +345,7 @@
         <text
           x={ball.cx}
           y={ball.cy - 8.5}
-          transform={`rotate(${counterRotation} ${ball.cx} ${ball.cy - 8.5})`}
+          transform={`rotate(${gridLabelAngle} ${ball.cx} ${ball.cy - 8.5})`}
           text-anchor="middle"
           class="font-mono fill-base-content/60 pointer-events-none"
           font-size="6"
@@ -346,7 +355,7 @@
         <text
           x={ball.cx}
           y={ball.cy - 0.5}
-          transform={`rotate(${counterRotation} ${ball.cx} ${ball.cy - 0.5})`}
+          transform={`rotate(${gridLabelAngle} ${ball.cx} ${ball.cy - 0.5})`}
           text-anchor="middle"
           class="font-mono font-semibold fill-base-content pointer-events-none"
           font-size="7.5"
@@ -357,7 +366,7 @@
           <text
             x={ball.cx}
             y={ball.cy + 7.5}
-            transform={`rotate(${counterRotation} ${ball.cx} ${ball.cy + 7.5})`}
+            transform={`rotate(${gridLabelAngle} ${ball.cx} ${ball.cy + 7.5})`}
             text-anchor="middle"
             class="font-mono fill-base-content pointer-events-none"
             font-size="6"
@@ -369,7 +378,7 @@
           <text
             x={ball.cx}
             y={ball.cy + 14}
-            transform={`rotate(${counterRotation} ${ball.cx} ${ball.cy + 14})`}
+            transform={`rotate(${gridLabelAngle} ${ball.cx} ${ball.cy + 14})`}
             text-anchor="middle"
             class="font-mono fill-info pointer-events-none"
             font-size="5.5"
@@ -395,7 +404,7 @@
   <text
     x={layout.outerPad + layout.headerPad + layout.gridWidth / 2}
     y={layout.totalHeight - 8}
-    transform={`rotate(${counterRotation} ${layout.outerPad + layout.headerPad + layout.gridWidth / 2} ${layout.totalHeight - 8})`}
+    transform={`rotate(${gridLabelAngle} ${layout.outerPad + layout.headerPad + layout.gridWidth / 2} ${layout.totalHeight - 8})`}
     text-anchor="middle"
     class="font-mono fill-base-content/60"
     font-size="12"

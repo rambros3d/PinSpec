@@ -25,6 +25,16 @@ export const LICENSE_PICOTOOL = 'BSD-3-Clause';
 export const LICENSE_ZEPHYR = 'Apache-2.0';
 /** License of raspberrypi/documentation (variant tables). */
 export const LICENSE_RPI_DOCS = 'CC-BY-SA-4.0';
+/** License of espressif/esp-gpio-tool target tables. */
+export const LICENSE_ESP_GPIO_TOOL = 'Apache-2.0';
+/** License of esp-rs/esp-hal esp-metadata (dual licensed). */
+export const LICENSE_ESP_HAL_METADATA = 'MIT / Apache-2.0';
+/** License of espressif/kicad-libraries (generated-file exception). */
+export const LICENSE_ESPRESSIF_KICAD = 'CC-BY-SA-4.0 (generated-file exception)';
+/** License of espressif/esp-idf headers. */
+export const LICENSE_ESP_IDF = 'Apache-2.0';
+/** Pinned ESP-IDF release tag used for all fetched header evidence. */
+export const ESP_IDF_REF = 'v5.4.1';
 
 /** Builds the default `.cache` location for a repository root. */
 export function defaultCacheDir(root: string = process.cwd()): string {
@@ -255,11 +265,67 @@ export function rpSourceSpecs(cacheDir: string = defaultCacheDir()): SourceSpec[
   ];
 }
 
+/** Pinned ESP-IDF header paths consumed by the matrix-count gate. */
+export const ESP_IDF_HEADER_PATHS = [
+  'components/soc/esp32c3/include/soc/soc_caps.h',
+  'components/soc/esp32c3/include/soc/gpio_sig_map.h',
+  'components/soc/esp32c3/register/soc/io_mux_reg.h',
+] as const;
+
+/** KiCad symbol and footprint files consumed by the ESP32 adapter. */
+export const ESP_KICAD_FILES = [
+  'symbols/Espressif.kicad_sym',
+  'footprints/Espressif.pretty/QFN-32-1EP_4x4mm_P0.4mm_EP2.9x2.9mm.kicad_mod',
+  'footprints/Espressif.pretty/QFN-48-1EP_5x5mm_P0.35mm_EP3.7x3.7mm.kicad_mod',
+  'footprints/Espressif.pretty/ESP32-WROOM-32E.kicad_mod',
+] as const;
+
+/** Source declarations for the ESP32 vendor adapter. */
+export function esp32SourceSpecs(cacheDir: string = defaultCacheDir()): SourceSpec[] {
+  const kicadBase = 'https://raw.githubusercontent.com/espressif/kicad-libraries/main';
+  const idfBase = `https://raw.githubusercontent.com/espressif/esp-idf/${ESP_IDF_REF}`;
+  return [
+    {
+      id: 'esp-gpio-tool',
+      url: 'https://github.com/espressif/esp-gpio-tool',
+      dir: path.join(cacheDir, 'esp-gpio-tool'),
+      license: LICENSE_ESP_GPIO_TOOL,
+    },
+    {
+      id: 'esp-hal-metadata',
+      url: 'https://github.com/esp-rs/esp-hal',
+      dir: path.join(cacheDir, 'esp-hal'),
+      license: LICENSE_ESP_HAL_METADATA,
+    },
+    {
+      id: 'espressif-kicad',
+      url: 'https://github.com/espressif/kicad-libraries',
+      dir: path.join(cacheDir, 'espressif-kicad'),
+      license: LICENSE_ESPRESSIF_KICAD,
+      rawFiles: ESP_KICAD_FILES.map((file) => ({
+        url: `${kicadBase}/${file}`,
+        path: file,
+      })),
+    },
+    {
+      id: 'esp-idf',
+      url: 'https://github.com/espressif/esp-idf',
+      dir: path.join(cacheDir, 'esp-idf'),
+      license: LICENSE_ESP_IDF,
+      rawFiles: ESP_IDF_HEADER_PATHS.map((file) => ({
+        url: `${idfBase}/${file}`,
+        path: file,
+      })),
+    },
+  ];
+}
+
 /** Every source configured for the current pipeline (used by CI pre-fetch). */
 export const SOURCE_SPECS: SourceSpec[] = [
   ...stm32SourceSpecs(),
   ...ch32SourceSpecs(),
   ...rpSourceSpecs(),
+  ...esp32SourceSpecs(),
 ];
 
 function main(): void {

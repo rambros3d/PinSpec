@@ -4,7 +4,8 @@
  * Resolves upstream sources, resets outputs, delegates to registered vendor
  * adapters, evaluates per-vendor and global gates, and writes every artifact
  * exactly once. No vendor-specific parsing lives here; see `adapters/stm32.ts`,
- * `adapters/ch32.ts`, and `adapters/rp/` for the vendor implementations.
+ * `adapters/ch32.ts`, `adapters/rp/`, and `adapters/esp32/` for the vendor
+ * implementations.
  */
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -17,6 +18,7 @@ import type {
   VendorId,
 } from '../../src/core/types';
 import { ch32Adapter } from './adapters/ch32';
+import { esp32Adapter } from './adapters/esp32';
 import { rpAdapter } from './adapters/rp';
 import { stm32Adapter } from './adapters/stm32';
 import {
@@ -44,7 +46,12 @@ import type {
 import { createWarningCollector } from './warnings';
 
 /** Adapters registered for this build. New vendors are added here only. */
-export const DEFAULT_ADAPTERS: VendorAdapter[] = [stm32Adapter, ch32Adapter, rpAdapter];
+export const DEFAULT_ADAPTERS: VendorAdapter[] = [
+  stm32Adapter,
+  ch32Adapter,
+  rpAdapter,
+  esp32Adapter,
+];
 
 /** End-of-run view used for logging and tests. */
 export interface GenerationSummary {
@@ -182,6 +189,7 @@ export function generateCatalog(
       matchRate,
       totalBytes,
       warnings: warnings.all(),
+      sources,
     };
     const evaluated = runGateSuite(adapter.gates, gateCtx);
     gateResults.push(...evaluated.results);
@@ -252,6 +260,7 @@ export function generateCatalog(
     matchRate: meta.matchRate ?? 0,
     totalBytes,
     warnings: warnings.all(),
+    sources,
     meta,
     warningDoc,
     serializedShards: prepared.all,

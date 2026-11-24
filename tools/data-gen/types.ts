@@ -107,6 +107,8 @@ export interface GateContext {
   matchRate: number;
   totalBytes: number;
   warnings: BuildWarning[];
+  /** Resolved upstream sources available to every per-vendor gate. */
+  sources?: ResolvedSource[];
   /** Filled by the orchestrator for the global provenance and artifact gates. */
   meta?: CatalogMeta;
   warningDoc?: WarningsDocument;

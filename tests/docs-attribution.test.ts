@@ -12,6 +12,9 @@ const TOUCHED_FILES = [
   'index.html',
   '.github/workflows/deploy.yml',
   'src/core/types.ts',
+  'src/core/vendor-view.ts',
+  'src/core/exporters/embassy-rust.ts',
+  'src/core/exporters/c-header.ts',
   'src/core/data-url.ts',
   'src/state/catalog.svelte.ts',
   'src/pages/LandingPage.svelte',
@@ -23,13 +26,26 @@ const TOUCHED_FILES = [
   'tools/data-gen/adapters/stm32.ts',
   'tools/data-gen/adapters/ch32.ts',
   'tools/data-gen/adapters/rp/index.ts',
+  'tools/data-gen/adapters/esp32/index.ts',
+  'tools/data-gen/adapters/esp32/gates.ts',
+  'tools/data-gen/adapters/esp32/gpio-tool.ts',
+  'tools/data-gen/adapters/esp32/metadata.ts',
+  'tools/data-gen/adapters/esp32/kicad.ts',
+  'tools/data-gen/adapters/esp32/esp-idf.ts',
+  'tools/data-gen/adapters/esp32/join.ts',
+  'tools/data-gen/adapters/esp32/modules.ts',
+  'tools/data-gen/adapters/esp32/types.ts',
+  'tools/data-gen/sources.ts',
+  'tests/data-gen-esp32.test.ts',
   'tests/gates-contracts.test.ts',
   'tests/subpath-contracts.test.ts',
   'tests/docs-attribution.test.ts',
   'src/core/hardware-audit.ts',
+  'src/components/workspace/ExportModal.svelte',
+  'src/components/workspace/CompatibleMcuFinder.svelte',
+  'src/components/landing/PresetGrid.svelte',
   'src/components/workspace/HardwareAuditPanel.svelte',
   'src/components/workspace/SummaryDrawer.svelte',
-  'src/components/workspace/ExportModal.svelte',
   'tests/hardware-audit.test.ts',
   'tests/data-gen-ch32.test.ts',
 ];
@@ -49,6 +65,10 @@ const SOURCE_TOKENS = [
   'pico-sdk',
   'Zephyr',
   'raspberrypi/documentation',
+  'espressif/esp-gpio-tool',
+  'esp-rs/esp-hal',
+  'espressif/kicad-libraries',
+  'espressif/esp-idf',
 ];
 
 describe('multi-vendor documentation and attribution', () => {
@@ -88,7 +108,7 @@ describe('multi-vendor documentation and attribution', () => {
     expect(agents).not.toContain('## Multi-vendor expansion (roadmap)');
   });
 
-  it('renders all seven licenses and live metadata in the landing footer', () => {
+  it('renders all eleven sources, licenses, and live metadata in the landing footer', () => {
     const footer = read('src/pages/LandingPage.svelte');
     for (const token of [...SOURCE_TOKENS, ...LICENSE_TOKENS]) {
       expect(footer, token).toContain(token);
@@ -98,9 +118,9 @@ describe('multi-vendor documentation and attribution', () => {
     expect(footer).toContain('sources');
   });
 
-  it('advertises all three vendors in the document metadata', () => {
+  it('advertises all four vendors in the document metadata', () => {
     const html = read('index.html');
-    expect(html).toContain('STM32 / CH32 / RP');
+    expect(html).toContain('STM32 / CH32 / RP / ESP32');
     expect(html).toContain('CubeMX-style');
   });
 });

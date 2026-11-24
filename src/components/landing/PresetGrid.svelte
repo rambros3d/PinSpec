@@ -65,6 +65,24 @@
       memory: '2048 KB Flash · 1024 KB RAM',
       note: 'High-density 240+25 ball TFBGA matrix showcasing the Grid renderer.',
     },
+    {
+      id: 'ESP32-C3FH4',
+      vendor: 'ESP32',
+      pkg: 'QFN-32',
+      renderer: 'Perimeter',
+      core: 'RISC-V single',
+      memory: '4096 KB in-package Flash · 400 KB SRAM',
+      note: 'GPIO-matrix routing with strapping and in-package flash reservations.',
+    },
+    {
+      id: 'ESP32-WROOM-E',
+      vendor: 'ESP32',
+      pkg: 'ESP32-WROOM-32E',
+      renderer: 'Perimeter',
+      core: 'Dual Xtensa LX6',
+      memory: '520 KB SRAM · module flash not declared upstream',
+      note: 'Module starter chip with GPIO0/BOOT and EN pads from first-party symbols.',
+    },
   ];
 
   function formatRelativeTime(ts: number): string {

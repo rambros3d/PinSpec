@@ -8,7 +8,13 @@ import {
   findOneHopFixForSignal,
   remapPinAssignment,
 } from '../src/core/solver';
-import type { ChipData, OneHopFix, WorkspaceState } from '../src/core/types';
+import {
+  formatMuxLabel,
+  getChipMuxModel,
+  type ChipData,
+  type OneHopFix,
+  type WorkspaceState,
+} from '../src/core/types';
 
 /** Synthetic CH32 remap-group chip with one bonded debug-sdi pin. */
 function makeCh32Chip(): ChipData {
@@ -149,6 +155,26 @@ function withAssignments(
   state.assignments = assignments;
   return state;
 }
+
+describe('vendor and mux model resolution', () => {
+  it('resolves an explicit mux model before the vendor fallback', () => {
+    expect(getChipMuxModel({ vendor: 'esp32' })).toBe('gpio-matrix');
+    expect(getChipMuxModel({ vendor: 'stm32' })).toBe('af');
+    expect(getChipMuxModel({ vendor: 'ch32' })).toBe('remap-group');
+    expect(getChipMuxModel({ vendor: 'rp' })).toBe('funcsel-pio');
+    expect(getChipMuxModel({ vendor: 'esp32', muxModel: 'af' })).toBe('af');
+    expect(getChipMuxModel({ muxModel: 'gpio-matrix' })).toBe('gpio-matrix');
+  });
+
+  it('labels matrix routes from display labels and signal names', () => {
+    expect(formatMuxLabel({ peripheral: 'UART0', signal: 'TX', af: null, funcLabel: 'U0TXD' }, 'gpio-matrix')).toBe('U0TXD');
+    expect(formatMuxLabel({ peripheral: 'UART0', signal: 'TX', af: null }, 'gpio-matrix')).toBe('TX');
+    expect(formatMuxLabel({ peripheral: 'GPIO', signal: 'Input', af: null }, 'gpio-matrix')).toBe('Input');
+    expect(formatMuxLabel({ peripheral: 'SPI1', signal: 'SCK', af: 5 }, 'af')).toBe('AF5');
+    expect(formatMuxLabel({ peripheral: 'SPI0', signal: 'RX', af: 1 }, 'funcsel-pio')).toBe('F1');
+    expect(formatMuxLabel({ peripheral: 'USART1', signal: 'TX', af: null, remapId: 1 }, 'remap-group')).toBe('RM1');
+  });
+});
 
 describe('CH32 coupled remap groups', () => {
   it('moves every signal of a remap group atomically', () => {

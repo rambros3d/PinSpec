@@ -69,14 +69,16 @@ describe('rotated vendor rendering contracts', () => {
       expect(source, name).toContain('formatMuxLabel');
       expect(source, name).toContain('data-pin-pos=');
       expect(source, name).toContain('geometryTransform');
-      expect(source, name).toContain('counterRotation');
+      expect(source, name).toContain('localLabelAngle');
     }
     expect(perimeter).toContain('twoSidedPackage');
     expect(perimeter).toContain('chip.package.hasExposedPad');
     expect(perimeter).toContain('bondedNames');
     expect(perimeter).toContain('stroke-dasharray={isBonded');
     expect(perimeter).toContain('tag && zoom >= 0.6');
-    expect(perimeter).toContain('rotate(${-90 + counterRotation} ${cx} ${cy})');
+    expect(perimeter).toContain('localLabelAngle(item.side, rotation)');
+    expect(perimeter).not.toContain('-90 + counterRotation');
+    expect(perimeter).not.toContain('rotate(${-90 + counterRotation} ${cx} ${cy})');
   });
 });
 
@@ -170,10 +172,11 @@ describe('peripheral configuration detail and RP PIO panel', () => {
 describe('vendor-aware discovery and presets', () => {
   it('builds vendor tabs with live per-source counts', () => {
     const tabs = buildVendorTabs(meta, index);
-    expect(tabs.map((t) => t.id)).toEqual(['all', 'stm32', 'ch32', 'rp']);
+    expect(tabs.map((t) => t.id)).toEqual(['all', 'stm32', 'ch32', 'rp', 'esp32']);
     expect(tabs[1].count).toBe(meta.sources?.stm32?.chipCount);
     expect(tabs[2].count).toBe(meta.sources?.ch32?.chipCount);
     expect(tabs[3].count).toBe(meta.sources?.rp?.chipCount);
+    expect(tabs[4].count).toBe(meta.sources?.esp32?.chipCount);
   });
 
   it('filters the generated index by vendor, family and package', () => {
@@ -209,7 +212,15 @@ describe('vendor-aware discovery and presets', () => {
 
   it('uses cross-vendor presets', () => {
     const source = readSource('src/components/landing/PresetGrid.svelte');
-    for (const id of ['STM32G431CBU6', 'CH32V003J4M6', 'CH32V203C8T6', 'RP2040', 'RP2350B']) {
+    for (const id of [
+      'STM32G431CBU6',
+      'CH32V003J4M6',
+      'CH32V203C8T6',
+      'RP2040',
+      'RP2350B',
+      'ESP32-C3FH4',
+      'ESP32-WROOM-E',
+    ]) {
       expect(source).toContain(id);
     }
     expect(source).toContain('Cross-Vendor Starter Chips');
@@ -223,11 +234,12 @@ describe('workspace exports and provenance copy', () => {
     expect(modal).toContain('ch32-hal');
     expect(modal).toContain('embassy-rp');
     expect(modal).toContain('embassy-stm32');
+    expect(modal).toContain('esp-hal');
     expect(modal).toContain('downloadFile');
     expect(modal).toContain('copyContent');
   });
 
-  it('contains no STM32-only claims and credits all three upstream sources', () => {
+  it('contains no STM32-only claims and credits all eleven upstream sources', () => {
     const stm32OnlyClaims = [
       'Fast STM32 pinout planning',
       'Jump to STM32 MCU',
@@ -257,10 +269,19 @@ describe('workspace exports and provenance copy', () => {
     expect(footer).toContain('embassy-rs/stm32-data-generated');
     expect(footer).toContain('ch32-riscv-ug/ch32-device-data');
     expect(footer).toContain('raspberrypi/pico-sdk');
+    for (const source of [
+      'espressif/esp-gpio-tool',
+      'esp-rs/esp-hal',
+      'espressif/kicad-libraries',
+      'espressif/esp-idf',
+    ]) {
+      expect(footer, source).toContain(source);
+    }
     expect(footer).toContain('Per-vendor chip counts and source revisions');
     expect(meta.sources?.stm32).toBeDefined();
     expect(meta.sources?.ch32).toBeDefined();
     expect(meta.sources?.rp).toBeDefined();
+    expect(meta.sources?.esp32).toBeDefined();
   });
 });
 

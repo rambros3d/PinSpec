@@ -4,6 +4,7 @@ import {
   normalizePackageRotation,
   parseGpioConfig,
   type GpioConfig,
+  type PackageRotation,
   type PinPlacementPreference,
   type PinAssignment,
   type PioPinAssignment,
@@ -46,8 +47,8 @@ interface CompactUrlPayload {
   y?: Record<string, CompactPlacement>;
   /** Placement overlay visibility (only when true). */
   w?: 1;
-  /** Package rotation, emitted only for the non-default -90 value. */
-  z?: -90;
+  /** Package rotation, emitted only for non-default clockwise values. */
+  z?: PackageRotation;
   /** Display-only overlay rotation in degrees, emitted only when non-zero. */
   q?: number;
 }

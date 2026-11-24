@@ -144,6 +144,21 @@ describe('artifact budget and shard integrity gates', () => {
     expect(broken[0]).toContain('not parseable JSON');
   });
 
+  it('accepts matching null flash for bare dies and rejects numeric mismatches', () => {
+    const bare = chip('BARE', { vendor: 'esp32', flashKb: null });
+    expect(createShardIntegrityGate().evaluate(ctx([bare])).errors).toEqual([]);
+    const mismatch = createShardIntegrityGate().evaluate(
+      ctx([bare], { index: [indexEntry(bare, { flashKb: 4096 })] }),
+    ).errors;
+    expect(mismatch[0]).toContain('flashKb');
+    const numeric = chip('MODULE', { vendor: 'esp32', flashKb: 4096 });
+    expect(
+      createShardIntegrityGate().evaluate(
+        ctx([numeric], { index: [indexEntry(numeric, { flashKb: 8192 })] }),
+      ).errors[0],
+    ).toContain('flashKb');
+  });
+
   it('detects NaN, infinity, and undefined before serialization', () => {
     expect(findInvalidValues({ a: Number.NaN })).toEqual(['$.a=NaN']);
     expect(findInvalidValues([1, Number.POSITIVE_INFINITY])).toEqual(['$[1]=Infinity']);
@@ -282,7 +297,7 @@ describe('provenance and warning contracts', () => {
       : {}),
   }));
 
-  it('emits all seven source ids with sha, url, and license', () => {
+  it('emits all eleven source ids with sha, url, and license', () => {
     const registry = buildSourceRegistry(sources);
     for (const id of CATALOG_SOURCE_IDS) {
       expect(registry[id], id).toBeDefined();
@@ -347,6 +362,21 @@ describe('provenance and warning contracts', () => {
     });
     expect(empty.warnings).toEqual([]);
     expect(createWarningsContractGate().evaluate(ctx([], { warningDoc: empty })).errors).toEqual([]);
+  });
+
+  it('accepts ESP32 deferred-part warnings with vendor attribution', () => {
+    const collector = createWarningCollector();
+    collector.add({
+      id: 'ESP32-C6-MINI-1/U',
+      vendor: 'esp32',
+      source: 'espressif-kicad',
+      reason: 'No first-party flash capacity evidence; module deferred.',
+    });
+    const doc = buildWarningsDocument('2026-01-01T00:00:00.000Z', collector.all(), {
+      totalVariants: 1, matchedVariants: 0, matchRate: 0,
+    });
+    expect(doc.warningsByVendor.esp32).toBe(1);
+    expect(createWarningsContractGate().evaluate(ctx([], { warningDoc: doc })).errors).toEqual([]);
   });
 
   it('rejects a warning document with missing attribution', () => {

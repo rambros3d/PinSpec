@@ -2,6 +2,7 @@
   import { Crosshair, Maximize2, Minus, Plus, RotateCw, X } from 'lucide-svelte';
   import { onMount } from 'svelte';
   import { normalizePlacement } from '../../core/placement';
+  import { clampOverlayPosition } from '../../core/overlay-position';
   import {
     formatMuxLabel,
     getChipMuxModel,
@@ -79,6 +80,12 @@
   let hoveredPin = $state<{ pin: PinInfo; x: number; y: number } | null>(null);
   let popover = $state<{ pin: PinInfo; x: number; y: number } | null>(null);
   let contextMenu = $state<{ pin: PinInfo; x: number; y: number } | null>(null);
+
+  // Measured overlay bounds; defaults keep the first render inside the viewport.
+  let popoverSize = $state({ width: 310, height: 400 });
+  let contextSize = $state({ width: 236, height: 230 });
+  let tooltipWidth = $state(268);
+  let tooltipHeight = $state(220);
 
   const muxModel = $derived(getChipMuxModel(chip));
 
@@ -309,14 +316,45 @@
     return () => window.removeEventListener('keydown', onKey);
   });
 
+  // Overlays stay floating in every orientation; clamp before passing coordinates.
+  const popoverPos = $derived.by(() => {
+    if (!popover || typeof window === 'undefined') return { x: 0, y: 0 };
+    const clamped = clampOverlayPosition(
+      popover.x + 12,
+      popover.y - 24,
+      popoverSize.width,
+      popoverSize.height,
+      window.innerWidth,
+      window.innerHeight,
+      12,
+    );
+    return { x: Math.max(12, clamped.left - 12), y: clamped.top + 24 };
+  });
+
+  const contextMenuPos = $derived.by(() => {
+    if (!contextMenu || typeof window === 'undefined') return { x: 0, y: 0 };
+    return clampOverlayPosition(
+      contextMenu.x,
+      contextMenu.y,
+      contextSize.width,
+      contextSize.height,
+      window.innerWidth,
+      window.innerHeight,
+      8,
+    );
+  });
+
   const tooltipPos = $derived.by(() => {
-    if (!hoveredPin || typeof window === 'undefined') return { left: 0, top: 0 };
-    const w = 270;
-    const h = 220;
-    return {
-      left: Math.min(hoveredPin.x + 16, window.innerWidth - w - 12),
-      top: Math.min(hoveredPin.y + 16, window.innerHeight - h - 12),
-    };
+    if (!hoveredPin || typeof window === 'undefined') return { left: 12, top: 12 };
+    return clampOverlayPosition(
+      hoveredPin.x + 16,
+      hoveredPin.y + 16,
+      tooltipWidth,
+      tooltipHeight,
+      window.innerWidth,
+      window.innerHeight,
+      12,
+    );
   });
 </script>
 
@@ -519,8 +557,10 @@
     {@const hAsgn = assignments[hPin.pos]}
     {@const hLabel = labels[hPin.pos]}
     <div
+      bind:clientWidth={tooltipWidth}
+      bind:clientHeight={tooltipHeight}
       class="fixed z-30 w-[268px] pointer-events-none rounded-panel border-ui border-hairline bg-surface-alpha shadow-lg p-2.5 text-xs"
-      style={`left: ${tooltipPos.left}px; top: ${tooltipPos.top}px;`}
+      style={`left: ${tooltipPos.left}px; top: ${tooltipPos.top}px; max-height: 88dvh; overflow: hidden;`}
     >
       <div class="flex items-center justify-between gap-2 pb-1.5 border-ui-b border-hairline">
         <span class="font-mono font-semibold text-primary">
@@ -593,8 +633,13 @@
     <PinPopover
       {chip}
       pin={popover.pin}
-      x={popover.x}
-      y={popover.y}
+      x={popoverPos.x}
+      y={popoverPos.y}
+      onMeasure={(size) => {
+        if (popoverSize.width !== size.width || popoverSize.height !== size.height) {
+          popoverSize = size;
+        }
+      }}
       currentAssignment={assignments[popover.pin.pos]}
       currentLabel={labels[popover.pin.pos] ?? ''}
       isLocked={Boolean(locked[popover.pin.pos])}
@@ -611,8 +656,13 @@
     <PinContextMenu
       {chip}
       pin={contextMenu.pin}
-      x={contextMenu.x}
-      y={contextMenu.y}
+      x={contextMenuPos.left}
+      y={contextMenuPos.top}
+      onMeasure={(size) => {
+        if (contextSize.width !== size.width || contextSize.height !== size.height) {
+          contextSize = size;
+        }
+      }}
       assignment={assignments[contextMenu.pin.pos]}
       label={labels[contextMenu.pin.pos] ?? ''}
       isLocked={Boolean(locked[contextMenu.pin.pos])}

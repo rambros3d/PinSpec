@@ -147,7 +147,7 @@
   }
 </script>
 
-<aside class="h-full flex flex-col bg-surface border-ui-r border-hairline select-none overflow-hidden">
+<aside class="h-full min-h-0 flex flex-col bg-surface border-ui-r border-hairline select-none overflow-hidden">
   <!-- Header + Filter -->
   <div class="p-2.5 border-ui-b border-hairline space-y-2">
     <div class="flex items-center justify-between">
@@ -168,7 +168,7 @@
   </div>
 
   <!-- Grouped Accordion -->
-  <div class="flex-1 overflow-y-auto py-1">
+  <div class="flex-1 min-h-0 overflow-y-auto py-1">
     {#each grouped as cat (cat.id)}
       {@const isCatOpen = filterText.trim().length > 0 || openCategories[cat.id]}
       <div class="border-ui-b border-hairline last:border-b-0">

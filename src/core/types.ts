@@ -256,6 +256,20 @@ export function parseGpioConfig(value: unknown): GpioConfig | null {
   };
 }
 
+/** Tabs available in the portrait workspace dock. */
+export const DOCK_TABS = ['peripherals', 'pins', 'diagnostics', 'dma', 'pio'] as const;
+export type DockTab = (typeof DOCK_TABS)[number];
+
+/**
+ * Normalize an untrusted persisted dock tab. The portrait dock falls back to
+ * Peripherals, so absent or unknown values never select a different pane.
+ */
+export function normalizeDockTab(value: unknown): DockTab {
+  return typeof value === 'string' && (DOCK_TABS as readonly string[]).includes(value)
+    ? (value as DockTab)
+    : 'peripherals';
+}
+
 /** Priority rings for the optional pin-placement overlay, inner highest. */
 export const PLACEMENT_RINGS = ['inner', 'middle', 'outer'] as const;
 export type PlacementRing = (typeof PLACEMENT_RINGS)[number];
@@ -288,6 +302,12 @@ export interface WorkspaceState {
   gpioConfig?: Record<string, GpioConfig>; // physical pin pos -> electrical settings
   placement?: Record<string, PinPlacementPreference>; // peripheral -> placement preference
   placementOverlayVisible?: boolean; // canvas overlay toggle, persisted with the state
+  /**
+   * Active portrait dock tab. Additive and optional so existing version-2
+   * state stays valid; persisted through history, sessions, links and project
+   * files because it is a user preference, not a session-only view flag.
+   */
+  dockTab?: DockTab;
 }
 
 export type PinVisualStatus = 'unused' | 'power' | 'assigned' | 'partial' | 'conflict';

@@ -121,7 +121,7 @@
   onclick={onClose}
 >
   <div
-    class="w-full max-w-3xl max-h-[84vh] flex flex-col rounded-panel border-ui border-hairline bg-surface shadow-2xl overflow-hidden"
+    class="w-full max-w-3xl max-h-[92dvh] min-h-0 flex flex-col rounded-panel border-ui border-hairline bg-surface shadow-2xl overflow-hidden"
     onclick={(e) => e.stopPropagation()}
     role="dialog"
     tabindex="-1"
@@ -247,7 +247,7 @@
     {/if}
 
     <!-- Monospace Code Preview -->
-    <div class="flex-1 overflow-auto p-5">
+    <div class="flex-1 min-h-0 overflow-auto p-5">
       <pre class="p-4 rounded-panel border-ui border-hairline bg-subtle font-mono text-xs leading-relaxed text-primary overflow-x-auto whitespace-pre-wrap break-all">{previewContent}</pre>
     </div>
   </div>

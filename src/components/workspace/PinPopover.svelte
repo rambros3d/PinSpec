@@ -22,6 +22,8 @@
     currentLabel?: string;
     isLocked: boolean;
     allAssignments: Record<string, PinAssignment>;
+    /** Reports measured overlay bounds so the canvas can clamp to the viewport. */
+    onMeasure?: (size: { width: number; height: number }) => void;
     onAssign: (assignment: PinAssignment) => void;
     onClear: () => void;
     onToggleLock: () => void;
@@ -37,6 +39,7 @@
     currentLabel = '',
     isLocked,
     allAssignments,
+    onMeasure,
     onAssign,
     onClear,
     onToggleLock,
@@ -45,6 +48,12 @@
 
   let query = $state('');
   let searchInput = $state<HTMLInputElement | null>(null);
+  let measuredWidth = $state(0);
+  let measuredHeight = $state(0);
+
+  $effect(() => {
+    onMeasure?.({ width: measuredWidth, height: measuredHeight });
+  });
 
   const muxModel = $derived(getChipMuxModel(chip));
   const bondedNames = $derived(pin.bondedNames ?? []);
@@ -112,8 +121,10 @@
 <div class="fixed inset-0 z-40" onclick={onClose}></div>
 
 <div
-  class="fixed z-50 w-[310px] max-h-[410px] flex flex-col rounded-panel border-ui border-hairline bg-surface shadow-xl overflow-hidden text-xs"
-  style={`left: ${clampedPos.left}px; top: ${clampedPos.top}px;`}
+  bind:clientWidth={measuredWidth}
+  bind:clientHeight={measuredHeight}
+  class="fixed z-50 w-[310px] flex flex-col rounded-panel border-ui border-hairline bg-surface shadow-xl overflow-hidden text-xs"
+  style={`left: ${clampedPos.left}px; top: ${clampedPos.top}px; max-height: min(410px, 88dvh);`}
   role="dialog"
   aria-label={`Assign signal to ${pin.name}`}
 >

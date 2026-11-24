@@ -1,7 +1,9 @@
 import { deflateSync, inflateSync, strFromU8, strToU8 } from 'fflate';
 import {
   PINCRAFT_STATE_VERSION,
+  normalizeDockTab,
   parseGpioConfig,
+  type DockTab,
   type GpioConfig,
   type PinPlacementPreference,
   type PinAssignment,
@@ -41,6 +43,8 @@ interface CompactUrlPayload {
   y?: Record<string, CompactPlacement>;
   /** Placement overlay visibility (only when true). */
   w?: 1;
+  /** Active portrait dock tab (only when explicitly stored). */
+  d?: DockTab;
 }
 
 export type DecodeResult =
@@ -86,7 +90,7 @@ function sortedKeys(record: Record<string, unknown>): string[] {
 /**
  * Encode a workspace into a compressed, URL-safe share payload.
  * Remap, PIO, GPIO config and placement maps are included only when populated
- * to keep links short.
+ * to keep links short. The dock tab is included only when explicitly stored.
  */
 export function encodeWorkspaceState(state: WorkspaceState): string {
   const payload: CompactUrlPayload = {
@@ -157,6 +161,7 @@ export function encodeWorkspaceState(state: WorkspaceState): string {
   }
 
   if (state.placementOverlayVisible) payload.w = 1;
+  if (state.dockTab !== undefined) payload.d = state.dockTab;
   if (state.placement && Object.keys(state.placement).length > 0) {
     payload.y = {};
     for (const peripheral of sortedKeys(state.placement as Record<string, unknown>)) {
@@ -274,6 +279,7 @@ export function decodeWorkspaceState(encoded: string): DecodeResult {
     }
 
     if (obj.w === 1 || obj.w === true) state.placementOverlayVisible = true;
+    if (obj.d !== undefined) state.dockTab = normalizeDockTab(obj.d);
     if (obj.y && typeof obj.y === 'object' && !Array.isArray(obj.y)) {
       const placement: Record<string, PinPlacementPreference> = {};
       for (const [peripheral, val] of Object.entries(obj.y as Record<string, unknown>)) {

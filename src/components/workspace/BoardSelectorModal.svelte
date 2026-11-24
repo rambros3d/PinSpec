@@ -38,7 +38,7 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="fixed inset-0 z-50 bg-overlay flex items-start justify-center pt-[10vh] px-4" onclick={onClose}>
   <div
-    class="w-full max-w-2xl rounded-panel border-ui border-hairline bg-surface shadow-2xl overflow-hidden flex flex-col max-h-[76vh]"
+    class="w-full max-w-2xl rounded-panel border-ui border-hairline bg-surface shadow-2xl overflow-hidden flex flex-col max-h-[92dvh] min-h-0"
     onclick={(e) => e.stopPropagation()}
     role="dialog"
     tabindex="-1"
@@ -68,7 +68,7 @@
       <span class="font-mono-tabular text-[11px] text-muted">{results.length} shown</span>
     </div>
 
-    <div class="flex-1 overflow-y-auto divide-y divide-hairline">
+    <div class="flex-1 min-h-0 overflow-y-auto divide-y divide-hairline">
       {#if results.length === 0}
         <div class="py-10 text-center text-xs text-muted">No board presets match "{query}".</div>
       {:else}

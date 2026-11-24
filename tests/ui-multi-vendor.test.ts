@@ -257,6 +257,20 @@ describe('export previews and provenance copy', () => {
   });
 });
 
+describe('pinout diff modal contract', () => {
+  it('provides two file inputs with independent load and error states', () => {
+    const source = readSource('src/components/workspace/PinoutDiffModal.svelte');
+    expect(source.match(/type="file"/g)?.length).toBe(2);
+    expect(source).toContain("'idle'");
+    expect(source).toContain("'loading'");
+    expect(source).toContain("'ready'");
+    expect(source).toContain("'error'");
+    expect(source).toContain('parsePinoutJson');
+    expect(source).toContain('unsupported-format');
+    expect(source).not.toContain('workspaceStore');
+  });
+});
+
 describe('theme and color safety', () => {
   it('keeps raw color literals only in the daisyUI theme file', () => {
     const files: string[] = [];

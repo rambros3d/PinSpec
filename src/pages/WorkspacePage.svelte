@@ -2,10 +2,12 @@
   import { AlertCircle, CircuitBoard, FileUp, PanelLeft, PanelRight, X } from 'lucide-svelte';
   import { onMount } from 'svelte';
   import BoardSelectorModal from '../components/workspace/BoardSelectorModal.svelte';
+  import CompatibleMcuFinder from '../components/workspace/CompatibleMcuFinder.svelte';
   import ExportModal from '../components/workspace/ExportModal.svelte';
   import McuSwitcherModal from '../components/workspace/McuSwitcherModal.svelte';
   import PackageCanvas from '../components/workspace/PackageCanvas.svelte';
   import PeripheralTree from '../components/workspace/PeripheralTree.svelte';
+  import PinoutDiffModal from '../components/workspace/PinoutDiffModal.svelte';
   import SummaryDrawer from '../components/workspace/SummaryDrawer.svelte';
   import TopToolbar from '../components/workspace/TopToolbar.svelte';
   import {
@@ -13,7 +15,7 @@
     prepareIocImport,
     type IocRawRecord,
   } from '../core/importers/ioc';
-  import type { WorkspaceState } from '../core/types';
+  import { DOCK_TABS, type DockTab, type WorkspaceState } from '../core/types';
   import {
     BOARD_PRESETS,
     buildBoardPresetState,
@@ -31,11 +33,22 @@
 
   let { mcuId, sharedPayload }: Props = $props();
 
+  type SummaryTab = 'pins' | 'diagnostics' | 'dma' | 'pio' | 'gpio';
+  const DOCK_TAB_LABELS: Record<DockTab, string> = {
+    peripherals: 'Peripherals',
+    pins: 'Pins',
+    diagnostics: 'Diagnostics',
+    dma: 'DMA',
+    pio: 'PIO',
+  };
+
   let leftWidth = $state(280);
   let rightWidth = $state(330);
   let leftCollapsed = $state(false);
   let rightCollapsed = $state(false);
   let showSwitcher = $state(false);
+  let showFinder = $state(false);
+  let showDiff = $state(false);
   let showExport = $state(false);
   let showBoardSelector = $state(false);
   let iocDropActive = $state(false);
@@ -44,6 +57,13 @@
 
   let canvasRef = $state<{ fitView: () => void } | null>(null);
   let searchInputRef = $state<HTMLInputElement | null>(null);
+  let summaryTab = $state<SummaryTab>('pins');
+
+  /** Select a portrait dock tab; non-tree tabs drive the shared summary pane. */
+  function selectDockTab(tab: DockTab): void {
+    workspaceStore.setDockTab(tab);
+    if (tab !== 'peripherals') summaryTab = tab;
+  }
 
   // Hydrate MCU or shared payload when props change
   let lastLoadedKey = '';
@@ -256,30 +276,38 @@
   });
 </script>
 
-<div class="h-screen w-screen flex flex-col overflow-hidden bg-canvas text-primary">
-  <TopToolbar
-    chip={workspaceStore.chip}
-    globalSearch={workspaceStore.globalSearch}
-    searchMatchCount={workspaceStore.searchMatchingPins.length}
-    canUndo={workspaceStore.canUndo}
-    canRedo={workspaceStore.canRedo}
-    rotation={workspaceStore.rotation}
-    bind:searchInputRef
-    onHome={() => router.navigateHome()}
-    onOpenSwitcher={() => (showSwitcher = true)}
-    onSearchChange={(val) => (workspaceStore.globalSearch = val)}
-    onUndo={() => workspaceStore.undo()}
-    onRedo={() => workspaceStore.redo()}
-    onClearAll={() => workspaceStore.clearAll()}
-    onFitView={() => canvasRef?.fitView()}
-    onRotate={() => workspaceStore.rotateClockwise()}
-    onShare={handleShare}
-    onOpenExport={() => (showExport = true)}
-  />
+<div
+  class="workspace-root h-[100dvh] w-full overflow-hidden overscroll-none bg-canvas text-primary"
+  data-dock-tab={workspaceStore.dockTab}
+  style={`--left-pane-width: ${leftWidth}px; --right-pane-width: ${rightWidth}px;`}
+>
+  <div class="workspace-toolbar min-w-0 min-h-0">
+    <TopToolbar
+      chip={workspaceStore.chip}
+      globalSearch={workspaceStore.globalSearch}
+      searchMatchCount={workspaceStore.searchMatchingPins.length}
+      canUndo={workspaceStore.canUndo}
+      canRedo={workspaceStore.canRedo}
+      rotation={workspaceStore.rotation}
+      bind:searchInputRef
+      onHome={() => router.navigateHome()}
+      onOpenSwitcher={() => (showSwitcher = true)}
+      onSearchChange={(val) => (workspaceStore.globalSearch = val)}
+      onUndo={() => workspaceStore.undo()}
+      onRedo={() => workspaceStore.redo()}
+      onClearAll={() => workspaceStore.clearAll()}
+      onFitView={() => canvasRef?.fitView()}
+      onRotate={() => workspaceStore.rotateClockwise()}
+      onShare={handleShare}
+      onOpenExport={() => (showExport = true)}
+      onOpenFinder={() => (showFinder = true)}
+      onOpenDiff={() => (showDiff = true)}
+    />
+  </div>
 
   <!-- Dismissible Error Banner (e.g. malformed #/s/... link) -->
   {#if workspaceStore.bannerError}
-    <div class="flex items-center justify-between gap-3 px-4 py-2 bg-danger-soft border-ui-b border-danger text-xs text-danger shrink-0">
+    <div class="workspace-banner flex items-center justify-between gap-3 px-4 py-2 bg-danger-soft border-ui-b border-danger text-xs text-danger shrink-0">
       <div class="flex items-center gap-2">
         <AlertCircle class="size-ui shrink-0" />
         <span>{workspaceStore.bannerError}</span>
@@ -305,7 +333,7 @@
 
   <!-- Three-Pane Workspace Body -->
   {#if workspaceStore.loading}
-    <div class="flex-1 flex items-center justify-center">
+    <div class="workspace-canvas flex items-center justify-center">
       <div class="text-center space-y-2">
         <div class="w-8 h-8 border-ui-strong border-hint border-t-transparent rounded-pill animate-spin mx-auto"></div>
         <p class="text-xs font-mono text-muted">
@@ -314,7 +342,7 @@
       </div>
     </div>
   {:else if workspaceStore.loadError || !workspaceStore.chip || !workspaceStore.report}
-    <div class="flex-1 flex items-center justify-center p-6">
+    <div class="workspace-canvas flex items-center justify-center p-6">
       <div class="max-w-md w-full rounded-panel border-ui border-hairline bg-surface p-6 text-center space-y-3">
         <AlertCircle class="w-8 h-8 text-danger mx-auto" />
         <h2 class="text-base font-semibold">Unable to Open MCU</h2>
@@ -340,10 +368,9 @@
       </div>
     </div>
   {:else}
-    <div class="flex-1 flex min-h-0 relative overflow-hidden">
       <!-- Left Pane: Peripheral Tree -->
       {#if !leftCollapsed}
-        <div class="shrink-0 h-full hidden md:block" style={`width: ${leftWidth}px;`}>
+        <div class="workspace-peripherals h-full">
           <PeripheralTree
             chip={workspaceStore.chip}
             assignments={workspaceStore.state.assignments}
@@ -356,9 +383,9 @@
             onFocusPin={(pos) => workspaceStore.focusPin(pos)}
           />
         </div>
-        <!-- Left Drag Resizer -->
+        <!-- Left Drag Resizer (landscape only) -->
         <div
-          class="hidden md:block w-1 cursor-col-resize hover:bg-action/60 transition-colors shrink-0"
+          class="workspace-resizer-left w-1 cursor-col-resize hover:bg-action/60 transition-colors"
           onpointerdown={(e) => startResize('left', e)}
           role="separator"
           aria-orientation="vertical"
@@ -367,13 +394,13 @@
       {/if}
 
       <!-- Center Pane: Interactive Package Canvas -->
-      <div class="flex-1 min-w-0 h-full relative flex flex-col">
+      <div class="workspace-canvas h-full">
         <!-- Drawer Collapse Toggles -->
         <button
           type="button"
           onclick={() => (leftCollapsed = !leftCollapsed)}
           title={leftCollapsed ? 'Show Peripherals' : 'Hide Peripherals'}
-          class="hidden md:flex absolute top-3 left-3 z-20 p-1.5 rounded-control border-ui border-hairline bg-surface-alpha text-muted hover:border-hint shadow-xs"
+          class="workspace-landscape-only hidden md:flex absolute top-3 left-3 z-20 p-1.5 rounded-control border-ui border-hairline bg-surface-alpha text-muted hover:border-hint shadow-xs"
         >
           <PanelLeft class="size-ui-md" />
         </button>
@@ -382,7 +409,7 @@
           type="button"
           onclick={() => (rightCollapsed = !rightCollapsed)}
           title={rightCollapsed ? 'Show Summary Drawer' : 'Hide Summary Drawer'}
-          class="hidden lg:flex absolute top-14 right-3 z-20 p-1.5 rounded-control border-ui border-hairline bg-surface-alpha text-muted hover:border-hint shadow-xs"
+          class="workspace-landscape-only hidden lg:flex absolute top-14 right-3 z-20 p-1.5 rounded-control border-ui border-hairline bg-surface-alpha text-muted hover:border-hint shadow-xs"
         >
           <PanelRight class="size-ui-md" />
         </button>
@@ -446,15 +473,15 @@
 
       <!-- Right Pane: Summary Drawer -->
       {#if !rightCollapsed}
-        <!-- Right Drag Resizer -->
+        <!-- Right Drag Resizer (landscape only) -->
         <div
-          class="hidden lg:block w-1 cursor-col-resize hover:bg-action/60 transition-colors shrink-0"
+          class="workspace-resizer-right w-1 cursor-col-resize hover:bg-action/60 transition-colors"
           onpointerdown={(e) => startResize('right', e)}
           role="separator"
           aria-orientation="vertical"
           aria-label="Resize summary pane"
         ></div>
-        <div class="shrink-0 h-full hidden lg:block" style={`width: ${rightWidth}px;`}>
+        <div class="workspace-summary h-full">
           <SummaryDrawer
             chip={workspaceStore.chip}
             assignments={workspaceStore.state.assignments}
@@ -462,6 +489,7 @@
             locked={workspaceStore.state.locked}
             pioAssignments={workspaceStore.state.pioAssignments ?? {}}
             report={workspaceStore.report}
+            bind:activeTab={summaryTab}
             onFocusPin={(pos) => workspaceStore.focusPin(pos)}
             onSetLabel={(pos, lbl) => workspaceStore.setLabel(pos, lbl)}
             onToggleLock={(pos) => workspaceStore.toggleLock(pos)}
@@ -471,7 +499,27 @@
           />
         </div>
       {/if}
-    </div>
+
+      <!-- Portrait dock tab strip; the panes above occupy the dock area. -->
+      <nav
+        class="workspace-dock-tabs shrink-0 items-center gap-1 border-ui-b border-hairline bg-subtle px-2 py-1 text-xs"
+        aria-label="Workspace panels"
+      >
+        {#each DOCK_TABS as tab (tab)}
+          <button
+            type="button"
+            onclick={() => selectDockTab(tab)}
+            aria-pressed={workspaceStore.dockTab === tab}
+            class={`px-2.5 py-1.5 rounded-control font-medium whitespace-nowrap shrink-0 ${
+              workspaceStore.dockTab === tab
+                ? 'bg-action text-on-action'
+                : 'text-muted hover:bg-elevated hover:text-primary'
+            }`}
+          >
+            {DOCK_TAB_LABELS[tab]}
+          </button>
+        {/each}
+      </nav>
   {/if}
 
   <!-- Toast Notification -->
@@ -508,7 +556,7 @@
       onclick={() => (ambiguousImport = null)}
     >
       <div
-        class="w-full max-w-md rounded-panel border-ui border-hairline bg-surface shadow-2xl overflow-hidden"
+        class="w-full max-w-md max-h-[92dvh] min-h-0 flex flex-col rounded-panel border-ui border-hairline bg-surface shadow-2xl overflow-hidden"
         onclick={(e) => e.stopPropagation()}
         role="dialog"
         tabindex="-1"
@@ -525,7 +573,7 @@
             <X class="size-ui" />
           </button>
         </div>
-        <div class="px-5 py-4 space-y-3">
+        <div class="px-5 py-4 space-y-3 min-h-0 overflow-y-auto">
           <p class="text-xs text-muted">
             The part ID in this file matches more than one catalog MCU. Select the part used by your board.
           </p>
@@ -547,6 +595,18 @@
   {/if}
 
   <!-- Modals -->
+  {#if showDiff}
+    <PinoutDiffModal onClose={() => (showDiff = false)} />
+  {/if}
+
+  {#if showFinder}
+    <CompatibleMcuFinder
+      chip={workspaceStore.chip}
+      workspaceState={workspaceStore.state}
+      onClose={() => (showFinder = false)}
+    />
+  {/if}
+
   {#if showSwitcher}
     <McuSwitcherModal
       activeMcuId={workspaceStore.chip?.id ?? ''}

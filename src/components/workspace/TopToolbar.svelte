@@ -2,10 +2,12 @@
   import {
     ChevronDown,
     Download,
+    GitCompare,
     Maximize2,
     Redo2,
     RotateCw,
     Search,
+    SearchCheck,
     Share2,
     Trash2,
     Undo2,
@@ -32,6 +34,8 @@
     onRotate: () => void;
     onShare: () => void;
     onOpenExport: () => void;
+    onOpenFinder: () => void;
+    onOpenDiff: () => void;
   }
 
   let {
@@ -52,14 +56,17 @@
     onRotate,
     onShare,
     onOpenExport,
+    onOpenFinder,
+    onOpenDiff,
   }: Props = $props();
 
   let confirmClear = $state(false);
 </script>
 
-<header class="h-12 shrink-0 flex items-center justify-between gap-3 px-3 border-ui-b border-hairline bg-surface select-none">
+<header class="h-12 shrink-0 min-h-0 min-w-0 overflow-hidden border-ui-b border-hairline bg-surface select-none">
+  <div class="flex h-full w-full min-w-0 items-center justify-between gap-3 px-3 overflow-x-auto overscroll-x-contain">
   <!-- Left: Brand Home + Active MCU Switcher -->
-  <div class="flex items-center gap-3 min-w-0">
+  <div class="flex items-center gap-3 min-w-0 shrink-0">
     <button
       type="button"
       onclick={onHome}
@@ -71,7 +78,7 @@
         <rect x="9.5" y="9.5" width="5" height="5" rx="0.5" />
         <path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4" />
       </svg>
-      <span class="font-bold text-sm tracking-tight">PinCraft</span>
+      <span class="hidden sm:inline font-bold text-sm tracking-tight">PinCraft</span>
     </button>
 
     <div class="w-px h-5 bg-elevated shrink-0"></div>
@@ -83,11 +90,11 @@
         class="flex items-center gap-2 px-2.5 py-1 rounded-control border-ui border-hairline bg-subtle hover:border-hint transition-colors min-w-0 whitespace-nowrap"
         title="Switch MCU"
       >
-        <span class="font-mono font-semibold text-xs text-primary">
+        <span class="font-mono font-semibold text-xs text-primary truncate max-w-[11rem]">
           {chip.id}
         </span>
         <span class="hidden lg:inline font-mono-tabular text-[11px] text-muted">
-          {chip.core} · {chip.flashKb}KB/{chip.ramKb}KB · {chip.package.name} ({chip.package.pinCount})
+          {chip.core} - {chip.flashKb}KB/{chip.ramKb}KB - {chip.package.name} ({chip.package.pinCount})
         </span>
         <ChevronDown class="size-ui-md text-faint shrink-0" />
       </button>
@@ -95,7 +102,7 @@
   </div>
 
   <!-- Center: Global Pin/Signal Search (Ctrl+F) -->
-  <div class="flex-1 max-w-xs relative flex items-center">
+  <div class="flex-1 min-w-[9rem] max-w-xs relative flex items-center shrink-0">
     <Search class="size-ui-md text-faint absolute left-2.5 pointer-events-none" />
     <input
       bind:this={searchInputRef}
@@ -204,6 +211,28 @@
 
     <button
       type="button"
+      onclick={onOpenFinder}
+      title="Find a compatible MCU for this pinout"
+      aria-label="Find compatible MCU"
+      class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-control border-ui border-hairline hover:bg-elevated text-xs font-medium text-primary whitespace-nowrap"
+    >
+      <SearchCheck class="size-ui-md" />
+      <span class="hidden lg:inline">Find MCU</span>
+    </button>
+
+    <button
+      type="button"
+      onclick={onOpenDiff}
+      title="Compare two project pinouts"
+      aria-label="Compare project pinouts"
+      class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-control border-ui border-hairline hover:bg-elevated text-xs font-medium text-primary whitespace-nowrap"
+    >
+      <GitCompare class="size-ui-md" />
+      <span class="hidden lg:inline">Compare</span>
+    </button>
+
+    <button
+      type="button"
       onclick={onShare}
       class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-control border-ui border-hairline hover:bg-elevated text-xs font-medium text-primary whitespace-nowrap"
     >
@@ -221,5 +250,6 @@
     </button>
 
     <ThemePicker compact={true} />
+  </div>
   </div>
 </header>

@@ -73,7 +73,7 @@
   onclick={onClose}
 >
   <div
-    class="w-full max-w-2xl rounded-panel border-ui border-hairline bg-surface shadow-2xl overflow-hidden flex flex-col max-h-[78vh]"
+    class="w-full max-w-2xl rounded-panel border-ui border-hairline bg-surface shadow-2xl overflow-hidden flex flex-col max-h-[92dvh]"
     onclick={(e) => e.stopPropagation()}
     role="dialog"
     tabindex="-1"
@@ -148,7 +148,7 @@
     </div>
 
     <!-- Results List -->
-    <div class="flex-1 overflow-y-auto divide-y divide-hairline">
+    <div class="flex-1 min-h-0 overflow-y-auto divide-y divide-hairline">
       {#if catalogStore.loadingIndex}
         <div class="py-10 text-center text-xs text-muted">Loading multi-vendor catalog...</div>
       {:else if results.length === 0}

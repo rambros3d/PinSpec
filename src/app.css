@@ -263,6 +263,133 @@ body {
   color: var(--text-primary);
   margin: 0;
   padding: 0;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+#app {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+/*
+ * Workspace grid. The same component instances occupy named areas; only the
+ * area assignment changes with orientation. Every cell can shrink so content
+ * scrolls inside its own pane instead of growing the document.
+ */
+.workspace-root {
+  display: grid;
+  grid-template-areas:
+    'toolbar toolbar toolbar toolbar toolbar'
+    'banner banner banner banner banner'
+    'peripherals leftresizer canvas rightresizer summary';
+  grid-template-columns: var(--left-pane-width, 280px) 4px minmax(0, 1fr) 4px var(--right-pane-width, 330px);
+  grid-template-rows: 3rem auto minmax(0, 1fr);
+  height: 100dvh;
+  width: 100%;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+.workspace-toolbar {
+  grid-area: toolbar;
+  min-width: 0;
+  min-height: 0;
+}
+
+.workspace-banner {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  min-width: 0;
+}
+
+.workspace-peripherals {
+  grid-area: peripherals;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.workspace-canvas {
+  grid-area: canvas;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.workspace-summary {
+  grid-area: summary;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.workspace-resizer-left {
+  grid-area: leftresizer;
+}
+
+.workspace-resizer-right {
+  grid-area: rightresizer;
+}
+
+.workspace-dock-tabs {
+  display: none;
+  min-width: 0;
+}
+
+@media (orientation: portrait) {
+  .workspace-root {
+    grid-template-areas:
+      'toolbar'
+      'banner'
+      'canvas'
+      'dock-tabs'
+      'dock';
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 3rem auto minmax(0, 1fr) auto 43dvh;
+  }
+
+  .workspace-resizer-left,
+  .workspace-resizer-right {
+    display: none;
+  }
+
+  .workspace-peripherals,
+  .workspace-summary {
+    grid-area: dock;
+    display: none;
+    flex-direction: column;
+  }
+
+  .workspace-root[data-dock-tab='peripherals'] .workspace-peripherals,
+  .workspace-root[data-dock-tab='pins'] .workspace-summary,
+  .workspace-root[data-dock-tab='diagnostics'] .workspace-summary,
+  .workspace-root[data-dock-tab='dma'] .workspace-summary,
+  .workspace-root[data-dock-tab='pio'] .workspace-summary {
+    display: flex;
+  }
+
+  .workspace-dock-tabs {
+    grid-area: dock-tabs;
+    display: flex;
+    overflow-x: auto;
+    overscroll-behavior: contain;
+  }
+
+  .workspace-summary .summary-tab-strip {
+    display: none;
+  }
+
+  .workspace-landscape-only {
+    display: none;
+  }
 }
 
 .font-mono-tabular {

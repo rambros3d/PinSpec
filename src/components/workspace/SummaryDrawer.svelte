@@ -29,6 +29,8 @@
   import PioPanel from './PioPanel.svelte';
   import PinTagPills from './PinTagPills.svelte';
 
+  export type SummaryDrawerTab = 'pins' | 'diagnostics' | 'dma' | 'pio' | 'gpio';
+
   interface Props {
     chip: ChipData;
     assignments: Record<string, PinAssignment>;
@@ -36,6 +38,8 @@
     locked: Record<string, boolean>;
     pioAssignments: Record<string, PioPinAssignment>;
     report: SolverReport;
+    /** Selected tab, bound by the portrait dock so one instance serves both layouts. */
+    activeTab?: SummaryDrawerTab;
     onFocusPin: (pos: string) => void;
     onSetLabel: (pos: string, label: string) => void;
     onToggleLock: (pos: string) => void;
@@ -51,6 +55,7 @@
     locked,
     pioAssignments,
     report,
+    activeTab = $bindable('pins'),
     onFocusPin,
     onSetLabel,
     onToggleLock,
@@ -59,7 +64,6 @@
     onSetPioAssignment,
   }: Props = $props();
 
-  let activeTab = $state<'pins' | 'diagnostics' | 'dma' | 'pio' | 'gpio'>('pins');
   let tableFilter = $state('');
   let sortKey = $state<'pos' | 'pin' | 'signal'>('pos');
   let sortAsc = $state(true);
@@ -153,9 +157,9 @@
   }
 </script>
 
-<aside class="h-full flex flex-col bg-surface border-ui-l border-hairline overflow-hidden">
+<aside class="h-full min-h-0 flex flex-col bg-surface border-ui-l border-hairline overflow-hidden">
   <!-- Tabs -->
-  <div class="flex items-center border-ui-b border-hairline bg-subtle px-2 pt-1.5 gap-1 shrink-0 text-xs">
+  <div class="summary-tab-strip flex items-center border-ui-b border-hairline bg-subtle px-2 pt-1.5 gap-1 shrink-0 text-xs">
     <button
       type="button"
       onclick={() => (activeTab = 'pins')}
@@ -243,7 +247,7 @@
       </div>
     </div>
 
-    <div class="flex-1 overflow-y-auto">
+    <div class="flex-1 min-h-0 overflow-y-auto">
       {#if rows.length === 0}
         <div class="p-6 text-center text-xs text-muted space-y-1">
           <p class="font-medium text-primary">No assigned pins yet</p>
@@ -363,7 +367,7 @@
 
   <!-- Tab 2: Diagnostics -->
   {:else if activeTab === 'diagnostics'}
-    <div class="flex-1 overflow-y-auto p-2.5 space-y-2">
+    <div class="flex-1 min-h-0 overflow-y-auto p-2.5 space-y-2">
       {#if report.diagnostics.length === 0}
         <div class="p-6 text-center text-xs text-muted space-y-1.5">
           <CheckCircle2 class="w-6 h-6 text-pin-success mx-auto" />
@@ -437,7 +441,7 @@
 
   <!-- Tab 3: DMA -->
   {:else if activeTab === 'dma'}
-    <div class="flex-1 overflow-y-auto p-2.5 space-y-2">
+    <div class="flex-1 min-h-0 overflow-y-auto p-2.5 space-y-2">
       {#if report.dmaAnalysis.length === 0}
         <div class="p-6 text-center text-xs text-muted space-y-1">
           <p class="font-medium text-primary">No active DMA requests</p>
@@ -498,7 +502,7 @@
 
   <!-- Tab 5: GPIO electrical settings for the selected pin -->
   {:else if activeTab === 'gpio'}
-    <div class="flex-1 overflow-y-auto p-2.5 space-y-3">
+    <div class="flex-1 min-h-0 overflow-y-auto p-2.5 space-y-3">
       {#if !inspectorPin}
         <div class="p-6 text-center text-xs text-muted space-y-1">
           <p class="font-medium text-primary">No pin selected</p>

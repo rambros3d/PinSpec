@@ -1,5 +1,6 @@
 import { cloneWorkspaceState, createWorkspaceHistory, type HistoryStack } from '../core/history';
 import { normalizeAngle } from '../core/placement';
+import { normalizeDockTab } from '../core/types';
 import {
   allocatePeripheralMode,
   applyOneHopFix,
@@ -15,6 +16,7 @@ import {
 import type {
   AlternatePinCandidate,
   ChipData,
+  DockTab,
   GpioConfig,
   OneHopFix,
   PinAssignment,
@@ -116,6 +118,20 @@ class WorkspaceStore {
   });
 
   assignedCount = $derived(Object.keys(this.state.assignments).length);
+
+  /** Active portrait dock tab, defaulting to Peripherals for older state. */
+  get dockTab(): DockTab {
+    return normalizeDockTab(this.state.dockTab);
+  }
+
+  /** Persist a dock tab change as one history entry, like other view settings. */
+  setDockTab(tab: DockTab): void {
+    const nextTab = normalizeDockTab(tab);
+    if (this.state.dockTab === nextTab) return;
+    const next = cloneWorkspaceState(this.state);
+    next.dockTab = nextTab;
+    this.commit(next);
+  }
 
   setPendingHandoff(state: WorkspaceState): void {
     this.pendingHandoffState = cloneWorkspaceState(state);

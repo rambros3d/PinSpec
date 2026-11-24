@@ -1,6 +1,8 @@
 import {
   PINCRAFT_STATE_VERSION,
+  normalizeDockTab,
   parseGpioConfig,
+  type DockTab,
   type GpioConfig,
   type PinAssignment,
   type PinPlacementPreference,
@@ -28,6 +30,8 @@ export interface PinCraftProjectFile {
   gpioConfig?: Record<string, GpioConfig>;
   placement?: Record<string, PinPlacementPreference>;
   placementOverlayVisible?: boolean;
+  /** Active portrait dock tab, omitted until the user selects one. */
+  dockTab?: DockTab;
 }
 
 export type JsonImportResult =
@@ -140,6 +144,7 @@ export function exportPinoutJson(state: WorkspaceState, vendor?: VendorId): stri
     }
     doc.placement = sortRecordKeys(cleanPlacement);
   }
+  if (state.dockTab !== undefined) doc.dockTab = normalizeDockTab(state.dockTab);
 
   return JSON.stringify(doc, null, 2) + '\n';
 }
@@ -262,6 +267,7 @@ export function parsePinoutJson(raw: string): JsonImportResult {
     }
 
     if (obj.placementOverlayVisible === true) state.placementOverlayVisible = true;
+    if (obj.dockTab !== undefined) state.dockTab = normalizeDockTab(obj.dockTab);
     if (obj.placement && typeof obj.placement === 'object' && !Array.isArray(obj.placement)) {
       const placement: Record<string, PinPlacementPreference> = {};
       for (const [peripheral, val] of Object.entries(obj.placement as Record<string, unknown>)) {

@@ -13,6 +13,8 @@
     assignment?: PinAssignment;
     label: string;
     isLocked: boolean;
+    /** Reports measured overlay bounds so the canvas can clamp to the viewport. */
+    onMeasure?: (size: { width: number; height: number }) => void;
     onSetLabel: (label: string) => void;
     onToggleLock: () => void;
     onHighlightAlternates: () => void;
@@ -29,6 +31,7 @@
     assignment,
     label,
     isLocked,
+    onMeasure,
     onSetLabel,
     onToggleLock,
     onHighlightAlternates,
@@ -40,6 +43,12 @@
   let editingLabel = $state(false);
   let draftLabel = $state('');
   let labelInput = $state<HTMLInputElement | null>(null);
+  let measuredWidth = $state(0);
+  let measuredHeight = $state(0);
+
+  $effect(() => {
+    onMeasure?.({ width: measuredWidth, height: measuredHeight });
+  });
 
   $effect(() => {
     draftLabel = label;
@@ -93,8 +102,10 @@
 <div class="fixed inset-0 z-40" onclick={onClose} oncontextmenu={(e) => { e.preventDefault(); onClose(); }}></div>
 
 <div
+  bind:clientWidth={measuredWidth}
+  bind:clientHeight={measuredHeight}
   class="fixed z-50 w-[236px] rounded-panel border-ui border-hairline bg-surface shadow-xl py-1 text-xs"
-  style={`left: ${clampedPos.left}px; top: ${clampedPos.top}px;`}
+  style={`left: ${clampedPos.left}px; top: ${clampedPos.top}px; max-height: 88dvh; overflow-y: auto;`}
   role="menu"
 >
   <div class="px-3 py-1.5 border-ui-b border-hairline flex items-center justify-between font-mono-tabular">

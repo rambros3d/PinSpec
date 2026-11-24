@@ -1,5 +1,5 @@
 import { normalizePlacement } from './placement';
-import type { WorkspaceState } from './types';
+import { normalizeDockTab, type WorkspaceState } from './types';
 
 export function cloneWorkspaceState(state: WorkspaceState): WorkspaceState {
   const assignments: WorkspaceState['assignments'] = {};
@@ -35,11 +35,14 @@ export function cloneWorkspaceState(state: WorkspaceState): WorkspaceState {
     }
   }
   if (state.placementOverlayVisible) cloned.placementOverlayVisible = true;
+  if (state.dockTab !== undefined) cloned.dockTab = normalizeDockTab(state.dockTab);
   return cloned;
 }
 
 export function statesEqual(a: WorkspaceState, b: WorkspaceState): boolean {
   if (a.mcuId !== b.mcuId) return false;
+  // Absent and explicit Peripherals are the same visible dock state.
+  if (normalizeDockTab(a.dockTab) !== normalizeDockTab(b.dockTab)) return false;
 
   const aKeys = Object.keys(a.assignments);
   const bKeys = Object.keys(b.assignments);

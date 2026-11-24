@@ -84,7 +84,7 @@ jobs:
           echo "Subpath fetches OK for index.html, data/index.json and data/chips/${SAMPLE}.json"
 
       - name: Upload GitHub Pages artifact
-        uses: actions/upload-pages-artifact@v5
+        uses: actions/upload-pages-artifact@v4
         with:
           path: dist
 

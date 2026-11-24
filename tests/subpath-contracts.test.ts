@@ -42,7 +42,7 @@ describe('deploy workflow contract', () => {
     expect(workflow).toContain('branches: [main]');
     expect(workflow).toContain('workflow_dispatch:');
     expect(workflow).toContain("cron: '0 4 * * 1'");
-    expect(workflow).toContain('actions/upload-pages-artifact@v5');
+    expect(workflow).toContain('actions/upload-pages-artifact@v4');
     expect(workflow).toContain('actions/deploy-pages@v4');
   });
 

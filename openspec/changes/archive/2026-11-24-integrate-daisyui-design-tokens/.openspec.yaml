@@ -1,0 +1,5 @@
+schema: spec-driven
+created: 2026-11-24
+goal: Replace hardcoded radius/border-width classes with semantic token
+  utilities, wire unused daisyUI color tokens into real UI surfaces, keep
+  depth/noise always on only on the IC package body, and clear Svelte warnings.

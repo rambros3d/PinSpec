@@ -100,7 +100,7 @@
 <div bind:this={wrapperEl} class="relative w-full space-y-2.5">
   <!-- Search Input Box -->
   <div class="relative flex items-center">
-    <Search class="w-4 h-4 text-faint absolute left-3.5 pointer-events-none" />
+    <Search class="size-ui text-faint absolute left-3.5 pointer-events-none" />
     <input
       bind:this={inputEl}
       bind:value={query}
@@ -108,7 +108,7 @@
       onkeydown={handleKeydown}
       type="text"
       placeholder="Jump to any MCU (e.g. STM32G431CBU6, CH32V003J4M6, RP2350B)..."
-      class="w-full pl-10 pr-20 py-3 rounded-lg border border-strong bg-surface text-sm font-mono text-primary placeholder:text-faint focus:outline-none focus:border-hint shadow-xs transition-colors"
+      class="w-full pl-10 pr-20 py-3 rounded-panel border-ui border-strong bg-surface text-sm font-mono text-primary placeholder:text-faint focus:outline-none focus:border-hint shadow-xs transition-colors"
     />
     <div class="absolute right-3 flex items-center gap-1.5">
       {#if query}
@@ -118,13 +118,13 @@
             query = '';
             inputEl?.focus();
           }}
-          class="p-1 rounded hover:bg-elevated text-faint"
+          class="p-1 rounded-control hover:bg-elevated text-faint"
           title="Clear"
         >
-          <X class="w-3.5 h-3.5" />
+          <X class="size-ui-md" />
         </button>
       {:else}
-        <kbd class="hidden sm:inline-block px-1.5 py-0.5 text-[11px] font-mono text-faint border border-hairline rounded bg-subtle">
+        <kbd class="hidden sm:inline-block px-1.5 py-0.5 text-[11px] font-mono text-faint border-ui border-hairline rounded-control bg-subtle">
           Ctrl+K
         </kbd>
       {/if}
@@ -142,10 +142,10 @@
           focused = true;
           inputEl?.focus();
         }}
-        class={`px-2.5 py-1 rounded-md font-mono whitespace-nowrap transition-colors ${
+        class={`px-2.5 py-1 rounded-control font-mono whitespace-nowrap transition-colors ${
           vendorFilter === tab.id
             ? 'bg-action text-on-action font-medium'
-            : 'bg-elevated text-primary hover:bg-elevated border border-hairline'
+            : 'bg-elevated text-primary hover:bg-elevated border-ui border-hairline'
         }`}
       >
         {tab.label}
@@ -159,7 +159,7 @@
       Family
       <select
         bind:value={familyFilter}
-        class="px-1.5 py-1 rounded-md bg-elevated border border-hairline text-xs text-primary focus:outline-none focus:border-hint"
+        class="px-1.5 py-1 rounded-control bg-elevated border-ui border-hairline text-xs text-primary focus:outline-none focus:border-hint"
       >
         <option value="">All</option>
         {#each familyOptions as fam (fam)}
@@ -171,7 +171,7 @@
       Package
       <select
         bind:value={pkgFilter}
-        class="px-1.5 py-1 rounded-md bg-elevated border border-hairline text-xs text-primary focus:outline-none focus:border-hint"
+        class="px-1.5 py-1 rounded-control bg-elevated border-ui border-hairline text-xs text-primary focus:outline-none focus:border-hint"
       >
         <option value="">All</option>
         {#each packageOptions as pkg (pkg)}
@@ -196,8 +196,8 @@
 
   <!-- Live Dropdown Results -->
   {#if showDropdown}
-    <div class="absolute left-0 right-0 top-[52px] z-30 rounded-xl border border-hairline bg-surface shadow-2xl overflow-hidden max-h-[340px] flex flex-col">
-      <div class="flex items-center justify-between px-3.5 py-2 border-b border-hairline bg-subtle text-[11px] font-mono-tabular text-muted">
+    <div class="absolute left-0 right-0 top-[52px] z-30 rounded-panel border-ui border-hairline bg-surface shadow-2xl overflow-hidden max-h-[340px] flex flex-col">
+      <div class="flex items-center justify-between px-3.5 py-2 border-ui-b border-hairline bg-subtle text-[11px] font-mono-tabular text-muted">
         <span>
           {#if catalogStore.loadingIndex}
             Loading multi-vendor catalog...
@@ -226,13 +226,13 @@
               }`}
             >
               <div class="flex items-center gap-2.5 min-w-0">
-                <Cpu class="w-4 h-4 text-faint shrink-0" />
+                <Cpu class="size-ui text-faint shrink-0" />
                 <div class="min-w-0">
                   <div class="flex items-center gap-1.5">
                     <span class="font-mono font-semibold text-xs text-primary">
                       {entry.id}
                     </span>
-                    <span class="px-1 py-px rounded border border-hairline bg-subtle font-mono text-[9px] uppercase text-muted">
+                    <span class="px-1 py-px rounded-control border-ui border-hairline bg-subtle font-mono text-[9px] uppercase text-muted">
                       {entry.vendor ?? 'stm32'}
                     </span>
                   </div>
@@ -246,7 +246,7 @@
                   <div class="text-primary">{entry.package}</div>
                   <div class="text-faint">{entry.pinCount} pins</div>
                 </div>
-                <ArrowRight class="w-3.5 h-3.5 text-faint" />
+                <ArrowRight class="size-ui-md text-faint" />
               </div>
             </button>
           {/each}

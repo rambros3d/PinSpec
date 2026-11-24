@@ -93,7 +93,7 @@
 
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {#each recentSessions.slice(0, 6) as session (session.mcuId)}
-          <div class="group rounded-lg border border-hairline bg-surface p-4 hover:border-hint transition-colors flex flex-col justify-between gap-3">
+          <div class="group rounded-panel border-ui border-hairline bg-surface p-4 hover:border-hint transition-colors flex flex-col justify-between gap-3">
             <div class="flex items-start justify-between gap-2">
               <button
                 type="button"
@@ -111,15 +111,15 @@
                 type="button"
                 onclick={() => onDeleteRecent(session.mcuId)}
                 title="Remove session"
-                class="p-1.5 rounded hover:bg-danger-soft text-faint hover:text-danger"
+                class="p-1.5 rounded-control hover:bg-danger-soft text-faint hover:text-danger"
               >
-                <Trash2 class="w-3.5 h-3.5" />
+                <Trash2 class="size-ui-md" />
               </button>
             </div>
 
-            <div class="flex items-center justify-between pt-2 border-t border-hairline text-xs">
+            <div class="flex items-center justify-between pt-2 border-ui-t border-hairline text-xs">
               <span class="inline-flex items-center gap-1 text-faint font-mono-tabular">
-                <Clock class="w-3 h-3" />
+                <Clock class="size-ui-sm" />
                 {formatRelativeTime(session.updatedAt)}
               </span>
               <button
@@ -128,7 +128,7 @@
                 class="inline-flex items-center gap-1 font-medium text-hint hover:underline"
               >
                 <span>Reopen</span>
-                <ArrowRight class="w-3 h-3" />
+                <ArrowRight class="size-ui-sm" />
               </button>
             </div>
           </div>
@@ -155,7 +155,7 @@
         <button
           type="button"
           onclick={() => onOpenMcu(item.id)}
-          class="group text-left rounded-lg border border-hairline bg-surface p-4 hover:border-hint transition-colors flex flex-col justify-between gap-3"
+          class="group text-left rounded-panel border-ui border-hairline bg-surface p-4 hover:border-hint transition-colors flex flex-col justify-between gap-3"
         >
           <div class="space-y-1.5">
             <div class="flex items-center justify-between gap-2">
@@ -163,7 +163,7 @@
                 <span class="font-mono font-semibold text-sm text-primary group-hover:text-hint transition-colors truncate">
                   {item.id}
                 </span>
-                <span class="px-1 py-px rounded border border-hairline bg-subtle font-mono text-[9px] text-muted">
+                <span class="px-1 py-px rounded-control border-ui border-hairline bg-subtle font-mono text-[9px] text-muted">
                   {item.vendor}
                 </span>
               </span>
@@ -180,7 +180,7 @@
           </div>
           <div class="flex items-center justify-end text-xs font-medium text-hint">
             <span class="inline-flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
-              Open workspace <ArrowRight class="w-3.5 h-3.5" />
+              Open workspace <ArrowRight class="size-ui-md" />
             </span>
           </div>
         </button>

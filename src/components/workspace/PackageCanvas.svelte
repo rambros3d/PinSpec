@@ -315,30 +315,30 @@
 
   <!-- Remap Mode Top-Center Banner -->
   {#if remapSourcePos}
-    <div class="absolute top-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3 px-3.5 py-2 rounded-lg border border-hint bg-remap-panel text-primary text-xs shadow-lg">
+    <div class="absolute top-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3 px-3.5 py-2 rounded-panel border-ui border-hint bg-remap-panel text-primary text-xs shadow-lg">
       <span class="font-mono font-medium">
         Remap Mode: click any pulsing cyan pin to move {remapSourceLabel}
       </span>
       <button
         type="button"
         onclick={onCancelRemap}
-        class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-action-soft-strong hover:bg-action-soft-strong text-primary whitespace-nowrap"
+        class="inline-flex items-center gap-1 px-2 py-0.5 rounded-control bg-action-soft-strong hover:bg-action-soft-strong text-primary whitespace-nowrap"
       >
-        <X class="w-3 h-3" />
+        <X class="size-ui-sm" />
         <span>Cancel (Esc)</span>
       </button>
     </div>
   {/if}
 
   <!-- Top-Right Canvas HUD Controls -->
-  <div class="absolute top-3 right-3 z-20 flex items-center gap-1 p-1 rounded-lg border border-hairline bg-surface-alpha shadow-sm text-xs">
+  <div class="absolute top-3 right-3 z-20 flex items-center gap-1 p-1 rounded-panel border-ui border-hairline bg-surface-alpha shadow-sm text-xs">
     <button
       type="button"
       onclick={() => zoomBy(1 / 1.2)}
       title="Zoom Out"
-      class="p-1.5 rounded hover:bg-elevated text-primary"
+      class="p-1.5 rounded-control hover:bg-elevated text-primary"
     >
-      <Minus class="w-3.5 h-3.5" />
+      <Minus class="size-ui-md" />
     </button>
     <span class="px-1.5 font-mono-tabular text-muted min-w-[44px] text-center">
       {Math.round(zoom * 100)}%
@@ -347,60 +347,60 @@
       type="button"
       onclick={() => zoomBy(1.2)}
       title="Zoom In"
-      class="p-1.5 rounded hover:bg-elevated text-primary"
+      class="p-1.5 rounded-control hover:bg-elevated text-primary"
     >
-      <Plus class="w-3.5 h-3.5" />
+      <Plus class="size-ui-md" />
     </button>
     <div class="w-px h-4 bg-elevated mx-0.5"></div>
     <button
       type="button"
       onclick={fitView}
       title="Fit View (0)"
-      class="p-1.5 rounded hover:bg-elevated text-primary"
+      class="p-1.5 rounded-control hover:bg-elevated text-primary"
     >
-      <Maximize2 class="w-3.5 h-3.5" />
+      <Maximize2 class="size-ui-md" />
     </button>
     <button
       type="button"
       onclick={onRotate}
       title="Rotate Package 90 deg"
-      class="inline-flex items-center gap-1 px-1.5 py-1 rounded hover:bg-elevated text-primary font-mono-tabular"
+      class="inline-flex items-center gap-1 px-1.5 py-1 rounded-control hover:bg-elevated text-primary font-mono-tabular"
     >
-      <RotateCw class="w-3.5 h-3.5" />
+      <RotateCw class="size-ui-md" />
       <span>{rotation}°</span>
     </button>
   </div>
 
   <!-- Bottom-Left Semantic Legend -->
-  <div class="absolute bottom-3 left-3 z-20 flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-1.5 rounded-lg border border-hairline bg-surface-alpha text-[11px] text-muted">
+  <div class="absolute bottom-3 left-3 z-20 flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-1.5 rounded-panel border-ui border-hairline bg-surface-alpha text-[11px] text-muted">
     <span class="inline-flex items-center gap-1.5">
-      <span class="w-2.5 h-2.5 rounded-xs bg-pin-unused"></span>
+      <span class="size-ui-xs rounded-mark bg-pin-unused"></span>
       Unused
     </span>
     <span class="inline-flex items-center gap-1.5">
-      <span class="w-2.5 h-2.5 rounded-xs bg-pin-power"></span>
+      <span class="size-ui-xs rounded-mark bg-pin-power"></span>
       Power / Reset
     </span>
     <span class="inline-flex items-center gap-1.5">
-      <span class="w-2.5 h-2.5 rounded-xs bg-pin-success"></span>
+      <span class="size-ui-xs rounded-mark bg-pin-success"></span>
       Assigned
     </span>
     <span class="inline-flex items-center gap-1.5">
-      <span class="w-2.5 h-2.5 rounded-xs bg-pin-partial"></span>
+      <span class="size-ui-xs rounded-mark bg-pin-partial"></span>
       Partial
     </span>
     <span class="inline-flex items-center gap-1.5">
-      <span class="w-2.5 h-2.5 rounded-xs bg-pin-conflict"></span>
+      <span class="size-ui-xs rounded-mark bg-pin-conflict"></span>
       Conflict
     </span>
     <span class="inline-flex items-center gap-1.5">
-      <span class="w-2.5 h-2.5 rounded-xs bg-pin-remap"></span>
+      <span class="size-ui-xs rounded-mark bg-pin-remap"></span>
       Remap / Search
     </span>
   </div>
 
   <!-- Bottom-Right Interaction Hint -->
-  <div class="hidden xl:flex absolute bottom-3 right-3 z-20 items-center gap-2 px-2.5 py-1 rounded-md border border-hairline bg-surface-alpha text-[11px] text-muted">
+  <div class="hidden xl:flex absolute bottom-3 right-3 z-20 items-center gap-2 px-2.5 py-1 rounded-control border-ui border-hairline bg-surface-alpha text-[11px] text-muted">
     <span>Left-click: Assign</span>
     <span aria-hidden="true">·</span>
     <span>Right-click: Label / Lock</span>
@@ -414,10 +414,10 @@
     {@const hAsgn = assignments[hPin.pos]}
     {@const hLabel = labels[hPin.pos]}
     <div
-      class="fixed z-30 w-[268px] pointer-events-none rounded-lg border border-hairline bg-surface-alpha shadow-lg p-2.5 text-xs"
+      class="fixed z-30 w-[268px] pointer-events-none rounded-panel border-ui border-hairline bg-surface-alpha shadow-lg p-2.5 text-xs"
       style={`left: ${tooltipPos.left}px; top: ${tooltipPos.top}px;`}
     >
-      <div class="flex items-center justify-between gap-2 pb-1.5 border-b border-hairline">
+      <div class="flex items-center justify-between gap-2 pb-1.5 border-ui-b border-hairline">
         <span class="font-mono font-semibold text-primary">
           {hPin.name}
         </span>
@@ -453,7 +453,7 @@
       {/if}
 
       {#if hPin.signals.length > 0}
-        <div class="mt-2 pt-1.5 border-t border-hairline">
+        <div class="mt-2 pt-1.5 border-ui-t border-hairline">
           <div class="text-[10px] font-medium text-muted mb-1">
             Mux options ({hPin.signals.length})
           </div>

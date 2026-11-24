@@ -121,14 +121,14 @@
   onclick={onClose}
 >
   <div
-    class="w-full max-w-3xl max-h-[84vh] flex flex-col rounded-xl border border-hairline bg-surface shadow-2xl overflow-hidden"
+    class="w-full max-w-3xl max-h-[84vh] flex flex-col rounded-panel border-ui border-hairline bg-surface shadow-2xl overflow-hidden"
     onclick={(e) => e.stopPropagation()}
     role="dialog"
     tabindex="-1"
     aria-label="Export and import pinout"
   >
     <!-- Header -->
-    <div class="flex items-center justify-between px-5 py-3.5 border-b border-hairline">
+    <div class="flex items-center justify-between px-5 py-3.5 border-ui-b border-hairline">
       <div>
         <h2 class="text-sm font-semibold text-primary">
           Export & Share Pinout
@@ -140,20 +140,20 @@
       <button
         type="button"
         onclick={onClose}
-        class="p-1.5 rounded-md hover:bg-elevated text-muted"
+        class="p-1.5 rounded-control hover:bg-elevated text-muted"
       >
-        <X class="w-4 h-4" />
+        <X class="size-ui" />
       </button>
     </div>
 
     <!-- Format Tabs -->
-    <div class="flex flex-wrap items-center justify-between gap-2 px-5 py-2.5 border-b border-hairline bg-subtle">
-      <div class="flex items-center gap-1 p-0.5 rounded-lg bg-elevated">
+    <div class="flex flex-wrap items-center justify-between gap-2 px-5 py-2.5 border-ui-b border-hairline bg-subtle">
+      <div class="flex items-center gap-1 p-0.5 rounded-panel bg-elevated">
         {#each formatTabs as tab (tab.id)}
           <button
             type="button"
             onclick={() => (activeTab = tab.id)}
-            class={`px-3 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-colors ${
+            class={`px-3 py-1 rounded-control text-xs font-medium whitespace-nowrap transition-colors ${
               activeTab === tab.id
                 ? 'bg-surface text-primary shadow-xs'
                 : 'text-muted hover:text-primary'
@@ -167,7 +167,7 @@
       <div class="flex items-center gap-2">
         {#if activeTab === 'csv'}
           <label class="flex items-center gap-1.5 text-xs text-muted cursor-pointer mr-1">
-            <input type="checkbox" bind:checked={includeUnassignedCsv} class="rounded" />
+            <input type="checkbox" bind:checked={includeUnassignedCsv} class="rounded-control" />
             <span>Include unassigned</span>
           </label>
         {/if}
@@ -175,13 +175,13 @@
         <button
           type="button"
           onclick={copyContent}
-          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-hairline hover:bg-elevated text-xs font-medium text-primary whitespace-nowrap"
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-control border-ui border-hairline hover:bg-elevated text-xs font-medium text-primary whitespace-nowrap"
         >
           {#if copied}
-            <Check class="w-3.5 h-3.5 text-pin-success" />
+            <Check class="size-ui-md text-pin-success" />
             <span>Copied</span>
           {:else}
-            <Copy class="w-3.5 h-3.5" />
+            <Copy class="size-ui-md" />
             <span>Copy</span>
           {/if}
         </button>
@@ -190,9 +190,9 @@
           <button
             type="button"
             onclick={downloadFile}
-            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-action hover:bg-action-hover text-xs font-semibold text-on-action whitespace-nowrap"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-control bg-action hover:bg-action-hover text-xs font-semibold text-on-action whitespace-nowrap"
           >
-            <Download class="w-3.5 h-3.5" />
+            <Download class="size-ui-md" />
             <span>Download</span>
           </button>
         {/if}
@@ -202,7 +202,7 @@
     <!-- JSON Import Dropzone -->
     {#if activeTab === 'json'}
       <div
-        class={`mx-5 mt-3 p-3 rounded-lg border border-dashed text-xs flex items-center justify-between gap-3 transition-colors ${
+        class={`mx-5 mt-3 p-3 rounded-panel border-ui border-dashed text-xs flex items-center justify-between gap-3 transition-colors ${
           draggingFile
             ? 'border-hint bg-info-soft'
             : 'border-strong bg-subtle'
@@ -220,13 +220,13 @@
         }}
       >
         <div class="flex items-center gap-2 text-muted">
-          <Upload class="w-4 h-4 text-hint shrink-0" />
+          <Upload class="size-ui text-hint shrink-0" />
           <span>Drag and drop a <code class="font-mono">pinout.json</code> file here to import, or choose a file.</span>
         </div>
         <button
           type="button"
           onclick={() => fileInput?.click()}
-          class="px-2.5 py-1 rounded border border-strong bg-surface hover:border-hint font-medium text-primary whitespace-nowrap"
+          class="px-2.5 py-1 rounded-control border-ui border-strong bg-surface hover:border-hint font-medium text-primary whitespace-nowrap"
         >
           Browse JSON
         </button>
@@ -248,7 +248,7 @@
 
     <!-- Monospace Code Preview -->
     <div class="flex-1 overflow-auto p-5">
-      <pre class="p-4 rounded-lg border border-hairline bg-subtle font-mono text-xs leading-relaxed text-primary overflow-x-auto whitespace-pre-wrap break-all">{previewContent}</pre>
+      <pre class="p-4 rounded-panel border-ui border-hairline bg-subtle font-mono text-xs leading-relaxed text-primary overflow-x-auto whitespace-pre-wrap break-all">{previewContent}</pre>
     </div>
   </div>
 </div>

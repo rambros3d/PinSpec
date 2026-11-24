@@ -87,17 +87,17 @@
 <div class="fixed inset-0 z-40" onclick={onClose} oncontextmenu={(e) => { e.preventDefault(); onClose(); }}></div>
 
 <div
-  class="fixed z-50 w-[236px] rounded-lg border border-hairline bg-surface shadow-xl py-1 text-xs"
+  class="fixed z-50 w-[236px] rounded-panel border-ui border-hairline bg-surface shadow-xl py-1 text-xs"
   style={`left: ${clampedPos.left}px; top: ${clampedPos.top}px;`}
   role="menu"
 >
-  <div class="px-3 py-1.5 border-b border-hairline flex items-center justify-between font-mono-tabular">
+  <div class="px-3 py-1.5 border-ui-b border-hairline flex items-center justify-between font-mono-tabular">
     <span class="font-semibold text-primary">{pin.name}</span>
     <span class="text-muted">Pin {pin.pos}</span>
   </div>
 
   {#if assignment || pin.bondedNames?.length || pin.tags?.length}
-    <div class="px-3 py-1.5 border-b border-hairline space-y-1">
+    <div class="px-3 py-1.5 border-ui-b border-hairline space-y-1">
       {#if assignment}
         <div class="font-mono text-[11px] text-primary">
           {assignment.peripheral}_{assignment.signal}
@@ -130,19 +130,19 @@
         bind:value={draftLabel}
         type="text"
         placeholder="e.g. MOTOR_U_HI"
-        class="w-full px-2 py-1.5 rounded bg-elevated border border-strong font-mono text-primary focus:outline-none focus:border-hint"
+        class="w-full px-2 py-1.5 rounded-control bg-elevated border-ui border-strong font-mono text-primary focus:outline-none focus:border-hint"
       />
       <div class="flex justify-end gap-1.5">
         <button
           type="button"
           onclick={onClose}
-          class="px-2.5 py-1 rounded border border-hairline text-muted hover:bg-elevated"
+          class="px-2.5 py-1 rounded-control border-ui border-hairline text-muted hover:bg-elevated"
         >
           Cancel
         </button>
         <button
           type="submit"
-          class="px-2.5 py-1 rounded bg-action hover:bg-action-hover text-on-action font-medium"
+          class="px-2.5 py-1 rounded-control bg-action hover:bg-action-hover text-on-action font-medium"
         >
           Save
         </button>
@@ -155,7 +155,7 @@
         onclick={startEditLabel}
         class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-primary hover:bg-elevated"
       >
-        <Tag class="w-3.5 h-3.5 text-faint" />
+        <Tag class="size-ui-md text-faint" />
         <span>{label ? 'Edit Net Label' : 'Set Net Label'}</span>
       </button>
 
@@ -168,10 +168,10 @@
         class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-primary hover:bg-elevated"
       >
         {#if isLocked}
-          <Unlock class="w-3.5 h-3.5 text-pin-power" />
+          <Unlock class="size-ui-md text-pin-power" />
           <span>Unlock Pin</span>
         {:else}
-          <Lock class="w-3.5 h-3.5 text-faint" />
+          <Lock class="size-ui-md text-faint" />
           <span>Lock Pin</span>
         {/if}
       </button>
@@ -185,7 +185,7 @@
         }}
         class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-primary hover:bg-elevated disabled:opacity-40"
       >
-        <Crosshair class="w-3.5 h-3.5 text-hint" />
+        <Crosshair class="size-ui-md text-hint" />
         <span>Highlight Alternate Pins</span>
       </button>
 
@@ -198,11 +198,11 @@
         }}
         class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-primary hover:bg-elevated disabled:opacity-40"
       >
-        <ArrowLeftRight class="w-3.5 h-3.5 text-hint" />
+        <ArrowLeftRight class="size-ui-md text-hint" />
         <span>Remap Pin (Ctrl+Click)</span>
       </button>
 
-      <div class="my-1 border-t border-hairline"></div>
+      <div class="my-1 border-ui-t border-hairline"></div>
 
       <button
         type="button"
@@ -213,7 +213,7 @@
         }}
         class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-danger hover:bg-danger-soft disabled:opacity-40"
       >
-        <Trash2 class="w-3.5 h-3.5" />
+        <Trash2 class="size-ui-md" />
         <span>Clear Assignment</span>
       </button>
     </div>

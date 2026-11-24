@@ -98,19 +98,19 @@
   }
 </script>
 
-<div class="rounded-xl border border-hairline bg-surface overflow-hidden flex flex-col">
+<div class="rounded-panel border-ui border-hairline bg-surface overflow-hidden flex flex-col">
   <!-- Vendor switcher: each chip is fetched from generated data on demand -->
-  <div class="flex flex-wrap items-center gap-1.5 px-4 py-2 border-b border-hairline bg-subtle text-xs">
+  <div class="flex flex-wrap items-center gap-1.5 px-4 py-2 border-ui-b border-hairline bg-subtle text-xs">
     <span class="text-muted mr-1">Preview:</span>
     {#each HERO_CHIPS as hero (hero.vendor)}
       <button
         type="button"
         onclick={() => onVendorChange(hero.vendor)}
         title={hero.id}
-        class={`px-2.5 py-1 rounded-md font-mono transition-colors ${
+        class={`px-2.5 py-1 rounded-control font-mono transition-colors ${
           vendor === hero.vendor
             ? 'bg-action text-on-action font-medium'
-            : 'bg-elevated text-primary hover:bg-elevated border border-hairline'
+            : 'bg-elevated text-primary hover:bg-elevated border-ui border-hairline'
         }`}
       >
         {hero.label}
@@ -119,7 +119,7 @@
   </div>
 
   <!-- Top Interactive Control Bar -->
-  <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 border-b border-hairline bg-subtle">
+  <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 border-ui-b border-hairline bg-subtle">
     <div class="flex items-center gap-2 text-xs font-mono-tabular">
       <span class="font-semibold text-primary">{chip.id}</span>
       <span class="text-faint">·</span>
@@ -135,23 +135,23 @@
         type="button"
         onclick={resetDemo}
         title="Reset hero demo pinout"
-        class="p-1.5 rounded-md border border-hairline hover:bg-elevated text-muted"
+        class="p-1.5 rounded-control border-ui border-hairline hover:bg-elevated text-muted"
       >
-        <RotateCcw class="w-3.5 h-3.5" />
+        <RotateCcw class="size-ui-md" />
       </button>
       <button
         type="button"
         onclick={() => onOpenWorkspace(demoState)}
-        class="inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-action hover:bg-action-hover text-xs font-semibold text-on-action whitespace-nowrap transition-colors"
+        class="inline-flex items-center gap-1 px-3 py-1.5 rounded-control bg-action hover:bg-action-hover text-xs font-semibold text-on-action whitespace-nowrap transition-colors"
       >
         <span>Open in Full Workspace</span>
-        <ArrowUpRight class="w-3.5 h-3.5" />
+        <ArrowUpRight class="size-ui-md" />
       </button>
     </div>
   </div>
 
   <!-- Quick Peripheral Toggles -->
-  <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-2 border-b border-hairline text-xs">
+  <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-2 border-ui-b border-hairline text-xs">
     <div class="flex flex-wrap items-center gap-1.5">
       <span class="text-muted text-[11px] mr-0.5">Live modes:</span>
       {#each activeModes as item (`${item.peripheral}:${item.mode}`)}
@@ -159,7 +159,7 @@
           type="button"
           onclick={() => handleToggleDemoPeripheral(item.peripheral, item.mode)}
           title={`Disable ${item.peripheral} (${item.mode})`}
-          class="px-2 py-0.5 rounded font-mono text-[11px] transition-colors border bg-success-soft border-pin-success text-pin-success font-medium"
+          class="px-2 py-0.5 rounded-control font-mono text-[11px] transition-colors border-ui bg-success-soft border-pin-success text-pin-success font-medium"
         >
           {item.peripheral} · {item.mode}
         </button>
@@ -193,7 +193,7 @@
   </div>
 
   <!-- Live Hover Inspector Bar -->
-  <div class="px-4 py-2 border-t border-hairline bg-subtle text-[11px] font-mono-tabular flex items-center justify-between gap-3 min-h-[34px]">
+  <div class="px-4 py-2 border-ui-t border-hairline bg-subtle text-[11px] font-mono-tabular flex items-center justify-between gap-3 min-h-[34px]">
     {#if hoveredPin}
       {@const hAsgn = demoState.assignments[hoveredPin.pos]}
       <div class="flex items-center gap-2 min-w-0 truncate">

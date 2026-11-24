@@ -118,15 +118,15 @@
   }
 </script>
 
-<aside class="h-full flex flex-col bg-surface border-l border-hairline overflow-hidden">
+<aside class="h-full flex flex-col bg-surface border-ui-l border-hairline overflow-hidden">
   <!-- Tabs -->
-  <div class="flex items-center border-b border-hairline bg-subtle px-2 pt-1.5 gap-1 shrink-0 text-xs">
+  <div class="flex items-center border-ui-b border-hairline bg-subtle px-2 pt-1.5 gap-1 shrink-0 text-xs">
     <button
       type="button"
       onclick={() => (activeTab = 'pins')}
-      class={`px-2.5 py-1.5 rounded-t-md font-medium whitespace-nowrap transition-colors ${
+      class={`px-2.5 py-1.5 rounded-top-control font-medium whitespace-nowrap transition-colors ${
         activeTab === 'pins'
-          ? 'bg-surface text-primary border-t border-x border-hairline -mb-px'
+          ? 'bg-surface text-primary border-ui-t border-ui-x border-hairline -mb-px'
           : 'text-muted hover:text-primary'
       }`}
     >
@@ -136,9 +136,9 @@
     <button
       type="button"
       onclick={() => (activeTab = 'diagnostics')}
-      class={`px-2.5 py-1.5 rounded-t-md font-medium whitespace-nowrap transition-colors flex items-center gap-1.5 ${
+      class={`px-2.5 py-1.5 rounded-top-control font-medium whitespace-nowrap transition-colors flex items-center gap-1.5 ${
         activeTab === 'diagnostics'
-          ? 'bg-surface text-primary border-t border-x border-hairline -mb-px'
+          ? 'bg-surface text-primary border-ui-t border-ui-x border-hairline -mb-px'
           : 'text-muted hover:text-primary'
       }`}
     >
@@ -158,9 +158,9 @@
     <button
       type="button"
       onclick={() => (activeTab = 'dma')}
-      class={`px-2.5 py-1.5 rounded-t-md font-medium whitespace-nowrap transition-colors ${
+      class={`px-2.5 py-1.5 rounded-top-control font-medium whitespace-nowrap transition-colors ${
         activeTab === 'dma'
-          ? 'bg-surface text-primary border-t border-x border-hairline -mb-px'
+          ? 'bg-surface text-primary border-ui-t border-ui-x border-hairline -mb-px'
           : 'text-muted hover:text-primary'
       }`}
     >
@@ -171,9 +171,9 @@
       <button
         type="button"
         onclick={() => (activeTab = 'pio')}
-        class={`px-2.5 py-1.5 rounded-t-md font-medium whitespace-nowrap transition-colors ${
+        class={`px-2.5 py-1.5 rounded-top-control font-medium whitespace-nowrap transition-colors ${
           activeTab === 'pio'
-            ? 'bg-surface text-primary border-t border-x border-hairline -mb-px'
+            ? 'bg-surface text-primary border-ui-t border-ui-x border-hairline -mb-px'
             : 'text-muted hover:text-primary'
         }`}
       >
@@ -184,14 +184,14 @@
 
   <!-- Tab 1: Pin Table -->
   {#if activeTab === 'pins'}
-    <div class="p-2 border-b border-hairline shrink-0">
+    <div class="p-2 border-ui-b border-hairline shrink-0">
       <div class="relative flex items-center">
-        <Search class="w-3.5 h-3.5 text-faint absolute left-2.5 pointer-events-none" />
+        <Search class="size-ui-md text-faint absolute left-2.5 pointer-events-none" />
         <input
           bind:value={tableFilter}
           type="text"
           placeholder="Filter assigned pins or labels..."
-          class="w-full pl-8 pr-2.5 py-1.5 rounded-md bg-elevated border border-hairline text-xs text-primary placeholder:text-faint focus:outline-none focus:border-hint"
+          class="w-full pl-8 pr-2.5 py-1.5 rounded-control bg-elevated border-ui border-hairline text-xs text-primary placeholder:text-faint focus:outline-none focus:border-hint"
         />
       </div>
     </div>
@@ -204,21 +204,21 @@
         </div>
       {:else}
         <table class="w-full text-left border-collapse text-[11px]">
-          <thead class="sticky top-0 bg-subtle border-b border-hairline text-muted">
+          <thead class="sticky top-0 bg-subtle border-ui-b border-hairline text-muted">
             <tr>
               <th class="py-1.5 pl-2.5 pr-1 font-medium">
                 <button type="button" onclick={() => toggleSort('pos')} class="inline-flex items-center gap-0.5 hover:text-primary">
-                  Pos <ArrowUpDown class="w-2.5 h-2.5" />
+                  Pos <ArrowUpDown class="size-ui-xs" />
                 </button>
               </th>
               <th class="py-1.5 px-1 font-medium">
                 <button type="button" onclick={() => toggleSort('pin')} class="inline-flex items-center gap-0.5 hover:text-primary">
-                  Pin <ArrowUpDown class="w-2.5 h-2.5" />
+                  Pin <ArrowUpDown class="size-ui-xs" />
                 </button>
               </th>
               <th class="py-1.5 px-1 font-medium">
                 <button type="button" onclick={() => toggleSort('signal')} class="inline-flex items-center gap-0.5 hover:text-primary">
-                  Signal <ArrowUpDown class="w-2.5 h-2.5" />
+                  Signal <ArrowUpDown class="size-ui-xs" />
                 </button>
               </th>
               <th class="py-1.5 px-1 font-medium">Label</th>
@@ -235,7 +235,7 @@
                   {row.pos}
                 </td>
                 <td class="py-1.5 px-1 font-mono font-medium text-primary whitespace-nowrap">
-                  <span class={row.bondedNames.length > 0 ? 'border-b border-dashed border-current' : ''}>
+                  <span class={row.bondedNames.length > 0 ? 'border-ui-b border-dashed border-current' : ''}>
                     {row.pinName}
                   </span>
                   {#if row.bondedNames.length > 0}
@@ -268,7 +268,7 @@
                     placeholder="—"
                     onchange={(e) =>
                       onSetLabel(row.pos, (e.currentTarget as HTMLInputElement).value)}
-                    class="w-full min-w-[68px] px-1.5 py-0.5 rounded bg-transparent hover:bg-elevated focus:bg-elevated border border-transparent focus:border-hint font-mono text-[11px] text-primary focus:outline-none"
+                    class="w-full min-w-[68px] px-1.5 py-0.5 rounded-control bg-transparent hover:bg-elevated focus:bg-elevated border-ui border-transparent focus:border-hint font-mono text-[11px] text-primary focus:outline-none"
                   />
                 </td>
                 <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -278,12 +278,12 @@
                     type="button"
                     onclick={() => onToggleLock(row.pos)}
                     title={row.isLocked ? 'Unlock pin' : 'Lock pin'}
-                    class="p-1 rounded hover:bg-elevated text-muted"
+                    class="p-1 rounded-control hover:bg-elevated text-muted"
                   >
                     {#if row.isLocked}
-                      <Lock class="w-3 h-3 text-pin-power" />
+                      <Lock class="size-ui-sm text-pin-power" />
                     {:else}
-                      <Unlock class="w-3 h-3" />
+                      <Unlock class="size-ui-sm" />
                     {/if}
                   </button>
                   <button
@@ -291,9 +291,9 @@
                     disabled={row.isLocked}
                     onclick={() => onClearPin(row.pos)}
                     title="Clear pin"
-                    class="p-1 rounded hover:bg-danger-soft text-faint hover:text-danger disabled:opacity-30"
+                    class="p-1 rounded-control hover:bg-danger-soft text-faint hover:text-danger disabled:opacity-30"
                   >
-                    <Trash2 class="w-3 h-3" />
+                    <Trash2 class="size-ui-sm" />
                   </button>
                 </td>
               </tr>
@@ -309,13 +309,13 @@
       {#if report.diagnostics.length === 0}
         <div class="p-6 text-center text-xs text-muted space-y-1.5">
           <CheckCircle2 class="w-6 h-6 text-pin-success mx-auto" />
-          <p class="font-medium text-primary">No conflicts or warnings</p>
+          <span class="inline-block px-2 py-0.5 rounded-pill bg-pin-success text-on-success font-medium">No conflicts or warnings</span>
           <p>All active peripherals and pin assignments satisfy hardware invariants.</p>
         </div>
       {:else}
         {#each report.diagnostics as diag (diag.id)}
           <div
-            class={`rounded-lg border p-2.5 text-xs space-y-2 ${
+            class={`rounded-panel border-ui p-2.5 text-xs space-y-2 ${
               diag.severity === 'error'
                 ? 'border-danger bg-danger-soft'
                 : 'border-pin-partial bg-warning-soft'
@@ -323,17 +323,17 @@
           >
             <div class="flex items-start gap-2">
               {#if diag.severity === 'error'}
-                <XCircle class="w-4 h-4 text-danger shrink-0 mt-0.5" />
+                <XCircle class="size-ui text-danger shrink-0 mt-0.5" />
               {:else}
-                <AlertTriangle class="w-4 h-4 text-pin-partial shrink-0 mt-0.5" />
+                <AlertTriangle class="size-ui text-pin-partial shrink-0 mt-0.5" />
               {/if}
               <div class="min-w-0 flex-1 space-y-1">
                 <div class="flex items-center justify-between gap-2">
                   <span
-                    class={`font-semibold text-[11px] ${
+                    class={`px-1.5 py-0.5 rounded-pill text-[11px] font-semibold ${
                       diag.severity === 'error'
-                        ? 'text-danger'
-                        : 'text-pin-partial'
+                        ? 'bg-danger text-on-error'
+                        : 'bg-pin-partial text-on-warning'
                     }`}
                   >
                     {diag.severity === 'error' ? 'Error' : 'Warning'}
@@ -355,7 +355,7 @@
                 <button
                   type="button"
                   onclick={() => onFocusPin(pPos)}
-                  class="px-2 py-0.5 rounded border border-strong bg-surface hover:border-hint font-mono text-[11px] text-primary"
+                  class="px-2 py-0.5 rounded-control border-ui border-strong bg-surface hover:border-hint font-mono text-[11px] text-primary"
                 >
                   Inspect {pinMap.get(pPos)?.name ?? pPos}
                 </button>
@@ -365,9 +365,9 @@
                 <button
                   type="button"
                   onclick={() => onApplyFix(diag.fix!)}
-                  class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-action hover:bg-action-hover text-on-action font-medium text-[11px]"
+                  class="inline-flex items-center gap-1 px-2.5 py-1 rounded-control bg-action hover:bg-action-hover text-on-action font-medium text-[11px]"
                 >
-                  <Wrench class="w-3 h-3" />
+                  <Wrench class="size-ui-sm" />
                   <span>Apply 1-Hop Remap</span>
                 </button>
               {/if}
@@ -388,7 +388,7 @@
       {:else}
         {#each report.dmaAnalysis as item (`${item.peripheral}:${item.signal}`)}
           <div
-            class={`rounded-lg border p-2.5 text-xs space-y-1 ${
+            class={`rounded-panel border-ui p-2.5 text-xs space-y-1 ${
               item.status === 'contention'
                 ? 'border-pin-partial bg-warning-soft'
                 : 'border-hairline bg-subtle'

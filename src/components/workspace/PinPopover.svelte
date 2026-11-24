@@ -106,13 +106,13 @@
 <div class="fixed inset-0 z-40" onclick={onClose}></div>
 
 <div
-  class="fixed z-50 w-[310px] max-h-[410px] flex flex-col rounded-lg border border-hairline bg-surface shadow-xl overflow-hidden text-xs"
+  class="fixed z-50 w-[310px] max-h-[410px] flex flex-col rounded-panel border-ui border-hairline bg-surface shadow-xl overflow-hidden text-xs"
   style={`left: ${clampedPos.left}px; top: ${clampedPos.top}px;`}
   role="dialog"
   aria-label={`Assign signal to ${pin.name}`}
 >
   <!-- Header -->
-  <div class="flex items-center justify-between gap-2 px-3 py-2 border-b border-hairline bg-subtle">
+  <div class="flex items-center justify-between gap-2 px-3 py-2 border-ui-b border-hairline bg-subtle">
     <div class="min-w-0">
       <div class="flex items-center gap-1.5 font-mono-tabular font-semibold text-primary">
         <span>{pin.name}</span>
@@ -138,12 +138,12 @@
         type="button"
         onclick={onToggleLock}
         title={isLocked ? 'Unlock pin' : 'Lock pin'}
-        class="p-1.5 rounded hover:bg-elevated text-muted"
+        class="p-1.5 rounded-control hover:bg-elevated text-muted"
       >
         {#if isLocked}
-          <Lock class="w-3.5 h-3.5 text-pin-power" />
+          <Lock class="size-ui-md text-pin-power" />
         {:else}
-          <Unlock class="w-3.5 h-3.5" />
+          <Unlock class="size-ui-md" />
         {/if}
       </button>
       {#if currentAssignment}
@@ -155,32 +155,32 @@
           }}
           disabled={isLocked}
           title="Clear assignment"
-          class="p-1.5 rounded hover:bg-danger-soft text-danger disabled:opacity-40"
+          class="p-1.5 rounded-control hover:bg-danger-soft text-danger disabled:opacity-40"
         >
-          <Trash2 class="w-3.5 h-3.5" />
+          <Trash2 class="size-ui-md" />
         </button>
       {/if}
       <button
         type="button"
         onclick={onClose}
         title="Close"
-        class="p-1.5 rounded hover:bg-elevated text-muted"
+        class="p-1.5 rounded-control hover:bg-elevated text-muted"
       >
-        <X class="w-3.5 h-3.5" />
+        <X class="size-ui-md" />
       </button>
     </div>
   </div>
 
   <!-- Search Input -->
-  <div class="px-2.5 py-2 border-b border-hairline">
+  <div class="px-2.5 py-2 border-ui-b border-hairline">
     <div class="relative flex items-center">
-      <Search class="w-3.5 h-3.5 text-faint absolute left-2.5 pointer-events-none" />
+      <Search class="size-ui-md text-faint absolute left-2.5 pointer-events-none" />
       <input
         bind:this={searchInput}
         bind:value={query}
         type="text"
         placeholder="Filter signals, peripheral, mux..."
-        class="w-full pl-8 pr-2.5 py-1.5 rounded-md bg-elevated border border-hairline text-primary placeholder:text-faint focus:outline-none focus:border-hint text-xs"
+        class="w-full pl-8 pr-2.5 py-1.5 rounded-control bg-elevated border-ui border-hairline text-primary placeholder:text-faint focus:outline-none focus:border-hint text-xs"
       />
     </div>
     {#if isLocked}
@@ -208,7 +208,7 @@
                 onAssign({ peripheral: 'GPIO', signal: mode, af: null });
                 onClose();
               }}
-              class={`flex items-center justify-between px-2 py-1.5 rounded text-left transition-colors disabled:opacity-40 ${
+              class={`flex items-center justify-between px-2 py-1.5 rounded-control text-left transition-colors disabled:opacity-40 ${
                 isActive
                   ? 'bg-success-soft text-pin-success font-medium'
                   : 'hover:bg-elevated text-primary'
@@ -216,7 +216,7 @@
             >
               <span class="font-mono">GPIO_{mode}</span>
               {#if isActive}
-                <Check class="w-3 h-3 shrink-0" />
+                <Check class="size-ui-sm shrink-0" />
               {/if}
             </button>
           {/each}
@@ -226,7 +226,7 @@
 
     {#each groupedSignals as [peripheral, sigs] (peripheral)}
       <div>
-        <div class="px-2 py-1 text-[11px] font-semibold text-muted border-t border-hairline">
+        <div class="px-2 py-1 text-[11px] font-semibold text-muted border-ui-t border-hairline">
           {peripheral}
         </div>
         <div class="space-y-0.5">
@@ -242,7 +242,7 @@
                 onAssign({ ...sig });
                 onClose();
               }}
-              class={`w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded text-left transition-colors disabled:opacity-40 ${
+              class={`w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-control text-left transition-colors disabled:opacity-40 ${
                 isActive
                   ? 'bg-success-soft text-pin-success font-medium'
                   : 'hover:bg-elevated text-primary'
@@ -259,7 +259,7 @@
                   {formatMuxLabel(sig, muxModel)}
                 </span>
                 {#if isActive}
-                  <Check class="w-3 h-3 text-pin-success" />
+                  <Check class="size-ui-sm text-pin-success" />
                 {/if}
               </span>
             </button>

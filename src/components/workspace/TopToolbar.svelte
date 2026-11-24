@@ -57,7 +57,7 @@
   let confirmClear = $state(false);
 </script>
 
-<header class="h-12 shrink-0 flex items-center justify-between gap-3 px-3 border-b border-hairline bg-surface select-none">
+<header class="h-12 shrink-0 flex items-center justify-between gap-3 px-3 border-ui-b border-hairline bg-surface select-none">
   <!-- Left: Brand Home + Active MCU Switcher -->
   <div class="flex items-center gap-3 min-w-0">
     <button
@@ -66,7 +66,7 @@
       class="flex items-center gap-2 text-primary hover:text-hint transition-colors whitespace-nowrap shrink-0"
       title="Back to PinCraft Home"
     >
-      <svg class="w-5 h-5 text-hint" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <svg class="size-ui-lg text-hint" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
         <rect x="6" y="6" width="12" height="12" rx="2" />
         <rect x="9.5" y="9.5" width="5" height="5" rx="0.5" />
         <path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4" />
@@ -80,7 +80,7 @@
       <button
         type="button"
         onclick={onOpenSwitcher}
-        class="flex items-center gap-2 px-2.5 py-1 rounded-md border border-hairline bg-subtle hover:border-hint transition-colors min-w-0 whitespace-nowrap"
+        class="flex items-center gap-2 px-2.5 py-1 rounded-control border-ui border-hairline bg-subtle hover:border-hint transition-colors min-w-0 whitespace-nowrap"
         title="Switch MCU"
       >
         <span class="font-mono font-semibold text-xs text-primary">
@@ -89,21 +89,21 @@
         <span class="hidden lg:inline font-mono-tabular text-[11px] text-muted">
           {chip.core} · {chip.flashKb}KB/{chip.ramKb}KB · {chip.package.name} ({chip.package.pinCount})
         </span>
-        <ChevronDown class="w-3.5 h-3.5 text-faint shrink-0" />
+        <ChevronDown class="size-ui-md text-faint shrink-0" />
       </button>
     {/if}
   </div>
 
   <!-- Center: Global Pin/Signal Search (Ctrl+F) -->
   <div class="flex-1 max-w-xs relative flex items-center">
-    <Search class="w-3.5 h-3.5 text-faint absolute left-2.5 pointer-events-none" />
+    <Search class="size-ui-md text-faint absolute left-2.5 pointer-events-none" />
     <input
       bind:this={searchInputRef}
       value={globalSearch}
       oninput={(e) => onSearchChange((e.currentTarget as HTMLInputElement).value)}
       type="text"
       placeholder="Find pin or signal (Ctrl+F)..."
-      class="w-full pl-8 pr-14 py-1.5 rounded-md bg-elevated border border-hairline text-xs font-mono text-primary placeholder:text-faint focus:outline-none focus:border-hint"
+      class="w-full pl-8 pr-14 py-1.5 rounded-control bg-elevated border-ui border-hairline text-xs font-mono text-primary placeholder:text-faint focus:outline-none focus:border-hint"
     />
     {#if globalSearch}
       <div class="absolute right-2 flex items-center gap-1">
@@ -113,10 +113,10 @@
         <button
           type="button"
           onclick={() => onSearchChange('')}
-          class="p-0.5 rounded hover:bg-elevated text-faint"
+          class="p-0.5 rounded-control hover:bg-elevated text-faint"
           title="Clear search"
         >
-          <X class="w-3 h-3" />
+          <X class="size-ui-sm" />
         </button>
       </div>
     {/if}
@@ -129,18 +129,18 @@
       onclick={onUndo}
       disabled={!canUndo}
       title="Undo (Ctrl+Z)"
-      class="p-1.5 rounded-md hover:bg-elevated text-primary disabled:opacity-35"
+      class="p-1.5 rounded-control hover:bg-elevated text-primary disabled:opacity-35"
     >
-      <Undo2 class="w-4 h-4" />
+      <Undo2 class="size-ui" />
     </button>
     <button
       type="button"
       onclick={onRedo}
       disabled={!canRedo}
       title="Redo (Ctrl+Y)"
-      class="p-1.5 rounded-md hover:bg-elevated text-primary disabled:opacity-35"
+      class="p-1.5 rounded-control hover:bg-elevated text-primary disabled:opacity-35"
     >
-      <Redo2 class="w-4 h-4" />
+      <Redo2 class="size-ui" />
     </button>
 
     <div class="relative">
@@ -148,12 +148,12 @@
         type="button"
         onclick={() => (confirmClear = !confirmClear)}
         title="Clear all assignments"
-        class="p-1.5 rounded-md hover:bg-danger-soft text-muted hover:text-danger"
+        class="p-1.5 rounded-control hover:bg-danger-soft text-muted hover:text-danger"
       >
-        <Trash2 class="w-4 h-4" />
+        <Trash2 class="size-ui" />
       </button>
       {#if confirmClear}
-        <div class="absolute right-0 top-10 z-50 w-56 rounded-lg border border-hairline bg-surface shadow-xl p-3 text-xs">
+        <div class="absolute right-0 top-10 z-50 w-56 rounded-panel border-ui border-hairline bg-surface shadow-xl p-3 text-xs">
           <p class="text-primary font-medium">Clear all pin assignments?</p>
           <p class="mt-1 text-[11px] text-muted">
             You can undo this action with Ctrl+Z.
@@ -162,7 +162,7 @@
             <button
               type="button"
               onclick={() => (confirmClear = false)}
-              class="px-2.5 py-1 rounded border border-hairline text-muted hover:bg-elevated"
+              class="px-2.5 py-1 rounded-control border-ui border-hairline text-muted hover:bg-elevated"
             >
               Cancel
             </button>
@@ -172,7 +172,7 @@
                 confirmClear = false;
                 onClearAll();
               }}
-              class="px-2.5 py-1 rounded bg-danger hover:bg-danger-hover text-on-danger font-medium"
+              class="px-2.5 py-1 rounded-control bg-danger hover:bg-danger-hover text-on-danger font-medium"
             >
               Clear All
             </button>
@@ -187,17 +187,17 @@
       type="button"
       onclick={onFitView}
       title="Fit View (0)"
-      class="hidden sm:inline-flex p-1.5 rounded-md hover:bg-elevated text-primary"
+      class="hidden sm:inline-flex p-1.5 rounded-control hover:bg-elevated text-primary"
     >
-      <Maximize2 class="w-4 h-4" />
+      <Maximize2 class="size-ui" />
     </button>
     <button
       type="button"
       onclick={onRotate}
       title={`Rotate package (${rotation} deg)`}
-      class="hidden sm:inline-flex p-1.5 rounded-md hover:bg-elevated text-primary"
+      class="hidden sm:inline-flex p-1.5 rounded-control hover:bg-elevated text-primary"
     >
-      <RotateCw class="w-4 h-4" />
+      <RotateCw class="size-ui" />
     </button>
 
     <div class="w-px h-5 bg-elevated mx-1"></div>
@@ -205,18 +205,18 @@
     <button
       type="button"
       onclick={onShare}
-      class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-hairline hover:bg-elevated text-xs font-medium text-primary whitespace-nowrap"
+      class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-control border-ui border-hairline hover:bg-elevated text-xs font-medium text-primary whitespace-nowrap"
     >
-      <Share2 class="w-3.5 h-3.5" />
+      <Share2 class="size-ui-md" />
       <span class="hidden md:inline">Share</span>
     </button>
 
     <button
       type="button"
       onclick={onOpenExport}
-      class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-action hover:bg-action-hover text-xs font-semibold text-on-action whitespace-nowrap transition-colors"
+      class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-control bg-action hover:bg-action-hover text-xs font-semibold text-on-action whitespace-nowrap transition-colors"
     >
-      <Download class="w-3.5 h-3.5" />
+      <Download class="size-ui-md" />
       <span>Export</span>
     </button>
 

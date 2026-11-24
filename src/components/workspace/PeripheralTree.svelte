@@ -147,9 +147,9 @@
   }
 </script>
 
-<aside class="h-full flex flex-col bg-surface border-r border-hairline select-none overflow-hidden">
+<aside class="h-full flex flex-col bg-surface border-ui-r border-hairline select-none overflow-hidden">
   <!-- Header + Filter -->
-  <div class="p-2.5 border-b border-hairline space-y-2">
+  <div class="p-2.5 border-ui-b border-hairline space-y-2">
     <div class="flex items-center justify-between">
       <h2 class="text-xs font-semibold text-primary">Peripherals</h2>
       <span class="font-mono-tabular text-[11px] text-muted">
@@ -157,12 +157,12 @@
       </span>
     </div>
     <div class="relative flex items-center">
-      <Search class="w-3.5 h-3.5 text-faint absolute left-2.5 pointer-events-none" />
+      <Search class="size-ui-md text-faint absolute left-2.5 pointer-events-none" />
       <input
         bind:value={filterText}
         type="text"
         placeholder="Filter SPI, TIM, USART, PWM, PIO..."
-        class="w-full pl-8 pr-2.5 py-1.5 rounded-md bg-elevated border border-hairline text-xs text-primary placeholder:text-faint focus:outline-none focus:border-hint"
+        class="w-full pl-8 pr-2.5 py-1.5 rounded-control bg-elevated border-ui border-hairline text-xs text-primary placeholder:text-faint focus:outline-none focus:border-hint"
       />
     </div>
   </div>
@@ -171,7 +171,7 @@
   <div class="flex-1 overflow-y-auto py-1">
     {#each grouped as cat (cat.id)}
       {@const isCatOpen = filterText.trim().length > 0 || openCategories[cat.id]}
-      <div class="border-b border-hairline last:border-b-0">
+      <div class="border-ui-b border-hairline last:border-b-0">
         <button
           type="button"
           onclick={() => toggleCategory(cat.id)}
@@ -179,9 +179,9 @@
         >
           <span class="flex items-center gap-1.5">
             {#if isCatOpen}
-              <ChevronDown class="w-3.5 h-3.5 text-faint" />
+              <ChevronDown class="size-ui-md text-faint" />
             {:else}
-              <ChevronRight class="w-3.5 h-3.5 text-faint" />
+              <ChevronRight class="size-ui-md text-faint" />
             {/if}
             <span>{cat.label}</span>
           </span>
@@ -211,9 +211,9 @@
                 >
                   <span class="flex items-center gap-2 min-w-0">
                     {#if isOpen}
-                      <ChevronDown class="w-3 h-3 text-faint shrink-0" />
+                      <ChevronDown class="size-ui-sm text-faint shrink-0" />
                     {:else}
-                      <ChevronRight class="w-3 h-3 text-faint shrink-0" />
+                      <ChevronRight class="size-ui-sm text-faint shrink-0" />
                     {/if}
                     <span class="font-mono font-medium truncate">{pName}</span>
                   </span>
@@ -231,12 +231,12 @@
                         {statusLabel(pStatus)}
                       </span>
                     {/if}
-                    <span class={`w-2 h-2 rounded-full ${statusColor(pStatus)}`}></span>
+                    <span class={`size-selector-dot rounded-pill ${statusColor(pStatus)}`}></span>
                   </span>
                 </button>
 
                 {#if isOpen}
-                  <div class="px-4 py-2 bg-subtle border-y border-hairline space-y-2">
+                  <div class="px-4 py-2 bg-subtle border-ui-y border-hairline space-y-2">
                     {#if (peripheralTags.get(pName) ?? []).length > 0}
                       <div class="flex items-center gap-1.5">
                         <span class="text-[10px] text-faint">Pins:</span>
@@ -258,7 +258,7 @@
                           value={activeMode}
                           onchange={(e) =>
                             onModeChange(pName, (e.currentTarget as HTMLSelectElement).value)}
-                          class="w-full px-2 py-1.5 rounded bg-surface border border-hairline text-xs text-primary focus:outline-none focus:border-hint"
+                          class="w-full px-2 py-1.5 rounded-control bg-surface border-ui border-hairline text-xs text-primary focus:outline-none focus:border-hint"
                         >
                           {#each modes as m (m.id)}
                             <option value={m.id}>{m.label}</option>
@@ -283,7 +283,7 @@
                           value={activeRemaps[pName] ?? 0}
                           onchange={(e) =>
                             onRemapChange(pName, Number((e.currentTarget as HTMLSelectElement).value))}
-                          class="w-full px-2 py-1.5 rounded bg-surface border border-hairline text-xs text-primary focus:outline-none focus:border-hint"
+                          class="w-full px-2 py-1.5 rounded-control bg-surface border-ui border-hairline text-xs text-primary focus:outline-none focus:border-hint"
                         >
                           {#each pInfo.remaps as option (option.id)}
                             <option value={option.id}>{option.name}</option>
@@ -310,7 +310,7 @@
                               type="checkbox"
                               checked={Boolean(assigned)}
                               onchange={() => onToggleSignal(pName, sig)}
-                              class="rounded border-strong text-hint focus:ring-hint"
+                              class="rounded-control border-strong text-hint focus:ring-hint"
                             />
                             <span class="font-mono truncate">{sig}</span>
                           </label>

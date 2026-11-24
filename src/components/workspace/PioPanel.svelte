@@ -84,7 +84,7 @@
       {:else}
         <div class="flex flex-wrap gap-1.5">
           {#each windows as window (window)}
-            <span class="px-2 py-1 rounded border border-hairline bg-subtle font-mono text-primary">
+            <span class="px-2 py-1 rounded-control border-ui border-hairline bg-subtle font-mono text-primary">
               {window}
             </span>
           {/each}
@@ -96,7 +96,7 @@
     </section>
 
     {#if baseDiagnostics.length > 0}
-      <section class="rounded-lg border border-pin-conflict bg-danger-soft p-2.5 space-y-1">
+      <section class="rounded-panel border-ui border-pin-conflict bg-danger-soft p-2.5 space-y-1">
         <h3 class="text-[11px] font-semibold text-danger">GPIOBASE errors</h3>
         {#each baseDiagnostics as diag (diag.id)}
           <p class="text-[11px] text-primary leading-relaxed">{diag.message}</p>
@@ -116,7 +116,7 @@
         <div class="space-y-1">
           {#each bindings as item (item.pos)}
             <div
-              class={`rounded border p-2 flex items-center justify-between gap-2 ${
+              class={`rounded-control border-ui p-2 flex items-center justify-between gap-2 ${
                 item.inWindow ? 'border-hairline bg-subtle' : 'border-pin-conflict bg-danger-soft'
               }`}
             >
@@ -137,9 +137,9 @@
                 type="button"
                 onclick={() => onSetAssignment(item.pos, null)}
                 title="Clear PIO binding"
-                class="p-1 rounded hover:bg-elevated text-faint hover:text-danger shrink-0"
+                class="p-1 rounded-control hover:bg-elevated text-faint hover:text-danger shrink-0"
               >
-                <Trash2 class="w-3 h-3" />
+                <Trash2 class="size-ui-sm" />
               </button>
             </div>
           {/each}
@@ -147,7 +147,7 @@
       {/if}
     </section>
 
-    <section class="rounded-lg border border-hairline bg-subtle p-2.5 space-y-2">
+    <section class="rounded-panel border-ui border-hairline bg-subtle p-2.5 space-y-2">
       <h3 class="text-[11px] font-semibold text-muted uppercase tracking-wide">
         Allocate state machine
       </h3>
@@ -156,7 +156,7 @@
           <span class="block text-[11px] text-muted">Pin</span>
           <select
             bind:value={selectedPos}
-            class="w-full px-1.5 py-1 rounded border border-hairline bg-surface text-primary font-mono text-[11px] focus:outline-none focus:border-hint"
+            class="w-full px-1.5 py-1 rounded-control border-ui border-hairline bg-surface text-primary font-mono text-[11px] focus:outline-none focus:border-hint"
           >
             {#each gpioPins as pin (pin.pos)}
               <option value={pin.pos}>{pin.name} ({pin.pos})</option>
@@ -167,7 +167,7 @@
           <span class="block text-[11px] text-muted">Instance</span>
           <select
             bind:value={selectedInstance}
-            class="w-full px-1.5 py-1 rounded border border-hairline bg-surface text-primary font-mono text-[11px] focus:outline-none focus:border-hint"
+            class="w-full px-1.5 py-1 rounded-control border-ui border-hairline bg-surface text-primary font-mono text-[11px] focus:outline-none focus:border-hint"
           >
             {#each instances as instance (instance)}
               <option value={instance}>{instance}</option>
@@ -178,7 +178,7 @@
           <span class="block text-[11px] text-muted">State machine</span>
           <select
             bind:value={selectedSm}
-            class="w-full px-1.5 py-1 rounded border border-hairline bg-surface text-primary font-mono text-[11px] focus:outline-none focus:border-hint"
+            class="w-full px-1.5 py-1 rounded-control border-ui border-hairline bg-surface text-primary font-mono text-[11px] focus:outline-none focus:border-hint"
           >
             {#each Array.from({ length: pio.stateMachinesPerInstance }, (_, i) => i) as sm (sm)}
               <option value={sm}>SM{sm}</option>
@@ -191,7 +191,7 @@
             bind:value={selectedRole}
             type="text"
             placeholder="TX"
-            class="w-full px-1.5 py-1 rounded border border-hairline bg-surface text-primary font-mono text-[11px] focus:outline-none focus:border-hint"
+            class="w-full px-1.5 py-1 rounded-control border-ui border-hairline bg-surface text-primary font-mono text-[11px] focus:outline-none focus:border-hint"
           />
         </label>
       </div>
@@ -199,9 +199,9 @@
         type="button"
         onclick={bindPin}
         disabled={!selectedPos}
-        class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-action hover:bg-action-hover text-on-action font-medium disabled:opacity-40"
+        class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-control bg-action hover:bg-action-hover text-on-action font-medium disabled:opacity-40"
       >
-        <Plus class="w-3 h-3" />
+        <Plus class="size-ui-sm" />
         Bind pin
       </button>
     </section>

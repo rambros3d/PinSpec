@@ -1,3 +1,14 @@
+<script module lang="ts">
+  // Module-scoped counter: unique SVG defs ids per instance without reading
+  // reactive props during initialization.
+  let surfaceCounter = 0;
+
+  function nextSurfaceId(): string {
+    surfaceCounter += 1;
+    return `ic-perimeter-${surfaceCounter}`;
+  }
+</script>
+
 <script lang="ts">
   import {
     formatMuxLabel,
@@ -42,7 +53,7 @@
     onPinHover,
   }: Props = $props();
 
-  const surfaceId = `ic-${chip.id.toLowerCase()}-${Math.random().toString(36).slice(2, 8)}`;
+  const surfaceId = nextSurfaceId();
 
   type Side = 'left' | 'bottom' | 'right' | 'top';
 

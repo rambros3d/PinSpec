@@ -230,14 +230,14 @@
 
 <div class="min-h-screen flex flex-col bg-canvas text-primary">
   <!-- Clean 3-Zone Top Navigation Bar -->
-  <header class="sticky top-0 z-30 border-b border-hairline bg-surface-alpha backdrop-blur-xs">
+  <header class="sticky top-0 z-30 border-ui-b border-hairline bg-surface-alpha backdrop-blur-xs">
     <div class="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between gap-8">
       <!-- Zone 1: Geometric IC Logo + Wordmark -->
       <a
         href="#/"
         class="flex items-center gap-2 text-base font-bold tracking-tight text-primary whitespace-nowrap shrink-0"
       >
-        <svg class="w-5 h-5 text-hint" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <svg class="size-ui-lg text-hint" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
           <rect x="6" y="6" width="12" height="12" rx="2" />
           <rect x="9.5" y="9.5" width="5" height="5" rx="0.5" />
           <path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4" />
@@ -271,7 +271,7 @@
           type="button"
           onclick={() => openHeroInWorkspace(demoState)}
           disabled={!heroChip}
-          class="px-4 py-2 rounded-lg bg-action hover:bg-action-hover text-xs font-semibold text-on-action whitespace-nowrap shrink-0 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          class="px-4 py-2 rounded-panel bg-action hover:bg-action-hover text-xs font-semibold text-on-action whitespace-nowrap shrink-0 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Workspace
         </button>
@@ -280,16 +280,20 @@
   </header>
 
   <!-- Split Hero Section with Faint SVG Dot-Grid -->
-  <section class="relative border-b border-hairline bg-dot-grid">
+  <section class="relative border-ui-b border-hairline bg-dot-grid">
     <div class="max-w-7xl mx-auto px-6 py-12 lg:py-16 grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
       <!-- Left Column -->
       <div class="lg:col-span-6 space-y-6 pt-2">
-        <div class="text-xs font-mono-tabular text-muted">
-          {#if catalogStore.meta}
-            {catalogStore.meta.chipCount.toLocaleString()} MCUs indexed · {catalogStore.meta.families.length} families · Static & offline-ready
-          {:else}
-            STM32, CH32 & RP pinout planning · Open upstream datasets
-          {/if}
+        <div class="flex flex-wrap items-center gap-2 text-xs font-mono-tabular text-muted">
+          <span>
+            {#if catalogStore.meta}
+              {catalogStore.meta.chipCount.toLocaleString()} MCUs indexed · {catalogStore.meta.families.length} families
+            {:else}
+              STM32, CH32 & RP pinout planning
+            {/if}
+          </span>
+          <span class="px-1.5 py-0.5 rounded-pill bg-brand-accent text-on-accent">Static / offline-ready</span>
+          <span class="px-1.5 py-0.5 rounded-pill bg-brand-secondary text-on-secondary">Open datasets</span>
         </div>
 
         <h1 class="text-3xl sm:text-4xl lg:text-[2.75rem] font-bold tracking-tight leading-[1.12] text-primary [text-wrap:balance]">
@@ -297,7 +301,7 @@
         </h1>
 
         <p class="text-base text-muted leading-relaxed max-w-xl">
-          Zero-install CubeMX-style pin allocation backed by ST open pin geometry, Embassy peripheral tables, WCH CH32 data and Raspberry Pi RP data. Check signal, remap, PIO and DMA conflicts in real time, move pins with <kbd class="px-1.5 py-0.5 text-xs font-mono rounded border border-strong bg-surface">Ctrl+Click</kbd>, and export Rust, C headers, CSV, or shareable URLs.
+          Zero-install CubeMX-style pin allocation backed by ST open pin geometry, Embassy peripheral tables, WCH CH32 data and Raspberry Pi RP data. Check signal, remap, PIO and DMA conflicts in real time, move pins with <kbd class="px-1.5 py-0.5 text-xs font-mono rounded-control border-ui border-strong bg-surface">Ctrl+Click</kbd>, and export Rust, C headers, CSV, or shareable URLs.
         </p>
 
         <!-- Instant Fuzzy MCU Search -->
@@ -308,9 +312,9 @@
           <button
             type="button"
             onclick={() => fileInputEl?.click()}
-            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-strong bg-surface hover:border-hint text-xs font-medium text-primary transition-colors whitespace-nowrap"
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-panel border-ui border-strong bg-surface hover:border-hint text-xs font-medium text-primary transition-colors whitespace-nowrap"
           >
-            <Upload class="w-3.5 h-3.5 text-hint" />
+            <Upload class="size-ui-md text-hint" />
             <span>Import pinout.json</span>
           </button>
           <input
@@ -341,23 +345,23 @@
             onOpenWorkspace={openHeroInWorkspace}
           />
         {:else if heroLoading}
-          <div class="rounded-xl border border-hairline bg-surface min-h-[380px] flex items-center justify-center">
+          <div class="rounded-panel border-ui border-hairline bg-surface min-h-[380px] flex items-center justify-center">
             <div class="flex items-center gap-2 text-sm text-muted">
-              <RefreshCw class="w-4 h-4 animate-spin" />
+              <RefreshCw class="size-ui animate-spin" />
               <span>Loading hero chip data from the generated catalog...</span>
             </div>
           </div>
         {:else}
-          <div class="rounded-xl border border-hairline bg-surface min-h-[380px] flex flex-col items-center justify-center gap-3 p-6 text-center">
-            <AlertCircle class="w-5 h-5 text-danger" />
+          <div class="rounded-panel border-ui border-hairline bg-surface min-h-[380px] flex flex-col items-center justify-center gap-3 p-6 text-center">
+            <AlertCircle class="size-ui-lg text-danger" />
             <p class="text-sm font-medium text-primary">Hero chip data unavailable</p>
             <p class="text-xs text-muted max-w-md">{heroError ?? 'The generated chip shard could not be loaded.'}</p>
             <button
               type="button"
               onclick={() => void loadHero()}
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-strong bg-surface hover:border-hint text-xs font-medium text-primary transition-colors"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-panel border-ui border-strong bg-surface hover:border-hint text-xs font-medium text-primary transition-colors"
             >
-              <RefreshCw class="w-3.5 h-3.5" />
+              <RefreshCw class="size-ui-md" />
               Retry
             </button>
           </div>
@@ -387,8 +391,8 @@
       </div>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="rounded-lg border border-hairline bg-surface p-5 space-y-2.5">
-          <Cpu class="w-5 h-5 text-hint" />
+        <div class="rounded-panel border-ui border-hairline bg-surface p-5 space-y-2.5">
+          <Cpu class="size-ui-lg text-hint" />
           <h3 class="text-sm font-semibold text-primary">
             Parametric Perimeter & BGA Renderers
           </h3>
@@ -397,8 +401,8 @@
           </p>
         </div>
 
-        <div class="rounded-lg border border-hairline bg-surface p-5 space-y-2.5">
-          <ArrowLeftRight class="w-5 h-5 text-pin-success" />
+        <div class="rounded-panel border-ui border-hairline bg-surface p-5 space-y-2.5">
+          <ArrowLeftRight class="size-ui-lg text-brand-accent" />
           <h3 class="text-sm font-semibold text-primary">
             Mode Allocation & Ctrl+Click Remapping
           </h3>
@@ -407,8 +411,8 @@
           </p>
         </div>
 
-        <div class="rounded-lg border border-hairline bg-surface p-5 space-y-2.5">
-          <FileCode2 class="w-5 h-5 text-pin-power" />
+        <div class="rounded-panel border-ui border-hairline bg-surface p-5 space-y-2.5">
+          <FileCode2 class="size-ui-lg text-brand-secondary" />
           <h3 class="text-sm font-semibold text-primary">
             Embassy Rust, C Header, CSV & URL Links
           </h3>
@@ -417,8 +421,8 @@
           </p>
         </div>
 
-        <div class="rounded-lg border border-hairline bg-surface p-5 space-y-2.5">
-          <RefreshCw class="w-5 h-5 text-hint" />
+        <div class="rounded-panel border-ui border-hairline bg-surface p-5 space-y-2.5">
+          <RefreshCw class="size-ui-lg text-hint" />
           <h3 class="text-sm font-semibold text-primary">
             Automated Weekly Open-Data Sync
           </h3>
@@ -442,12 +446,12 @@
         </div>
 
         <div class="flex items-center gap-2">
-          <div class="flex items-center gap-1 p-1 rounded-lg bg-elevated border border-hairline">
+          <div class="flex items-center gap-1 p-1 rounded-panel bg-elevated border-ui border-hairline">
             {#each exportTabs as tab (tab.id)}
               <button
                 type="button"
                 onclick={() => (exportTab = tab.id)}
-                class={`px-3 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-colors ${
+                class={`px-3 py-1 rounded-control text-xs font-medium whitespace-nowrap transition-colors ${
                   exportTab === tab.id
                     ? 'bg-surface text-primary shadow-xs'
                     : 'text-muted hover:text-primary'
@@ -461,35 +465,35 @@
           <button
             type="button"
             onclick={copyPreview}
-            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-hairline bg-surface hover:border-hint text-xs font-medium text-primary whitespace-nowrap"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-panel border-ui border-hairline bg-surface hover:border-hint text-xs font-medium text-primary whitespace-nowrap"
           >
             {#if copiedExport}
-              <Check class="w-3.5 h-3.5 text-pin-success" />
+              <Check class="size-ui-md text-pin-success" />
               <span>Copied</span>
             {:else}
-              <Copy class="w-3.5 h-3.5" />
+              <Copy class="size-ui-md" />
               <span>Copy</span>
             {/if}
           </button>
           <button
             type="button"
             onclick={downloadPreview}
-            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-action hover:bg-action-hover text-xs font-semibold text-on-action whitespace-nowrap"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-panel bg-action hover:bg-action-hover text-xs font-semibold text-on-action whitespace-nowrap"
           >
-            <Download class="w-3.5 h-3.5" />
+            <Download class="size-ui-md" />
             <span>Download</span>
           </button>
         </div>
       </div>
 
-      <div class="rounded-xl border border-hairline bg-surface overflow-hidden">
+      <div class="rounded-panel border-ui border-hairline bg-surface overflow-hidden">
         <pre class="p-5 font-mono text-xs leading-relaxed text-primary overflow-x-auto max-h-[340px]">{exportPreview}</pre>
       </div>
     </section>
   </main>
 
   <!-- Technical Attribution Footer -->
-  <footer id="provenance" class="border-t border-hairline bg-surface">
+  <footer id="provenance" class="border-ui-t border-hairline bg-surface">
     <div class="max-w-7xl mx-auto px-6 py-6 flex flex-col lg:flex-row items-start justify-between gap-6 text-xs text-muted">
       <div class="font-mono-tabular space-y-1">
         <div class="font-semibold text-primary">Per-vendor chip counts and source revisions</div>

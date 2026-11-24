@@ -73,15 +73,15 @@
   onclick={onClose}
 >
   <div
-    class="w-full max-w-2xl rounded-xl border border-hairline bg-surface shadow-2xl overflow-hidden flex flex-col max-h-[78vh]"
+    class="w-full max-w-2xl rounded-panel border-ui border-hairline bg-surface shadow-2xl overflow-hidden flex flex-col max-h-[78vh]"
     onclick={(e) => e.stopPropagation()}
     role="dialog"
     tabindex="-1"
     aria-label="Switch MCU"
   >
     <!-- Search bar -->
-    <div class="flex items-center gap-2.5 px-4 py-3 border-b border-hairline">
-      <Search class="w-4 h-4 text-faint shrink-0" />
+    <div class="flex items-center gap-2.5 px-4 py-3 border-ui-b border-hairline">
+      <Search class="size-ui text-faint shrink-0" />
       <input
         bind:this={inputEl}
         bind:value={query}
@@ -93,21 +93,21 @@
       <button
         type="button"
         onclick={onClose}
-        class="p-1 rounded hover:bg-elevated text-muted"
+        class="p-1 rounded-control hover:bg-elevated text-muted"
         title="Close (Esc)"
       >
-        <X class="w-4 h-4" />
+        <X class="size-ui" />
       </button>
     </div>
 
     <!-- Filter Controls -->
-    <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-2 border-b border-hairline bg-subtle text-xs">
+    <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-2 border-ui-b border-hairline bg-subtle text-xs">
       <div class="flex flex-wrap items-center gap-1">
         {#each vendorTabs as tab (tab.id)}
           <button
             type="button"
             onclick={() => (vendorFilter = tab.id)}
-            class={`px-2 py-1 rounded font-mono whitespace-nowrap transition-colors ${
+            class={`px-2 py-1 rounded-control font-mono whitespace-nowrap transition-colors ${
               vendorFilter === tab.id
                 ? 'bg-action text-on-action font-medium'
                 : 'bg-elevated text-primary hover:bg-elevated'
@@ -121,7 +121,7 @@
           Family
           <select
             bind:value={familyFilter}
-            class="px-1.5 py-1 rounded bg-elevated border border-hairline text-xs text-primary focus:outline-none focus:border-hint"
+            class="px-1.5 py-1 rounded-control bg-elevated border-ui border-hairline text-xs text-primary focus:outline-none focus:border-hint"
           >
             <option value="">All</option>
             {#each familyOptions as fam (fam)}
@@ -133,7 +133,7 @@
           Package
           <select
             bind:value={pkgFilter}
-            class="px-1.5 py-1 rounded bg-elevated border border-hairline text-xs text-primary focus:outline-none focus:border-hint"
+            class="px-1.5 py-1 rounded-control bg-elevated border-ui border-hairline text-xs text-primary focus:outline-none focus:border-hint"
           >
             <option value="">All</option>
             {#each pkgOptions as pkg (pkg)}
@@ -173,13 +173,13 @@
             }`}
           >
             <div class="flex items-center gap-2.5 min-w-0">
-              <Cpu class="w-4 h-4 text-faint shrink-0" />
+              <Cpu class="size-ui text-faint shrink-0" />
               <div class="min-w-0">
                 <div class="flex items-center gap-2">
                   <span class="font-mono font-semibold text-sm text-primary">
                     {entry.id}
                   </span>
-                  <span class="px-1 py-px rounded border border-hairline bg-subtle font-mono text-[9px] uppercase text-muted">
+                  <span class="px-1 py-px rounded-control border-ui border-hairline bg-subtle font-mono text-[9px] uppercase text-muted">
                     {entry.vendor ?? 'stm32'}
                   </span>
                   {#if isCurrent}

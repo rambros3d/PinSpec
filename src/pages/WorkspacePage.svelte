@@ -147,9 +147,9 @@
 
   <!-- Dismissible Error Banner (e.g. malformed #/s/... link) -->
   {#if workspaceStore.bannerError}
-    <div class="flex items-center justify-between gap-3 px-4 py-2 bg-danger-soft border-b border-danger text-xs text-danger shrink-0">
+    <div class="flex items-center justify-between gap-3 px-4 py-2 bg-danger-soft border-ui-b border-danger text-xs text-danger shrink-0">
       <div class="flex items-center gap-2">
-        <AlertCircle class="w-4 h-4 shrink-0" />
+        <AlertCircle class="size-ui shrink-0" />
         <span>{workspaceStore.bannerError}</span>
       </div>
       <div class="flex items-center gap-2">
@@ -163,9 +163,9 @@
         <button
           type="button"
           onclick={() => workspaceStore.dismissBanner()}
-          class="p-0.5 rounded hover:bg-danger-soft-strong"
+          class="p-0.5 rounded-control hover:bg-danger-soft-strong"
         >
-          <X class="w-3.5 h-3.5" />
+          <X class="size-ui-md" />
         </button>
       </div>
     </div>
@@ -175,7 +175,7 @@
   {#if workspaceStore.loading}
     <div class="flex-1 flex items-center justify-center">
       <div class="text-center space-y-2">
-        <div class="w-8 h-8 border-2 border-hint border-t-transparent rounded-full animate-spin mx-auto"></div>
+        <div class="w-8 h-8 border-ui-strong border-hint border-t-transparent rounded-pill animate-spin mx-auto"></div>
         <p class="text-xs font-mono text-muted">
           Loading {mcuId ?? 'shared pinout'}...
         </p>
@@ -183,7 +183,7 @@
     </div>
   {:else if workspaceStore.loadError || !workspaceStore.chip || !workspaceStore.report}
     <div class="flex-1 flex items-center justify-center p-6">
-      <div class="max-w-md w-full rounded-xl border border-hairline bg-surface p-6 text-center space-y-3">
+      <div class="max-w-md w-full rounded-panel border-ui border-hairline bg-surface p-6 text-center space-y-3">
         <AlertCircle class="w-8 h-8 text-danger mx-auto" />
         <h2 class="text-base font-semibold">Unable to Open MCU</h2>
         <p class="text-xs text-muted">
@@ -193,14 +193,14 @@
           <button
             type="button"
             onclick={() => router.navigateHome()}
-            class="px-3.5 py-2 rounded-lg border border-hairline text-xs font-medium hover:bg-elevated"
+            class="px-3.5 py-2 rounded-panel border-ui border-hairline text-xs font-medium hover:bg-elevated"
           >
             Back to Home
           </button>
           <button
             type="button"
             onclick={() => (showSwitcher = true)}
-            class="px-3.5 py-2 rounded-lg bg-action hover:bg-action-hover text-on-action text-xs font-semibold"
+            class="px-3.5 py-2 rounded-panel bg-action hover:bg-action-hover text-on-action text-xs font-semibold"
           >
             Choose Another MCU
           </button>
@@ -241,18 +241,18 @@
           type="button"
           onclick={() => (leftCollapsed = !leftCollapsed)}
           title={leftCollapsed ? 'Show Peripherals' : 'Hide Peripherals'}
-          class="hidden md:flex absolute top-3 left-3 z-20 p-1.5 rounded-md border border-hairline bg-surface-alpha text-muted hover:border-hint shadow-xs"
+          class="hidden md:flex absolute top-3 left-3 z-20 p-1.5 rounded-control border-ui border-hairline bg-surface-alpha text-muted hover:border-hint shadow-xs"
         >
-          <PanelLeft class="w-3.5 h-3.5" />
+          <PanelLeft class="size-ui-md" />
         </button>
 
         <button
           type="button"
           onclick={() => (rightCollapsed = !rightCollapsed)}
           title={rightCollapsed ? 'Show Summary Drawer' : 'Hide Summary Drawer'}
-          class="hidden lg:flex absolute top-14 right-3 z-20 p-1.5 rounded-md border border-hairline bg-surface-alpha text-muted hover:border-hint shadow-xs"
+          class="hidden lg:flex absolute top-14 right-3 z-20 p-1.5 rounded-control border-ui border-hairline bg-surface-alpha text-muted hover:border-hint shadow-xs"
         >
-          <PanelRight class="w-3.5 h-3.5" />
+          <PanelRight class="size-ui-md" />
         </button>
 
         <PackageCanvas
@@ -311,7 +311,7 @@
   <!-- Toast Notification -->
   {#if workspaceStore.toast}
     <div
-      class={`fixed bottom-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-lg border text-xs font-medium shadow-lg ${
+      class={`fixed bottom-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-panel border-ui text-xs font-medium shadow-lg ${
         workspaceStore.toast.tone === 'success'
           ? 'bg-toast-success border-pin-success text-primary'
           : workspaceStore.toast.tone === 'warning'

@@ -558,7 +558,7 @@
   {#if workspaceStore.toast}
     <div
       role="status"
-      class={`workspace-toast alert fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-2 text-xs font-medium shadow-lg ${
+      class={`workspace-toast alert fixed bottom-14 left-1/2 -translate-x-1/2 z-50 flex flex-row items-center gap-2 px-4 py-2 text-xs font-medium shadow-lg ${
         workspaceStore.toast.tone === 'success'
           ? 'alert-success'
           : workspaceStore.toast.tone === 'warning'

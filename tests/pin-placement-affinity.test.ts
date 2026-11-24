@@ -571,12 +571,14 @@ describe('placement overlay interaction refresh', () => {
     expect(overlay).toContain('ringFromEvent(event)');
   });
 
-  it('keeps the top-centre toggle separate from the top-right view HUD', () => {
+  it('keeps the bottom-centre toggle separate from the horizontal top-right view HUD', () => {
     const canvas = readCanvas();
-    expect(canvas).toContain('absolute top-3 left-1/2 -translate-x-1/2 z-20 flex flex-col');
+    expect(canvas).toContain('absolute bottom-3 left-1/2 -translate-x-1/2 z-20 pointer-events-none');
+    expect(canvas).toContain('card card-border pointer-events-auto flex flex-row items-center gap-1.5');
     expect(canvas).toContain('aria-pressed={placementSettings.overlayVisible}');
     expect(canvas).toContain('setPlacementOverlayVisible(next)');
     const hud = canvas.match(/Top-Right Canvas HUD Controls[\s\S]*?<!-- Bottom-Left/)?.[0] ?? '';
+    expect(hud).toContain('flex flex-row items-center gap-1');
     expect(hud).not.toContain('Placement');
     expect(readOverlay()).toContain('class="absolute inset-0 z-10 pointer-events-none"');
   });

@@ -553,8 +553,8 @@
     />
   {/if}
 
-  <!-- Top-centre controls: placement toggle stacked with the remap banner -->
-  <div class="absolute top-3 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 pointer-events-none">
+  <!-- Bottom-centre placement toggle -->
+  <div class="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
     <button
       type="button"
       onclick={() => {
@@ -564,31 +564,32 @@
       }}
       title={placementSettings.overlayVisible ? 'Hide placement overlay' : 'Show placement overlay'}
       aria-pressed={placementSettings.overlayVisible}
-      class="card card-border pointer-events-auto flex items-center gap-1.5 px-2.5 py-1 bg-base-100/95 text-xs shadow-sm"
+      class="card card-border pointer-events-auto flex flex-row items-center gap-1.5 px-2.5 py-1 bg-base-100/95 text-xs shadow-sm"
     >
       <Crosshair class="size-3.5" />
       <span class="font-medium">Placement</span>
     </button>
-
-    {#if remapSourcePos}
-      <div role="status" class="alert alert-info pointer-events-auto flex items-center gap-3 px-3.5 py-2 text-xs shadow-lg">
-        <span class="font-mono font-medium">
-          Remap Mode: click any pulsing cyan pin to move {remapSourceLabel}
-        </span>
-        <button
-          type="button"
-          onclick={onCancelRemap}
-          class="btn btn-xs btn-primary whitespace-nowrap"
-        >
-          <X class="size-3" />
-          <span>Cancel (Esc)</span>
-        </button>
-      </div>
-    {/if}
   </div>
 
+  <!-- Top-centre remap banner -->
+  {#if remapSourcePos}
+    <div role="status" class="alert alert-info absolute top-3 left-1/2 -translate-x-1/2 z-20 pointer-events-auto flex flex-row items-center gap-3 px-3.5 py-2 text-xs shadow-lg">
+      <span class="font-mono font-medium">
+        Remap Mode: click any pulsing cyan pin to move {remapSourceLabel}
+      </span>
+      <button
+        type="button"
+        onclick={onCancelRemap}
+        class="btn btn-xs btn-primary whitespace-nowrap"
+      >
+        <X class="size-3" />
+        <span>Cancel (Esc)</span>
+      </button>
+    </div>
+  {/if}
+
   <!-- Top-Right Canvas HUD Controls -->
-  <div class="card card-border absolute top-3 right-3 z-20 flex items-center gap-1 p-1 bg-base-100/95 shadow-sm text-xs">
+  <div class="card card-border absolute top-3 right-3 z-20 flex flex-row items-center gap-1 p-1 bg-base-100/95 shadow-sm text-xs">
     <button
       type="button"
       onclick={() => zoomBy(1 / 1.2)}

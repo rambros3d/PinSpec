@@ -1,0 +1,113 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  --color-canvas-dark: #0b0e14;
+  --color-surface-dark: #121722;
+  --color-elevated-dark: #171e2c;
+  --color-border-dark: #1f2937;
+  --color-text-dark: #e5e7eb;
+  --color-muted-dark: #94a3b8;
+
+  --color-canvas-light: #f8fafc;
+  --color-surface-light: #ffffff;
+  --color-elevated-light: #f1f5f9;
+  --color-border-light: #e2e8f0;
+  --color-text-light: #0f172a;
+  --color-muted-light: #475569;
+
+  --color-pin-unused: #475569;
+  --color-pin-power: #eab308;
+  --color-pin-assigned: #10b981;
+  --color-pin-partial: #f97316;
+  --color-pin-conflict: #ef4444;
+  --color-pin-remap: #38bdf8;
+}
+
+:root {
+  color-scheme: light;
+  --bg-canvas: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-elevated: #f1f5f9;
+  --border-hairline: #e2e8f0;
+  --text-primary: #0f172a;
+  --text-muted: #475569;
+  --dot-grid: rgba(15, 23, 42, 0.08);
+}
+
+.dark {
+  color-scheme: dark;
+  --bg-canvas: #0b0e14;
+  --bg-surface: #121722;
+  --bg-elevated: #171e2c;
+  --border-hairline: #1f2937;
+  --text-primary: #e5e7eb;
+  --text-muted: #94a3b8;
+  --dot-grid: rgba(148, 163, 184, 0.12);
+}
+
+html,
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
+  margin: 0;
+  padding: 0;
+}
+
+.dark body {
+  letter-spacing: 0.005em;
+}
+
+.font-mono-tabular {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.bg-dot-grid {
+  background-image: radial-gradient(var(--dot-grid) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+@keyframes pin-pulse {
+  0%, 100% {
+    opacity: 1;
+    stroke-width: 2.2;
+  }
+  50% {
+    opacity: 0.45;
+    stroke-width: 3.4;
+  }
+}
+
+.animate-pin-pulse {
+  animation: pin-pulse 1.15s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-pin-pulse {
+    animation: none;
+  }
+}
+
+/* Subtle engineering scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.28);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.48);
+}

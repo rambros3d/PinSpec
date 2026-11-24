@@ -1,0 +1,6 @@
+{
+  "summary":  "Multi-vendor expansion plan extending PinCraft from STM32 to support WCH CH32 RISC-V and Raspberry Pi RP2040/RP235x microcontrollers across the static data pipeline, pure constraint solver, SVG package renderer, exporters, landing page, and CI/CD workflow.",
+  "updatedAt":  "2026-11-24T05:20:17.101610540Z",
+  "requestFeedback":  true,
+  "userFacing":  true
+}

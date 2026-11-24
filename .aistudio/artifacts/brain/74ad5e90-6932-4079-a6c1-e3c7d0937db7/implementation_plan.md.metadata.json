@@ -1,0 +1,6 @@
+{
+  "summary":  "Comprehensive architectural, UX, visual design, and data pipeline implementation plan for PinCraft — a Svelte 5 static STM32 pinout configurator powered by full upstream ST open pin data and Embassy stm32-data sync.",
+  "updatedAt":  "2026-11-23T12:37:47.968613869Z",
+  "requestFeedback":  true,
+  "userFacing":  true
+}

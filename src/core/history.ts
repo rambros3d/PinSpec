@@ -1,0 +1,179 @@
+import type { WorkspaceState } from './types';
+
+export function cloneWorkspaceState(state: WorkspaceState): WorkspaceState {
+  const assignments: WorkspaceState['assignments'] = {};
+  for (const [pos, a] of Object.entries(state.assignments)) {
+    assignments[pos] = { ...a };
+  }
+  const cloned: WorkspaceState = {
+    mcuId: state.mcuId,
+    assignments,
+    labels: { ...state.labels },
+    locked: { ...state.locked },
+    peripheralModes: { ...state.peripheralModes },
+  };
+  if (state.activeRemaps && Object.keys(state.activeRemaps).length > 0) {
+    cloned.activeRemaps = { ...state.activeRemaps };
+  }
+  if (state.pioAssignments && Object.keys(state.pioAssignments).length > 0) {
+    cloned.pioAssignments = {};
+    for (const [pos, pio] of Object.entries(state.pioAssignments)) {
+      cloned.pioAssignments[pos] = { ...pio };
+    }
+  }
+  return cloned;
+}
+
+export function statesEqual(a: WorkspaceState, b: WorkspaceState): boolean {
+  if (a.mcuId !== b.mcuId) return false;
+
+  const aKeys = Object.keys(a.assignments);
+  const bKeys = Object.keys(b.assignments);
+  if (aKeys.length !== bKeys.length) return false;
+  for (const k of aKeys) {
+    const av = a.assignments[k];
+    const bv = b.assignments[k];
+    if (
+      !bv ||
+      av.peripheral !== bv.peripheral ||
+      av.signal !== bv.signal ||
+      av.af !== bv.af ||
+      av.remapId !== bv.remapId ||
+      av.funcLabel !== bv.funcLabel ||
+      av.resourceId !== bv.resourceId
+    ) {
+      return false;
+    }
+  }
+
+  const alKeys = Object.keys(a.labels);
+  const blKeys = Object.keys(b.labels);
+  if (alKeys.length !== blKeys.length) return false;
+  for (const k of alKeys) {
+    if (a.labels[k] !== b.labels[k]) return false;
+  }
+
+  const akKeys = Object.keys(a.locked);
+  const bkKeys = Object.keys(b.locked);
+  if (akKeys.length !== bkKeys.length) return false;
+  for (const k of akKeys) {
+    if (Boolean(a.locked[k]) !== Boolean(b.locked[k])) return false;
+  }
+
+  const apKeys = Object.keys(a.peripheralModes);
+  const bpKeys = Object.keys(b.peripheralModes);
+  if (apKeys.length !== bpKeys.length) return false;
+  for (const k of apKeys) {
+    if (a.peripheralModes[k] !== b.peripheralModes[k]) return false;
+  }
+
+  const ar = a.activeRemaps ?? {};
+  const br = b.activeRemaps ?? {};
+  const arKeys = Object.keys(ar);
+  const brKeys = Object.keys(br);
+  if (arKeys.length !== brKeys.length) return false;
+  for (const k of arKeys) {
+    if (ar[k] !== br[k]) return false;
+  }
+
+  const apio = a.pioAssignments ?? {};
+  const bpio = b.pioAssignments ?? {};
+  const apioKeys = Object.keys(apio);
+  const bpioKeys = Object.keys(bpio);
+  if (apioKeys.length !== bpioKeys.length) return false;
+  for (const k of apioKeys) {
+    const av = apio[k];
+    const bv = bpio[k];
+    if (!bv || av.instance !== bv.instance || av.sm !== bv.sm || av.role !== bv.role) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+export class HistoryStack<T = WorkspaceState> {
+  private past: T[] = [];
+  private present: T;
+  private future: T[] = [];
+  private readonly maxDepth: number;
+  private readonly cloneFn: (value: T) => T;
+  private readonly equalsFn: (a: T, b: T) => boolean;
+
+  constructor(
+    initial: T,
+    options?: {
+      maxDepth?: number;
+      clone?: (value: T) => T;
+      equals?: (a: T, b: T) => boolean;
+    },
+  ) {
+    this.maxDepth = options?.maxDepth ?? 100;
+    this.cloneFn = options?.clone ?? ((v) => structuredClone(v));
+    this.equalsFn = options?.equals ?? ((a, b) => JSON.stringify(a) === JSON.stringify(b));
+    this.present = this.cloneFn(initial);
+  }
+
+  get current(): T {
+    return this.cloneFn(this.present);
+  }
+
+  get canUndo(): boolean {
+    return this.past.length > 0;
+  }
+
+  get canRedo(): boolean {
+    return this.future.length > 0;
+  }
+
+  get undoCount(): number {
+    return this.past.length;
+  }
+
+  get redoCount(): number {
+    return this.future.length;
+  }
+
+  push(next: T): boolean {
+    if (this.equalsFn(this.present, next)) {
+      return false;
+    }
+    this.past.push(this.cloneFn(this.present));
+    if (this.past.length > this.maxDepth) {
+      this.past.shift();
+    }
+    this.present = this.cloneFn(next);
+    this.future = [];
+    return true;
+  }
+
+  undo(): T | null {
+    if (this.past.length === 0) return null;
+    this.future.push(this.cloneFn(this.present));
+    const prev = this.past.pop()!;
+    this.present = this.cloneFn(prev);
+    return this.cloneFn(this.present);
+  }
+
+  redo(): T | null {
+    if (this.future.length === 0) return null;
+    this.past.push(this.cloneFn(this.present));
+    const next = this.future.pop()!;
+    this.present = this.cloneFn(next);
+    return this.cloneFn(this.present);
+  }
+
+  reset(initial: T): void {
+    this.past = [];
+    this.future = [];
+    this.present = this.cloneFn(initial);
+  }
+}
+
+export function createWorkspaceHistory(initial: WorkspaceState, maxDepth = 100): HistoryStack<WorkspaceState> {
+  return new HistoryStack<WorkspaceState>(initial, {
+    maxDepth,
+    clone: cloneWorkspaceState,
+    equals: statesEqual,
+  });
+}

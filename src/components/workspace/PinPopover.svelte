@@ -106,7 +106,13 @@
   });
 
   onMount(() => {
-    searchInput?.focus();
+    // Do not open the on-screen keyboard on touch devices when a pin is tapped.
+    if (
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(hover: hover) and (pointer: fine)').matches
+    ) {
+      searchInput?.focus();
+    }
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };

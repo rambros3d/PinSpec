@@ -56,6 +56,15 @@ No feature work starts from an ad-hoc list.
   and other self-contained changes do not need a new change. Use judgment:
   feature work and multi-file behavior changes still use OpenSpec.
 
+### Persistence of settings and configuration
+
+All user settings and configurations MUST be persisted. Every configurable
+feature must define its persisted representation in the same change that
+introduces it: workspace state, undo/redo history, `localStorage` sessions,
+share URLs, and project JSON. Session-only settings are not acceptable unless
+the user explicitly approves them. A configuration that disappears on reload
+or is absent from a shared link is incomplete.
+
 ### Writing style
 
 Use professional, clear wording in UI copy, documentation, commit messages,
@@ -534,6 +543,8 @@ Pages. Runtime fetches must use `import.meta.env.BASE_URL` through the pure
   Small self-contained edits are exempt.
 - Do not use marketing or promotional language in UI copy, documentation,
   or commit messages.
+- Do not introduce session-only settings or configurations; every user setting
+  must survive reload and be included in share links and project files.
 - Do not use emojis in any file.
 - Do not introduce a backend, server routes, API keys, or GenAI/Gemini calls.
 - Do not import Svelte or DOM APIs into `src/core/`.

@@ -228,7 +228,7 @@ describe('finder wiring', () => {
   it('opens from the toolbar and caps its dialog to the viewport', () => {
     const toolbar = readSource('src/components/workspace/TopToolbar.svelte');
     expect(toolbar).toContain('onOpenFinder');
-    expect(toolbar).toContain('Find compatible MCU');
+    expect(toolbar).toContain('Find MCU alternatives');
     const page = readSource('src/pages/WorkspacePage.svelte');
     expect(page).toContain('CompatibleMcuFinder');
     expect(page).toContain('showFinder');

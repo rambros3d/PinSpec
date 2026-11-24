@@ -337,7 +337,6 @@
       searchMatchCount={workspaceStore.searchMatchingPins.length}
       canUndo={workspaceStore.canUndo}
       canRedo={workspaceStore.canRedo}
-      rotation={workspaceStore.rotation}
       bind:searchInputRef
       onHome={() => router.navigateHome()}
       onOpenSwitcher={() => (showSwitcher = true)}
@@ -345,8 +344,6 @@
       onUndo={() => workspaceStore.undo()}
       onRedo={() => workspaceStore.redo()}
       onClearAll={() => workspaceStore.clearAll()}
-      onFitView={() => canvasRef?.fitView()}
-      onRotate={() => workspaceStore.toggleRotation()}
       onShare={handleShare}
       onOpenExport={() => (showExport = true)}
       onOpenFinder={() => (showFinder = true)}

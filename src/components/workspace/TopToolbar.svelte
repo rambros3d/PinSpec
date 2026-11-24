@@ -4,9 +4,7 @@
     ChevronRight,
     Download,
     GitCompare,
-    Maximize2,
     Redo2,
-    RotateCw,
     Search,
     SearchCheck,
     Share2,
@@ -14,7 +12,7 @@
     Undo2,
     X,
   } from 'lucide-svelte';
-  import type { ChipData, PackageRotation } from '../../core/types';
+  import type { ChipData } from '../../core/types';
   import { shouldShowScrollAffordance } from '../../core/scroll-affordance';
   import ThemePicker from '../ThemePicker.svelte';
 
@@ -24,7 +22,6 @@
     searchMatchCount: number;
     canUndo: boolean;
     canRedo: boolean;
-    rotation: PackageRotation;
     searchInputRef?: HTMLInputElement | null;
     onHome: () => void;
     onOpenSwitcher: () => void;
@@ -32,8 +29,6 @@
     onUndo: () => void;
     onRedo: () => void;
     onClearAll: () => void;
-    onFitView: () => void;
-    onRotate: () => void;
     onShare: () => void;
     onOpenExport: () => void;
     onOpenFinder: () => void;
@@ -46,7 +41,6 @@
     searchMatchCount,
     canUndo,
     canRedo,
-    rotation,
     searchInputRef = $bindable(null),
     onHome,
     onOpenSwitcher,
@@ -54,8 +48,6 @@
     onUndo,
     onRedo,
     onClearAll,
-    onFitView,
-    onRotate,
     onShare,
     onOpenExport,
     onOpenFinder,
@@ -171,61 +163,13 @@
       <Redo2 class="size-4" />
     </button>
 
-    <div class="relative">
-      <button
-        type="button"
-        onclick={() => (confirmClear = !confirmClear)}
-        title="Clear all assignments"
-        class="btn btn-ghost btn-sm btn-square hover:text-error"
-      >
-        <Trash2 class="size-4" />
-      </button>
-      {#if confirmClear}
-        <div class="card card-border absolute right-0 top-10 z-50 w-56 bg-base-100 shadow-xl p-3 text-xs">
-          <p class="text-foreground font-medium">Clear all pin assignments?</p>
-          <p class="mt-1 text-[11px] text-base-content/60">
-            You can undo this action with Ctrl+Z.
-          </p>
-          <div class="mt-2.5 flex justify-end gap-1.5">
-            <button
-              type="button"
-              onclick={() => (confirmClear = false)}
-              class="btn btn-sm btn-ghost"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onclick={() => {
-                confirmClear = false;
-                onClearAll();
-              }}
-              class="btn btn-sm btn-error font-medium"
-            >
-              Clear All
-            </button>
-          </div>
-        </div>
-      {/if}
-    </div>
-
-    <div class="w-px h-5 bg-base-300 mx-1"></div>
-
     <button
       type="button"
-      onclick={onFitView}
-      title="Fit View (0)"
-      class="btn btn-ghost btn-sm btn-square hidden sm:inline-flex"
+      onclick={() => (confirmClear = !confirmClear)}
+      title="Clear all assignments"
+      class="btn btn-ghost btn-sm btn-square hover:text-error"
     >
-      <Maximize2 class="size-4" />
-    </button>
-    <button
-      type="button"
-      onclick={onRotate}
-      title={rotation === -90 ? 'Restore package orientation' : 'Rotate package counter-clockwise'}
-      class="btn btn-ghost btn-sm btn-square hidden sm:inline-flex"
-    >
-      <RotateCw class="size-4" />
+      <Trash2 class="size-4" />
     </button>
 
     <div class="w-px h-5 bg-base-300 mx-1"></div>
@@ -233,12 +177,12 @@
     <button
       type="button"
       onclick={onOpenFinder}
-      title="Find a compatible MCU for this pinout"
-      aria-label="Find compatible MCU"
+      title="Find pinout-compatible MCU alternatives"
+      aria-label="Find MCU alternatives"
       class="btn btn-sm btn-outline gap-1.5 text-xs font-medium whitespace-nowrap"
     >
       <SearchCheck class="size-3.5" />
-      <span class="hidden lg:inline">Find MCU</span>
+      <span class="hidden lg:inline">Alternatives</span>
     </button>
 
     <button
@@ -273,6 +217,35 @@
     <ThemePicker compact={true} />
   </div>
   </div>
+
+  {#if confirmClear}
+    <div class="card card-border fixed right-3 top-12 z-50 w-56 bg-base-100 shadow-xl p-3 text-xs">
+      <p class="text-foreground font-medium">Clear all pin assignments?</p>
+      <p class="mt-1 text-[11px] text-base-content/60">
+        You can undo this action with Ctrl+Z.
+      </p>
+      <div class="mt-2.5 flex justify-end gap-1.5">
+        <button
+          type="button"
+          onclick={() => (confirmClear = false)}
+          class="btn btn-sm btn-ghost"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          onclick={() => {
+            confirmClear = false;
+            onClearAll();
+          }}
+          class="btn btn-sm btn-error font-medium"
+        >
+          Clear All
+        </button>
+      </div>
+    </div>
+  {/if}
+
   {#if showScrollHint}
     <ChevronRight
       class="size-4 text-base-content/60 absolute right-0.5 top-1/2 -translate-y-1/2 pointer-events-none"

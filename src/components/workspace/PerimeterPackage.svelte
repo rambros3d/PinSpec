@@ -42,6 +42,8 @@
     onPinHover,
   }: Props = $props();
 
+  const surfaceId = `ic-${chip.id.toLowerCase()}-${Math.random().toString(36).slice(2, 8)}`;
+
   type Side = 'left' | 'bottom' | 'right' | 'top';
 
   interface PlacedPin {
@@ -274,6 +276,27 @@
   role="img"
   aria-label={`${chip.id} ${chip.package.name} pinout diagram`}
 >
+  <defs>
+    <clipPath id={`${surfaceId}-clip`}>
+      <rect
+        x={layout.originX}
+        y={layout.originY}
+        width={layout.bodyWidth}
+        height={layout.bodyHeight}
+        rx="6"
+      />
+    </clipPath>
+    <linearGradient id={`${surfaceId}-depth`} x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="var(--color-ic-top)" />
+      <stop offset="100%" stop-color="var(--color-ic-bottom)" />
+    </linearGradient>
+    <filter id={`${surfaceId}-noise`} x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" stitchTiles="stitch" />
+      <feColorMatrix type="saturate" values="0" />
+      <feComponentTransfer><feFuncA type="linear" slope="0.16" /></feComponentTransfer>
+    </filter>
+  </defs>
+
   <!-- IC Package Body -->
   <g>
     <rect
@@ -282,8 +305,32 @@
       width={layout.bodyWidth}
       height={layout.bodyHeight}
       rx="6"
-      class="fill-elevated stroke-hairline"
+      class="fill-ic-body stroke-hairline"
       stroke-width="2"
+      style={`filter: drop-shadow(0 3px 5px color-mix(in oklab, var(--color-neutral) 55%, transparent));`}
+    />
+    <rect
+      x={layout.originX}
+      y={layout.originY}
+      width={layout.bodyWidth}
+      height={layout.bodyHeight}
+      rx="6"
+      fill={`url(#${surfaceId}-depth)`}
+      opacity="0.55"
+      pointer-events="none"
+    />
+    <rect
+      x={layout.originX}
+      y={layout.originY}
+      width={layout.bodyWidth}
+      height={layout.bodyHeight}
+      rx="6"
+      fill="currentColor"
+      filter={`url(#${surfaceId}-noise)`}
+      clip-path={`url(#${surfaceId}-clip)`}
+      style="mix-blend-mode: overlay;"
+      opacity="0.7"
+      pointer-events="none"
     />
     <!-- Subtle inner die outline -->
     <rect

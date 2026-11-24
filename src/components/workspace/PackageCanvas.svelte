@@ -256,7 +256,7 @@
 
 <div
   bind:this={stageEl}
-  class={`relative flex-1 h-full overflow-hidden bg-canvas bg-dot-grid select-none ${
+  class={`relative flex-1 h-full overflow-hidden bg-mcu-canvas bg-dot-grid select-none ${
     dragging ? 'cursor-grabbing' : 'cursor-grab'
   }`}
   onwheel={handleWheel}

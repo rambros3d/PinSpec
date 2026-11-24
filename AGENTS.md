@@ -58,12 +58,22 @@ No feature work starts from an ad-hoc list.
 
 ### Persistence of settings and configuration
 
-All user settings and configurations MUST be persisted. Every configurable
-feature must define its persisted representation in the same change that
-introduces it: workspace state, undo/redo history, `localStorage` sessions,
-share URLs, and project JSON. Session-only settings are not acceptable unless
-the user explicitly approves them. A configuration that disappears on reload
-or is absent from a shared link is incomplete.
+Two categories of state exist, and they have different persistence rules:
+
+- **Pin configuration** (assignments, labels, locks, peripheral modes, remaps,
+  PIO bindings, GPIO electrical settings and placement preferences that affect
+  allocation) MUST be shareable. It belongs in workspace state, undo/redo
+  history, `#/s/...` share URLs and version-2 project JSON, so another user
+  opening a link or file gets the same pin plan.
+- **UI preferences and view state** (selected peripheral, filter chips, section
+  expansion, dock tab, theme, panel visibility and other presentation state)
+  MUST be persisted only in `localStorage`. They do not belong in share URLs
+  or exported project files.
+
+Every new state field must declare which category it belongs to in the same
+change that introduces it. Pin configuration without URL/JSON persistence is
+incomplete; UI preferences placed in share URLs or project files are out of
+scope for sharing.
 
 ### Writing style
 
@@ -543,8 +553,8 @@ Pages. Runtime fetches must use `import.meta.env.BASE_URL` through the pure
   Small self-contained edits are exempt.
 - Do not use marketing or promotional language in UI copy, documentation,
   or commit messages.
-- Do not introduce session-only settings or configurations; every user setting
-  must survive reload and be included in share links and project files.
+- Do not put UI preferences or view state in share URLs or project files; use
+  localStorage for those. Only pin configuration is shareable.
 - Do not use emojis in any file.
 - Do not introduce a backend, server routes, API keys, or GenAI/Gemini calls.
 - Do not import Svelte or DOM APIs into `src/core/`.

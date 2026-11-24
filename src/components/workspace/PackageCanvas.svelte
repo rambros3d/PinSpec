@@ -1,19 +1,24 @@
 <script lang="ts">
-  import { Maximize2, Minus, Plus, RotateCw, X } from 'lucide-svelte';
+  import { Crosshair, Maximize2, Minus, Plus, RotateCw, X } from 'lucide-svelte';
   import { onMount } from 'svelte';
+  import { normalizePlacement } from '../../core/placement';
   import {
     formatMuxLabel,
     getChipMuxModel,
     type ChipData,
     type PinAssignment,
     type PinInfo,
+    type PinPlacementPreference,
     type PinVisualStatus,
+    type PlacementRing,
   } from '../../core/types';
-  import PinTagPills from './PinTagPills.svelte';
+  import { workspaceStore } from '../../state/workspace.svelte';
   import GridPackage from './GridPackage.svelte';
   import PerimeterPackage from './PerimeterPackage.svelte';
   import PinContextMenu from './PinContextMenu.svelte';
   import PinPopover from './PinPopover.svelte';
+  import PlacementOverlay, { type PlacementIndicator } from './PlacementOverlay.svelte';
+  import PinTagPills from './PinTagPills.svelte';
 
   interface Props {
     chip: ChipData;
@@ -59,6 +64,8 @@
 
   let stageEl = $state<HTMLDivElement | null>(null);
   let contentEl = $state<HTMLDivElement | null>(null);
+  let stageWidth = $state(0);
+  let stageHeight = $state(0);
 
   let zoom = $state(1);
   let panX = $state(0);
@@ -73,8 +80,67 @@
   let popover = $state<{ pin: PinInfo; x: number; y: number } | null>(null);
   let contextMenu = $state<{ pin: PinInfo; x: number; y: number } | null>(null);
 
-  const highlightSet = $derived(new Set<string>(highlightedPins));
   const muxModel = $derived(getChipMuxModel(chip));
+
+  const placementSettings = $derived(normalizePlacement(workspaceStore.state));
+  let selectedPlacementPeripheral = $state<string | null>(null);
+
+  const placementIndicators = $derived.by<PlacementIndicator[]>(() => {
+    const names = new Set<string>(Object.keys(placementSettings.preferences));
+    for (const asgn of Object.values(assignments)) {
+      if (asgn.peripheral !== 'GPIO') names.add(asgn.peripheral);
+    }
+    return Array.from(names)
+      .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+      .map((name) => ({
+        name,
+        preference: placementSettings.preferences[name] ?? null,
+        claimed: Object.entries(assignments)
+          .filter(([, asgn]) => asgn.peripheral === name)
+          .map(([pos]) => pos),
+      }));
+  });
+
+  // Reuse the established highlight plumbing for the selected peripheral.
+  const highlightSet = $derived.by(() => {
+    const set = new Set<string>(highlightedPins);
+    if (placementSettings.overlayVisible && selectedPlacementPeripheral) {
+      const indicator = placementIndicators.find(
+        (item) => item.name === selectedPlacementPeripheral,
+      );
+      for (const pos of indicator?.claimed ?? []) set.add(pos);
+    }
+    return set;
+  });
+
+  const overlayCenterX = $derived(stageWidth / 2);
+  const overlayCenterY = $derived(stageHeight / 2);
+  const overlayRadius = $derived(Math.max(40, Math.min(stageWidth, stageHeight) * 0.36));
+
+  function placementPreference(name: string): PinPlacementPreference {
+    return (
+      placementSettings.preferences[name] ?? {
+        angle: 0,
+        ring: 'outer',
+        enabled: true,
+      }
+    );
+  }
+
+  function handlePlacementAngle(name: string, angle: number, commit: boolean): void {
+    const preference: PinPlacementPreference = { ...placementPreference(name), angle };
+    if (commit) workspaceStore.commitPlacement(name, preference);
+    else workspaceStore.previewPlacement(name, preference);
+  }
+
+  function handlePlacementRing(name: string, ring: PlacementRing): void {
+    workspaceStore.setPlacement(name, { ...placementPreference(name), ring });
+  }
+
+  function handlePlacementEnable(name: string): void {
+    workspaceStore.setPlacement(name, { angle: 0, ring: 'outer', enabled: true });
+    selectedPlacementPeripheral = name;
+  }
 
   const remapSourceLabel = $derived.by(() => {
     if (!remapSourcePos) return '';
@@ -256,6 +322,8 @@
 
 <div
   bind:this={stageEl}
+  bind:clientWidth={stageWidth}
+  bind:clientHeight={stageHeight}
   class={`relative flex-1 h-full overflow-hidden bg-mcu-canvas bg-dot-grid select-none ${
     dragging ? 'cursor-grabbing' : 'cursor-grab'
   }`}
@@ -313,6 +381,26 @@
     </div>
   </div>
 
+  <!-- Toggleable pin-placement affinity overlay -->
+  {#if placementSettings.overlayVisible}
+    <PlacementOverlay
+      {stageEl}
+      centerX={overlayCenterX}
+      centerY={overlayCenterY}
+      radius={overlayRadius}
+      indicators={placementIndicators}
+      selected={selectedPlacementPeripheral}
+      onSelect={(name) => (selectedPlacementPeripheral = name)}
+      onAngle={handlePlacementAngle}
+      onRing={handlePlacementRing}
+      onEnable={handlePlacementEnable}
+      onClose={() => {
+        selectedPlacementPeripheral = null;
+        workspaceStore.setPlacementOverlayVisible(false);
+      }}
+    />
+  {/if}
+
   <!-- Remap Mode Top-Center Banner -->
   {#if remapSourcePos}
     <div class="absolute top-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3 px-3.5 py-2 rounded-panel border-ui border-hint bg-remap-panel text-primary text-xs shadow-lg">
@@ -368,6 +456,23 @@
     >
       <RotateCw class="size-ui-md" />
       <span>{rotation}°</span>
+    </button>
+    <div class="w-px h-4 bg-elevated mx-0.5"></div>
+    <button
+      type="button"
+      onclick={() => {
+        const next = !placementSettings.overlayVisible;
+        if (!next) selectedPlacementPeripheral = null;
+        workspaceStore.setPlacementOverlayVisible(next);
+      }}
+      title={placementSettings.overlayVisible ? 'Hide placement overlay' : 'Show placement overlay'}
+      aria-pressed={placementSettings.overlayVisible}
+      class={`inline-flex items-center gap-1 px-1.5 py-1 rounded-control hover:bg-elevated font-medium ${
+        placementSettings.overlayVisible ? 'text-pin-remap' : 'text-muted'
+      }`}
+    >
+      <Crosshair class="size-ui-md" />
+      <span class="hidden xl:inline text-[11px]">Placement</span>
     </button>
   </div>
 

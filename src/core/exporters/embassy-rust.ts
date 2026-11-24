@@ -3,6 +3,7 @@ import {
   getChipMuxModel,
   getChipVendor,
   type ChipData,
+  type GpioConfig,
   type PinInfo,
   type WorkspaceState,
 } from '../types';
@@ -42,6 +43,7 @@ interface BindingEntry {
   muxLabel: string;
   resourceId?: string;
   fieldName: string;
+  gpio?: GpioConfig;
 }
 
 interface Bindings {
@@ -83,6 +85,7 @@ function collectBindings(chip: ChipData, state: WorkspaceState): Bindings {
       muxLabel: formatMuxLabel(asgn, muxModel),
       ...(asgn.resourceId ? { resourceId: asgn.resourceId } : {}),
       fieldName,
+      ...(state.gpioConfig?.[pos] ? { gpio: state.gpioConfig[pos] } : {}),
     };
 
     const list = grouped.get(asgn.peripheral) ?? [];
@@ -97,6 +100,14 @@ function collectBindings(chip: ChipData, state: WorkspaceState): Bindings {
   });
 
   return { grouped, sortedPeripherals };
+}
+
+/** Embedded-HAL-style configuration comment emitted only for configured pins. */
+function gpioCommentLines(gpio: GpioConfig | undefined): string[] {
+  if (!gpio) return [];
+  return [
+    `    // embedded-hal GPIO config: level=${gpio.outputLevel}, drive=${gpio.drive}, pull=${gpio.pull}, speed=${gpio.speed}`,
+  ];
 }
 
 /** Shared struct/impl body used by all three vendor formatters. */
@@ -126,6 +137,7 @@ function renderStruct(
       lines.push(
         `    pub ${e.fieldName}: peripherals::${e.pinIdent}, // Pin ${e.pos} (${e.pinName}) -> ${e.peripheral}_${e.signal} [${e.muxLabel}]`,
       );
+      lines.push(...gpioCommentLines(e.gpio));
     }
   }
   lines.push(`}`);

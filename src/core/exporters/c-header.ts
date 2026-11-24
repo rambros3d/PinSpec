@@ -3,6 +3,7 @@ import {
   getChipMuxModel,
   getChipVendor,
   type ChipData,
+  type GpioConfig,
   type PinInfo,
   type WorkspaceState,
 } from '../types';
@@ -55,6 +56,22 @@ function parsePwmResource(resourceId: string | undefined, signal: string): { sli
   const match = (resourceId ?? signal).match(/^PWM(\d+)([AB])$/);
   if (!match) return null;
   return { slice: Number.parseInt(match[1], 10), channel: match[2] === 'A' ? 0 : 1 };
+}
+
+/** Convert a fixed setting value to an upper-snake macro token. */
+function toMacroToken(value: string): string {
+  return value.replace(/([a-z])([A-Z])/g, '$1_$2').toUpperCase();
+}
+
+/** Per-pin electrical macros; no lines are emitted for unconfigured pins. */
+function gpioMacroLines(macro: string, config: GpioConfig | undefined): string[] {
+  if (!config) return [];
+  return [
+    `#define ${macro}_LEVEL GPIO_LEVEL_${toMacroToken(config.outputLevel)}`,
+    `#define ${macro}_DRIVE GPIO_DRIVE_${toMacroToken(config.drive)}`,
+    `#define ${macro}_PULL GPIO_PULL_${toMacroToken(config.pull)}`,
+    `#define ${macro}_SPEED GPIO_SPEED_${toMacroToken(config.speed)}`,
+  ];
 }
 
 function headerPreamble(chip: ChipData, guard: string): string[] {
@@ -120,6 +137,7 @@ function formatStm32(chip: ChipData, state: WorkspaceState, guard: string): stri
     } else {
       lines.push(`#define ${macro}_AF 0xFFU /* None / AFIO */`);
     }
+    lines.push(...gpioMacroLines(macro, state.gpioConfig?.[pos]));
     lines.push(``);
   }
 
@@ -172,6 +190,7 @@ function formatRp(chip: ChipData, state: WorkspaceState, guard: string): string 
       lines.push(`#define ${macro}_PIO_SM ${pio.sm ?? 0}U`);
       if (pio.role) lines.push(`#define ${macro}_PIO_ROLE "${pio.role}"`);
     }
+    lines.push(...gpioMacroLines(macro, state.gpioConfig?.[pos]));
     lines.push(``);
   }
 
@@ -213,6 +232,7 @@ function formatCh32(chip: ChipData, state: WorkspaceState, guard: string): strin
     lines.push(`#define ${macro}_PIN ${portPin?.pinNum ?? 0}U`);
     const remapId = asgn.remapId ?? (asgn.af !== null ? asgn.af : undefined);
     lines.push(`#define ${macro}_RM ${remapId === undefined ? 0 : remapId}U`);
+    lines.push(...gpioMacroLines(macro, state.gpioConfig?.[pos]));
     lines.push(``);
   }
 

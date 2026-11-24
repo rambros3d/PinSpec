@@ -1,4 +1,10 @@
 import { cloneWorkspaceState } from './history';
+import {
+  buildPinGeometryMap,
+  orderPeripheralsByPlacement,
+  placementAffinityForPin,
+  type PlacementAffinityContext,
+} from './placement';
 import type {
   AlternatePinCandidate,
   ChipData,
@@ -12,6 +18,7 @@ import type {
   PeripheralRemapOption,
   PeripheralStatus,
   PinAssignment,
+  PinPlacementPreference,
   PinInfo,
   PinSignal,
   PinTag,
@@ -295,12 +302,18 @@ function computeSignalPinCounts(chip: ChipData): Map<string, number> {
   return counts;
 }
 
-function computePinScarcityScore(
+/**
+ * Scarcity score for one candidate pin. The optional placement context adds a
+ * term that is exactly zero when no preference is enabled, so the default
+ * allocator path keeps its original scores and assignments.
+ */
+export function computePinScarcityScore(
   pin: PinInfo,
   chip: ChipData,
   state: WorkspaceState,
   signalPinCounts: Map<string, number>,
   targetPeripheral: string,
+  affinity?: PlacementAffinityContext | null,
 ): number {
   let score = 0;
 
@@ -348,6 +361,9 @@ function computePinScarcityScore(
 
   // Minor tie-breaker favoring fewer total alternate functions
   score += pin.signals.length * 0.5;
+
+  const preference = affinity ? affinity.preference : state.placement?.[targetPeripheral];
+  score += placementAffinityForPin(pin, chip, preference, affinity ?? {});
   return score;
 }
 
@@ -1009,6 +1025,127 @@ export function togglePeripheralSignal(
 
   const fix = findOneHopFixForSignal(chip, next, peripheralName, signal);
   return { state: next, assignedPos: null, fix };
+}
+
+/**
+ * Reallocate one peripheral after a placement change. Locked pins are never
+ * removed or overwritten; their signals count as already satisfied.
+ */
+export function reallocatePeripheralPlacement(
+  chip: ChipData,
+  state: WorkspaceState,
+  peripheral: string,
+  preference?: PinPlacementPreference | null,
+  signalNames?: readonly string[],
+): WorkspaceState {
+  const next = cloneWorkspaceState(state);
+  const effectivePreference =
+    preference === undefined ? state.placement?.[peripheral] : preference;
+  const context: PlacementAffinityContext = {
+    preference: effectivePreference,
+    geometry: buildPinGeometryMap(chip),
+  };
+  const signalPinCounts = computeSignalPinCounts(chip);
+
+  const satisfied = new Set<string>();
+  const signals = new Set<string>(signalNames ?? []);
+  for (const [pos, asgn] of Object.entries(state.assignments)) {
+    if (asgn.peripheral !== peripheral) continue;
+    if (next.locked[pos]) {
+      satisfied.add(asgn.signal);
+      continue;
+    }
+    signals.add(asgn.signal);
+    delete next.assignments[pos];
+  }
+  if (signals.size === 0) return next;
+
+  const signalOrder = [...signals].sort((a, b) => {
+    const countA = chip.pins.filter(
+      (p) => p.type === 'io' && pinSupportsSignal(p, peripheral, a) !== null,
+    ).length;
+    const countB = chip.pins.filter(
+      (p) => p.type === 'io' && pinSupportsSignal(p, peripheral, b) !== null,
+    ).length;
+    return countA - countB || a.localeCompare(b);
+  });
+
+  for (const signal of signalOrder) {
+    if (satisfied.has(signal)) continue;
+    const candidates = chip.pins.filter(
+      (pin) =>
+        pin.type === 'io' &&
+        !next.locked[pin.pos] &&
+        !next.assignments[pin.pos] &&
+        pinSupportsSignal(pin, peripheral, signal) !== null,
+    );
+    candidates.sort(
+      (a, b) =>
+        computePinScarcityScore(a, chip, next, signalPinCounts, peripheral, context) -
+          computePinScarcityScore(b, chip, next, signalPinCounts, peripheral, context) ||
+        a.pos.localeCompare(b.pos, undefined, { numeric: true }),
+    );
+    const chosen = candidates[0];
+    if (!chosen) continue;
+    const match = pinSupportsSignal(chosen, peripheral, signal)!;
+    next.assignments[chosen.pos] = {
+      ...match,
+      peripheral,
+      signal: match.signal,
+      af: match.af,
+    };
+  }
+  return next;
+}
+
+/** Reallocate enabled peripherals in strict ring order (inner first). */
+export function reallocatePlacementOrdered(
+  chip: ChipData,
+  state: WorkspaceState,
+  peripherals?: readonly string[],
+): WorkspaceState {
+  const names =
+    peripherals ??
+    Array.from(
+      new Set([
+        ...Object.keys(state.placement ?? {}),
+        ...Object.values(state.assignments)
+          .map((asgn) => asgn.peripheral)
+          .filter((name) => name !== 'GPIO'),
+      ]),
+    );
+  // Clear every unlocked assignment up front so an inner-ring peripheral can
+  // claim a pin currently held by an outer-ring one.
+  const signalsByPeripheral = new Map<string, Set<string>>();
+  for (const [pos, asgn] of Object.entries(state.assignments)) {
+    if (!names.includes(asgn.peripheral)) continue;
+    const list = signalsByPeripheral.get(asgn.peripheral) ?? new Set<string>();
+    if (state.locked[pos]) list.add(`locked:${asgn.signal}`);
+    else list.add(asgn.signal);
+    signalsByPeripheral.set(asgn.peripheral, list);
+  }
+  let next = cloneWorkspaceState(state);
+  for (const [peripheral, signals] of signalsByPeripheral) {
+    for (const [pos, asgn] of Object.entries(next.assignments)) {
+      if (asgn.peripheral === peripheral && !next.locked[pos]) {
+        delete next.assignments[pos];
+      }
+    }
+    signalsByPeripheral.set(
+      peripheral,
+      new Set(Array.from(signals).filter((signal) => !signal.startsWith('locked:'))),
+    );
+  }
+  for (const peripheral of orderPeripheralsByPlacement(names, state)) {
+    next = reallocatePeripheralPlacement(
+      chip,
+      next,
+      peripheral,
+      state.placement?.[peripheral],
+      Array.from(signalsByPeripheral.get(peripheral) ?? []),
+    );
+  }
+  return next;
 }
 
 function analyzeDma(

@@ -109,9 +109,9 @@ describe('exporters', () => {
     const csv = exportCsv(sampleChip, sampleState);
     const lines = csv.trim().split('\n');
     expect(lines[0]).toBe(
-      'Vendor,Position,Pin,Type,Peripheral,Signal,Mux,Resource,Label,Locked',
+      'Vendor,Position,Pin,Type,Peripheral,Signal,Mux,Resource,Label,Locked,Level,Drive,Pull,Speed',
     );
-    expect(lines[1]).toBe('stm32,15,PA5,io,SPI1,SCK,AF5,,IMU_CLK,true');
+    expect(lines[1]).toBe('stm32,15,PA5,io,SPI1,SCK,AF5,,IMU_CLK,true,,,,');
   });
 
   it('exports deterministic JSON and re-imports cleanly', () => {

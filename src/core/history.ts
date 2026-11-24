@@ -1,3 +1,4 @@
+import { normalizePlacement } from './placement';
 import type { WorkspaceState } from './types';
 
 export function cloneWorkspaceState(state: WorkspaceState): WorkspaceState {
@@ -21,6 +22,19 @@ export function cloneWorkspaceState(state: WorkspaceState): WorkspaceState {
       cloned.pioAssignments[pos] = { ...pio };
     }
   }
+  if (state.gpioConfig && Object.keys(state.gpioConfig).length > 0) {
+    cloned.gpioConfig = {};
+    for (const [pos, config] of Object.entries(state.gpioConfig)) {
+      cloned.gpioConfig[pos] = { ...config };
+    }
+  }
+  if (state.placement && Object.keys(state.placement).length > 0) {
+    cloned.placement = {};
+    for (const [peripheral, preference] of Object.entries(state.placement)) {
+      cloned.placement[peripheral] = { ...preference };
+    }
+  }
+  if (state.placementOverlayVisible) cloned.placementOverlayVisible = true;
   return cloned;
 }
 
@@ -85,6 +99,44 @@ export function statesEqual(a: WorkspaceState, b: WorkspaceState): boolean {
     const av = apio[k];
     const bv = bpio[k];
     if (!bv || av.instance !== bv.instance || av.sm !== bv.sm || av.role !== bv.role) {
+      return false;
+    }
+  }
+
+  const ag = a.gpioConfig ?? {};
+  const bg = b.gpioConfig ?? {};
+  const agKeys = Object.keys(ag);
+  const bgKeys = Object.keys(bg);
+  if (agKeys.length !== bgKeys.length) return false;
+  for (const k of agKeys) {
+    const av = ag[k];
+    const bv = bg[k];
+    if (
+      !bv ||
+      av.outputLevel !== bv.outputLevel ||
+      av.drive !== bv.drive ||
+      av.pull !== bv.pull ||
+      av.speed !== bv.speed
+    ) {
+      return false;
+    }
+  }
+
+  const ap = normalizePlacement(a);
+  const bp = normalizePlacement(b);
+  if (ap.overlayVisible !== bp.overlayVisible) return false;
+  const aplKeys = Object.keys(ap.preferences);
+  const bplKeys = Object.keys(bp.preferences);
+  if (aplKeys.length !== bplKeys.length) return false;
+  for (const k of aplKeys) {
+    const av = ap.preferences[k];
+    const bv = bp.preferences[k];
+    if (
+      !bv ||
+      av.angle !== bv.angle ||
+      av.ring !== bv.ring ||
+      av.enabled !== bv.enabled
+    ) {
       return false;
     }
   }

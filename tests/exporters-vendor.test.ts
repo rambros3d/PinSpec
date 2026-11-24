@@ -228,17 +228,17 @@ describe('vendor-neutral CSV', () => {
   it('uses the new header, vendor mux labels and escaped cells', () => {
     const csv = exportCsv(rp, rpState);
     const lines = csv.trim().split('\n');
-    expect(lines[0]).toBe('Vendor,Position,Pin,Type,Peripheral,Signal,Mux,Resource,Label,Locked');
-    expect(lines[1]).toBe('rp,2,GPIO0,io,PWM,PWM0A,F4,PWM0A,,false');
-    expect(lines[2]).toBe('rp,4,GPIO2,io,SPI0,SCK,F1,,"Flash, CLK",false');
+    expect(lines[0]).toBe('Vendor,Position,Pin,Type,Peripheral,Signal,Mux,Resource,Label,Locked,Level,Drive,Pull,Speed');
+    expect(lines[1]).toBe('rp,2,GPIO0,io,PWM,PWM0A,F4,PWM0A,,false,,,,');
+    expect(lines[2]).toBe('rp,4,GPIO2,io,SPI0,SCK,F1,,"Flash, CLK",false,,,,');
   });
 
   it('mixes CH32 remap and STM32 AF rows under the new header', () => {
     const csv = exportCsv(ch32, ch32State) + exportCsv(stm32, stm32State).split('\n').slice(1).join('\n');
     const lines = csv.trim().split('\n');
-    expect(lines[0]).toBe('Vendor,Position,Pin,Type,Peripheral,Signal,Mux,Resource,Label,Locked');
-    expect(lines[1]).toBe('ch32,2,PD5,io,USART1,TX,RM1,,,false');
-    expect(lines[2]).toBe('stm32,15,PA5,io,SPI1,SCK,AF7,,,false');
+    expect(lines[0]).toBe('Vendor,Position,Pin,Type,Peripheral,Signal,Mux,Resource,Label,Locked,Level,Drive,Pull,Speed');
+    expect(lines[1]).toBe('ch32,2,PD5,io,USART1,TX,RM1,,,false,,,,');
+    expect(lines[2]).toBe('stm32,15,PA5,io,SPI1,SCK,AF7,,,false,,,,');
   });
 });
 

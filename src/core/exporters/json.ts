@@ -1,10 +1,17 @@
 import {
   PINCRAFT_STATE_VERSION,
+  parseGpioConfig,
+  type GpioConfig,
   type PinAssignment,
+  type PinPlacementPreference,
   type PioPinAssignment,
   type VendorId,
   type WorkspaceState,
 } from '../types';
+import {
+  canonicalPinPlacementPreference,
+  parsePinPlacementPreference,
+} from '../placement';
 
 /** The single PinCraft project-file schema (no legacy version shim). */
 export interface PinCraftProjectFile {
@@ -18,6 +25,9 @@ export interface PinCraftProjectFile {
   locked: string[];
   activeRemaps?: Record<string, number>;
   pioAssignments?: Record<string, PioPinAssignment>;
+  gpioConfig?: Record<string, GpioConfig>;
+  placement?: Record<string, PinPlacementPreference>;
+  placementOverlayVisible?: boolean;
 }
 
 export type JsonImportResult =
@@ -55,10 +65,21 @@ function canonicalPio(pio: PioPinAssignment): PioPinAssignment {
   };
 }
 
+/** Emit GPIO electrical settings in a fixed field order. */
+function canonicalGpio(config: GpioConfig): GpioConfig {
+  return {
+    outputLevel: config.outputLevel,
+    drive: config.drive,
+    pull: config.pull,
+    speed: config.speed,
+  };
+}
+
 /**
  * Serialize a workspace to the current project-file schema.
  * `vendor` is recorded as provenance metadata; the MCU ID remains authoritative
- * on import. Remaps and PIO bindings are omitted when empty.
+ * on import. Remaps, PIO bindings, GPIO settings and placement preferences
+ * are omitted when empty.
  */
 export function exportPinoutJson(state: WorkspaceState, vendor?: VendorId): string {
   const cleanAssignments: Record<string, PinAssignment> = {};
@@ -103,6 +124,21 @@ export function exportPinoutJson(state: WorkspaceState, vendor?: VendorId): stri
       cleanPio[pos] = canonicalPio(pio);
     }
     doc.pioAssignments = sortRecordKeys(cleanPio);
+  }
+  if (state.gpioConfig && Object.keys(state.gpioConfig).length > 0) {
+    const cleanGpio: Record<string, GpioConfig> = {};
+    for (const [pos, config] of Object.entries(state.gpioConfig)) {
+      cleanGpio[pos] = canonicalGpio(config);
+    }
+    doc.gpioConfig = sortRecordKeys(cleanGpio);
+  }
+  if (state.placementOverlayVisible) doc.placementOverlayVisible = true;
+  if (state.placement && Object.keys(state.placement).length > 0) {
+    const cleanPlacement: Record<string, PinPlacementPreference> = {};
+    for (const [peripheral, pref] of Object.entries(state.placement)) {
+      cleanPlacement[peripheral] = canonicalPinPlacementPreference(pref);
+    }
+    doc.placement = sortRecordKeys(cleanPlacement);
   }
 
   return JSON.stringify(doc, null, 2) + '\n';
@@ -211,6 +247,29 @@ export function parsePinoutJson(raw: string): JsonImportResult {
       }
       if (Object.keys(pioAssignments).length > 0) {
         state.pioAssignments = sortRecordKeys(pioAssignments);
+      }
+    }
+
+    if (obj.gpioConfig && typeof obj.gpioConfig === 'object' && !Array.isArray(obj.gpioConfig)) {
+      const gpioConfig: Record<string, GpioConfig> = {};
+      for (const [pos, val] of Object.entries(obj.gpioConfig as Record<string, unknown>)) {
+        const config = parseGpioConfig(val);
+        if (config) gpioConfig[pos] = canonicalGpio(config);
+      }
+      if (Object.keys(gpioConfig).length > 0) {
+        state.gpioConfig = sortRecordKeys(gpioConfig);
+      }
+    }
+
+    if (obj.placementOverlayVisible === true) state.placementOverlayVisible = true;
+    if (obj.placement && typeof obj.placement === 'object' && !Array.isArray(obj.placement)) {
+      const placement: Record<string, PinPlacementPreference> = {};
+      for (const [peripheral, val] of Object.entries(obj.placement as Record<string, unknown>)) {
+        const parsed = parsePinPlacementPreference(val);
+        if (parsed) placement[peripheral] = canonicalPinPlacementPreference(parsed);
+      }
+      if (Object.keys(placement).length > 0) {
+        state.placement = sortRecordKeys(placement);
       }
     }
 

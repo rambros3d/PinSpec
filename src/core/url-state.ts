@@ -1,10 +1,14 @@
 import { deflateSync, inflateSync, strFromU8, strToU8 } from 'fflate';
 import {
   PINCRAFT_STATE_VERSION,
+  parseGpioConfig,
+  type GpioConfig,
+  type PinPlacementPreference,
   type PinAssignment,
   type PioPinAssignment,
   type WorkspaceState,
 } from './types';
+import { parsePinPlacementPreference } from './placement';
 
 type CompactAssignment = [
   string,
@@ -15,6 +19,10 @@ type CompactAssignment = [
   (string | null)?,
 ];
 type CompactPio = [string, number | undefined, string | undefined];
+/** Physical position -> [level, drive, pull, speed], only when non-empty. */
+type CompactGpio = [string, string, string, string];
+/** Peripheral -> [angle, ring, enabled as 0/1], only when non-empty. */
+type CompactPlacement = [number, string, number];
 
 interface CompactUrlPayload {
   v: 2;
@@ -27,6 +35,12 @@ interface CompactUrlPayload {
   r?: Record<string, number>;
   /** Physical position -> [instance, state machine, role] (only when non-empty). */
   o?: Record<string, CompactPio>;
+  /** Physical position -> [level, drive, pull, speed] (only when non-empty). */
+  g?: Record<string, CompactGpio>;
+  /** Peripheral -> [angle, ring, enabled] (only when non-empty). */
+  y?: Record<string, CompactPlacement>;
+  /** Placement overlay visibility (only when true). */
+  w?: 1;
 }
 
 export type DecodeResult =
@@ -71,7 +85,8 @@ function sortedKeys(record: Record<string, unknown>): string[] {
 
 /**
  * Encode a workspace into a compressed, URL-safe share payload.
- * Remap and PIO maps are included only when populated to keep links short.
+ * Remap, PIO, GPIO config and placement maps are included only when populated
+ * to keep links short.
  */
 export function encodeWorkspaceState(state: WorkspaceState): string {
   const payload: CompactUrlPayload = {
@@ -130,6 +145,23 @@ export function encodeWorkspaceState(state: WorkspaceState): string {
     for (const pos of sortedKeys(state.pioAssignments as Record<string, unknown>)) {
       const pio = state.pioAssignments[pos];
       payload.o[pos] = [pio.instance, pio.sm, pio.role];
+    }
+  }
+
+  if (state.gpioConfig && Object.keys(state.gpioConfig).length > 0) {
+    payload.g = {};
+    for (const pos of sortedKeys(state.gpioConfig as Record<string, unknown>)) {
+      const config = state.gpioConfig[pos];
+      payload.g[pos] = [config.outputLevel, config.drive, config.pull, config.speed];
+    }
+  }
+
+  if (state.placementOverlayVisible) payload.w = 1;
+  if (state.placement && Object.keys(state.placement).length > 0) {
+    payload.y = {};
+    for (const peripheral of sortedKeys(state.placement as Record<string, unknown>)) {
+      const pref = state.placement[peripheral];
+      payload.y[peripheral] = [pref.angle, pref.ring, pref.enabled ? 1 : 0];
     }
   }
 
@@ -228,6 +260,33 @@ export function decodeWorkspaceState(encoded: string): DecodeResult {
         };
       }
       if (Object.keys(pioAssignments).length > 0) state.pioAssignments = pioAssignments;
+    }
+
+    if (obj.g && typeof obj.g === 'object' && !Array.isArray(obj.g)) {
+      const gpioConfig: Record<string, GpioConfig> = {};
+      for (const [pos, val] of Object.entries(obj.g as Record<string, unknown>)) {
+        if (!Array.isArray(val) || val.length < 4) continue;
+        const [outputLevel, drive, pull, speed] = val;
+        const config = parseGpioConfig({ outputLevel, drive, pull, speed });
+        if (config) gpioConfig[pos] = config;
+      }
+      if (Object.keys(gpioConfig).length > 0) state.gpioConfig = gpioConfig;
+    }
+
+    if (obj.w === 1 || obj.w === true) state.placementOverlayVisible = true;
+    if (obj.y && typeof obj.y === 'object' && !Array.isArray(obj.y)) {
+      const placement: Record<string, PinPlacementPreference> = {};
+      for (const [peripheral, val] of Object.entries(obj.y as Record<string, unknown>)) {
+        if (!Array.isArray(val) || val.length < 3) continue;
+        const [angle, ring, enabled] = val;
+        const parsed = parsePinPlacementPreference({
+          angle,
+          ring,
+          enabled: enabled === 1 || enabled === true,
+        });
+        if (parsed) placement[peripheral] = parsed;
+      }
+      if (Object.keys(placement).length > 0) state.placement = placement;
     }
 
     return { ok: true, state };

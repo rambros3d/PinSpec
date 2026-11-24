@@ -212,6 +212,71 @@ export interface PioPinAssignment {
   role?: string; // e.g. "TX", "CLK", "D0"
 }
 
+/** Fixed output level values matching embedded-HAL naming. */
+export const GPIO_OUTPUT_LEVELS = ['High', 'Low'] as const;
+export type GpioOutputLevel = (typeof GPIO_OUTPUT_LEVELS)[number];
+
+/** Fixed output drive modes matching embedded-HAL naming. */
+export const GPIO_DRIVES = ['PushPull', 'OpenDrain'] as const;
+export type GpioDrive = (typeof GPIO_DRIVES)[number];
+
+/** Fixed pull-resistor settings matching embedded-HAL naming. */
+export const GPIO_PULLS = ['None', 'Up', 'Down'] as const;
+export type GpioPull = (typeof GPIO_PULLS)[number];
+
+/** Fixed output speed settings matching embedded-HAL naming. */
+export const GPIO_SPEEDS = ['Low', 'Medium', 'High', 'VeryHigh'] as const;
+export type GpioSpeed = (typeof GPIO_SPEEDS)[number];
+
+/**
+ * Electrical settings for one configured GPIO. Kept as an optional map keyed
+ * by physical position so workspaces that never edit these settings keep their
+ * existing behavior and exports.
+ */
+export interface GpioConfig {
+  outputLevel: GpioOutputLevel;
+  drive: GpioDrive;
+  pull: GpioPull;
+  speed: GpioSpeed;
+}
+
+/** Validate an untrusted persisted value against the four fixed value sets. */
+export function parseGpioConfig(value: unknown): GpioConfig | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const rec = value as Record<string, unknown>;
+  if (!GPIO_OUTPUT_LEVELS.includes(rec.outputLevel as GpioOutputLevel)) return null;
+  if (!GPIO_DRIVES.includes(rec.drive as GpioDrive)) return null;
+  if (!GPIO_PULLS.includes(rec.pull as GpioPull)) return null;
+  if (!GPIO_SPEEDS.includes(rec.speed as GpioSpeed)) return null;
+  return {
+    outputLevel: rec.outputLevel as GpioOutputLevel,
+    drive: rec.drive as GpioDrive,
+    pull: rec.pull as GpioPull,
+    speed: rec.speed as GpioSpeed,
+  };
+}
+
+/** Priority rings for the optional pin-placement overlay, inner highest. */
+export const PLACEMENT_RINGS = ['inner', 'middle', 'outer'] as const;
+export type PlacementRing = (typeof PLACEMENT_RINGS)[number];
+
+/** Fast inter-ring ordering; lower ranks are allocated first. */
+export const PLACEMENT_RING_RANK: Record<PlacementRing, number> = {
+  inner: 0,
+  middle: 1,
+  outer: 2,
+};
+
+/**
+ * Opt-in placement preference for one peripheral. Storage is additive and
+ * optional so workspaces without placement keep the original allocator path.
+ */
+export interface PinPlacementPreference {
+  angle: number; // degrees from the package centre, 0 <= angle < 360
+  ring: PlacementRing;
+  enabled: boolean;
+}
+
 export interface WorkspaceState {
   mcuId: string;
   assignments: Record<string, PinAssignment>; // keyed by physical pin pos
@@ -220,6 +285,9 @@ export interface WorkspaceState {
   peripheralModes: Record<string, string>; // e.g. { SPI1: "full_duplex" }
   activeRemaps?: Record<string, number>; // peripheral -> selected remap ID
   pioAssignments?: Record<string, PioPinAssignment>; // physical pin pos -> PIO binding
+  gpioConfig?: Record<string, GpioConfig>; // physical pin pos -> electrical settings
+  placement?: Record<string, PinPlacementPreference>; // peripheral -> placement preference
+  placementOverlayVisible?: boolean; // canvas overlay toggle, persisted with the state
 }
 
 export type PinVisualStatus = 'unused' | 'power' | 'assigned' | 'partial' | 'conflict';

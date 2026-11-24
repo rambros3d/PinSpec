@@ -1,4 +1,5 @@
 import { cloneWorkspaceState, createWorkspaceHistory, type HistoryStack } from '../core/history';
+import { normalizeAngle } from '../core/placement';
 import {
   allocatePeripheralMode,
   applyOneHopFix,
@@ -7,14 +8,17 @@ import {
   evaluateWorkspace,
   findAlternatePins,
   pinSupportsSignal,
+  reallocatePeripheralPlacement,
   remapPinAssignment,
   togglePeripheralSignal,
 } from '../core/solver';
 import type {
   AlternatePinCandidate,
   ChipData,
+  GpioConfig,
   OneHopFix,
   PinAssignment,
+  PinPlacementPreference,
   PioPinAssignment,
   SolverReport,
   WorkspaceState,
@@ -347,6 +351,81 @@ class WorkspaceStore {
       delete next.pioAssignments[pos];
       if (Object.keys(next.pioAssignments).length === 0) delete next.pioAssignments;
     }
+    this.commit(next);
+  }
+
+  /**
+   * Set or clear a pin's electrical settings. Passing `null` removes the
+   * entry; empty maps are omitted from persisted state. Every change goes
+   * through history so the inspector edits are undoable.
+   */
+  setGpioConfig(pos: string, config: GpioConfig | null): void {
+    const next = cloneWorkspaceState(this.state);
+    if (config) {
+      if (!next.gpioConfig) next.gpioConfig = {};
+      next.gpioConfig[pos] = { ...config };
+    } else if (next.gpioConfig) {
+      delete next.gpioConfig[pos];
+      if (Object.keys(next.gpioConfig).length === 0) delete next.gpioConfig;
+    }
+    this.commit(next);
+  }
+
+  /**
+   * Apply a placement preference and reallocate only that peripheral. Passing
+   * `commit = false` previews a drag without filling undo history; the final
+   * pointer-up calls `commitPlacement` for a single history entry.
+   */
+  private applyPlacementChange(
+    peripheral: string,
+    preference: PinPlacementPreference | null,
+    commit: boolean,
+  ): void {
+    const next = cloneWorkspaceState(this.state);
+    if (!next.placement) next.placement = {};
+    if (preference) {
+      next.placement[peripheral] = { ...preference, angle: normalizeAngle(preference.angle) };
+    } else {
+      delete next.placement[peripheral];
+    }
+    if (Object.keys(next.placement).length === 0) delete next.placement;
+    const result = this.chip
+      ? reallocatePeripheralPlacement(this.chip, next, peripheral, preference)
+      : next;
+    if (commit) {
+      this.commit(result);
+    } else {
+      // Live drag preview: history is untouched until the drag is committed.
+      this.state = result;
+    }
+  }
+
+  /** Persist a placement change as one history entry. */
+  setPlacement(peripheral: string, preference: PinPlacementPreference | null): void {
+    this.applyPlacementChange(peripheral, preference, true);
+  }
+
+  /** Live, uncommitted placement update used while dragging an indicator. */
+  previewPlacement(peripheral: string, preference: PinPlacementPreference): void {
+    this.applyPlacementChange(peripheral, preference, false);
+  }
+
+  /** Commit the final state of a drag. */
+  commitPlacement(peripheral: string, preference: PinPlacementPreference): void {
+    this.applyPlacementChange(peripheral, preference, true);
+  }
+
+  /** Abandon an in-progress drag preview and restore the last committed state. */
+  cancelPlacementPreview(): void {
+    this.state = this.history.current;
+  }
+
+  /** Persist the canvas overlay toggle with the rest of the workspace state. */
+  setPlacementOverlayVisible(visible: boolean): void {
+    if (Boolean(this.state.placementOverlayVisible) === visible) return;
+    const next = cloneWorkspaceState(this.state);
+    if (visible) next.placementOverlayVisible = true;
+    else delete next.placementOverlayVisible;
     this.commit(next);
   }
 

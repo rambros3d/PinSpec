@@ -13,13 +13,19 @@
   import {
     formatMuxLabel,
     getChipMuxModel,
+    GPIO_DRIVES,
+    GPIO_OUTPUT_LEVELS,
+    GPIO_PULLS,
+    GPIO_SPEEDS,
     type ChipData,
+    type GpioConfig,
     type OneHopFix,
     type PinAssignment,
     type PioPinAssignment,
     type SolverReport,
   } from '../../core/types';
   import { deriveExtiLineId } from '../../core/solver';
+  import { workspaceStore } from '../../state/workspace.svelte';
   import PioPanel from './PioPanel.svelte';
   import PinTagPills from './PinTagPills.svelte';
 
@@ -53,12 +59,35 @@
     onSetPioAssignment,
   }: Props = $props();
 
-  let activeTab = $state<'pins' | 'diagnostics' | 'dma' | 'pio'>('pins');
+  let activeTab = $state<'pins' | 'diagnostics' | 'dma' | 'pio' | 'gpio'>('pins');
   let tableFilter = $state('');
   let sortKey = $state<'pos' | 'pin' | 'signal'>('pos');
   let sortAsc = $state(true);
+  let inspectorPos = $state<string | null>(null);
+
+  const DEFAULT_GPIO_CONFIG: GpioConfig = {
+    outputLevel: 'Low',
+    drive: 'PushPull',
+    pull: 'None',
+    speed: 'Medium',
+  };
 
   const pinMap = $derived(new Map(chip.pins.map((p) => [p.pos, p])));
+  const inspectorPin = $derived(inspectorPos ? pinMap.get(inspectorPos) ?? null : null);
+  const inspectorConfig = $derived(
+    inspectorPos ? workspaceStore.state.gpioConfig?.[inspectorPos] ?? null : null,
+  );
+
+  $effect(() => {
+    const pos = workspaceStore.focusPinRequest?.pos;
+    if (pos) inspectorPos = pos;
+  });
+
+  function updateGpioConfig<K extends keyof GpioConfig>(key: K, value: GpioConfig[K]): void {
+    if (!inspectorPos) return;
+    const next: GpioConfig = { ...(inspectorConfig ?? DEFAULT_GPIO_CONFIG), [key]: value };
+    workspaceStore.setGpioConfig(inspectorPos, next);
+  }
   const muxModel = $derived(getChipMuxModel(chip));
   const showPio = $derived(Boolean(chip.pio));
 
@@ -186,6 +215,18 @@
         PIO
       </button>
     {/if}
+
+    <button
+      type="button"
+      onclick={() => (activeTab = 'gpio')}
+      class={`px-2.5 py-1.5 rounded-top-control font-medium whitespace-nowrap transition-colors ${
+        activeTab === 'gpio'
+          ? 'bg-surface text-primary border-ui-t border-ui-x border-hairline -mb-px'
+          : 'text-muted hover:text-primary'
+      }`}
+    >
+      GPIO
+    </button>
   </div>
 
   <!-- Tab 1: Pin Table -->
@@ -235,7 +276,10 @@
             {#each rows as row (row.pos)}
               <tr
                 class="hover:bg-elevated cursor-pointer"
-                onclick={() => onFocusPin(row.pos)}
+                onclick={() => {
+                  inspectorPos = row.pos;
+                  onFocusPin(row.pos);
+                }}
               >
                 <td class="py-1.5 pl-2.5 pr-1 font-mono-tabular text-muted">
                   {row.pos}
@@ -451,5 +495,114 @@
       diagnostics={report.diagnostics}
       onSetAssignment={onSetPioAssignment}
     />
+
+  <!-- Tab 5: GPIO electrical settings for the selected pin -->
+  {:else if activeTab === 'gpio'}
+    <div class="flex-1 overflow-y-auto p-2.5 space-y-3">
+      {#if !inspectorPin}
+        <div class="p-6 text-center text-xs text-muted space-y-1">
+          <p class="font-medium text-primary">No pin selected</p>
+          <p>Select a pin in the pin table or on the package to edit its electrical settings.</p>
+        </div>
+      {:else}
+        <div class="rounded-panel border-ui border-hairline bg-subtle p-2.5 text-xs">
+          <div class="flex items-center justify-between gap-2">
+            <span class="font-mono font-semibold text-primary">{inspectorPin.name}</span>
+            <span class="font-mono-tabular text-[11px] text-muted">Pin {inspectorPin.pos}</span>
+          </div>
+          {#if assignments[inspectorPin.pos]}
+            <div class="font-mono text-[11px] text-muted mt-1">
+              {assignments[inspectorPin.pos].peripheral}_{assignments[inspectorPin.pos].signal}
+            </div>
+          {/if}
+        </div>
+
+        <div class="rounded-panel border-ui border-hairline bg-surface p-2.5 space-y-2.5 text-xs">
+          <div class="flex items-center justify-between gap-2">
+            <span class="font-medium text-primary">Electrical settings</span>
+            {#if inspectorConfig}
+              <button
+                type="button"
+                onclick={() => workspaceStore.setGpioConfig(inspectorPin!.pos, null)}
+                class="text-[11px] text-muted hover:text-primary underline"
+              >
+                Reset
+              </button>
+            {/if}
+          </div>
+
+          <label class="block space-y-1">
+            <span class="text-[11px] text-muted">Output level</span>
+            <select
+              value={inspectorConfig?.outputLevel ?? DEFAULT_GPIO_CONFIG.outputLevel}
+              onchange={(e) =>
+                updateGpioConfig(
+                  'outputLevel',
+                  (e.currentTarget as HTMLSelectElement).value as GpioConfig['outputLevel'],
+                )}
+              class="w-full px-2 py-1.5 rounded-control bg-elevated border-ui border-hairline text-xs text-primary focus:outline-none focus:border-hint"
+            >
+              {#each GPIO_OUTPUT_LEVELS as level}
+                <option value={level}>{level}</option>
+              {/each}
+            </select>
+          </label>
+
+          <label class="block space-y-1">
+            <span class="text-[11px] text-muted">Drive</span>
+            <select
+              value={inspectorConfig?.drive ?? DEFAULT_GPIO_CONFIG.drive}
+              onchange={(e) =>
+                updateGpioConfig(
+                  'drive',
+                  (e.currentTarget as HTMLSelectElement).value as GpioConfig['drive'],
+                )}
+              class="w-full px-2 py-1.5 rounded-control bg-elevated border-ui border-hairline text-xs text-primary focus:outline-none focus:border-hint"
+            >
+              {#each GPIO_DRIVES as drive}
+                <option value={drive}>{drive}</option>
+              {/each}
+            </select>
+          </label>
+
+          <label class="block space-y-1">
+            <span class="text-[11px] text-muted">Pull resistor</span>
+            <select
+              value={inspectorConfig?.pull ?? DEFAULT_GPIO_CONFIG.pull}
+              onchange={(e) =>
+                updateGpioConfig(
+                  'pull',
+                  (e.currentTarget as HTMLSelectElement).value as GpioConfig['pull'],
+                )}
+              class="w-full px-2 py-1.5 rounded-control bg-elevated border-ui border-hairline text-xs text-primary focus:outline-none focus:border-hint"
+            >
+              {#each GPIO_PULLS as pull}
+                <option value={pull}>{pull}</option>
+              {/each}
+            </select>
+          </label>
+
+          <label class="block space-y-1">
+            <span class="text-[11px] text-muted">Speed</span>
+            <select
+              value={inspectorConfig?.speed ?? DEFAULT_GPIO_CONFIG.speed}
+              onchange={(e) =>
+                updateGpioConfig(
+                  'speed',
+                  (e.currentTarget as HTMLSelectElement).value as GpioConfig['speed'],
+                )}
+              class="w-full px-2 py-1.5 rounded-control bg-elevated border-ui border-hairline text-xs text-primary focus:outline-none focus:border-hint"
+            >
+              {#each GPIO_SPEEDS as speed}
+                <option value={speed}>{speed}</option>
+              {/each}
+            </select>
+          </label>
+        </div>
+        <p class="text-[11px] text-muted">
+          Settings are stored with the pinout and included in share links, project files, and exports.
+        </p>
+      {/if}
+    </div>
   {/if}
 </aside>

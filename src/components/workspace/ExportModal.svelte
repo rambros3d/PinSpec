@@ -5,7 +5,7 @@
   import { exportCsv } from '../../core/exporters/csv';
   import { exportEmbassyRust } from '../../core/exporters/embassy-rust';
   import { exportPinoutJson, parsePinoutJson } from '../../core/exporters/json';
-  import type { ChipData, WorkspaceState } from '../../core/types';
+  import { getChipVendor, type ChipData, type WorkspaceState } from '../../core/types';
 
   interface Props {
     chip: ChipData;
@@ -35,7 +35,7 @@
       case 'csv':
         return exportCsv(chip, wsState, includeUnassignedCsv);
       case 'json':
-        return exportPinoutJson(wsState);
+        return exportPinoutJson(wsState, getChipVendor(chip));
       case 'share':
         return shareUrl;
     }

@@ -1,14 +1,32 @@
 import { deflateSync, inflateSync, strFromU8, strToU8 } from 'fflate';
-import type { PinAssignment, WorkspaceState } from './types';
+import {
+  PINCRAFT_STATE_VERSION,
+  type PinAssignment,
+  type PioPinAssignment,
+  type WorkspaceState,
+} from './types';
+
+type CompactAssignment = [
+  string,
+  string,
+  number | null,
+  (string | null)?,
+  (number | null)?,
+  (string | null)?,
+];
+type CompactPio = [string, number | undefined, string | undefined];
 
 interface CompactUrlPayload {
-  v: 1;
+  v: 2;
   m: string;
-  // Optional 4th-6th slots carry the generalized mux metadata (v1 payload, extended tuple).
-  a?: Record<string, Array<string | number | null>>;
+  a?: Record<string, CompactAssignment>;
   l?: Record<string, string>;
   k?: string[];
   p?: Record<string, string>;
+  /** Peripheral -> active remap ID (only present when non-empty). */
+  r?: Record<string, number>;
+  /** Physical position -> [instance, state machine, role] (only when non-empty). */
+  o?: Record<string, CompactPio>;
 }
 
 export type DecodeResult =
@@ -47,23 +65,26 @@ function base64UrlToBytes(encoded: string): Uint8Array {
   return new Uint8Array(Buffer.from(base64, 'base64'));
 }
 
+function sortedKeys(record: Record<string, unknown>): string[] {
+  return Object.keys(record).sort((a, b) => a.localeCompare(b));
+}
+
+/**
+ * Encode a workspace into a compressed, URL-safe share payload.
+ * Remap and PIO maps are included only when populated to keep links short.
+ */
 export function encodeWorkspaceState(state: WorkspaceState): string {
   const payload: CompactUrlPayload = {
-    v: 1,
+    v: PINCRAFT_STATE_VERSION,
     m: state.mcuId,
   };
 
-  const assignmentEntries = Object.entries(state.assignments).sort(([a], [b]) =>
-    a.localeCompare(b),
-  );
+  const assignmentEntries = sortedKeys(state.assignments as Record<string, unknown>);
   if (assignmentEntries.length > 0) {
     payload.a = {};
-    for (const [pos, asgn] of assignmentEntries) {
-      const row: Array<string | number | null> = [
-        asgn.peripheral,
-        asgn.signal,
-        asgn.af,
-      ];
+    for (const pos of assignmentEntries) {
+      const asgn = state.assignments[pos];
+      const row: CompactAssignment = [asgn.peripheral, asgn.signal, asgn.af];
       if (
         asgn.funcLabel !== undefined ||
         asgn.remapId !== undefined ||
@@ -97,23 +118,42 @@ export function encodeWorkspaceState(state: WorkspaceState): string {
     payload.p = Object.fromEntries(modeEntries);
   }
 
+  if (state.activeRemaps && Object.keys(state.activeRemaps).length > 0) {
+    payload.r = {};
+    for (const peripheral of sortedKeys(state.activeRemaps as Record<string, unknown>)) {
+      payload.r[peripheral] = state.activeRemaps[peripheral];
+    }
+  }
+
+  if (state.pioAssignments && Object.keys(state.pioAssignments).length > 0) {
+    payload.o = {};
+    for (const pos of sortedKeys(state.pioAssignments as Record<string, unknown>)) {
+      const pio = state.pioAssignments[pos];
+      payload.o[pos] = [pio.instance, pio.sm, pio.role];
+    }
+  }
+
   const json = JSON.stringify(payload);
   const deflated = deflateSync(strToU8(json), { level: 9 });
   return bytesToBase64Url(deflated);
 }
 
+/** Decode a share payload, returning a banner-friendly error for bad links. */
 export function decodeWorkspaceState(encoded: string): DecodeResult {
   try {
     const compressed = base64UrlToBytes(encoded);
     const raw = strFromU8(inflateSync(compressed));
     const parsed: unknown = JSON.parse(raw);
 
-    if (!parsed || typeof parsed !== 'object') {
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
       return { ok: false, error: 'Decoded share payload is not a valid object.' };
     }
     const obj = parsed as Record<string, unknown>;
-    if (obj.v !== 1) {
-      return { ok: false, error: `Unsupported share link version: ${String(obj.v)}.` };
+    if (obj.v !== PINCRAFT_STATE_VERSION) {
+      return {
+        ok: false,
+        error: `Unsupported share link version: ${String(obj.v)}.`,
+      };
     }
     if (typeof obj.m !== 'string' || obj.m.trim().length === 0) {
       return { ok: false, error: 'Share link is missing a valid MCU identifier.' };
@@ -122,31 +162,17 @@ export function decodeWorkspaceState(encoded: string): DecodeResult {
     const assignments: Record<string, PinAssignment> = {};
     if (obj.a && typeof obj.a === 'object' && !Array.isArray(obj.a)) {
       for (const [pos, val] of Object.entries(obj.a as Record<string, unknown>)) {
-        if (Array.isArray(val) && val.length >= 2) {
-          const [peripheral, signal, af, funcLabel, remapId, resourceId] = val;
-          if (typeof peripheral === 'string' && typeof signal === 'string') {
-            assignments[pos] = {
-              peripheral,
-              signal,
-              af: typeof af === 'number' ? af : null,
-              ...(typeof funcLabel === 'string' ? { funcLabel } : {}),
-              ...(typeof remapId === 'number' ? { remapId } : {}),
-              ...(typeof resourceId === 'string' ? { resourceId } : {}),
-            };
-          }
-        } else if (val && typeof val === 'object') {
-          const rec = val as Record<string, unknown>;
-          if (typeof rec.peripheral === 'string' && typeof rec.signal === 'string') {
-            assignments[pos] = {
-              peripheral: rec.peripheral,
-              signal: rec.signal,
-              af: typeof rec.af === 'number' ? rec.af : null,
-              ...(typeof rec.funcLabel === 'string' ? { funcLabel: rec.funcLabel } : {}),
-              ...(typeof rec.remapId === 'number' ? { remapId: rec.remapId } : {}),
-              ...(typeof rec.resourceId === 'string' ? { resourceId: rec.resourceId } : {}),
-            };
-          }
-        }
+        if (!Array.isArray(val) || val.length < 2) continue;
+        const [peripheral, signal, af, funcLabel, remapId, resourceId] = val;
+        if (typeof peripheral !== 'string' || typeof signal !== 'string') continue;
+        assignments[pos] = {
+          peripheral,
+          signal,
+          af: typeof af === 'number' ? af : null,
+          ...(typeof funcLabel === 'string' ? { funcLabel } : {}),
+          ...(typeof remapId === 'number' ? { remapId } : {}),
+          ...(typeof resourceId === 'string' ? { resourceId } : {}),
+        };
       }
     }
 
@@ -164,10 +190,6 @@ export function decodeWorkspaceState(encoded: string): DecodeResult {
       for (const pos of obj.k) {
         if (typeof pos === 'string') locked[pos] = true;
       }
-    } else if (obj.k && typeof obj.k === 'object') {
-      for (const [pos, val] of Object.entries(obj.k as Record<string, unknown>)) {
-        if (Boolean(val)) locked[pos] = true;
-      }
     }
 
     const peripheralModes: Record<string, string> = {};
@@ -179,16 +201,36 @@ export function decodeWorkspaceState(encoded: string): DecodeResult {
       }
     }
 
-    return {
-      ok: true,
-      state: {
-        mcuId: obj.m.trim(),
-        assignments,
-        labels,
-        locked,
-        peripheralModes,
-      },
+    const state: WorkspaceState = {
+      mcuId: obj.m.trim(),
+      assignments,
+      labels,
+      locked,
+      peripheralModes,
     };
+
+    if (obj.r && typeof obj.r === 'object' && !Array.isArray(obj.r)) {
+      const remaps: Record<string, number> = {};
+      for (const [peripheral, id] of Object.entries(obj.r as Record<string, unknown>)) {
+        if (typeof id === 'number') remaps[peripheral] = id;
+      }
+      if (Object.keys(remaps).length > 0) state.activeRemaps = remaps;
+    }
+
+    if (obj.o && typeof obj.o === 'object' && !Array.isArray(obj.o)) {
+      const pioAssignments: Record<string, PioPinAssignment> = {};
+      for (const [pos, val] of Object.entries(obj.o as Record<string, unknown>)) {
+        if (!Array.isArray(val) || typeof val[0] !== 'string') continue;
+        pioAssignments[pos] = {
+          instance: val[0],
+          ...(typeof val[1] === 'number' ? { sm: val[1] } : {}),
+          ...(typeof val[2] === 'string' ? { role: val[2] } : {}),
+        };
+      }
+      if (Object.keys(pioAssignments).length > 0) state.pioAssignments = pioAssignments;
+    }
+
+    return { ok: true, state };
   } catch (err) {
     return {
       ok: false,

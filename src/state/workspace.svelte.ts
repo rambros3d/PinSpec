@@ -2,6 +2,7 @@ import { cloneWorkspaceState, createWorkspaceHistory, type HistoryStack } from '
 import {
   allocatePeripheralMode,
   applyOneHopFix,
+  applyRemapGroup,
   createEmptyWorkspace,
   evaluateWorkspace,
   findAlternatePins,
@@ -14,6 +15,7 @@ import type {
   ChipData,
   OneHopFix,
   PinAssignment,
+  PioPinAssignment,
   SolverReport,
   WorkspaceState,
 } from '../core/types';
@@ -307,6 +309,45 @@ class WorkspaceStore {
     const next = applyOneHopFix(this.state, fix);
     this.commit(next);
     this.showToast(`Applied remap: ${fix.displacedPeripheral}_${fix.displacedSignal} moved.`, 'success');
+  }
+
+  /**
+   * Apply a CH32-style coupled remap group and record the selection.
+   * A locked or occupied target blocks the whole atomic move.
+   */
+  setActiveRemap(peripheralName: string, remapId: number): void {
+    if (!this.chip) return;
+    const result = applyRemapGroup(this.chip, this.state, peripheralName, remapId);
+    if (!result.applied) {
+      this.showToast(result.diagnostics[0]?.message ?? 'Remap could not be applied.', 'warning');
+      return;
+    }
+    this.commit(result.state);
+  }
+
+  /** Clear a peripheral's remap selection while keeping its pin assignments. */
+  clearActiveRemap(peripheralName: string): void {
+    if (!this.state.activeRemaps?.[peripheralName]) return;
+    const next = cloneWorkspaceState(this.state);
+    delete next.activeRemaps![peripheralName];
+    if (Object.keys(next.activeRemaps!).length === 0) delete next.activeRemaps;
+    this.commit(next);
+  }
+
+  /**
+   * Bind or clear an RP PIO assignment for a physical pin. Passing `null`
+   * removes the binding; empty binding maps are omitted from persisted state.
+   */
+  setPioAssignment(pos: string, assignment: PioPinAssignment | null): void {
+    const next = cloneWorkspaceState(this.state);
+    if (assignment) {
+      if (!next.pioAssignments) next.pioAssignments = {};
+      next.pioAssignments[pos] = { ...assignment };
+    } else if (next.pioAssignments) {
+      delete next.pioAssignments[pos];
+      if (Object.keys(next.pioAssignments).length === 0) delete next.pioAssignments;
+    }
+    this.commit(next);
   }
 
   enterRemapMode(pos: string): void {

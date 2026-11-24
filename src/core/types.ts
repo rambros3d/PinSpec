@@ -1,3 +1,10 @@
+/**
+ * Current PinCraft state schema version for project files and share links.
+ * There is deliberately no version-1 import path: the multi-vendor schema
+ * replaces it outright, and any other version is rejected by both codecs.
+ */
+export const PINCRAFT_STATE_VERSION = 2;
+
 export type VendorId = 'stm32' | 'ch32' | 'rp';
 
 export type MuxModel =

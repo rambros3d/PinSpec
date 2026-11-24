@@ -105,11 +105,13 @@ describe('exporters', () => {
     expect(h).toContain('#endif');
   });
 
-  it('generates KiCad / EasyEDA CSV table', () => {
+  it('generates a vendor-neutral CSV table', () => {
     const csv = exportCsv(sampleChip, sampleState);
     const lines = csv.trim().split('\n');
-    expect(lines[0]).toBe('Position,Pin,Type,Peripheral,Signal,AF,Label,Locked');
-    expect(lines[1]).toBe('15,PA5,io,SPI1,SCK,AF5,IMU_CLK,true');
+    expect(lines[0]).toBe(
+      'Vendor,Position,Pin,Type,Peripheral,Signal,Mux,Resource,Label,Locked',
+    );
+    expect(lines[1]).toBe('stm32,15,PA5,io,SPI1,SCK,AF5,,IMU_CLK,true');
   });
 
   it('exports deterministic JSON and re-imports cleanly', () => {

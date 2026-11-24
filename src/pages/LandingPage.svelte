@@ -413,6 +413,18 @@
             Upstream commits: open-pin-data {catalogStore.meta.openPinDataCommit} · stm32-data {catalogStore.meta.stm32DataCommit}
           </div>
         {/if}
+        {#if catalogStore.meta?.sources?.ch32}
+          {@const ch32Source = catalogStore.meta.sources.ch32}
+          <div class="text-[11px] text-faint space-y-0.5">
+            {#if ch32Source.repositories}
+              {#each ch32Source.repositories as repo (repo.id)}
+                <div>{repo.id} {repo.commit} ({repo.license}) · {ch32Source.chipCount.toLocaleString()} chips</div>
+              {/each}
+            {:else}
+              <div>ch32-device-data {ch32Source.commit} · {ch32Source.chipCount.toLocaleString()} chips</div>
+            {/if}
+          </div>
+        {/if}
       </div>
 
       <div class="text-[11px] space-y-1 sm:text-right">
@@ -421,6 +433,9 @@
         </div>
         <div>
           AF & DMA tables: <a class="underline hover:text-primary" href="https://github.com/embassy-rs/stm32-data-generated" target="_blank" rel="noreferrer">embassy-rs/stm32-data-generated</a> (MIT / Apache-2.0)
+        </div>
+        <div>
+          CH32 pinouts: <a class="underline hover:text-primary" href="https://github.com/ch32-riscv-ug/ch32-device-data" target="_blank" rel="noreferrer">ch32-riscv-ug/ch32-device-data</a> (MIT)
         </div>
       </div>
     </div>

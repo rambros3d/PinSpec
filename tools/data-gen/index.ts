@@ -3,7 +3,8 @@
  *
  * Resolves upstream sources, resets outputs, delegates to registered vendor
  * adapters, and writes every artifact exactly once. No vendor-specific parsing
- * lives here; see `adapters/stm32.ts` for the STM32 implementation.
+ * lives here; see `adapters/stm32.ts` and `adapters/ch32.ts` for the vendor
+ * implementations.
  */
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -14,6 +15,7 @@ import type {
   ChipData,
   VendorId,
 } from '../../src/core/types';
+import { ch32Adapter } from './adapters/ch32';
 import { stm32Adapter } from './adapters/stm32';
 import {
   buildMetaDocument,
@@ -37,7 +39,7 @@ import type {
 import { createWarningCollector } from './warnings';
 
 /** Adapters registered for this build. New vendors are added here only. */
-export const DEFAULT_ADAPTERS: VendorAdapter[] = [stm32Adapter];
+export const DEFAULT_ADAPTERS: VendorAdapter[] = [stm32Adapter, ch32Adapter];
 
 /** End-of-run view used for logging and tests. */
 export interface GenerationSummary {

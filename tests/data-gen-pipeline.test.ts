@@ -322,8 +322,10 @@ describe('metadata and warnings', () => {
     const meta = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
     expect(doc.warningCount).toBe(doc.warnings.length);
     expect(doc.warnings.every((w: { vendor: string }) => typeof w.vendor === 'string')).toBe(true);
-    expect(doc.warningsByVendor.stm32).toBe(doc.warningCount);
-    expect(meta.sources.stm32.chipCount).toBe(meta.chipCount);
+    const ch32Warnings = doc.warningsByVendor.ch32 ?? 0;
+    expect(doc.warningsByVendor.stm32).toBe(doc.warningCount - ch32Warnings);
+    expect(meta.sources.stm32.chipCount).toBeLessThanOrEqual(meta.chipCount);
+    expect(meta.sources.ch32?.chipCount ?? 0).toBe(meta.chipCount - meta.sources.stm32.chipCount);
     expect(meta.sources.stm32.commit).toBe(meta.stm32DataCommit);
     expect(meta.sources.stm32.openPinDataCommit).toBe(meta.openPinDataCommit);
   });

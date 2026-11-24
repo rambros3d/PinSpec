@@ -14,6 +14,8 @@ import type { ResolvedSource, SourceSpec } from './types';
 export const LICENSE_OPEN_PIN_DATA = 'BSD-3-Clause';
 /** License of embassy-rs/stm32-data-generated (dual licensed). */
 export const LICENSE_EMBASSY_STM32 = 'MIT / Apache-2.0';
+/** License of ch32-riscv-ug/ch32-device-data. */
+export const LICENSE_CH32_DEVICE_DATA = 'MIT';
 
 /** Builds the default `.cache` location for a repository root. */
 export function defaultCacheDir(root: string = process.cwd()): string {
@@ -75,8 +77,20 @@ export function stm32SourceSpecs(cacheDir: string = defaultCacheDir()): SourceSp
   ];
 }
 
+/** Source declarations for the CH32 vendor adapter. */
+export function ch32SourceSpecs(cacheDir: string = defaultCacheDir()): SourceSpec[] {
+  return [
+    {
+      id: 'ch32-device-data',
+      url: 'https://github.com/ch32-riscv-ug/ch32-device-data.git',
+      dir: path.join(cacheDir, 'ch32-device-data'),
+      license: LICENSE_CH32_DEVICE_DATA,
+    },
+  ];
+}
+
 /** Every source configured for the current pipeline (used by CI pre-fetch). */
-export const SOURCE_SPECS: SourceSpec[] = stm32SourceSpecs();
+export const SOURCE_SPECS: SourceSpec[] = [...stm32SourceSpecs(), ...ch32SourceSpecs()];
 
 function main(): void {
   for (const spec of SOURCE_SPECS) {

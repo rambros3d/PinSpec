@@ -33,13 +33,14 @@
 
   let { mcuId, sharedPayload }: Props = $props();
 
-  type SummaryTab = 'pins' | 'diagnostics' | 'dma' | 'pio' | 'gpio';
+  type SummaryTab = 'pins' | 'diagnostics' | 'dma' | 'pio' | 'gpio' | 'audit';
   const DOCK_TAB_LABELS: Record<DockTab, string> = {
     peripherals: 'Peripherals',
     pins: 'Pins',
     diagnostics: 'Diagnostics',
     dma: 'DMA',
     pio: 'PIO',
+    audit: 'Audit',
   };
 
   let leftWidth = $state(280);

@@ -5,6 +5,7 @@
   import { exportCsv } from '../../core/exporters/csv';
   import { exportEmbassyRust } from '../../core/exporters/embassy-rust';
   import { exportPinoutJson, parsePinoutJson } from '../../core/exporters/json';
+  import { buildHardwareAudit, formatHardwareAuditText } from '../../core/hardware-audit';
   import { getChipVendor, type ChipData, type WorkspaceState } from '../../core/types';
 
   interface Props {
@@ -17,7 +18,7 @@
 
   let { chip, state: wsState, shareUrl, onImportState, onClose }: Props = $props();
 
-  type TabId = 'rust' | 'c' | 'csv' | 'json' | 'share';
+  type TabId = 'rust' | 'c' | 'csv' | 'json' | 'audit' | 'share';
 
   let activeTab = $state<TabId>('rust');
   let includeUnassignedCsv = $state(false);
@@ -39,6 +40,7 @@
     { id: 'c' as TabId, label: 'C Header' },
     { id: 'csv' as TabId, label: 'CSV' },
     { id: 'json' as TabId, label: 'JSON' },
+    { id: 'audit' as TabId, label: 'Audit' },
     { id: 'share' as TabId, label: 'Share URL' },
   ]);
 
@@ -52,6 +54,8 @@
         return exportCsv(chip, wsState, includeUnassignedCsv);
       case 'json':
         return exportPinoutJson(wsState, getChipVendor(chip));
+      case 'audit':
+        return formatHardwareAuditText(buildHardwareAudit(chip, wsState));
       case 'share':
         return shareUrl;
     }
@@ -68,6 +72,8 @@
         return `${id}_pinout.csv`;
       case 'json':
         return `${id}_pinout.json`;
+      case 'audit':
+        return `${id}_hardware_audit.txt`;
       case 'share':
         return `${id}_share_url.txt`;
     }

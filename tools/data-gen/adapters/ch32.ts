@@ -2,16 +2,16 @@
  * CH32 vendor adapter: converts the public CSV surface of
  * `ch32-riscv-ug/ch32-device-data` into complete `ChipData` catalog entries.
  *
- * Only files under the upstream `index/` directory are consumed: upstream
- * declares that directory as its stable public contract and publishes a SHA-256
- * manifest for it. Register/bits detail from `evidence/remap_fields.csv` and
- * electrical kind from `evidence/pins.csv` are already folded into the public
- * `index/routes.csv` and `index/pinout.csv` tables, so the working-layer files
- * are neither read nor needed (and cannot be manifest-verified).
+ * Tables under the upstream `index/` directory are manifest-verified and are
+ * the source of geometry, signals, and remaps. One additional checkout file,
+ * `evidence/pins.csv`, supplies electrical I/O types; it has no upstream digest
+ * entry, so this adapter requires its columns and records its own SHA-256 in
+ * provenance. No other working-layer file is read.
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import type {
+  CatalogEvidenceFile,
   CatalogIndexEntry,
   ChipData,
   PeripheralInfo,
@@ -24,10 +24,11 @@ import type {
 import { parseCsv, requireColumns } from '../csv';
 import { buildPackageInfo, classifyPeripheralKind } from '../helpers';
 import { sha256Hex } from '../hashes';
-import { ch32SourceSpecs } from '../sources';
+import { CH32_EVIDENCE_FILE, LICENSE_CH32_DEVICE_DATA, ch32SourceSpecs } from '../sources';
 import type {
   AdapterContext,
   AdapterResult,
+  DeclaredSourceFile,
   Gate,
   GateContext,
   GateResult,
@@ -122,6 +123,61 @@ export function verifyCh32Sources(indexDir: string): Map<string, Ch32ManifestEnt
     }
   }
   return manifest;
+}
+
+/** Parsed tolerance evidence plus the digest of the exact upstream bytes. */
+export interface Ch32ToleranceEvidence {
+  rows: Row[];
+  sha256: string;
+  declared: DeclaredSourceFile;
+}
+
+/**
+ * Reads the declared, non-manifest-verified electrical-kind file. Missing or
+ * column-incomplete evidence aborts CH32 generation instead of silently
+ * dropping tolerance tags.
+ */
+export function readCh32ToleranceEvidence(sourceDir: string): Ch32ToleranceEvidence {
+  const declared = CH32_EVIDENCE_FILE;
+  const target = path.join(sourceDir, declared.path);
+  if (!fs.existsSync(target)) {
+    throw new Error(`CH32 evidence verification failed: missing ${declared.path}.`);
+  }
+  const raw = fs.readFileSync(target);
+  const { columns, rows } = parseCsv(raw.toString('utf8'));
+  requireColumns(columns, declared.columns, declared.path);
+  if (rows.length === 0) {
+    throw new Error(`CH32 evidence verification failed: ${declared.path} has no data rows.`);
+  }
+  return { rows, sha256: sha256Hex(raw), declared };
+}
+
+/** Normalized join key spanning part number, physical pin position, and pad. */
+export function ch32ToleranceKey(part: string, pin: string, pad: string): string {
+  return [part, pin, pad]
+    .map((value) => (value ?? '').trim().toUpperCase())
+    .join('|');
+}
+
+/** Keys of upstream `I/O/FT` rows; plain `I/O` and other kinds are excluded. */
+export function ch32FtToleranceKeys(rows: Row[]): Set<string> {
+  const keys = new Set<string>();
+  for (const row of rows) {
+    if ((row.type ?? '').trim().toLowerCase() !== 'i/o/ft') continue;
+    keys.add(ch32ToleranceKey(row.part_number, row.pin, row.pad));
+  }
+  return keys;
+}
+
+/** Provenance record for the evidence file consumed by a CH32 generation run. */
+export function ch32EvidenceProvenance(evidence: Ch32ToleranceEvidence): CatalogEvidenceFile {
+  return {
+    path: evidence.declared.path,
+    sha256: evidence.sha256,
+    rows: evidence.rows.length,
+    url: evidence.declared.url,
+    license: LICENSE_CH32_DEVICE_DATA,
+  };
 }
 
 /** Reads and column-checks one manifest-verified CSV table. */
@@ -226,6 +282,7 @@ export function buildCh32Chip(
   pinoutRows: Row[],
   routeIndex: Map<string, RouteEvidence>,
   core: string,
+  ftToleranceKeys: ReadonlySet<string> = new Set<string>(),
 ): ChipData {
   const partId = part.part_number.trim().toUpperCase();
   const series = part.series.trim();
@@ -321,6 +378,9 @@ export function buildCh32Chip(
     const kinds = rows.map((r) => mapPinType(r.kind, r.pad));
     const pinType = kinds.includes('io') ? 'io' : kinds[0] ?? 'io';
     const tags = derivePinTags(rows);
+    if (padNames.some((pad) => ftToleranceKeys.has(ch32ToleranceKey(partId, pos, pad)))) {
+      tags.push('5v-tolerant');
+    }
     if (padNames.length > 1) tags.push('bonded');
 
     pins.push({
@@ -389,6 +449,8 @@ export function generateCh32(ctx: AdapterContext): AdapterResult {
   const indexDir = path.join(source.dir, CH32_INDEX_DIR);
   console.log('Loading CH32 ch32-device-data index tables...');
   verifyCh32Sources(indexDir);
+  const evidence = readCh32ToleranceEvidence(source.dir);
+  const ftToleranceKeys = ch32FtToleranceKeys(evidence.rows);
 
   const partRows = readTable(indexDir, 'parts.csv');
   const pinoutRows = readTable(indexDir, 'pinout.csv');
@@ -466,6 +528,7 @@ export function generateCh32(ctx: AdapterContext): AdapterResult {
       rows,
       routeIndex,
       coreBySeries.get((part.series || '').trim()) ?? '',
+      ftToleranceKeys,
     );
     chips.set(id, chip);
     index.set(id, ch32IndexEntry(chip));
@@ -498,6 +561,7 @@ export function generateCh32(ctx: AdapterContext): AdapterResult {
     families: Array.from(families).sort(),
     totalVariants,
     matchedVariants,
+    evidenceFiles: [ch32EvidenceProvenance(evidence)],
   };
 }
 
@@ -524,6 +588,7 @@ export const ch32ReferenceGate: Gate = {
     const errors: string[] = [];
     let groupedRemaps = 0;
     let sdiTaggedPd1 = 0;
+    let ftTaggedParts = 0;
     for (const ref of CH32_REFERENCES) {
       const errorCountBefore = errors.length;
       const chip = ctx.chips.get(ref.id);
@@ -577,6 +642,9 @@ export const ch32ReferenceGate: Gate = {
       )) {
         sdiTaggedPd1 += 1;
       }
+      if (chip.pins.some((p) => p.tags?.includes('5v-tolerant'))) {
+        ftTaggedParts += 1;
+      }
       if (errors.length === errorCountBefore) {
         console.log(`  ch32 reference: ${ref.id} ${ref.pins} pins OK`);
       }
@@ -586,6 +654,12 @@ export const ch32ReferenceGate: Gate = {
     }
     if (sdiTaggedPd1 === 0) {
       errors.push('CH32 gate failed: no priority part carries a debug-sdi tag on PD1.');
+    }
+    if (ftTaggedParts === 0) {
+      errors.push(
+        `CH32 gate failed: no priority part (${CH32_REFERENCES.map((ref) => ref.id).join(', ')}) ` +
+        `carries a 5v-tolerant pin from ${CH32_EVIDENCE_FILE.path}.`,
+      );
     }
     return { vendor: 'ch32', name: 'ch32-reference-parts', errors, notes: [] };
   },

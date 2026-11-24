@@ -14,6 +14,7 @@ import {
   generateCh32,
   mapPinType,
   parseCh32Manifest,
+  readCh32ToleranceEvidence,
   routeToRemapId,
   verifyCh32Sources,
 } from '../tools/data-gen/adapters/ch32';
@@ -51,6 +52,9 @@ const ROUTE_COLS = [
 ];
 const PACKAGE_COLS = ['package', 'pin_count', 'body_size', 'pin_pitch'];
 const SERIES_COLS = ['series', 'family', 'core', 'isa'];
+const EVIDENCE_COLS = [
+  'part_number', 'pin', 'pad', 'kind', 'type', 'confidence', 'basis', 'table', 'datasheet',
+];
 
 type TableRow = Record<string, string | number>;
 
@@ -106,17 +110,44 @@ interface Fixture {
   routes?: TableRow[];
   series?: TableRow[];
   packages?: TableRow[];
+  evidence?: TableRow[];
+}
+
+/** Default electrical-kind rows: selected pads are upstream `I/O/FT`. */
+function defaultEvidence(pinouts: TableRow[]): TableRow[] {
+  const ftPads = new Set(['PC1', 'PC2', 'PC5', 'PC6']);
+  return pinouts
+    .filter((row) => row.kind === 'gpio')
+    .map((row) => ({
+      part_number: row.part_number,
+      pin: row.pin,
+      pad: row.pad,
+      kind: row.kind,
+      type: ftPads.has(String(row.pad)) ? 'I/O/FT' : 'I/O',
+      confidence: 'confirmed',
+      basis: 'fixture:test',
+      table: '2-1',
+      datasheet: 'fixture',
+    }));
 }
 
 /** Writes a complete manifest-verified `index/` surface for one CH32 source. */
 function writeFixture(root: string, fixture: Fixture): string {
   const sourceDir = path.join(root, '.cache', 'ch32-device-data');
   const indexDir = path.join(sourceDir, 'index');
+  const evidenceDir = path.join(sourceDir, 'evidence');
   fs.mkdirSync(indexDir, { recursive: true });
+  fs.mkdirSync(evidenceDir, { recursive: true });
+
+  const pinoutRows = fixture.pinouts ?? [pinout('CH32V003F4P6', 1, 'PD4')];
+  fs.writeFileSync(
+    path.join(evidenceDir, 'pins.csv'),
+    csvTable(EVIDENCE_COLS, fixture.evidence ?? defaultEvidence(pinoutRows)),
+  );
 
   const tables: Record<string, string> = {
     'parts.csv': csvTable(PART_COLS, fixture.parts ?? [part('CH32V003F4P6')]),
-    'pinout.csv': csvTable(PINOUT_COLS, fixture.pinouts ?? [pinout('CH32V003F4P6', 1, 'PD4')]),
+    'pinout.csv': csvTable(PINOUT_COLS, pinoutRows),
     'routes.csv': csvTable(ROUTE_COLS, fixture.routes ?? []),
     'packages.csv': csvTable(PACKAGE_COLS, fixture.packages ?? [
       { package: 'TSSOP20', pin_count: 20 },
@@ -157,11 +188,11 @@ function leads(id: string, count: number, padFor: (i: number) => string = (i) =>
 
 function referenceRows(): TableRow[] {
   return [
-    ...leads('CH32V003F4P6', 20),
+    ...leads('CH32V003F4P6', 20, (i) => (i === 10 ? 'PC1' : `PA${i}`)),
     ...leads('CH32V003J4M6', 8, (i) => ['PD1', 'VDD', 'PA2', 'VSS', 'PC4', 'PC1', 'PD6', 'PD4'][i]),
     pinout('CH32V003J4M6', 1, 'PD6', { peripheral: 'SDI', role: 'SWDIO', signal: 'SWIO' }),
-    ...leads('CH32V203C8T6', 48),
-    ...leads('CH32X035G8U6', 28),
+    ...leads('CH32V203C8T6', 48, (i) => (i === 10 ? 'PC2' : `PA${i}`)),
+    ...leads('CH32X035G8U6', 28, (i) => (i === 10 ? 'PC5' : `PA${i}`)),
     pinout('CH32V203C8T6', 'EP', 'VSS', { kind: 'power' }),
     pinout('CH32X035G8U6', 'EP', 'GND', { kind: 'power' }),
   ];
@@ -221,6 +252,42 @@ describe('CH32 CSV and manifest helpers', () => {
     );
     expect(parseCh32Manifest(fs.readFileSync(path.join(sourceDir, 'index', 'manifest.csv'), 'utf8')).size)
       .toBeGreaterThan(0);
+  });
+
+  it('reads declared tolerance evidence with its digest and rejects missing or malformed files', () => {
+    const root = tempRoot('pincraft-ch32-evidence-');
+    const sourceDir = writeFixture(root, {});
+    const evidencePath = path.join(sourceDir, 'evidence', 'pins.csv');
+    const evidence = readCh32ToleranceEvidence(sourceDir);
+    expect(evidence.rows.length).toBeGreaterThan(0);
+    expect(evidence.sha256).toBe(sha256Hex(fs.readFileSync(evidencePath)));
+    expect(evidence.declared.path).toBe('evidence/pins.csv');
+    expect(evidence.declared.columns).toEqual(['part_number', 'pin', 'pad', 'type']);
+
+    fs.writeFileSync(evidencePath, 'part_number,pin\nCH32V003F4P6,11\n');
+    expect(() => readCh32ToleranceEvidence(sourceDir)).toThrow(
+      /CH32 source evidence\/pins\.csv is missing required column/,
+    );
+    fs.rmSync(evidencePath);
+    expect(() => readCh32ToleranceEvidence(sourceDir)).toThrow(
+      /CH32 evidence verification failed: missing evidence\/pins\.csv/,
+    );
+  });
+
+  it('aborts generation when the declared tolerance evidence is absent', () => {
+    const root = tempRoot('pincraft-ch32-evidence-abort-');
+    const sourceDir = writeFixture(root, {});
+    fs.rmSync(path.join(sourceDir, 'evidence', 'pins.csv'));
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    try {
+      expect(() => generateCatalog(root, [adapterWithFixtureSource(sourceDir)])).toThrow(
+        /missing evidence\/pins\.csv/,
+      );
+      expect(fs.readdirSync(path.join(root, 'public', 'data', 'chips'))).toEqual([]);
+      expect(fs.existsSync(path.join(root, 'public', 'data', 'meta.json'))).toBe(false);
+    } finally {
+      logSpy.mockRestore();
+    }
   });
 
   it('aborts generation with a named error and writes no CH32 shards on digest mismatch', () => {
@@ -394,6 +461,43 @@ describe('CH32 bonded pads, signals, remaps, and tags', () => {
     expect(sig.remapId).toBe(1);
   });
 
+  it('tags FT pins by part, position, and pad while leaving plain I/O untagged', () => {
+    const root = tempRoot('pincraft-ch32-ft-');
+    const id = 'CH32V003F4P6';
+    const pinouts = [
+      pinout(id, 11, 'PC1'),
+      pinout(id, 12, 'PC2'),
+      pinout(id, 13, 'PD4'),
+      pinout(id, 14, 'PC5'),
+      pinout(id, 15, 'PC5'),
+      pinout(id, 15, 'PC6'),
+      pinout(id, 15, 'PC7'),
+    ];
+    const evidence = [
+      { part_number: id, pin: 11, pad: 'PC1', kind: 'gpio', type: 'i/o/ft' },
+      { part_number: id, pin: 12, pad: 'PC2', kind: 'gpio', type: 'I/O' },
+      { part_number: id, pin: 13, pad: 'PD4', kind: 'gpio', type: 'I/O' },
+      { part_number: id, pin: 13, pad: 'PD4', kind: 'gpio', type: 'I/O/FT' },
+      { part_number: id.toLowerCase(), pin: ' 15 ', pad: ' pc5 ', kind: 'gpio', type: ' I/O/FT ' },
+      { part_number: id, pin: 15, pad: 'PC6', kind: 'gpio', type: 'I/O/FT' },
+      { part_number: id, pin: 15, pad: 'PC7', kind: 'gpio', type: 'I/O/FT' },
+      { part_number: 'CH32V003OTHER6', pin: 12, pad: 'PC2', kind: 'gpio', type: 'I/O/FT' },
+    ];
+    writeFixture(root, { parts: [part(id)], pinouts, evidence });
+    const result = generateCh32({ paths: {
+      root, cacheDir: path.join(root, '.cache'),
+      outDir: path.join(root, 'public', 'data'), chipsOutDir: path.join(root, 'public', 'data', 'chips'),
+    }, sources: sourceFor(root), warnings: createWarningCollector() });
+    const chip = result.chips.get(id)!;
+    expect(chip.pins.find((p) => p.pos === '11')?.tags).toContain('5v-tolerant');
+    expect(chip.pins.find((p) => p.pos === '12')?.tags ?? []).not.toContain('5v-tolerant');
+    expect(chip.pins.find((p) => p.pos === '13')?.tags).toContain('5v-tolerant');
+    const bonded = chip.pins.find((p) => p.pos === '15')!;
+    expect(bonded.bondedNames).toEqual(['PC5', 'PC6', 'PC7']);
+    expect(bonded.tags?.filter((tag) => tag === '5v-tolerant')).toHaveLength(1);
+    expect(bonded.tags).toContain('bonded');
+  });
+
   it('applies semantic tags only where source evidence supports them', () => {
     expect(derivePinTags([
       { peripheral: 'SDI', role: 'SWDIO', signal: 'SWIO' },
@@ -458,6 +562,21 @@ describe('CH32 deferral, gates, provenance, and registration', () => {
       for (const id of ['CH32V003F4P6', 'CH32V003J4M6', 'CH32V203C8T6', 'CH32X035G8U6']) {
         expect(logs).toContain(`ch32 reference: ${id}`);
       }
+      const withoutFt = new Map(
+        Array.from(result.chips, ([id, chip]) => [
+          id,
+          {
+            ...chip,
+            pins: chip.pins.map((p) => ({
+              ...p,
+              tags: p.tags?.filter((tag) => tag !== '5v-tolerant'),
+            })),
+          },
+        ]),
+      );
+      const ftErrors = ch32ReferenceGate.evaluate(gateCtx(withoutFt)).errors;
+      expect(ftErrors.some((e) => e.includes('CH32V003F4P6') && e.includes('5v-tolerant'))).toBe(true);
+
       const j4 = result.chips.get('CH32V003J4M6')!;
       j4.pins = j4.pins.slice(0, 7);
       const errors = ch32ReferenceGate.evaluate(gateCtx(result.chips)).errors;
@@ -490,6 +609,12 @@ describe('CH32 deferral, gates, provenance, and registration', () => {
       expect(meta.sources.ch32.commit).toBe(expectedCommit);
       expect(meta.sources.ch32.chipCount).toBe(4);
       expect(meta.sources.ch32.license).toBe('MIT');
+      expect(meta.sources.ch32.evidenceFiles).toHaveLength(1);
+      expect(meta.sources.ch32.evidenceFiles[0]).toMatchObject({
+        path: 'evidence/pins.csv',
+        sha256: sha256Hex(fs.readFileSync(path.join(sourceDir, 'evidence', 'pins.csv'))),
+        license: 'MIT',
+      });
       expect(meta.chipCount).toBe(4);
       const index = JSON.parse(fs.readFileSync(path.join(root, 'public', 'data', 'index.json'), 'utf8'));
       expect(index).toHaveLength(4);

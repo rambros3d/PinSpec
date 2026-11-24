@@ -115,6 +115,17 @@ export interface CatalogVendorRepository {
   license: string;
 }
 
+/** An in-checkout upstream file consumed outside a source's manifest surface. */
+export interface CatalogEvidenceFile {
+  /** Upstream-relative path of the consumed file. */
+  path: string;
+  /** SHA-256 of the exact file bytes, lowercase hex. */
+  sha256: string;
+  rows: number;
+  url: string;
+  license: string;
+}
+
 /** Per-vendor provenance written to `meta.json.sources`. */
 export interface CatalogVendorSource {
   commit?: string;
@@ -125,6 +136,8 @@ export interface CatalogVendorSource {
   /** Match and coverage percentages for this vendor, both in the range 0-100. */
   ratios?: { match: number; coverage: number };
   repositories?: CatalogVendorRepository[];
+  /** Additional declared upstream files consumed by this vendor's adapter. */
+  evidenceFiles?: CatalogEvidenceFile[];
 }
 
 /** Stable identifiers of the seven upstream sources recorded by the gate. */
@@ -257,7 +270,7 @@ export function parseGpioConfig(value: unknown): GpioConfig | null {
 }
 
 /** Tabs available in the portrait workspace dock. */
-export const DOCK_TABS = ['peripherals', 'pins', 'diagnostics', 'dma', 'pio'] as const;
+export const DOCK_TABS = ['peripherals', 'pins', 'diagnostics', 'dma', 'pio', 'audit'] as const;
 export type DockTab = (typeof DOCK_TABS)[number];
 
 /**

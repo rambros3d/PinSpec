@@ -372,7 +372,8 @@ body {
   .workspace-root[data-dock-tab='pins'] .workspace-summary,
   .workspace-root[data-dock-tab='diagnostics'] .workspace-summary,
   .workspace-root[data-dock-tab='dma'] .workspace-summary,
-  .workspace-root[data-dock-tab='pio'] .workspace-summary {
+  .workspace-root[data-dock-tab='pio'] .workspace-summary,
+  .workspace-root[data-dock-tab='audit'] .workspace-summary {
     display: flex;
   }
 

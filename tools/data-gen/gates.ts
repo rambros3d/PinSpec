@@ -209,6 +209,23 @@ export function createProvenanceGate(
           errors.push(`provenance gate failed: ${vendor} has no match/coverage ratios.`);
         }
       }
+      const ch32 = meta.sources?.ch32;
+      if (ch32) {
+        const evidence = ch32.evidenceFiles ?? [];
+        if (evidence.length === 0) {
+          errors.push('provenance gate failed: ch32 has no evidence file digest.');
+        }
+        for (const file of evidence) {
+          if (!/^[0-9a-f]{64}$/.test(file.sha256)) {
+            errors.push(`provenance gate failed: evidence ${file.path} has no SHA-256 digest.`);
+          }
+          for (const key of ['path', 'url', 'license'] as const) {
+            if (typeof file[key] !== 'string' || file[key].trim() === '') {
+              errors.push(`provenance gate failed: evidence ${file.path} has no ${key}.`);
+            }
+          }
+        }
+      }
       if (meta.chipCount !== ctx.index.length) {
         errors.push(
           `provenance gate failed: meta chipCount ${meta.chipCount} disagrees with index ${ctx.index.length}.`,

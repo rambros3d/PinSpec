@@ -5,6 +5,7 @@
  * so adapters, gates, and their tests never import Svelte or DOM APIs.
  */
 import type {
+  CatalogEvidenceFile,
   CatalogIndexEntry,
   CatalogMeta,
   ChipData,
@@ -20,6 +21,16 @@ export interface RawSourceFile {
   path: string;
 }
 
+/** A file inside an upstream checkout consumed outside its manifest surface. */
+export interface DeclaredSourceFile {
+  /** Path relative to the checkout root, using forward slashes. */
+  path: string;
+  /** Columns that must be present before the file may be parsed. */
+  columns: readonly string[];
+  /** Stable HTTP URL recorded in provenance for this file. */
+  url: string;
+}
+
 /** Declaration of an upstream checkout before its revision is resolved. */
 export interface SourceSpec {
   id: string;
@@ -31,6 +42,8 @@ export interface SourceSpec {
    * `url` then names the upstream project (used for provenance only).
    */
   rawFiles?: RawSourceFile[];
+  /** Extra checkout files read by the adapter with an independently recorded digest. */
+  declaredFiles?: DeclaredSourceFile[];
 }
 
 /** A source checkout with a resolved revision (or the literal `unknown`). */
@@ -80,6 +93,8 @@ export interface AdapterResult {
   families: string[];
   totalVariants: number;
   matchedVariants: number;
+  /** Digests of additional declared files, copied into `meta.json` provenance. */
+  evidenceFiles?: CatalogEvidenceFile[];
 }
 
 /** Complete catalog view available to per-vendor gates after emission. */

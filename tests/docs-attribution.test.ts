@@ -26,6 +26,12 @@ const TOUCHED_FILES = [
   'tests/gates-contracts.test.ts',
   'tests/subpath-contracts.test.ts',
   'tests/docs-attribution.test.ts',
+  'src/core/hardware-audit.ts',
+  'src/components/workspace/HardwareAuditPanel.svelte',
+  'src/components/workspace/SummaryDrawer.svelte',
+  'src/components/workspace/ExportModal.svelte',
+  'tests/hardware-audit.test.ts',
+  'tests/data-gen-ch32.test.ts',
 ];
 
 const LICENSE_TOKENS = [
@@ -62,6 +68,8 @@ describe('multi-vendor documentation and attribution', () => {
     }
     expect(readme).toContain('build-warnings.json');
     expect(readme).toContain('ch32-device-data');
+    expect(readme).toContain('evidence/pins.csv');
+    expect(readme).toMatch(/no compatibility shim/i);
     expect(readme).toContain('pico-sdk');
     expect(readme).toContain('gate');
   });

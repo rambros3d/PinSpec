@@ -108,6 +108,9 @@ export function buildVendorSourcesMeta(
       entry.openPinDataCommit =
         vendorSources.find((s) => s.id === 'stm32-open-pin-data')?.commit ?? 'unknown';
     }
+    if (result?.evidenceFiles && result.evidenceFiles.length > 0) {
+      entry.evidenceFiles = result.evidenceFiles.map((file) => ({ ...file }));
+    }
     out[adapter.vendor] = entry;
   }
   return out;

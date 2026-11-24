@@ -12,7 +12,7 @@ npm run dev
 
 `npm run gen-data` shallow-clones `STMicroelectronics/STM32_open_pin_data`, `embassy-rs/stm32-data-generated`, and `ch32-riscv-ug/ch32-device-data` into the gitignored `.cache/` directory, fetches individual RP reference files (KiCad symbols/footprints, picotool/pico-sdk FUNCSEL tables, Zephyr device trees and Raspberry Pi documentation), and emits lazy-loaded static JSON files into `public/data/`. Sources may also be fetched on their own with `npm run acquire-sources`. An existing checkout or fetched file is never refreshed automatically; delete the relevant `.cache/` entry first to update upstream data.
 
-Generation is orchestrated by `tools/data-gen/index.ts`, which resolves sources, registers vendor adapters, collects attributed warnings, evaluates per-vendor gates, and writes all artifacts exactly once. STM32 parsing lives in `tools/data-gen/adapters/stm32.ts`; CH32 parsing lives in `tools/data-gen/adapters/ch32.ts`; RP parsing lives in `tools/data-gen/adapters/rp/` (KiCad s-expression pins, FUNCSEL join, and Zephyr/documentation variant facts). The CH32 adapter reads only the upstream `index/` CSV surface and verifies every consumed file against `index/manifest.csv` SHA-256 digests before parsing. RP parts carry `vendor: 'rp'` and `muxModel: 'funcsel-pio'`.
+Generation is orchestrated by `tools/data-gen/index.ts`, which resolves sources, registers vendor adapters, collects attributed warnings, evaluates per-vendor gates, and writes all artifacts exactly once. STM32 parsing lives in `tools/data-gen/adapters/stm32.ts`; CH32 parsing lives in `tools/data-gen/adapters/ch32.ts`; RP parsing lives in `tools/data-gen/adapters/rp/` (KiCad s-expression pins, FUNCSEL join, and Zephyr/documentation variant facts). The CH32 adapter verifies every consumed `index/` CSV against `index/manifest.csv` SHA-256 digests before parsing. It also reads the declared `evidence/pins.csv` file for electrical I/O types, requires its `part_number`, `pin`, `pad`, and `type` columns, and records that file's own SHA-256 in provenance; upstream publishes no manifest digest for it. RP parts carry `vendor: 'rp'` and `muxModel: 'funcsel-pio'`.
 
 ## Verification Commands
 
@@ -39,7 +39,9 @@ failure exits non-zero without publishing a partial catalog:
 - **CH32:** all 105 covered parts plus structural assertions on
   `CH32V003F4P6` (20 pins), `CH32V003J4M6` (8 bonded leads), `CH32V203C8T6` (48
   pins), and `CH32X035G8U6` (28 pins), including grouped `remaps[]`, `bonded`
-  names/tags, and the `debug-sdi` tag on PD1.
+  names/tags, the `debug-sdi` tag on PD1, and at least one priority part with a
+  `5v-tolerant` pin backed by an `I/O/FT` row in `evidence/pins.csv`. Parts with
+  no upstream FT row remain untagged.
 - **RP:** `RP2040` (56 pins/30 GPIO), `RP2350A` (60/30), and `RP2350B` (80/48),
   QFN exposed pads, `funcsel-pio` with `funcLabel`/`PWM0A`..`PWM11B`
   `resourceId` keys, and HSTX, ADC, QSPI, SWD, and PIO tags.
@@ -126,14 +128,14 @@ in the vendored theme CSS file.
 
 - Physical package geometry and pinouts: [STMicroelectronics/STM32_open_pin_data](https://github.com/STMicroelectronics/STM32_open_pin_data) (BSD-3-Clause)
 - Normalized peripheral signals, alternate function indices, and DMA tables: [embassy-rs/stm32-data-generated](https://github.com/embassy-rs/stm32-data-generated) (MIT / Apache-2.0)
-- CH32 part, package, pinout, and remap CSV tables: [ch32-riscv-ug/ch32-device-data](https://github.com/ch32-riscv-ug/ch32-device-data) (MIT). Only the documented `index/` surface is consumed, pinned by commit and verified against `index/manifest.csv`.
+- CH32 part, package, pinout, and remap CSV tables: [ch32-riscv-ug/ch32-device-data](https://github.com/ch32-riscv-ug/ch32-device-data) (MIT). The documented `index/` surface is pinned by commit and verified against `index/manifest.csv`; `evidence/pins.csv` is consumed in addition for `I/O/FT` electrical types with an independently recorded SHA-256. No compatibility shim is provided for the regenerated CH32 shards that carry the new tag.
 - RP physical pins and packages: [KiCad symbols](https://gitlab.com/kicad/libraries/kicad-symbols) and [footprints](https://gitlab.com/kicad/libraries/kicad-footprints) (CC-BY-SA-4.0, generated-file exception).
 - RP FUNCSEL tables: [raspberrypi/picotool](https://github.com/raspberrypi/picotool) and [raspberrypi/pico-sdk](https://github.com/raspberrypi/pico-sdk) (BSD-3-Clause).
 - RP memory and variant facts: [Zephyr](https://github.com/zephyrproject-rtos/zephyr) (Apache-2.0) and [raspberrypi/documentation](https://github.com/raspberrypi/documentation) (CC-BY-SA-4.0).
 
 ## Generated Data Provenance
 
-`public/data/meta.json` records `generatedAt`, the resolved revision, license, emitted chip count, and match/coverage ratios for every generated vendor under `sources`. The same map also carries seven canonical source records keyed by `st-open-pin-data`, `stm32-data-generated`, `ch32-device-data`, `kicad`, `pico-sdk`, `zephyr`, and `raspberry-pi-docs`, each with `sha`, `url`, and `license`. For raw-file sources (RP) the SHA is a short SHA-256 of the fetched files. The legacy top-level `openPinDataCommit`, `stm32DataCommit`, `chipCount`, `matchRate`, and `families` fields remain for existing consumers. The landing footer renders provenance directly from `meta.json.sources`.
+`public/data/meta.json` records `generatedAt`, the resolved revision, license, emitted chip count, and match/coverage ratios for every generated vendor under `sources`. The same map also carries seven canonical source records keyed by `st-open-pin-data`, `stm32-data-generated`, `ch32-device-data`, `kicad`, `pico-sdk`, `zephyr`, and `raspberry-pi-docs`, each with `sha`, `url`, and `license`. For raw-file sources (RP) the SHA is a short SHA-256 of the fetched files. The CH32 vendor record also carries `evidenceFiles` with the full SHA-256, row count, URL, and license of the additional electrical-kind file. The legacy top-level `openPinDataCommit`, `stm32DataCommit`, `chipCount`, `matchRate`, and `families` fields remain for existing consumers. The landing footer renders provenance directly from `meta.json.sources`.
 
 ```json
 {

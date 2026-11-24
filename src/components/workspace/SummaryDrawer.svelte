@@ -26,10 +26,11 @@
   } from '../../core/types';
   import { deriveExtiLineId } from '../../core/solver';
   import { workspaceStore } from '../../state/workspace.svelte';
+  import HardwareAuditPanel from './HardwareAuditPanel.svelte';
   import PioPanel from './PioPanel.svelte';
   import PinTagPills from './PinTagPills.svelte';
 
-  export type SummaryDrawerTab = 'pins' | 'diagnostics' | 'dma' | 'pio' | 'gpio';
+  export type SummaryDrawerTab = 'pins' | 'diagnostics' | 'dma' | 'pio' | 'gpio' | 'audit';
 
   interface Props {
     chip: ChipData;
@@ -230,6 +231,18 @@
       }`}
     >
       GPIO
+    </button>
+
+    <button
+      type="button"
+      onclick={() => (activeTab = 'audit')}
+      class={`px-2.5 py-1.5 rounded-top-control font-medium whitespace-nowrap transition-colors ${
+        activeTab === 'audit'
+          ? 'bg-surface text-primary border-ui-t border-ui-x border-hairline -mb-px'
+          : 'text-muted hover:text-primary'
+      }`}
+    >
+      Audit
     </button>
   </div>
 
@@ -608,5 +621,9 @@
         </p>
       {/if}
     </div>
+
+  <!-- Tab 6: data-derived hardware audit, read-only -->
+  {:else if activeTab === 'audit'}
+    <HardwareAuditPanel {chip} state={workspaceStore.state} />
   {/if}
 </aside>

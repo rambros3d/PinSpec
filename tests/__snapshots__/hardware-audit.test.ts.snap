@@ -1,0 +1,50 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`pure hardware audit module > renders stable text with identical facts on repeated calls 1`] = `
+"Hardware audit: STM32G431CBU6 (stm32)
+
+Strapping
+  2 PC13-BOOT0: role=boot; evidence=chip-shard-pin-name; detail=PC13-BOOT0; pull=Up (workspace-gpio-config); label=BOOT_SEL (workspace-label)
+  3 PG10-NRST: role=reset; evidence=chip-shard-pin-name; detail=PG10-NRST; pull=unknown (data-unavailable); label=absent
+  4 PA13: role=debug-swd; evidence=chip-shard-signal; detail=SYS.SWDIO; pull=unknown (data-unavailable); label=UART_5V_TX (workspace-label)
+  9 BOOT0: role=boot; evidence=chip-shard-pin-type; detail=boot; pull=unknown (data-unavailable); label=absent
+
+Interfaces
+  I2C1: status=present; detail=I2C1:i2c; evidence=chip-shard-peripheral
+  USB: status=present; detail=USB:device_fs; evidence=chip-shard-peripheral
+Oscillators
+  OSC_IN: status=present; detail=5:PF0:OSC_IN; evidence=chip-shard-signal
+  OSC_OUT: status=present; detail=6:PF1:OSC_OUT; evidence=chip-shard-signal
+Power Domains
+  VDD: status=present; detail=1:VDD; evidence=chip-shard-pin-type
+Passive Fields
+  i2c-pull-up-value: status=data-unavailable; detail=no upstream pull-up row; evidence=data-unavailable
+  decoupling-capacitor-count: status=data-unavailable; detail=no upstream decoupling row; evidence=data-unavailable
+  usb-series-resistance: status=data-unavailable; detail=no upstream series component row; evidence=data-unavailable
+  usb-esd-device: status=data-unavailable; detail=no upstream ESD row; evidence=data-unavailable
+  guard-ring-layout: status=data-unavailable; detail=no upstream layout row; evidence=data-unavailable
+  vcap-value: status=data-unavailable; detail=no upstream VCAP row; evidence=data-unavailable
+  crystal-load-capacitance: status=data-unavailable; detail=no numeric capacitance emitted; evidence=data-unavailable
+
+Unused Pins
+  2 PC13-BOOT0: status=implicit-unused; evidence=implicit-unused
+  3 PG10-NRST: status=implicit-unused; evidence=implicit-unused
+  4 PA13: status=implicit-unused; evidence=implicit-unused
+  5 PF0: status=implicit-unused; evidence=implicit-unused
+  6 PF1: status=implicit-unused; evidence=implicit-unused
+  8 PB8: status=implicit-unused; evidence=implicit-unused
+Bonded Pads
+  (none)
+
+Voltage Tolerance
+  1 VDD: tolerance=unknown; detail=no tolerance tag or matching label; evidence=data-unavailable
+  2 PC13-BOOT0: tolerance=unknown; detail=no tolerance tag or matching label; evidence=data-unavailable
+  3 PG10-NRST: tolerance=unknown; detail=no tolerance tag or matching label; evidence=data-unavailable
+  4 PA13: tolerance=user-labeled-5v; detail=UART_5V_TX; evidence=workspace-label
+  5 PF0: tolerance=unknown; detail=no tolerance tag or matching label; evidence=data-unavailable
+  6 PF1: tolerance=unknown; detail=no tolerance tag or matching label; evidence=data-unavailable
+  7 PA11 [PA9]: tolerance=unknown; detail=no tolerance tag or matching label; evidence=data-unavailable
+  8 PB8: tolerance=unknown; detail=no tolerance tag or matching label; evidence=data-unavailable
+  9 BOOT0: tolerance=unknown; detail=no tolerance tag or matching label; evidence=data-unavailable
+"
+`;

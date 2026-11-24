@@ -361,6 +361,17 @@ describe('orchestrator with injected adapters', () => {
         families: ['TEST'],
         totalVariants: 1,
         matchedVariants: 1,
+        ...(vendor === 'ch32'
+          ? {
+              evidenceFiles: [{
+                path: 'evidence/pins.csv',
+                sha256: 'b'.repeat(64),
+                rows: 1,
+                url: 'https://github.com/ch32-riscv-ug/ch32-device-data/blob/main/evidence/pins.csv',
+                license: 'Test License',
+              }],
+            }
+          : {}),
       }),
       gates: strict
         ? []

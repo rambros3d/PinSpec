@@ -9,7 +9,7 @@ import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import type { ResolvedSource, SourceSpec } from './types';
+import type { DeclaredSourceFile, ResolvedSource, SourceSpec } from './types';
 
 /** License of STMicroelectronics/STM32_open_pin_data. */
 export const LICENSE_OPEN_PIN_DATA = 'BSD-3-Clause';
@@ -126,6 +126,17 @@ export function stm32SourceSpecs(cacheDir: string = defaultCacheDir()): SourceSp
   ];
 }
 
+/**
+ * CH32 electrical-kind evidence. The file lives in the same checkout as the
+ * manifest-verified `index/` tables, but upstream does not publish a digest for
+ * it, so the adapter records its own SHA-256 instead of treating it as verified.
+ */
+export const CH32_EVIDENCE_FILE: DeclaredSourceFile = {
+  path: 'evidence/pins.csv',
+  columns: ['part_number', 'pin', 'pad', 'type'],
+  url: 'https://github.com/ch32-riscv-ug/ch32-device-data/blob/main/evidence/pins.csv',
+};
+
 /** Source declarations for the CH32 vendor adapter. */
 export function ch32SourceSpecs(cacheDir: string = defaultCacheDir()): SourceSpec[] {
   return [
@@ -134,6 +145,7 @@ export function ch32SourceSpecs(cacheDir: string = defaultCacheDir()): SourceSpe
       url: 'https://github.com/ch32-riscv-ug/ch32-device-data.git',
       dir: path.join(cacheDir, 'ch32-device-data'),
       license: LICENSE_CH32_DEVICE_DATA,
+      declaredFiles: [CH32_EVIDENCE_FILE],
     },
   ];
 }

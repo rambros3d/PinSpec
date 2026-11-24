@@ -166,7 +166,9 @@ describe('CH32 and RP structural gate extensions', () => {
         signals: [],
         ...(name === 'PD1'
           ? {
-              tags: id.endsWith('J4M6') ? ['debug-sdi', 'bonded'] : ['debug-sdi'],
+              tags: id.endsWith('J4M6')
+                ? ['debug-sdi', 'bonded', '5v-tolerant']
+                : ['debug-sdi', '5v-tolerant'],
               bondedNames: id.endsWith('J4M6') ? ['PD1', 'PD6'] : undefined,
             }
           : {}),
@@ -212,6 +214,16 @@ describe('CH32 and RP structural gate extensions', () => {
       pins: c.pins.map((p) => ({ ...p, tags: p.tags?.filter((t) => t !== 'debug-sdi') })),
     }));
     expect(ch32ReferenceGate.evaluate(ctx(untagged)).errors.some((e) => e.includes('debug-sdi'))).toBe(true);
+    const noFt = priorityChips().map((c) => ({
+      ...c,
+      pins: c.pins.map((p) => ({
+        ...p,
+        tags: p.tags?.filter((tag) => tag !== '5v-tolerant'),
+      })),
+    }));
+    expect(ch32ReferenceGate.evaluate(ctx(noFt)).errors.some(
+      (e) => e.includes('CH32V003F4P6') && e.includes('5v-tolerant'),
+    )).toBe(true);
   });
 
   it('names an out-of-range PWM slice resource on an RP part', () => {
@@ -257,6 +269,17 @@ describe('provenance and warning contracts', () => {
     families: [],
     totalVariants: 10,
     matchedVariants: 10,
+    ...(adapter.vendor === 'ch32'
+      ? {
+          evidenceFiles: [{
+            path: 'evidence/pins.csv',
+            sha256: 'a'.repeat(64),
+            rows: 2,
+            url: 'https://github.com/ch32-riscv-ug/ch32-device-data/blob/main/evidence/pins.csv',
+            license: 'MIT',
+          }],
+        }
+      : {}),
   }));
 
   it('emits all seven source ids with sha, url, and license', () => {
@@ -284,6 +307,22 @@ describe('provenance and warning contracts', () => {
     expect(createProvenanceGate().evaluate({ ...base, meta: brokenMeta }).errors.some((e) => e.includes('kicad') && e.includes('sha'))).toBe(true);
     const noRatio = { ...meta, sources: { ...meta.sources, rp: { ...vendorSources.rp!, ratios: undefined } } };
     expect(createProvenanceGate().evaluate({ ...base, meta: noRatio }).errors.some((e) => e.includes('rp') && e.includes('ratios'))).toBe(true);
+    const noEvidence = {
+      ...meta,
+      sources: { ...meta.sources, ch32: { ...vendorSources.ch32!, evidenceFiles: undefined } },
+    };
+    expect(createProvenanceGate().evaluate({ ...base, meta: noEvidence }).errors.some((e) => e.includes('ch32') && e.includes('evidence'))).toBe(true);
+    const shortDigest = {
+      ...meta,
+      sources: {
+        ...meta.sources,
+        ch32: {
+          ...vendorSources.ch32!,
+          evidenceFiles: [{ ...vendorSources.ch32!.evidenceFiles![0], sha256: 'short' }],
+        },
+      },
+    };
+    expect(createProvenanceGate().evaluate({ ...base, meta: shortDigest }).errors.some((e) => e.includes('SHA-256'))).toBe(true);
   });
 
   it('attributes a deferred CH32 part and keeps the empty-warning case valid', () => {

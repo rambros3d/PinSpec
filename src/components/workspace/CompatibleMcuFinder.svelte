@@ -14,6 +14,7 @@
   import { catalogPackageKinds } from '../../core/vendor-view';
   import type { ChipData, VendorId, WorkspaceState } from '../../core/types';
   import { catalogStore } from '../../state/catalog.svelte';
+  import { openDialogWithFocus } from '../../state/dialog-focus';
   import { router } from '../../state/router.svelte';
 
   interface Props {
@@ -123,7 +124,9 @@
   }
 
   onMount(() => {
-    dialogEl?.showModal();
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    if (!dialogEl?.open) dialogEl?.showModal();
+    openDialogWithFocus(dialogEl, undefined, opener);
     void catalogStore.ensureLoaded().then(() => runSearch());
     return () => {
       generation += 1;

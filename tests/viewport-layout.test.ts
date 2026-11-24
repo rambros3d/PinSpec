@@ -51,6 +51,27 @@ describe('document viewport lock', () => {
     expect(css).toContain("@import './themes/daisyui.css'");
   });
 
+  it('scrolls landing content inside a landing-only shell', () => {
+    const css = readSource('src/app.css');
+    const block = css.match(/\.landing-shell\s*\{[\s\S]*?\}/)?.[0] ?? '';
+    for (const declaration of [
+      'height: 100dvh',
+      'overflow-y: auto',
+      'overscroll-behavior: contain',
+      'scroll-padding-top: 3.5rem',
+    ]) {
+      expect(block, declaration).toContain(declaration);
+    }
+    const page = readSource('src/pages/LandingPage.svelte');
+    expect(page).toContain('class="landing-shell flex flex-col bg-base-200 text-foreground"');
+    expect(page).not.toContain('min-h-screen');
+    expect(page).toContain('navbar sticky top-0');
+    expect(page).toContain('href="#presets"');
+    expect(page).toContain('id="export-preview"');
+    expect(page).toContain('id="provenance"');
+    expect(readSource('src/components/landing/PresetGrid.svelte')).toContain('id="presets"');
+  });
+
   it('sizes the workspace root to dvh without viewport-unit legacy classes', () => {
     const page = readSource('src/pages/WorkspacePage.svelte');
     expect(page).toContain('h-[100dvh]');
@@ -172,12 +193,78 @@ describe('native dialog contract', () => {
     expect(page).not.toContain("e.key === 'Escape'");
   });
 
+  it('guards both window shortcut handlers while a native dialog is open', () => {
+    const page = readSource('src/pages/WorkspacePage.svelte');
+    const handler =
+      page.match(/const onKeyDown = \(e: KeyboardEvent\) => \{[\s\S]*?\n    \};/)?.[0] ?? '';
+    const guard = "document.querySelector('dialog[open]')";
+    expect(handler, 'workspace guard').toContain(guard);
+    expect(handler.indexOf(guard), 'workspace guard placement').toBeLessThan(
+      handler.indexOf("e.key.toLowerCase() === 'f'"),
+    );
+    expect(handler).not.toContain('Escape');
+
+    const canvas = readSource('src/components/workspace/PackageCanvas.svelte');
+    const canvasHandler =
+      canvas.match(/const onKey = \(e: KeyboardEvent\) => \{[\s\S]*?\n    \};/)?.[0] ?? '';
+    expect(canvasHandler, 'canvas guard').toContain(guard);
+    expect(canvasHandler.indexOf(guard), 'canvas guard placement').toBeLessThan(
+      canvasHandler.indexOf("e.key === 'Escape'"),
+    );
+    expect(canvasHandler.indexOf(guard), 'canvas fit guard placement').toBeLessThan(
+      canvasHandler.indexOf("e.key === '0'"),
+    );
+  });
+
   it('keeps the shared workspace shortcuts without dialog Escape handling', () => {
     const page = readSource('src/pages/WorkspacePage.svelte');
     const handler = page.match(/const onKeyDown = \(e: KeyboardEvent\) => \{[\s\S]*?\n    \};/)?.[0] ?? '';
     expect(handler).toContain("e.key.toLowerCase() === 'f'");
     expect(handler).toContain("e.key.toLowerCase() === 'k'");
     expect(handler).not.toContain('Escape');
+  });
+});
+
+describe('canvas gesture and rotation input', () => {
+  it('registers non-passive wheel and gesture listeners with cleanup', () => {
+    const source = readSource('src/components/workspace/PackageCanvas.svelte');
+    expect(source).toContain("addEventListener('wheel', handleWheel, { passive: false })");
+    expect(source).toContain(
+      "addEventListener('gesturestart', handleGestureStart, { passive: false })",
+    );
+    expect(source).toContain(
+      "addEventListener('gesturechange', handleGestureChange, { passive: false })",
+    );
+    expect(source).toContain("removeEventListener('wheel', handleWheel)");
+    expect(source).not.toContain('onwheel=');
+    expect(source).toContain('activePointers');
+    expect(source).toContain('resetPinch()');
+    expect(source).toContain('zoomBy(distance / pinchDistance, midX, midY)');
+
+    const css = readSource('src/app.css');
+    const stage = css.match(/\.canvas-stage\s*\{[\s\S]*?\}/)?.[0] ?? '';
+    expect(stage).toContain('touch-action: none');
+    for (const block of [
+      css.match(/html,\s*body\s*\{[\s\S]*?\}/)?.[0] ?? '',
+      css.match(/#app\s*\{[\s\S]*?\}/)?.[0] ?? '',
+    ]) {
+      expect(block).toContain('overflow: hidden');
+    }
+  });
+
+  it('renders two-state rotation in SVG without a CSS wrapper', () => {
+    const canvas = readSource('src/components/workspace/PackageCanvas.svelte');
+    expect(canvas).toContain('rotation === -90');
+    expect(canvas).not.toContain('transform: rotate(${rotation}deg)');
+    expect(canvas).toContain('{rotation}');
+    for (const file of ['PerimeterPackage.svelte', 'GridPackage.svelte']) {
+      const source = readSource(`src/components/workspace/${file}`);
+      expect(source, file).toContain('rotation?: PackageRotation');
+      expect(source, file).toContain('geometryTransform');
+      expect(source, file).toContain('counterRotation');
+      expect(source, file).toContain('rotate(-90 ${viewCenterX} ${viewCenterY})');
+      expect(source, file).toContain('rotate(${counterRotation}');
+    }
   });
 });
 

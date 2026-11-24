@@ -2,6 +2,7 @@
   import { Cpu, Search, X } from 'lucide-svelte';
   import { onMount } from 'svelte';
   import { catalogStore, searchCatalogEntries } from '../../state/catalog.svelte';
+  import { openDialogWithFocus } from '../../state/dialog-focus';
   import {
     buildVendorTabs,
     catalogFamilies,
@@ -64,9 +65,10 @@
   }
 
   onMount(() => {
-    dialogEl?.showModal();
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    if (!dialogEl?.open) dialogEl?.showModal();
+    openDialogWithFocus(dialogEl, inputEl, opener);
     catalogStore.ensureLoaded();
-    inputEl?.focus();
   });
 </script>
 
@@ -123,7 +125,7 @@
             {tab.label} <span class="font-mono-tabular opacity-75">({tab.count})</span>
           </button>
         {/each}
-        <span class="mx-1 text-base-content/40">|</span>
+        <span class="mx-1 text-base-content/60">|</span>
         <label class="inline-flex items-center gap-1 text-base-content/60">
           Family
           <select

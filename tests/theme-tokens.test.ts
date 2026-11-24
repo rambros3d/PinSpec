@@ -115,6 +115,18 @@ describe('daisyUI token integration', () => {
     expect(canvas).toContain('bg-base-100');
   });
 
+  it('keeps rotated label text on theme utilities rather than literal colors', () => {
+    for (const name of ['PerimeterPackage.svelte', 'GridPackage.svelte']) {
+      const source = fs.readFileSync(
+        path.join(ROOT, 'src', 'components', 'workspace', name),
+        'utf8',
+      );
+      expect(source, name).toContain('counterRotation');
+      expect(source, name).toContain('fill-base-content');
+      expect(source, name).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
+    }
+  });
+
   it('maps status surfaces onto daisyUI status utilities', () => {
     const markup = sourceFiles()
       .filter((file) => /\.svelte$/.test(file) && file.includes(`${path.sep}src${path.sep}`))

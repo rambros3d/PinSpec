@@ -7,6 +7,8 @@
   import { exportPinoutJson, parsePinoutJson } from '../../core/exporters/json';
   import { buildHardwareAudit, formatHardwareAuditText } from '../../core/hardware-audit';
   import { getChipVendor, type ChipData, type WorkspaceState } from '../../core/types';
+  import { workspaceStore } from '../../state/workspace.svelte';
+  import { openDialogWithFocus } from '../../state/dialog-focus';
 
   interface Props {
     chip: ChipData;
@@ -27,6 +29,7 @@
   let draggingFile = $state(false);
   let fileInput = $state<HTMLInputElement | null>(null);
   let dialogEl = $state<HTMLDialogElement | null>(null);
+  let copyButtonEl = $state<HTMLButtonElement | null>(null);
 
   const vendor = $derived(getChipVendor(chip));
 
@@ -86,18 +89,22 @@
       copied = true;
       setTimeout(() => (copied = false), 1800);
     } catch {
-      // fallback ignored
+      workspaceStore.showToast('Unable to copy the export preview. Check clipboard access.', 'warning');
     }
   }
 
   function downloadFile(): void {
-    const blob = new Blob([previewContent], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = downloadFilename;
-    a.click();
-    URL.revokeObjectURL(url);
+    try {
+      const blob = new Blob([previewContent], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = downloadFilename;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 0);
+    } catch {
+      workspaceStore.showToast('Unable to start the export download.', 'warning');
+    }
   }
 
   /** Native dialog close path; the close event notifies the parent once. */
@@ -118,7 +125,9 @@
   }
 
   onMount(() => {
-    dialogEl?.showModal();
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    if (!dialogEl?.open) dialogEl?.showModal();
+    openDialogWithFocus(dialogEl, copyButtonEl, opener);
   });
 </script>
 
@@ -187,6 +196,7 @@
         {/if}
 
         <button
+          bind:this={copyButtonEl}
           type="button"
           onclick={copyContent}
           class="btn btn-sm btn-outline gap-1.5 text-xs font-medium whitespace-nowrap"

@@ -79,6 +79,20 @@ body {
   overscroll-behavior: none;
 }
 
+/* Keyboard focus remains visible for custom controls and SVG groups. */
+:focus-visible {
+  outline: 2px solid var(--color-info);
+  outline-offset: 2px;
+}
+
+/* Landing content scrolls inside its own container; the document stays locked. */
+.landing-shell {
+  height: 100dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-padding-top: 3.5rem;
+}
+
 /*
  * Workspace grid. The same component instances occupy named areas; only the
  * area assignment changes with orientation. Every cell can shrink so content
@@ -127,6 +141,11 @@ body {
   position: relative;
   display: flex;
   flex-direction: column;
+}
+
+/* Touch input over the canvas drives pointer zoom and pan, not document scroll. */
+.canvas-stage {
+  touch-action: none;
 }
 
 .workspace-summary {
@@ -193,6 +212,10 @@ body {
     display: none;
   }
 
+  .workspace-toast {
+    bottom: calc(43dvh + 0.75rem);
+  }
+
   .workspace-landscape-only {
     display: none;
   }
@@ -226,6 +249,15 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .animate-pin-pulse {
     animation: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 

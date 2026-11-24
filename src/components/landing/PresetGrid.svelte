@@ -118,7 +118,7 @@
             </div>
 
             <div class="flex items-center justify-between pt-2 border-t border-base-300 text-xs">
-              <span class="inline-flex items-center gap-1 text-base-content/40 font-mono-tabular">
+              <span class="inline-flex items-center gap-1 text-base-content/60 font-mono-tabular">
                 <Clock class="size-3" />
                 {formatRelativeTime(session.updatedAt)}
               </span>
@@ -135,6 +135,10 @@
         {/each}
       </div>
     </div>
+  {:else}
+    <p class="text-xs text-base-content/60">
+      Opening a part creates a recent session in this browser.
+    </p>
   {/if}
 
   <!-- Popular Starter Chips -->

@@ -77,6 +77,7 @@
     speed: 'Medium',
   };
 
+  const hasAssignments = $derived(Object.keys(assignments).length > 0);
   const pinMap = $derived(new Map(chip.pins.map((p) => [p.pos, p])));
   const inspectorPin = $derived(inspectorPos ? pinMap.get(inspectorPos) ?? null : null);
   const inspectorConfig = $derived(
@@ -261,26 +262,47 @@
     </div>
 
     <div class="flex-1 min-h-0 overflow-y-auto">
-      {#if rows.length === 0}
+      {#if rows.length === 0 && !hasAssignments}
         <div class="p-6 text-center text-xs text-base-content/60 space-y-1">
           <p class="font-medium text-foreground">No assigned pins yet</p>
           <p>Enable a peripheral mode on the left or left-click any I/O pin on the package.</p>
+        </div>
+      {:else if rows.length === 0}
+        <div class="p-6 text-center text-xs text-base-content/60 space-y-2">
+          <p class="font-medium text-foreground">No assigned pins match this filter</p>
+          <p>Adjust or clear the pin filter to see the assigned pins again.</p>
+          <button
+            type="button"
+            onclick={() => (tableFilter = '')}
+            class="btn btn-sm btn-outline"
+          >
+            Clear filter
+          </button>
         </div>
       {:else}
         <table class="table table-xs w-full text-left text-[11px]">
           <thead class="sticky top-0 bg-base-200 border-b border-base-300 text-base-content/60">
             <tr>
-              <th class="py-1.5 pl-2.5 pr-1 font-medium">
+              <th
+                class="py-1.5 pl-2.5 pr-1 font-medium"
+                aria-sort={sortKey === 'pos' ? (sortAsc ? 'ascending' : 'descending') : 'none'}
+              >
                 <button type="button" onclick={() => toggleSort('pos')} class="inline-flex items-center gap-0.5 hover:text-foreground">
                   Pos <ArrowUpDown class="size-2.5" />
                 </button>
               </th>
-              <th class="py-1.5 px-1 font-medium">
+              <th
+                class="py-1.5 px-1 font-medium"
+                aria-sort={sortKey === 'pin' ? (sortAsc ? 'ascending' : 'descending') : 'none'}
+              >
                 <button type="button" onclick={() => toggleSort('pin')} class="inline-flex items-center gap-0.5 hover:text-foreground">
                   Pin <ArrowUpDown class="size-2.5" />
                 </button>
               </th>
-              <th class="py-1.5 px-1 font-medium">
+              <th
+                class="py-1.5 px-1 font-medium"
+                aria-sort={sortKey === 'signal' ? (sortAsc ? 'ascending' : 'descending') : 'none'}
+              >
                 <button type="button" onclick={() => toggleSort('signal')} class="inline-flex items-center gap-0.5 hover:text-foreground">
                   Signal <ArrowUpDown class="size-2.5" />
                 </button>
@@ -306,7 +328,7 @@
                     {row.pinName}
                   </span>
                   {#if row.bondedNames.length > 0}
-                    <span class="block text-[10px] font-normal text-base-content/40">
+                    <span class="block text-[10px] font-normal text-base-content/60">
                       {row.bondedNames.join(' / ')}
                     </span>
                   {/if}
@@ -332,7 +354,7 @@
                       {row.extiLine}
                     </span>
                   {/if}
-                  <span class="text-base-content/40 ml-1">{row.muxLabel}</span>
+                  <span class="text-base-content/60 ml-1">{row.muxLabel}</span>
                 </td>
                 <!-- svelte-ignore a11y_click_events_have_key_events -->
                 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->

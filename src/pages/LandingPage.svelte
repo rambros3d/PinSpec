@@ -195,19 +195,23 @@
       copiedExport = true;
       setTimeout(() => (copiedExport = false), 1600);
     } catch {
-      // ignore
+      workspaceStore.showToast('Unable to copy the export preview. Check clipboard access.', 'warning');
     }
   }
 
   function downloadPreview(): void {
     if (!exportPreview || typeof document === 'undefined') return;
-    const blob = new Blob([exportPreview], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = exportFilename;
-    anchor.click();
-    URL.revokeObjectURL(url);
+    try {
+      const blob = new Blob([exportPreview], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = exportFilename;
+      anchor.click();
+      setTimeout(() => URL.revokeObjectURL(url), 0);
+    } catch {
+      workspaceStore.showToast('Unable to start the export download.', 'warning');
+    }
   }
 
   function formatSyncDate(iso: string | undefined): string {
@@ -225,7 +229,7 @@
   });
 </script>
 
-<div class="min-h-screen flex flex-col bg-base-200 text-foreground">
+<div class="landing-shell flex flex-col bg-base-200 text-foreground">
   <!-- Clean 3-Zone Top Navigation Bar -->
   <header class="navbar sticky top-0 z-30 border-b border-base-300 bg-base-100/95 backdrop-blur-xs">
     <div class="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between gap-8">
@@ -449,7 +453,7 @@
           {@const vendorSource = catalogStore.meta?.sources?.[vendor.id]}
           {#if vendorSource}
             {@const repoCount = vendorSource.repositories?.length ?? 0}
-            <div class="text-[11px] text-base-content/40 space-y-0.5">
+            <div class="text-[11px] text-base-content/60 space-y-0.5">
               <div>
                 {vendor.label}: {vendorSource.chipCount.toLocaleString()} chips · primary revision {vendorSource.commit ?? 'unknown'}
                 {#if vendorSource.ratios}

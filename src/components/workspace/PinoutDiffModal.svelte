@@ -11,6 +11,7 @@
   } from '../../core/project-diff';
   import { getChipMuxModel, type ChipData, type PinVisualStatus } from '../../core/types';
   import { catalogStore } from '../../state/catalog.svelte';
+  import { openDialogWithFocus } from '../../state/dialog-focus';
   import GridPackage from './GridPackage.svelte';
   import PerimeterPackage from './PerimeterPackage.svelte';
 
@@ -259,7 +260,9 @@
   }
 
   onMount(() => {
-    dialogEl?.showModal();
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    if (!dialogEl?.open) dialogEl?.showModal();
+    openDialogWithFocus(dialogEl, undefined, opener);
     return () => {
       diffGeneration += 1;
       beforeGeneration += 1;

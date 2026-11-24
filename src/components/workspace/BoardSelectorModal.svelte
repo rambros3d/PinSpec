@@ -2,6 +2,7 @@
   import { CircuitBoard, Search, X } from 'lucide-svelte';
   import { onMount } from 'svelte';
   import type { BoardPreset } from '../../data/boards';
+  import { openDialogWithFocus } from '../../state/dialog-focus';
 
   interface Props {
     presets: readonly BoardPreset[];
@@ -31,8 +32,9 @@
   }
 
   onMount(() => {
-    dialogEl?.showModal();
-    inputEl?.focus();
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    if (!dialogEl?.open) dialogEl?.showModal();
+    openDialogWithFocus(dialogEl, inputEl, opener);
   });
 </script>
 

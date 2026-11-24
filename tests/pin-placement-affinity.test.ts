@@ -495,9 +495,38 @@ describe('placement overlay wiring', () => {
       path.join(ROOT, 'src/components/workspace/PlacementOverlay.svelte'),
       'utf8',
     );
-    for (const token of ['PLACEMENT_RINGS', 'setPointerCapture', 'type="number"', 'onRing', 'indicator.name']) {
+    for (const token of [
+      'PLACEMENT_RINGS',
+      'setPointerCapture',
+      'type="number"',
+      'indicator.name',
+      'ringFromEvent',
+      'overlayRotation',
+      'onRotate',
+    ]) {
       expect(overlay, token).toContain(token);
     }
+    expect(overlay).not.toContain('onRing');
+    expect(overlay).not.toContain('handleRingChange');
+    expect(canvas).not.toContain('onRing=');
+    expect(canvas).not.toContain('handlePlacementRing');
+  });
+
+  it('forwards the persisted rotation alongside the overlay', () => {
+    const canvas = fs.readFileSync(
+      path.join(ROOT, 'src/components/workspace/PackageCanvas.svelte'),
+      'utf8',
+    );
+    expect(canvas).toContain('rotation: PackageRotation');
+    expect(canvas).toContain('{rotation}');
+    expect(canvas).toContain('rotation === -90');
+    const store = fs.readFileSync(
+      path.join(ROOT, 'src/state/workspace.svelte.ts'),
+      'utf8',
+    );
+    expect(store).toContain('normalizePackageRotation');
+    expect(store).toContain('toggleRotation()');
+    expect(store).not.toContain('rotateClockwise');
   });
 
   it('does not change generated data or non-JSON exporter files', () => {
@@ -505,5 +534,174 @@ describe('placement overlay wiring', () => {
     expect(generated).not.toContain('placement');
     const rust = fs.readFileSync(path.join(ROOT, 'src/core/exporters/embassy-rust.ts'), 'utf8');
     expect(rust).not.toContain('placement');
+  });
+});
+
+describe('placement overlay interaction refresh', () => {
+  const readOverlay = (): string =>
+    fs.readFileSync(
+      path.join(ROOT, 'src/components/workspace/PlacementOverlay.svelte'),
+      'utf8',
+    );
+  const readCanvas = (): string =>
+    fs.readFileSync(
+      path.join(ROOT, 'src/components/workspace/PackageCanvas.svelte'),
+      'utf8',
+    );
+
+  it('uses tighter ring spacing with a larger outer ring', () => {
+    const overlay = readOverlay();
+    expect(overlay).toContain('inner: 0.5');
+    expect(overlay).toContain('middle: 0.72');
+    expect(overlay).toContain('outer: 0.98');
+    expect(overlay).not.toContain('0.34');
+    expect(overlay).not.toContain('0.66');
+    expect(overlay).not.toContain('0.96');
+  });
+
+  it('keeps keyboard angle steps and adds clamped ring stepping', () => {
+    const overlay = readOverlay();
+    expect(overlay).toContain(
+      "event.shiftKey && (event.key === 'ArrowUp' || event.key === 'ArrowDown')",
+    );
+    expect(overlay).toContain(
+      'Math.max(0, Math.min(PLACEMENT_RINGS.length - 1, current + step))',
+    );
+    expect(overlay).toContain("event.key === 'ArrowRight' ? 5 : event.key === 'ArrowLeft' ? -5 : 0");
+    expect(overlay).toContain('ringFromEvent(event)');
+  });
+
+  it('keeps the top-centre toggle separate from the top-right view HUD', () => {
+    const canvas = readCanvas();
+    expect(canvas).toContain('absolute top-3 left-1/2 -translate-x-1/2 z-20 flex flex-col');
+    expect(canvas).toContain('aria-pressed={placementSettings.overlayVisible}');
+    expect(canvas).toContain('setPlacementOverlayVisible(next)');
+    const hud = canvas.match(/Top-Right Canvas HUD Controls[\s\S]*?<!-- Bottom-Left/)?.[0] ?? '';
+    expect(hud).not.toContain('Placement');
+    expect(readOverlay()).toContain('class="absolute inset-0 z-10 pointer-events-none"');
+  });
+
+  it('persists overlay rotation through every version-2 surface', () => {
+    const rotated: WorkspaceState = {
+      ...createEmptyWorkspace(chip.id),
+      placementOverlayRotation: 90,
+    };
+    const cloned = cloneWorkspaceState(rotated);
+    expect(cloned.placementOverlayRotation).toBe(90);
+    expect(statesEqual(createEmptyWorkspace(chip.id), { ...rotated, placementOverlayRotation: 0 })).toBe(
+      true,
+    );
+    expect(statesEqual(createEmptyWorkspace(chip.id), rotated)).toBe(false);
+
+    const history = createWorkspaceHistory(createEmptyWorkspace(chip.id));
+    expect(history.push(rotated)).toBe(true);
+    expect(history.current.placementOverlayRotation).toBe(90);
+    expect(history.undo()?.placementOverlayRotation).toBeUndefined();
+    expect(history.redo()?.placementOverlayRotation).toBe(90);
+
+    const decoded = decodeWorkspaceState(encodeWorkspaceState(rotated));
+    expect(decoded.ok).toBe(true);
+    if (decoded.ok) expect(decoded.state.placementOverlayRotation).toBe(90);
+    const absentDecoded = decodeWorkspaceState(encodeWorkspaceState(createEmptyWorkspace(chip.id)));
+    expect(absentDecoded.ok).toBe(true);
+    if (absentDecoded.ok) expect(absentDecoded.state.placementOverlayRotation).toBeUndefined();
+
+    const raw = exportPinoutJson(rotated);
+    expect(raw).toContain('"placementOverlayRotation": 90');
+    const parsed = parsePinoutJson(raw);
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) expect(parsed.state.placementOverlayRotation).toBe(90);
+    expect(exportPinoutJson(createEmptyWorkspace(chip.id))).not.toContain(
+      'placementOverlayRotation',
+    );
+  });
+
+  it('does not change scoring geometry or allocation when the overlay rotates', () => {
+    const placement = { SPI1: { angle: 30, ring: 'inner' as const, enabled: true } };
+    const plain: WorkspaceState = { ...createEmptyWorkspace(chip.id), placement };
+    const rotated: WorkspaceState = {
+      ...plain,
+      placementOverlayRotation: 90,
+    };
+    const geometry = buildPinGeometryMap(chip);
+    const pin = chip.pins[1];
+    expect(placementAffinityForPin(pin, chip, placement.SPI1, { geometry })).toBe(
+      placementAffinityForPin(pin, chip, rotated.placement!.SPI1, { geometry }),
+    );
+    expect(buildPinGeometryMap(chip).byPos).toEqual(geometry.byPos);
+    expect(orderPeripheralsByPlacement(['SPI1', 'USART1'], plain)).toEqual(
+      orderPeripheralsByPlacement(['SPI1', 'USART1'], rotated),
+    );
+    expect(
+      allocatePeripheralMode(chip, plain, 'SPI1', 'full_duplex').state.assignments,
+    ).toEqual(allocatePeripheralMode(chip, rotated, 'SPI1', 'full_duplex').state.assignments);
+    expect(
+      allocatePeripheralMode(chip, createEmptyWorkspace(chip.id), 'SPI1', 'full_duplex').state
+        .assignments,
+    ).toEqual({
+      '3': { peripheral: 'SPI1', signal: 'MISO', af: 5 },
+      '5': { peripheral: 'SPI1', signal: 'SCK', af: 5 },
+      '7': { peripheral: 'SPI1', signal: 'MOSI', af: 5 },
+    });
+  });
+
+  it('previews drags without history entries and commits one change on pointer-up', async () => {
+    const storage = new Map<string, string>();
+    vi.stubGlobal('window', {
+      localStorage: {
+        getItem: (key: string) => storage.get(key) ?? null,
+        setItem: (key: string, value: string) => storage.set(key, value),
+      },
+    });
+    vi.resetModules();
+    const { workspaceStore } = await import('../src/state/workspace.svelte.ts');
+    const { catalogStore } = await import('../src/state/catalog.svelte.ts');
+    catalogStore.primeChip(chip);
+    await workspaceStore.openMcu(chip.id);
+
+    workspaceStore.setPlacement('SPI1', { angle: 10, ring: 'inner', enabled: true });
+    workspaceStore.previewPlacement('SPI1', { angle: 20, ring: 'middle', enabled: true });
+    expect(workspaceStore.state.placement?.SPI1?.angle).toBe(20);
+    workspaceStore.undo();
+    expect(workspaceStore.state.placement).toBeUndefined();
+    workspaceStore.redo();
+    expect(workspaceStore.state.placement?.SPI1).toEqual({
+      angle: 10,
+      ring: 'inner',
+      enabled: true,
+    });
+
+    workspaceStore.commitPlacement('SPI1', { angle: 30, ring: 'outer', enabled: true });
+    workspaceStore.undo();
+    expect(workspaceStore.state.placement?.SPI1?.ring).toBe('inner');
+
+    workspaceStore.setPlacementOverlayRotation(90);
+    expect(workspaceStore.state.placementOverlayRotation).toBe(90);
+    let sessions = JSON.parse(storage.get('pincraft:recent_sessions_v1') ?? '[]') as Array<{
+      state: WorkspaceState;
+    }>;
+    expect(sessions[0].state.placementOverlayRotation).toBe(90);
+    workspaceStore.undo();
+    workspaceStore.redo();
+    expect(workspaceStore.state.placementOverlayRotation).toBe(90);
+    sessions = JSON.parse(storage.get('pincraft:recent_sessions_v1') ?? '[]') as Array<{
+      state: WorkspaceState;
+    }>;
+    expect(sessions[0].state.placementOverlayRotation).toBe(90);
+    vi.unstubAllGlobals();
+  });
+
+  it('derives ring indicators only from enabled preferences', () => {
+    const canvas = readCanvas();
+    expect(canvas).toContain('placementOptions');
+    expect(canvas).toContain('info.signals.length > 0 || info.kind === \'sys\'');
+    expect(canvas).toContain('placementSettings.preferences[name]?.enabled');
+    expect(canvas).toContain('if (preference.enabled) names.add(name)');
+    expect(canvas).toContain(
+      "workspaceStore.setPlacement(name, { angle: 0, ring: 'outer', enabled: true })",
+    );
+    const overlay = readOverlay();
+    expect(overlay).toContain('{enabledNames.has(option) ? \'\' : \' (off)\'}');
+    expect(overlay).toContain('Enable {selected}');
   });
 });

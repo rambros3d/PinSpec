@@ -283,6 +283,17 @@ export function normalizeDockTab(value: unknown): DockTab {
     : 'peripherals';
 }
 
+/**
+ * Package view rotation. Only counter-clockwise 90 degrees is a selectable
+ * non-default value; absent or unrecognized values normalize to 0.
+ */
+export type PackageRotation = 0 | -90;
+
+/** Normalize an untrusted persisted rotation to the supported two-state union. */
+export function normalizePackageRotation(value: unknown): PackageRotation {
+  return value === -90 ? -90 : 0;
+}
+
 /** Priority rings for the optional pin-placement overlay, inner highest. */
 export const PLACEMENT_RINGS = ['inner', 'middle', 'outer'] as const;
 export type PlacementRing = (typeof PLACEMENT_RINGS)[number];
@@ -321,6 +332,13 @@ export interface WorkspaceState {
    * files because it is a user preference, not a session-only view flag.
    */
   dockTab?: DockTab;
+  /** Additive view rotation; absent means the default 0-degree orientation. */
+  packageRotation?: PackageRotation;
+  /**
+   * Display-only placement overlay rotation in degrees. Scoring geometry and
+   * stored preference angles remain in package coordinates.
+   */
+  placementOverlayRotation?: number;
 }
 
 export type PinVisualStatus = 'unused' | 'power' | 'assigned' | 'partial' | 'conflict';

@@ -89,7 +89,7 @@
             </span>
           {/each}
         </div>
-        <p class="text-[11px] text-base-content/40">
+        <p class="text-[11px] text-base-content/60">
           PIO state machines may only address pins inside one of these 32-pin windows.
         </p>
       {/if}

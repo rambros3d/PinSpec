@@ -1,6 +1,6 @@
 import { cloneWorkspaceState, createWorkspaceHistory, type HistoryStack } from '../core/history';
 import { normalizeAngle } from '../core/placement';
-import { normalizeDockTab } from '../core/types';
+import { normalizeDockTab, normalizePackageRotation, type PackageRotation } from '../core/types';
 import {
   allocatePeripheralMode,
   applyOneHopFix,
@@ -70,7 +70,6 @@ class WorkspaceStore {
   toast = $state<{ id: number; text: string; tone: 'info' | 'success' | 'warning' } | null>(null);
 
   // Interactive workspace view controls
-  rotation = $state<0 | 90 | 180 | 270>(0);
   globalSearch = $state('');
   remapSourcePos = $state<string | null>(null);
   highlightedPins = $state<string[]>([]);
@@ -124,6 +123,11 @@ class WorkspaceStore {
     return normalizeDockTab(this.state.dockTab);
   }
 
+  /** Effective package rotation derived from persisted workspace state. */
+  get rotation(): PackageRotation {
+    return normalizePackageRotation(this.state.packageRotation);
+  }
+
   /** Persist a dock tab change as one history entry, like other view settings. */
   setDockTab(tab: DockTab): void {
     const nextTab = normalizeDockTab(tab);
@@ -147,6 +151,13 @@ class WorkspaceStore {
 
   dismissBanner(): void {
     this.bannerError = null;
+  }
+
+  /** Clear the current notification immediately, including its timer. */
+  dismissToast(): void {
+    if (this.toastTimer) clearTimeout(this.toastTimer);
+    this.toastTimer = null;
+    this.toast = null;
   }
 
   private syncHistoryFlags(): void {
@@ -216,7 +227,6 @@ class WorkspaceStore {
 
       this.history.reset(initialState);
       this.state = this.history.current;
-      this.rotation = 0;
       this.syncHistoryFlags();
       this.persistCurrentSession();
     } catch (err) {
@@ -436,6 +446,15 @@ class WorkspaceStore {
     this.state = this.history.current;
   }
 
+  /** Persist a display-only overlay rotation as one undoable change. */
+  setPlacementOverlayRotation(rotation: number): void {
+    const nextRotation = normalizeAngle(rotation);
+    if (normalizeAngle(this.state.placementOverlayRotation ?? 0) === nextRotation) return;
+    const next = cloneWorkspaceState(this.state);
+    next.placementOverlayRotation = nextRotation;
+    this.commit(next);
+  }
+
   /** Persist the canvas overlay toggle with the rest of the workspace state. */
   setPlacementOverlayVisible(visible: boolean): void {
     if (Boolean(this.state.placementOverlayVisible) === visible) return;
@@ -538,10 +557,13 @@ class WorkspaceStore {
     }
   }
 
-  rotateClockwise(): void {
-    const order: Array<0 | 90 | 180 | 270> = [0, 90, 180, 270];
-    const idx = order.indexOf(this.rotation);
-    this.rotation = order[(idx + 1) % order.length];
+  /** Toggle between the two supported orientations as one undoable change. */
+  toggleRotation(): void {
+    const next = this.rotation === 0 ? -90 : 0;
+    const nextState = cloneWorkspaceState(this.state);
+    if (next === -90) nextState.packageRotation = -90;
+    else delete nextState.packageRotation;
+    this.commit(nextState);
   }
 
   buildShareUrl(): string {

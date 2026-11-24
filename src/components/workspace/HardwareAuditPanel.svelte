@@ -35,7 +35,7 @@
   <section class="space-y-1.5">
     <h3 class="text-[11px] font-semibold text-foreground">Strapping</h3>
     {#if report.strapping.length === 0}
-      <p class="text-[11px] text-base-content/40">No strapping roles declared in this shard.</p>
+      <p class="text-[11px] text-base-content/60">No strapping roles declared in this shard.</p>
     {:else}
       {#each report.strapping as fact (fact.pos + fact.role)}
         <div class="card card-border bg-base-200 p-2 space-y-0.5">
@@ -106,7 +106,7 @@
   <section class="space-y-1.5">
     <h3 class="text-[11px] font-semibold text-foreground">Unused pins</h3>
     {#if report.unusedPins.unused.length === 0}
-      <p class="text-[11px] text-base-content/40">No unassigned I/O pins.</p>
+      <p class="text-[11px] text-base-content/60">No unassigned I/O pins.</p>
     {:else}
       <div class="card card-border bg-base-200 p-2 space-y-0.5">
         {#each report.unusedPins.unused as fact (fact.pos)}
@@ -120,7 +120,7 @@
 
     <h4 class="text-[11px] font-medium text-base-content/60">Bonded pads</h4>
     {#if report.unusedPins.bonded.length === 0}
-      <p class="text-[11px] text-base-content/40">No shard-backed bonded pads.</p>
+      <p class="text-[11px] text-base-content/60">No shard-backed bonded pads.</p>
     {:else}
       <div class="card card-border bg-base-200 p-2 space-y-0.5">
         {#each report.unusedPins.bonded as fact (fact.pos)}

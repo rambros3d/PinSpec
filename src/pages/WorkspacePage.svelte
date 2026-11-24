@@ -8,6 +8,7 @@
   import PackageCanvas from '../components/workspace/PackageCanvas.svelte';
   import PeripheralTree from '../components/workspace/PeripheralTree.svelte';
   import PinoutDiffModal from '../components/workspace/PinoutDiffModal.svelte';
+  import ShortcutHelpDialog from '../components/workspace/ShortcutHelpDialog.svelte';
   import SummaryDrawer from '../components/workspace/SummaryDrawer.svelte';
   import TopToolbar from '../components/workspace/TopToolbar.svelte';
   import {
@@ -23,6 +24,7 @@
     type BoardPreset,
   } from '../data/boards';
   import { catalogStore } from '../state/catalog.svelte';
+  import { openDialogWithFocus } from '../state/dialog-focus';
   import { router } from '../state/router.svelte';
   import { workspaceStore } from '../state/workspace.svelte';
 
@@ -52,11 +54,13 @@
   let showDiff = $state(false);
   let showExport = $state(false);
   let showBoardSelector = $state(false);
+  let showShortcutHelp = $state(false);
   let iocDropActive = $state(false);
   let iocFileInput = $state<HTMLInputElement | null>(null);
   let ambiguousImport = $state<{ record: IocRawRecord; candidates: string[] } | null>(null);
   let ambiguousChoice = $state<string | null>(null);
   let ambiguousDialogEl = $state<HTMLDialogElement | null>(null);
+  let ambiguousCancelEl = $state<HTMLButtonElement | null>(null);
 
   let canvasRef = $state<{ fitView: () => void } | null>(null);
   let searchInputRef = $state<HTMLInputElement | null>(null);
@@ -86,7 +90,9 @@
   // The ambiguous-import dialog is conditional, so promote it when it mounts.
   $effect(() => {
     if (ambiguousImport && ambiguousDialogEl && !ambiguousDialogEl.open) {
+      const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
       ambiguousDialogEl.showModal();
+      openDialogWithFocus(ambiguousDialogEl, ambiguousCancelEl, opener);
     }
   });
 
@@ -244,6 +250,7 @@
 
   onMount(() => {
     const onKeyDown = (e: KeyboardEvent) => {
+      if (document.querySelector('dialog[open]')) return;
       const target = e.target as HTMLElement | null;
       const inInput =
         target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT');
@@ -265,6 +272,9 @@
       } else if ((e.ctrlKey || e.metaKey) && !inInput && e.key.toLowerCase() === 'y') {
         e.preventDefault();
         workspaceStore.redo();
+      } else if (e.key === '?' && !inInput) {
+        e.preventDefault();
+        showShortcutHelp = true;
       }
     };
     const onDragOver = (e: DragEvent) => {
@@ -319,7 +329,7 @@
       onRedo={() => workspaceStore.redo()}
       onClearAll={() => workspaceStore.clearAll()}
       onFitView={() => canvasRef?.fitView()}
-      onRotate={() => workspaceStore.rotateClockwise()}
+      onRotate={() => workspaceStore.toggleRotation()}
       onShare={handleShare}
       onOpenExport={() => (showExport = true)}
       onOpenFinder={() => (showFinder = true)}
@@ -489,7 +499,7 @@
           onEnterRemap={(pos) => workspaceStore.enterRemapMode(pos)}
           onCompleteRemap={(targetPos) => workspaceStore.completeRemap(targetPos)}
           onCancelRemap={() => workspaceStore.cancelRemapMode()}
-          onRotate={() => workspaceStore.rotateClockwise()}
+          onRotate={() => workspaceStore.toggleRotation()}
         />
       </div>
 
@@ -523,30 +533,32 @@
       {/if}
 
       <!-- Portrait dock tab strip; the panes above occupy the dock area. -->
-      <nav
+      <div
+        role="tablist"
         class="dock workspace-dock-tabs shrink-0 items-center gap-1 border-b border-base-300 bg-base-200 px-2 py-1 text-xs"
         aria-label="Workspace panels"
       >
         {#each DOCK_TABS as tab (tab)}
           <button
             type="button"
+            role="tab"
             onclick={() => selectDockTab(tab)}
-            aria-pressed={workspaceStore.dockTab === tab}
-            class={`btn btn-sm whitespace-nowrap shrink-0 ${
+            aria-selected={workspaceStore.dockTab === tab}
+            class={`btn btn-sm min-h-11 whitespace-nowrap shrink-0 ${
               workspaceStore.dockTab === tab ? 'dock-active btn-primary' : 'btn-ghost'
             }`}
           >
             {DOCK_TAB_LABELS[tab]}
           </button>
         {/each}
-      </nav>
+      </div>
   {/if}
 
   <!-- Toast Notification -->
   {#if workspaceStore.toast}
     <div
       role="status"
-      class={`alert fixed bottom-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2 text-xs font-medium shadow-lg ${
+      class={`workspace-toast alert fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-2 text-xs font-medium shadow-lg ${
         workspaceStore.toast.tone === 'success'
           ? 'alert-success'
           : workspaceStore.toast.tone === 'warning'
@@ -554,7 +566,15 @@
             : 'alert-info'
       }`}
     >
-      {workspaceStore.toast.text}
+      <span>{workspaceStore.toast.text}</span>
+      <button
+        type="button"
+        onclick={() => workspaceStore.dismissToast()}
+        aria-label="Dismiss notification"
+        class="btn btn-ghost btn-xs btn-square"
+      >
+        <X class="size-3" />
+      </button>
     </div>
   {/if}
 
@@ -589,6 +609,7 @@
         <div class="flex items-center justify-between px-5 py-3.5 border-b border-base-300">
           <h2 class="text-sm font-semibold text-foreground">Confirm MCU for Import</h2>
           <button
+            bind:this={ambiguousCancelEl}
             type="button"
             onclick={closeAmbiguousDialog}
             class="btn btn-ghost btn-sm btn-square"
@@ -659,5 +680,9 @@
       onSelect={handleBoardSelect}
       onClose={() => (showBoardSelector = false)}
     />
+  {/if}
+
+  {#if showShortcutHelp}
+    <ShortcutHelpDialog onClose={() => (showShortcutHelp = false)} />
   {/if}
 </div>

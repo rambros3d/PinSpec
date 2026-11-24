@@ -14,6 +14,7 @@
     formatMuxLabel,
     type ChipData,
     type MuxModel,
+    type PackageRotation,
     type PinAssignment,
     type PinInfo,
     type PinVisualStatus,
@@ -26,6 +27,7 @@
     locked: Record<string, boolean>;
     pinStatus: Record<string, PinVisualStatus>;
     zoom?: number;
+    rotation?: PackageRotation;
     muxModel?: MuxModel;
     highlightedPins?: Set<string>;
     remapSourcePos?: string | null;
@@ -43,6 +45,7 @@
     locked,
     pinStatus,
     zoom = 1,
+    rotation = 0,
     muxModel = 'af',
     highlightedPins = new Set<string>(),
     remapSourcePos = null,
@@ -183,6 +186,15 @@
     };
   });
 
+  // Geometry rotates around the viewBox centre; text counter-rotates at its
+  // own anchor so every label stays upright in screen space.
+  const viewCenterX = $derived(layout.totalWidth / 2);
+  const viewCenterY = $derived(layout.totalHeight / 2);
+  const geometryTransform = $derived(
+    rotation === -90 ? `rotate(-90 ${viewCenterX} ${viewCenterY})` : undefined,
+  );
+  const counterRotation = $derived(rotation === -90 ? 90 : 0);
+
   function getColors(pos: string): { fill: string; stroke: string; text: string; tagBg: string } {
     const isHighlighted = highlightedPins.has(pos);
     const isRemapSrc = remapSourcePos === pos;
@@ -308,6 +320,7 @@
     </filter>
   </defs>
 
+  <g transform={geometryTransform}>
   <!-- IC Package Body -->
   <g>
     <rect
@@ -371,6 +384,7 @@
         <text
           x={layout.originX + layout.bodyWidth / 2}
           y={layout.originY + layout.bodyHeight - 17}
+          transform={`rotate(${counterRotation} ${layout.originX + layout.bodyWidth / 2} ${layout.originY + layout.bodyHeight - 17})`}
           text-anchor="middle"
           class="font-mono fill-base-content/40 pointer-events-none"
           font-size="8"
@@ -397,6 +411,7 @@
     <text
       x={layout.originX + layout.bodyWidth / 2}
       y={layout.originY + layout.bodyHeight / 2 - 10}
+      transform={`rotate(${counterRotation} ${layout.originX + layout.bodyWidth / 2} ${layout.originY + layout.bodyHeight / 2 - 10})`}
       text-anchor="middle"
       class="font-mono fill-base-content font-semibold"
       font-size={compact ? 14 : 16}
@@ -406,6 +421,7 @@
     <text
       x={layout.originX + layout.bodyWidth / 2}
       y={layout.originY + layout.bodyHeight / 2 + 12}
+      transform={`rotate(${counterRotation} ${layout.originX + layout.bodyWidth / 2} ${layout.originY + layout.bodyHeight / 2 + 12})`}
       text-anchor="middle"
       class="font-mono fill-base-content/60"
       font-size={compact ? 11 : 12}
@@ -415,6 +431,7 @@
     <text
       x={layout.originX + layout.bodyWidth / 2}
       y={layout.originY + layout.bodyHeight / 2 + 29}
+      transform={`rotate(${counterRotation} ${layout.originX + layout.bodyWidth / 2} ${layout.originY + layout.bodyHeight / 2 + 29})`}
       text-anchor="middle"
       class="font-mono fill-base-content/40"
       font-size="10"
@@ -489,6 +506,7 @@
           x={cx}
           y={cy + 3.5}
           text-anchor="middle"
+          transform={`rotate(${counterRotation} ${cx} ${cy + 3.5})`}
           class="font-mono font-medium pointer-events-none fill-base-content"
           font-size={layout.pitch < 24 ? 8.5 : 10}
         >
@@ -499,7 +517,7 @@
           x={cx}
           y={cy + 3.5}
           text-anchor="middle"
-          transform={`rotate(-90 ${cx} ${cy})`}
+          transform={`rotate(${-90 + counterRotation} ${cx} ${cy})`}
           class="font-mono font-medium pointer-events-none fill-base-content"
           font-size={layout.pitch < 24 ? 8.5 : 10}
         >
@@ -512,6 +530,7 @@
         <text
           x={layout.originX + 6}
           y={cy + 3}
+          transform={`rotate(${counterRotation} ${layout.originX + 6} ${cy + 3})`}
           text-anchor="start"
           class="font-mono fill-base-content/40 pointer-events-none"
           font-size="8.5"
@@ -522,6 +541,7 @@
         <text
           x={layout.originX + layout.bodyWidth - 6}
           y={cy + 3}
+          transform={`rotate(${counterRotation} ${layout.originX + layout.bodyWidth - 6} ${cy + 3})`}
           text-anchor="end"
           class="font-mono fill-base-content/40 pointer-events-none"
           font-size="8.5"
@@ -532,6 +552,7 @@
         <text
           x={cx}
           y={layout.originY + layout.bodyHeight - 6}
+          transform={`rotate(${counterRotation} ${cx} ${layout.originY + layout.bodyHeight - 6})`}
           text-anchor="middle"
           class="font-mono fill-base-content/40 pointer-events-none"
           font-size="8.5"
@@ -542,6 +563,7 @@
         <text
           x={cx}
           y={layout.originY + 13}
+          transform={`rotate(${counterRotation} ${cx} ${layout.originY + 13})`}
           text-anchor="middle"
           class="font-mono fill-base-content/40 pointer-events-none"
           font-size="8.5"
@@ -606,6 +628,7 @@
           <text
             x={item.x - 13}
             y={cy + 3.5}
+            transform={`rotate(${counterRotation} ${item.x - 13} ${cy + 3.5})`}
             text-anchor="end"
             class="font-mono font-medium fill-base-content pointer-events-none"
             font-size={layout.pitch < 24 ? 8.5 : 9.5}
@@ -634,6 +657,7 @@
           <text
             x={item.x + item.width + 13}
             y={cy + 3.5}
+            transform={`rotate(${counterRotation} ${item.x + item.width + 13} ${cy + 3.5})`}
             text-anchor="start"
             class="font-mono font-medium fill-base-content pointer-events-none"
             font-size={layout.pitch < 24 ? 8.5 : 9.5}
@@ -649,7 +673,7 @@
             stroke={colors.stroke}
             stroke-width="1.2"
           />
-          <g transform={`translate(${cx}, ${item.y - 8}) rotate(-90)`}>
+          <g transform={`translate(${cx}, ${item.y - 8}) rotate(${-90 + counterRotation})`}>
             <rect
               x="0"
               y={-tagH / 2}
@@ -679,7 +703,7 @@
             stroke={colors.stroke}
             stroke-width="1.2"
           />
-          <g transform={`translate(${cx}, ${item.y + item.height + 8}) rotate(-90)`}>
+          <g transform={`translate(${cx}, ${item.y + item.height + 8}) rotate(${-90 + counterRotation})`}>
             <rect
               x={-tagW}
               y={-tagH / 2}
@@ -704,4 +728,5 @@
       {/if}
     </g>
   {/each}
+  </g>
 </svg>

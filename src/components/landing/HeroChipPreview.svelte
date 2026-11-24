@@ -120,9 +120,9 @@
   <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 border-b border-base-300 bg-base-200">
     <div class="flex items-center gap-2 text-xs font-mono-tabular">
       <span class="font-semibold text-foreground">{chip.id}</span>
-      <span class="text-base-content/40">·</span>
+      <span class="text-base-content/60">·</span>
       <span class="text-base-content/60">{chip.package.name}</span>
-      <span class="text-base-content/40">·</span>
+      <span class="text-base-content/60">·</span>
       <span class="text-success">
         {Object.keys(demoState.assignments).length} pins assigned
       </span>
@@ -163,7 +163,7 @@
         </button>
       {/each}
     </div>
-    <span class="text-[11px] text-base-content/40">Click any pin to edit</span>
+    <span class="text-[11px] text-base-content/60">Click any pin to edit</span>
   </div>
 
   <!-- Live Interactive SVG Chip -->
@@ -198,12 +198,12 @@
         <span class="font-semibold text-foreground shrink-0">
           Pin {hoveredPin.pos} ({hoveredPin.name})
         </span>
-        <span class="text-base-content/40">·</span>
+        <span class="text-base-content/60">·</span>
         {#if hAsgn}
           <span class="text-success shrink-0">
             {hAsgn.peripheral}_{hAsgn.signal} [{formatMuxLabel(hAsgn, muxModel)}]
           </span>
-          <span class="text-base-content/40">·</span>
+          <span class="text-base-content/60">·</span>
         {/if}
         <span class="text-base-content/60 truncate">
           {hoveredPin.signals.length > 0

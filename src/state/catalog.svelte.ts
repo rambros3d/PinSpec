@@ -138,6 +138,18 @@ class CatalogStore {
     return this.indexPromise;
   }
 
+  /**
+   * Retry a failed catalog load by discarding the cached promise and the
+   * partial state before running the existing loader again.
+   */
+  retry(): Promise<void> {
+    this.indexPromise = null;
+    this.indexError = null;
+    this.meta = null;
+    this.index = [];
+    return this.ensureLoaded();
+  }
+
   primeChip(chip: ChipData): void {
     this.chipCache.set(chip.id.toUpperCase(), chip);
   }

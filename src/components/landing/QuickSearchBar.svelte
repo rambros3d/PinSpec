@@ -152,7 +152,7 @@
       </button>
     {/each}
 
-    <span class="text-base-content/40 mx-0.5">|</span>
+    <span class="text-base-content/60 mx-0.5">|</span>
 
     <label class="inline-flex items-center gap-1 text-base-content/60">
       Family
@@ -210,7 +210,18 @@
       </div>
 
       <div class="overflow-y-auto divide-y divide-base-300">
-        {#if results.length === 0 && !catalogStore.loadingIndex}
+        {#if catalogStore.indexError}
+          <div role="alert" class="py-6 px-4 text-center text-xs space-y-2">
+            <p class="font-medium text-error">{catalogStore.indexError}</p>
+            <button
+              type="button"
+              onclick={() => catalogStore.retry()}
+              class="btn btn-sm btn-outline"
+            >
+              Retry catalog load
+            </button>
+          </div>
+        {:else if results.length === 0 && !catalogStore.loadingIndex}
           <div class="py-8 text-center text-xs text-base-content/60">
             No parts matched your filter criteria.
           </div>
@@ -245,7 +256,7 @@
               <div class="flex items-center gap-2 shrink-0">
                 <div class="text-right font-mono-tabular text-[11px]">
                   <div class="text-foreground">{entry.package}</div>
-                  <div class="text-base-content/40">{entry.pinCount} pins</div>
+                  <div class="text-base-content/60">{entry.pinCount} pins</div>
                 </div>
                 <ArrowRight class="size-3.5 text-base-content/40" />
               </div>

@@ -2,6 +2,7 @@ import { deflateSync, inflateSync, strFromU8, strToU8 } from 'fflate';
 import {
   PINCRAFT_STATE_VERSION,
   normalizeDockTab,
+  normalizePackageRotation,
   parseGpioConfig,
   type DockTab,
   type GpioConfig,
@@ -10,7 +11,7 @@ import {
   type PioPinAssignment,
   type WorkspaceState,
 } from './types';
-import { parsePinPlacementPreference } from './placement';
+import { normalizeAngle, parsePinPlacementPreference } from './placement';
 
 type CompactAssignment = [
   string,
@@ -45,6 +46,10 @@ interface CompactUrlPayload {
   w?: 1;
   /** Active portrait dock tab (only when explicitly stored). */
   d?: DockTab;
+  /** Package rotation, emitted only for the non-default -90 value. */
+  z?: -90;
+  /** Display-only overlay rotation in degrees, emitted only when non-zero. */
+  q?: number;
 }
 
 export type DecodeResult =
@@ -162,6 +167,10 @@ export function encodeWorkspaceState(state: WorkspaceState): string {
 
   if (state.placementOverlayVisible) payload.w = 1;
   if (state.dockTab !== undefined) payload.d = state.dockTab;
+  const rotation = normalizePackageRotation(state.packageRotation);
+  if (rotation !== 0) payload.z = rotation;
+  const overlayRotation = normalizeAngle(state.placementOverlayRotation ?? 0);
+  if (overlayRotation !== 0) payload.q = overlayRotation;
   if (state.placement && Object.keys(state.placement).length > 0) {
     payload.y = {};
     for (const peripheral of sortedKeys(state.placement as Record<string, unknown>)) {
@@ -280,6 +289,12 @@ export function decodeWorkspaceState(encoded: string): DecodeResult {
 
     if (obj.w === 1 || obj.w === true) state.placementOverlayVisible = true;
     if (obj.d !== undefined) state.dockTab = normalizeDockTab(obj.d);
+    const rotation = normalizePackageRotation(obj.z);
+    if (rotation !== 0) state.packageRotation = rotation;
+    if (typeof obj.q === 'number') {
+      const overlayRotation = normalizeAngle(obj.q);
+      if (overlayRotation !== 0) state.placementOverlayRotation = overlayRotation;
+    }
     if (obj.y && typeof obj.y === 'object' && !Array.isArray(obj.y)) {
       const placement: Record<string, PinPlacementPreference> = {};
       for (const [peripheral, val] of Object.entries(obj.y as Record<string, unknown>)) {

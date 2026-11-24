@@ -14,6 +14,7 @@
     formatMuxLabel,
     type ChipData,
     type MuxModel,
+    type PackageRotation,
     type PinAssignment,
     type PinInfo,
     type PinVisualStatus,
@@ -26,6 +27,7 @@
     locked: Record<string, boolean>;
     pinStatus: Record<string, PinVisualStatus>;
     zoom?: number;
+    rotation?: PackageRotation;
     muxModel?: MuxModel;
     highlightedPins?: Set<string>;
     remapSourcePos?: string | null;
@@ -42,6 +44,7 @@
     locked,
     pinStatus,
     zoom = 1,
+    rotation = 0,
     muxModel = 'af',
     highlightedPins = new Set<string>(),
     remapSourcePos = null,
@@ -97,6 +100,15 @@
       balls,
     };
   });
+
+  // The ball matrix rotates as geometry; headers, ball labels and the footer
+  // counter-rotate at their own anchors so they remain upright on screen.
+  const viewCenterX = $derived(layout.totalWidth / 2);
+  const viewCenterY = $derived(layout.totalHeight / 2);
+  const geometryTransform = $derived(
+    rotation === -90 ? `rotate(-90 ${viewCenterX} ${viewCenterY})` : undefined,
+  );
+  const counterRotation = $derived(rotation === -90 ? 90 : 0);
 
   function getBallColors(pos: string): { fill: string; stroke: string } {
     if (remapSourcePos === pos) {
@@ -155,6 +167,7 @@
     </filter>
   </defs>
 
+  <g transform={geometryTransform}>
   <!-- Substrate Frame -->
   <rect
     x={layout.outerPad + layout.headerPad - 8}
@@ -199,6 +212,7 @@
   <text
     x={layout.outerPad + layout.headerPad - 12}
     y={layout.outerPad + layout.headerPad - 14}
+    transform={`rotate(${counterRotation} ${layout.outerPad + layout.headerPad - 12} ${layout.outerPad + layout.headerPad - 14})`}
     text-anchor="end"
     class="font-mono font-semibold fill-warning"
     font-size="10"
@@ -211,6 +225,7 @@
     <text
       x={layout.outerPad + layout.headerPad + ci * layout.cellSize + layout.cellSize / 2}
       y={layout.outerPad + layout.headerPad - 16}
+      transform={`rotate(${counterRotation} ${layout.outerPad + layout.headerPad + ci * layout.cellSize + layout.cellSize / 2} ${layout.outerPad + layout.headerPad - 16})`}
       text-anchor="middle"
       class="font-mono fill-base-content/60 font-medium"
       font-size="11"
@@ -224,6 +239,7 @@
     <text
       x={layout.outerPad + layout.headerPad - 18}
       y={layout.outerPad + layout.headerPad + ri * layout.cellSize + layout.cellSize / 2 + 4}
+      transform={`rotate(${counterRotation} ${layout.outerPad + layout.headerPad - 18} ${layout.outerPad + layout.headerPad + ri * layout.cellSize + layout.cellSize / 2 + 4})`}
       text-anchor="end"
       class="font-mono fill-base-content/60 font-medium"
       font-size="11"
@@ -284,6 +300,7 @@
         <text
           x={ball.cx}
           y={ball.cy + 3.5}
+          transform={`rotate(${counterRotation} ${ball.cx} ${ball.cy + 3.5})`}
           text-anchor="middle"
           class="font-mono font-medium fill-base-content pointer-events-none"
           font-size="8.5"
@@ -295,6 +312,7 @@
         <text
           x={ball.cx}
           y={asgn ? ball.cy - 2 : ball.cy + 3}
+          transform={`rotate(${counterRotation} ${ball.cx} ${asgn ? ball.cy - 2 : ball.cy + 3})`}
           text-anchor="middle"
           class="font-mono font-semibold fill-base-content pointer-events-none"
           font-size="8.5"
@@ -305,6 +323,7 @@
           <text
             x={ball.cx}
             y={ball.cy + 8.5}
+            transform={`rotate(${counterRotation} ${ball.cx} ${ball.cy + 8.5})`}
             text-anchor="middle"
             class="font-mono fill-base-content pointer-events-none"
             font-size="6.8"
@@ -317,6 +336,7 @@
         <text
           x={ball.cx}
           y={ball.cy - 8.5}
+          transform={`rotate(${counterRotation} ${ball.cx} ${ball.cy - 8.5})`}
           text-anchor="middle"
           class="font-mono fill-base-content/60 pointer-events-none"
           font-size="6"
@@ -326,6 +346,7 @@
         <text
           x={ball.cx}
           y={ball.cy - 0.5}
+          transform={`rotate(${counterRotation} ${ball.cx} ${ball.cy - 0.5})`}
           text-anchor="middle"
           class="font-mono font-semibold fill-base-content pointer-events-none"
           font-size="7.5"
@@ -336,6 +357,7 @@
           <text
             x={ball.cx}
             y={ball.cy + 7.5}
+            transform={`rotate(${counterRotation} ${ball.cx} ${ball.cy + 7.5})`}
             text-anchor="middle"
             class="font-mono fill-base-content pointer-events-none"
             font-size="6"
@@ -347,6 +369,7 @@
           <text
             x={ball.cx}
             y={ball.cy + 14}
+            transform={`rotate(${counterRotation} ${ball.cx} ${ball.cy + 14})`}
             text-anchor="middle"
             class="font-mono fill-info pointer-events-none"
             font-size="5.5"
@@ -372,10 +395,12 @@
   <text
     x={layout.outerPad + layout.headerPad + layout.gridWidth / 2}
     y={layout.totalHeight - 8}
+    transform={`rotate(${counterRotation} ${layout.outerPad + layout.headerPad + layout.gridWidth / 2} ${layout.totalHeight - 8})`}
     text-anchor="middle"
     class="font-mono fill-base-content/60"
     font-size="12"
   >
     {chip.id} · {chip.package.name} ({chip.package.pinCount} balls) · {chip.core}
   </text>
+  </g>
 </svg>

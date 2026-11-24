@@ -1,6 +1,7 @@
 <script lang="ts">
   import {
     ChevronDown,
+    ChevronRight,
     Download,
     GitCompare,
     Maximize2,
@@ -13,7 +14,8 @@
     Undo2,
     X,
   } from 'lucide-svelte';
-  import type { ChipData } from '../../core/types';
+  import type { ChipData, PackageRotation } from '../../core/types';
+  import { shouldShowScrollAffordance } from '../../core/scroll-affordance';
   import ThemePicker from '../ThemePicker.svelte';
 
   interface Props {
@@ -22,7 +24,7 @@
     searchMatchCount: number;
     canUndo: boolean;
     canRedo: boolean;
-    rotation: 0 | 90 | 180 | 270;
+    rotation: PackageRotation;
     searchInputRef?: HTMLInputElement | null;
     onHome: () => void;
     onOpenSwitcher: () => void;
@@ -61,10 +63,29 @@
   }: Props = $props();
 
   let confirmClear = $state(false);
+  let scrollRowEl = $state<HTMLDivElement | null>(null);
+  let showScrollHint = $state(false);
+
+  function updateScrollHint(): void {
+    if (!scrollRowEl) return;
+    showScrollHint = shouldShowScrollAffordance(
+      scrollRowEl.scrollLeft,
+      scrollRowEl.clientWidth,
+      scrollRowEl.scrollWidth,
+    );
+  }
+
+  $effect(() => {
+    updateScrollHint();
+  });
 </script>
 
-<header class="h-12 shrink-0 min-h-0 min-w-0 overflow-hidden border-b border-base-300 bg-base-100 select-none">
-  <div class="flex h-full w-full min-w-0 items-center justify-between gap-3 px-3 overflow-x-auto overscroll-x-contain">
+<header class="h-12 shrink-0 min-h-0 min-w-0 relative overflow-hidden border-b border-base-300 bg-base-100 select-none">
+  <div
+    bind:this={scrollRowEl}
+    onscroll={updateScrollHint}
+    class="flex h-full w-full min-w-0 items-center justify-between gap-3 px-3 overflow-x-auto overscroll-x-contain"
+  >
   <!-- Left: Brand Home + Active MCU Switcher -->
   <div class="flex items-center gap-3 min-w-0 shrink-0">
     <button
@@ -201,7 +222,7 @@
     <button
       type="button"
       onclick={onRotate}
-      title={`Rotate package (${rotation} deg)`}
+      title={rotation === -90 ? 'Restore package orientation' : 'Rotate package counter-clockwise'}
       class="btn btn-ghost btn-sm btn-square hidden sm:inline-flex"
     >
       <RotateCw class="size-4" />
@@ -252,4 +273,10 @@
     <ThemePicker compact={true} />
   </div>
   </div>
+  {#if showScrollHint}
+    <ChevronRight
+      class="size-4 text-base-content/60 absolute right-0.5 top-1/2 -translate-y-1/2 pointer-events-none"
+      aria-hidden="true"
+    />
+  {/if}
 </header>

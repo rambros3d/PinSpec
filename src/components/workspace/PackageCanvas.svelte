@@ -1,12 +1,13 @@
 <script lang="ts">
   import { Crosshair, Maximize2, Minus, Plus, RotateCw, X } from 'lucide-svelte';
   import { onMount } from 'svelte';
-  import { normalizePlacement } from '../../core/placement';
+  import { normalizeAngle, normalizePlacement } from '../../core/placement';
   import { clampOverlayPosition } from '../../core/overlay-position';
   import {
     formatMuxLabel,
     getChipMuxModel,
     type ChipData,
+    type PackageRotation,
     type PinAssignment,
     type PinInfo,
     type PinPlacementPreference,
@@ -27,7 +28,7 @@
     labels: Record<string, string>;
     locked: Record<string, boolean>;
     pinStatus: Record<string, PinVisualStatus>;
-    rotation: 0 | 90 | 180 | 270;
+    rotation: PackageRotation;
     highlightedPins: string[];
     remapSourcePos: string | null;
     focusPinRequest?: { pos: string; nonce: number } | null;
@@ -77,6 +78,12 @@
   let panOriginX = 0;
   let panOriginY = 0;
 
+  // Active touch pointers feed one cursor-centred zoom operation. A second
+  // pointer cancels pan and switches the stage to pinch scaling.
+  const activePointers = new Map<number, { x: number; y: number }>();
+  let pinchDistance = 0;
+  let gestureScale = 1;
+
   let hoveredPin = $state<{ pin: PinInfo; x: number; y: number } | null>(null);
   let popover = $state<{ pin: PinInfo; x: number; y: number } | null>(null);
   let contextMenu = $state<{ pin: PinInfo; x: number; y: number } | null>(null);
@@ -90,12 +97,37 @@
   const muxModel = $derived(getChipMuxModel(chip));
 
   const placementSettings = $derived(normalizePlacement(workspaceStore.state));
+  const overlayRotation = $derived(
+    normalizeAngle(workspaceStore.state.placementOverlayRotation ?? 0),
+  );
   let selectedPlacementPeripheral = $state<string | null>(null);
 
-  const placementIndicators = $derived.by<PlacementIndicator[]>(() => {
-    const names = new Set<string>(Object.keys(placementSettings.preferences));
+  // Selector options: allocatable peripherals from the chip plus system
+  // peripherals that hold assignments. GPIO is never an allocatable option.
+  const placementOptions = $derived.by<string[]>(() => {
+    const names = new Set<string>();
+    for (const [name, info] of Object.entries(chip.peripherals)) {
+      if (name === 'GPIO') continue;
+      if (info.signals.length > 0 || info.kind === 'sys') names.add(name);
+    }
     for (const asgn of Object.values(assignments)) {
-      if (asgn.peripheral !== 'GPIO') names.add(asgn.peripheral);
+      if (asgn.peripheral === 'GPIO') continue;
+      const info = chip.peripherals[asgn.peripheral];
+      if (!info || info.signals.length === 0 || info.kind === 'sys') {
+        names.add(asgn.peripheral);
+      }
+    }
+    return Array.from(names).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+  });
+
+  // Only opted-in peripherals get a ring indicator; assigned but unconfigured
+  // peripherals remain selectable without biasing the allocator.
+  const placementIndicators = $derived.by<PlacementIndicator[]>(() => {
+    const names = new Set<string>(
+      placementOptions.filter((name) => placementSettings.preferences[name]?.enabled),
+    );
+    for (const [name, preference] of Object.entries(placementSettings.preferences)) {
+      if (preference.enabled) names.add(name);
     }
     return Array.from(names)
       .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
@@ -134,14 +166,19 @@
     );
   }
 
-  function handlePlacementAngle(name: string, angle: number, commit: boolean): void {
-    const preference: PinPlacementPreference = { ...placementPreference(name), angle };
+  function handlePlacementAngle(
+    name: string,
+    angle: number,
+    ring: PlacementRing,
+    commit: boolean,
+  ): void {
+    const preference: PinPlacementPreference = {
+      ...placementPreference(name),
+      angle,
+      ring,
+    };
     if (commit) workspaceStore.commitPlacement(name, preference);
     else workspaceStore.previewPlacement(name, preference);
-  }
-
-  function handlePlacementRing(name: string, ring: PlacementRing): void {
-    workspaceStore.setPlacement(name, { ...placementPreference(name), ring });
   }
 
   function handlePlacementEnable(name: string): void {
@@ -163,7 +200,7 @@
     if (!svg) return;
     const sw = Number(svg.getAttribute('width')) || 700;
     const sh = Number(svg.getAttribute('height')) || 700;
-    const isRotated = rotation === 90 || rotation === 270;
+    const isRotated = rotation === -90;
     const effW = isRotated ? sh : sw;
     const effH = isRotated ? sw : sh;
 
@@ -195,13 +232,59 @@
     zoom = Number(nextZoom.toFixed(3));
   }
 
+  /** Wheel input: discrete step for a mouse wheel, fine step for trackpad pinch. */
   function handleWheel(e: WheelEvent): void {
     e.preventDefault();
-    const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
-    zoomBy(factor, e.clientX, e.clientY);
+    if (e.ctrlKey || e.metaKey) {
+      const delta = Math.max(-60, Math.min(60, e.deltaY));
+      zoomBy(Math.exp(-delta * 0.004), e.clientX, e.clientY);
+    } else {
+      const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
+      zoomBy(factor, e.clientX, e.clientY);
+    }
+  }
+
+  /** Re-baseline the pinch from the first two active pointers. */
+  function resetPinch(): void {
+    const points = Array.from(activePointers.values());
+    if (points.length < 2) {
+      pinchDistance = 0;
+      return;
+    }
+    const [a, b] = points;
+    pinchDistance = Math.hypot(b.x - a.x, b.y - a.y);
+  }
+
+  interface CanvasGestureEvent extends Event {
+    scale: number;
+  }
+
+  function handleGestureStart(e: Event): void {
+    e.preventDefault();
+    dragging = false;
+    gestureScale = (e as CanvasGestureEvent).scale || 1;
+  }
+
+  function handleGestureChange(e: Event): void {
+    e.preventDefault();
+    const scale = (e as CanvasGestureEvent).scale || 1;
+    if (gestureScale > 0 && scale > 0) zoomBy(scale / gestureScale);
+    gestureScale = scale;
+  }
+
+  function handleGestureEnd(e: Event): void {
+    e.preventDefault();
+    gestureScale = 1;
   }
 
   function handlePointerDown(e: PointerEvent): void {
+    activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (activePointers.size >= 2) {
+      // A second pointer starts a pinch, never a pan.
+      dragging = false;
+      resetPinch();
+      return;
+    }
     // Allow left-drag on background or middle-mouse drag anywhere
     const isPinTarget = (e.target as HTMLElement | null)?.closest('[data-pin-pos]');
     if (e.button === 1 || (e.button === 0 && !isPinTarget)) {
@@ -215,6 +298,21 @@
   }
 
   function handlePointerMove(e: PointerEvent): void {
+    if (activePointers.has(e.pointerId)) {
+      activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    }
+    if (activePointers.size >= 2) {
+      const points = Array.from(activePointers.values());
+      const [a, b] = points;
+      const distance = Math.hypot(b.x - a.x, b.y - a.y);
+      const midX = (a.x + b.x) / 2;
+      const midY = (a.y + b.y) / 2;
+      if (pinchDistance > 0 && distance > 0) {
+        zoomBy(distance / pinchDistance, midX, midY);
+      }
+      pinchDistance = distance;
+      return;
+    }
     if (dragging) {
       panX = panOriginX + (e.clientX - dragStartX);
       panY = panOriginY + (e.clientY - dragStartY);
@@ -224,6 +322,8 @@
   }
 
   function handlePointerUp(e: PointerEvent): void {
+    activePointers.delete(e.pointerId);
+    resetPinch();
     if (dragging) {
       dragging = false;
       try {
@@ -302,7 +402,15 @@
 
   onMount(() => {
     fitView();
+    const stage = stageEl;
+    if (stage) {
+      stage.addEventListener('wheel', handleWheel, { passive: false });
+      stage.addEventListener('gesturestart', handleGestureStart, { passive: false });
+      stage.addEventListener('gesturechange', handleGestureChange, { passive: false });
+      stage.addEventListener('gestureend', handleGestureEnd, { passive: false });
+    }
     const onKey = (e: KeyboardEvent) => {
+      if (document.querySelector('dialog[open]')) return;
       const target = e.target as HTMLElement | null;
       const inInput =
         target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT');
@@ -313,7 +421,15 @@
       }
     };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    return () => {
+      if (stage) {
+        stage.removeEventListener('wheel', handleWheel);
+        stage.removeEventListener('gesturestart', handleGestureStart);
+        stage.removeEventListener('gesturechange', handleGestureChange);
+        stage.removeEventListener('gestureend', handleGestureEnd);
+      }
+      window.removeEventListener('keydown', onKey);
+    };
   });
 
   // Overlays stay floating in every orientation; clamp before passing coordinates.
@@ -362,10 +478,9 @@
   bind:this={stageEl}
   bind:clientWidth={stageWidth}
   bind:clientHeight={stageHeight}
-  class={`relative flex-1 h-full overflow-hidden bg-base-100 bg-dot-grid select-none ${
+  class={`canvas-stage relative flex-1 h-full overflow-hidden bg-base-100 bg-dot-grid select-none ${
     dragging ? 'cursor-grabbing' : 'cursor-grab'
   }`}
-  onwheel={handleWheel}
   onpointerdown={handlePointerDown}
   onpointermove={handlePointerMove}
   onpointerup={handlePointerUp}
@@ -379,44 +494,41 @@
     class="absolute top-0 left-0 origin-top-left will-change-transform"
     style={`transform: translate3d(${panX}px, ${panY}px, 0) scale(${zoom});`}
   >
-    <div
-      class="origin-center transition-transform duration-150"
-      style={`transform: rotate(${rotation}deg);`}
-    >
-      {#if chip.package.kind === 'grid'}
-        <GridPackage
-          {chip}
-          {assignments}
-          {labels}
-          {locked}
-          {pinStatus}
-          {zoom}
-          muxModel={muxModel}
-          highlightedPins={highlightSet}
-          {remapSourcePos}
-          selectedPinPos={popover?.pin.pos ?? contextMenu?.pin.pos ?? null}
-          onPinClick={handlePinClick}
-          onPinContextMenu={handlePinContextMenu}
-          onPinHover={handlePinHover}
-        />
-      {:else}
-        <PerimeterPackage
-          {chip}
-          {assignments}
-          {labels}
-          {locked}
-          {pinStatus}
-          {zoom}
-          muxModel={muxModel}
-          highlightedPins={highlightSet}
-          {remapSourcePos}
-          selectedPinPos={popover?.pin.pos ?? contextMenu?.pin.pos ?? null}
-          onPinClick={handlePinClick}
-          onPinContextMenu={handlePinContextMenu}
-          onPinHover={handlePinHover}
-        />
-      {/if}
-    </div>
+    {#if chip.package.kind === 'grid'}
+      <GridPackage
+        {chip}
+        {assignments}
+        {labels}
+        {locked}
+        {pinStatus}
+        {zoom}
+        {rotation}
+        muxModel={muxModel}
+        highlightedPins={highlightSet}
+        {remapSourcePos}
+        selectedPinPos={popover?.pin.pos ?? contextMenu?.pin.pos ?? null}
+        onPinClick={handlePinClick}
+        onPinContextMenu={handlePinContextMenu}
+        onPinHover={handlePinHover}
+      />
+    {:else}
+      <PerimeterPackage
+        {chip}
+        {assignments}
+        {labels}
+        {locked}
+        {pinStatus}
+        {zoom}
+        {rotation}
+        muxModel={muxModel}
+        highlightedPins={highlightSet}
+        {remapSourcePos}
+        selectedPinPos={popover?.pin.pos ?? contextMenu?.pin.pos ?? null}
+        onPinClick={handlePinClick}
+        onPinContextMenu={handlePinContextMenu}
+        onPinHover={handlePinHover}
+      />
+    {/if}
   </div>
 
   <!-- Toggleable pin-placement affinity overlay -->
@@ -427,11 +539,13 @@
       centerY={overlayCenterY}
       radius={overlayRadius}
       indicators={placementIndicators}
+      options={placementOptions}
       selected={selectedPlacementPeripheral}
+      {overlayRotation}
       onSelect={(name) => (selectedPlacementPeripheral = name)}
       onAngle={handlePlacementAngle}
-      onRing={handlePlacementRing}
       onEnable={handlePlacementEnable}
+      onRotate={() => workspaceStore.setPlacementOverlayRotation(overlayRotation + 90)}
       onClose={() => {
         selectedPlacementPeripheral = null;
         workspaceStore.setPlacementOverlayVisible(false);
@@ -439,22 +553,39 @@
     />
   {/if}
 
-  <!-- Remap Mode Top-Center Banner -->
-  {#if remapSourcePos}
-    <div role="status" class="alert alert-info absolute top-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3 px-3.5 py-2 text-xs shadow-lg">
-      <span class="font-mono font-medium">
-        Remap Mode: click any pulsing cyan pin to move {remapSourceLabel}
-      </span>
-      <button
-        type="button"
-        onclick={onCancelRemap}
-        class="btn btn-xs btn-primary whitespace-nowrap"
-      >
-        <X class="size-3" />
-        <span>Cancel (Esc)</span>
-      </button>
-    </div>
-  {/if}
+  <!-- Top-centre controls: placement toggle stacked with the remap banner -->
+  <div class="absolute top-3 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 pointer-events-none">
+    <button
+      type="button"
+      onclick={() => {
+        const next = !placementSettings.overlayVisible;
+        if (!next) selectedPlacementPeripheral = null;
+        workspaceStore.setPlacementOverlayVisible(next);
+      }}
+      title={placementSettings.overlayVisible ? 'Hide placement overlay' : 'Show placement overlay'}
+      aria-pressed={placementSettings.overlayVisible}
+      class="card card-border pointer-events-auto flex items-center gap-1.5 px-2.5 py-1 bg-base-100/95 text-xs shadow-sm"
+    >
+      <Crosshair class="size-3.5" />
+      <span class="font-medium">Placement</span>
+    </button>
+
+    {#if remapSourcePos}
+      <div role="status" class="alert alert-info pointer-events-auto flex items-center gap-3 px-3.5 py-2 text-xs shadow-lg">
+        <span class="font-mono font-medium">
+          Remap Mode: click any pulsing cyan pin to move {remapSourceLabel}
+        </span>
+        <button
+          type="button"
+          onclick={onCancelRemap}
+          class="btn btn-xs btn-primary whitespace-nowrap"
+        >
+          <X class="size-3" />
+          <span>Cancel (Esc)</span>
+        </button>
+      </div>
+    {/if}
+  </div>
 
   <!-- Top-Right Canvas HUD Controls -->
   <div class="card card-border absolute top-3 right-3 z-20 flex items-center gap-1 p-1 bg-base-100/95 shadow-sm text-xs">
@@ -489,28 +620,11 @@
     <button
       type="button"
       onclick={onRotate}
-      title="Rotate Package 90 deg"
+      title={rotation === -90 ? 'Restore package orientation' : 'Rotate package counter-clockwise'}
       class="btn btn-ghost btn-sm gap-1 font-mono-tabular"
     >
       <RotateCw class="size-3.5" />
-      <span>{rotation}°</span>
-    </button>
-    <div class="w-px h-4 bg-base-300 mx-0.5"></div>
-    <button
-      type="button"
-      onclick={() => {
-        const next = !placementSettings.overlayVisible;
-        if (!next) selectedPlacementPeripheral = null;
-        workspaceStore.setPlacementOverlayVisible(next);
-      }}
-      title={placementSettings.overlayVisible ? 'Hide placement overlay' : 'Show placement overlay'}
-      aria-pressed={placementSettings.overlayVisible}
-      class={`btn btn-ghost btn-sm gap-1 font-medium ${
-        placementSettings.overlayVisible ? 'btn-active text-info' : ''
-      }`}
-    >
-      <Crosshair class="size-3.5" />
-      <span class="hidden xl:inline text-[11px]">Placement</span>
+      <span class="hidden xl:inline">Rotate</span>
     </button>
   </div>
 
@@ -608,13 +722,13 @@
                 <span class="text-foreground truncate">
                   {sig.peripheral}_{sig.signal}
                 </span>
-                <span class="text-base-content/40 ml-2 shrink-0">
+                <span class="text-base-content/60 ml-2 shrink-0">
                   {formatMuxLabel(sig, muxModel)}
                 </span>
               </div>
             {/each}
             {#if hPin.signals.length > 10}
-              <div class="text-[10px] text-base-content/40">
+              <div class="text-[10px] text-base-content/60">
                 +{hPin.signals.length - 10} more signals (click to inspect)
               </div>
             {/if}

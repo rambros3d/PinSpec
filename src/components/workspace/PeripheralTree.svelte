@@ -185,7 +185,7 @@
             {/if}
             <span>{cat.label}</span>
           </span>
-          <span class="font-mono-tabular text-[11px] text-base-content/40">
+          <span class="font-mono-tabular text-[11px] text-base-content/60">
             {cat.names.length}
           </span>
         </button>
@@ -237,7 +237,7 @@
                   <div class="px-4 py-2 bg-base-200 border-y border-base-300 space-y-2">
                     {#if (peripheralTags.get(pName) ?? []).length > 0}
                       <div class="flex items-center gap-1.5">
-                        <span class="text-[10px] text-base-content/40">Pins:</span>
+                        <span class="text-[10px] text-base-content/60">Pins:</span>
                         <PinTagPills tags={peripheralTags.get(pName) ?? []} compact={true} />
                       </div>
                     {/if}
@@ -287,7 +287,7 @@
                             <option value={option.id}>{option.name}</option>
                           {/each}
                         </select>
-                        <div class="font-mono text-[10px] text-base-content/40 break-words">
+                        <div class="font-mono text-[10px] text-base-content/60 break-words">
                           {summarizeRemapSignals(selectedRemap.signals)}
                         </div>
                         {#if selectedRemap.registerNote}

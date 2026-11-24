@@ -133,7 +133,7 @@
     <div class="min-w-0">
       <div class="flex items-center gap-1.5 font-mono-tabular font-semibold text-foreground">
         <span>{pin.name}</span>
-        <span class="text-base-content/40">·</span>
+        <span class="text-base-content/60">·</span>
         <span class="text-base-content/60">Pin {pin.pos}</span>
       </div>
       {#if bondedNames.length > 0}

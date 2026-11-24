@@ -60,6 +60,28 @@ describe('vendor-correct mux labels', () => {
   });
 });
 
+describe('rotated vendor rendering contracts', () => {
+  it('keeps vendor labels, bonded pads and exposed pads intact while rotating', () => {
+    const perimeter = readSource('src/components/workspace/PerimeterPackage.svelte');
+    const grid = readSource('src/components/workspace/GridPackage.svelte');
+    for (const [name, source] of [
+      ['perimeter', perimeter],
+      ['grid', grid],
+    ] as const) {
+      expect(source, name).toContain('formatMuxLabel');
+      expect(source, name).toContain('data-pin-pos=');
+      expect(source, name).toContain('geometryTransform');
+      expect(source, name).toContain('counterRotation');
+    }
+    expect(perimeter).toContain('twoSidedPackage');
+    expect(perimeter).toContain('chip.package.hasExposedPad');
+    expect(perimeter).toContain('bondedNames');
+    expect(perimeter).toContain('stroke-dasharray={isBonded');
+    expect(perimeter).toContain('tag && zoom >= 0.6');
+    expect(perimeter).toContain('rotate(${-90 + counterRotation} ${cx} ${cy})');
+  });
+});
+
 describe('multi-vendor package rendering', () => {
   it('recognizes two-sided SOP packages and exposes the declared sides', () => {
     const source = readSource('src/components/workspace/PerimeterPackage.svelte');

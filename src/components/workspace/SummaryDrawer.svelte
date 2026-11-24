@@ -20,7 +20,6 @@
     type ChipData,
     type GpioConfig,
     type OneHopFix,
-    type PeripheralStatus,
     type PinAssignment,
     type PioPinAssignment,
     type SolverReport,
@@ -29,7 +28,6 @@
   import { deriveExtiLineId } from '../../core/solver';
   import { workspaceStore } from '../../state/workspace.svelte';
   import HardwareAuditPanel from './HardwareAuditPanel.svelte';
-  import PeripheralDetail from './PeripheralDetail.svelte';
   import PioPanel from './PioPanel.svelte';
   import PinTagPills from './PinTagPills.svelte';
 
@@ -42,16 +40,8 @@
     locked: Record<string, boolean>;
     pioAssignments: Record<string, PioPinAssignment>;
     report: SolverReport;
-    /** Selected peripheral from the compact tree, edited in the Configuration tab. */
-    peripheralName: string | null;
-    peripheralModes: Record<string, string>;
-    peripheralStatus: Record<string, PeripheralStatus>;
-    activeRemaps: Record<string, number>;
     /** Selected tab, bound by the portrait dock so one instance serves both layouts. */
     activeTab?: SummaryDrawerTab;
-    onModeChange: (peripheralName: string, modeId: string) => void;
-    onRemapChange: (peripheralName: string, remapId: number) => void;
-    onToggleSignal: (peripheralName: string, signal: string) => void;
     onFocusPin: (pos: string) => void;
     onSetLabel: (pos: string, label: string) => void;
     onToggleLock: (pos: string) => void;
@@ -67,14 +57,7 @@
     locked,
     pioAssignments,
     report,
-    peripheralName,
-    peripheralModes,
-    peripheralStatus,
-    activeRemaps,
     activeTab = $bindable('pins'),
-    onModeChange,
-    onRemapChange,
-    onToggleSignal,
     onFocusPin,
     onSetLabel,
     onToggleLock,
@@ -190,18 +173,6 @@
       }`}
     >
       Pin Table <span class="font-mono-tabular text-[11px] opacity-75">({Object.keys(assignments).length})</span>
-    </button>
-
-    <button
-      type="button"
-      onclick={() => (activeTab = 'configuration')}
-      class={`tab text-xs font-medium whitespace-nowrap ${
-        activeTab === 'configuration'
-          ? 'tab-active bg-base-100 text-foreground'
-          : 'text-base-content/60 hover:text-foreground'
-      }`}
-    >
-      Configuration
     </button>
 
     <button
@@ -430,22 +401,7 @@
       {/if}
     </div>
 
-  <!-- Tab 2: Configuration for the peripheral selected in the tree -->
-  {:else if activeTab === 'configuration'}
-    <PeripheralDetail
-      {chip}
-      {peripheralName}
-      {assignments}
-      {peripheralModes}
-      {peripheralStatus}
-      {activeRemaps}
-      {onModeChange}
-      {onRemapChange}
-      {onToggleSignal}
-      {onFocusPin}
-    />
-
-  <!-- Tab 3: Diagnostics -->
+  <!-- Tab 2: Diagnostics -->
   {:else if activeTab === 'diagnostics'}
     <div class="flex-1 min-h-0 overflow-y-auto p-2.5 space-y-2">
       {#if report.diagnostics.length === 0}

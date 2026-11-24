@@ -9,7 +9,11 @@ import {
   type PioPinAssignment,
   type WorkspaceState,
 } from './types';
-import { normalizeAngle, parsePinPlacementPreference } from './placement';
+import {
+  canonicalPinPlacementPreference,
+  normalizeAngle,
+  parsePinPlacementPreference,
+} from './placement';
 
 type CompactAssignment = [
   string,
@@ -170,7 +174,7 @@ export function encodeWorkspaceState(state: WorkspaceState): string {
   if (state.placement && Object.keys(state.placement).length > 0) {
     payload.y = {};
     for (const peripheral of sortedKeys(state.placement as Record<string, unknown>)) {
-      const pref = state.placement[peripheral];
+      const pref = canonicalPinPlacementPreference(state.placement[peripheral]);
       payload.y[peripheral] = [pref.angle, pref.ring, pref.enabled ? 1 : 0];
     }
   }

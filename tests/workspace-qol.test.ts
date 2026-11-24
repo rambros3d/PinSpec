@@ -260,11 +260,16 @@ describe('placement overlay Escape and keyboard focus', () => {
     expect(source).toContain('role="button"');
     expect(source).toContain('tabindex="0"');
     expect(source).toContain("event.key === 'ArrowRight' ? 5 : event.key === 'ArrowLeft' ? -5 : 0");
-    for (const token of ['PLACEMENT_RINGS', 'setPointerCapture', 'type="number"', 'indicator.name']) {
+    for (const token of ['PLACEMENT_RINGS', 'setPointerCapture', 'indicator.name']) {
       expect(source, token).toContain(token);
     }
+    expect(source).not.toContain('type="number"');
+    expect(source).not.toContain('pointer-events-auto absolute top-16');
     expect(source).not.toContain('onRing');
     expect(source).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
+    const panel = readSource('src/components/workspace/PlacementPanel.svelte');
+    expect(panel).toContain('type="number"');
+    expect(panel).not.toContain('setPlacementOverlayVisible');
   });
 });
 
@@ -276,9 +281,10 @@ describe('portrait dock and toolbar affordance', () => {
     expect(page).toContain('aria-selected={workspaceStore.dockTab === tab}');
     expect(page).toContain('min-h-11');
     expect(page.match(/data-dock-tab=/g)?.length).toBe(1);
-    for (const label of ['Peripherals', 'Pins', 'Configuration', 'Diagnostics', 'DMA', 'PIO']) {
+    for (const label of ['Peripherals', 'Pins', 'Diagnostics', 'DMA', 'PIO', 'Audit']) {
       expect(page, label).toContain(label);
     }
+    expect(page).not.toContain('Configuration');
   });
 
   it('computes toolbar overflow from scroll metrics', () => {

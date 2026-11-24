@@ -2,17 +2,45 @@ import {
   PLACEMENT_RINGS,
   PLACEMENT_RING_RANK,
   type ChipData,
+  type LegacyPlacementRing,
   type PackageInfo,
+  type PeripheralStatus,
+  type PinAssignment,
   type PinInfo,
   type PinPlacementPreference,
   type PlacementRing,
   type WorkspaceState,
 } from './types';
+import { partitionPeripherals } from './vendor-view';
 
 /** Normalized placement view used by every persistence surface. */
 export interface PlacementSettings {
   overlayVisible: boolean;
   preferences: Record<string, PinPlacementPreference>;
+}
+
+/** One draggable peripheral indicator shown by the placement overlay. */
+export interface PlacementIndicator {
+  name: string;
+  preference: PinPlacementPreference | null;
+  claimed: string[];
+}
+
+/** Legacy spatial names mapped onto the current priority ring identifiers. */
+const LEGACY_RING_MAP: Record<LegacyPlacementRing, PlacementRing> = {
+  inner: 'high',
+  middle: 'medium',
+  outer: 'low',
+};
+
+/** Normalize a persisted ring name, accepting legacy spatial identifiers. */
+export function normalizePlacementRing(value: unknown): PlacementRing | null {
+  if (typeof value !== 'string') return null;
+  if ((PLACEMENT_RINGS as readonly string[]).includes(value)) return value as PlacementRing;
+  if (Object.prototype.hasOwnProperty.call(LEGACY_RING_MAP, value)) {
+    return LEGACY_RING_MAP[value as LegacyPlacementRing];
+  }
+  return null;
 }
 
 /** Derive an angle from a peripheral preference, wrapping into [0, 360). */
@@ -27,21 +55,26 @@ export function angularGap(a: number, b: number): number {
   return Math.min(diff, 360 - diff);
 }
 
-/** Validate one untrusted persisted placement preference. */
+/** Validate one untrusted persisted placement preference, normalizing legacy rings. */
 export function parsePinPlacementPreference(value: unknown): PinPlacementPreference | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   const rec = value as Record<string, unknown>;
   if (typeof rec.angle !== 'number' || !Number.isFinite(rec.angle)) return null;
-  if (!PLACEMENT_RINGS.includes(rec.ring as PlacementRing)) return null;
+  const ring = normalizePlacementRing(rec.ring);
+  if (!ring) return null;
   if (typeof rec.enabled !== 'boolean') return null;
-  return { angle: normalizeAngle(rec.angle), ring: rec.ring as PlacementRing, enabled: rec.enabled };
+  return { angle: normalizeAngle(rec.angle), ring, enabled: rec.enabled };
 }
 
-/** Emit preference fields in a fixed order for deterministic project files. */
+/** Emit preference fields in a fixed order, with only current ring names. */
 export function canonicalPinPlacementPreference(
   preference: PinPlacementPreference,
 ): PinPlacementPreference {
-  return { angle: normalizeAngle(preference.angle), ring: preference.ring, enabled: preference.enabled };
+  return {
+    angle: normalizeAngle(preference.angle),
+    ring: normalizePlacementRing(preference.ring) ?? 'low',
+    enabled: preference.enabled,
+  };
 }
 
 /**
@@ -180,15 +213,15 @@ export function placementAffinityForPin(
 
   // Inter-ring priority dominates scarcity; intra-ring ranking combines
   // angular closeness with a smaller radial term that favors outer balls.
-  const rank = PLACEMENT_RING_RANK[preference.ring] ?? 2;
+  const rank = PLACEMENT_RING_RANK[normalizePlacementRing(preference.ring) ?? 'low'] ?? 2;
   const angularPenalty = (angularGap(angle, preference.angle) / 180) * 60;
   const radialPenalty = (1 - Math.min(1, radius / Math.max(1e-6, geometry.maxRadius))) * 30;
   return rank * 10000 + angularPenalty + radialPenalty;
 }
 
 /**
- * Stable peripheral order for placement-driven allocation: enabled inner-ring
- * preferences first, then middle, then outer; unconfigured peripherals keep
+ * Stable peripheral order for placement-driven allocation: enabled high-ring
+ * preferences first, then medium, then low; unconfigured peripherals keep
  * their original relative order at the end.
  */
 export function orderPeripheralsByPlacement(
@@ -200,9 +233,101 @@ export function orderPeripheralsByPlacement(
   return [...peripherals].sort((a, b) => {
     const pa = preferences[a];
     const pb = preferences[b];
-    const ra = pa?.enabled ? PLACEMENT_RING_RANK[pa.ring] : Number.MAX_SAFE_INTEGER;
-    const rb = pb?.enabled ? PLACEMENT_RING_RANK[pb.ring] : Number.MAX_SAFE_INTEGER;
+    const ra = pa?.enabled
+      ? PLACEMENT_RING_RANK[normalizePlacementRing(pa.ring) ?? 'low']
+      : Number.MAX_SAFE_INTEGER;
+    const rb = pb?.enabled
+      ? PLACEMENT_RING_RANK[normalizePlacementRing(pb.ring) ?? 'low']
+      : Number.MAX_SAFE_INTEGER;
     if (ra !== rb) return ra - rb;
     return (originalIndex.get(a) ?? 0) - (originalIndex.get(b) ?? 0);
   });
+}
+
+/**
+ * Derive the configured peripheral names eligible for a placement bubble.
+ * Reuses the shared configured/unconfigured partition so solver status and
+ * selected modes stay authoritative; assigned system peripherals are included
+ * because they hold real pin configuration even without assignable signals.
+ */
+export function configuredPeripheralNames(
+  chip: ChipData,
+  peripheralStatus: Record<string, PeripheralStatus>,
+  peripheralModes: Record<string, string>,
+  assignments: Record<string, PinAssignment> | null = null,
+): string[] {
+  const { configured } = partitionPeripherals(peripheralStatus, peripheralModes);
+  const assigned = new Set<string>();
+  if (assignments) {
+    for (const asgn of Object.values(assignments)) {
+      if (asgn.peripheral && asgn.peripheral !== 'GPIO') assigned.add(asgn.peripheral);
+    }
+  }
+  const names = new Set(
+    configured.filter(
+      (name) => name !== 'GPIO' && (Boolean(chip.peripherals[name]) || assigned.has(name)),
+    ),
+  );
+  // An assigned system peripheral stays eligible even without catalog signals.
+  for (const name of assigned) names.add(name);
+  return Array.from(names).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+}
+
+/** Axis-aligned rectangle expressed in stage-local CSS pixels. */
+export interface MeasuredRect {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}
+
+/** Stage bounds expressed in the same stage-local coordinate space. */
+export interface StageBounds {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
+/**
+ * Largest radius centred on the stage that stays inside the stage bounds and
+ * clears every measured furniture rectangle. Components measure rectangles in
+ * the DOM; this helper only does arithmetic on plain numbers, so it stays
+ * host-testable with no Svelte or browser imports. Degenerate input falls back
+ * to a finite radius; transient overlays are never passed in as rectangles.
+ */
+export function measuredSafeRadius(
+  centerX: number,
+  centerY: number,
+  bounds: StageBounds,
+  reserved: readonly MeasuredRect[],
+  fallback = 40,
+): number {
+  const safeFallback = Number.isFinite(fallback) && fallback > 0 ? fallback : 40;
+  if (
+    !Number.isFinite(centerX) ||
+    !Number.isFinite(centerY) ||
+    !Number.isFinite(bounds.width) ||
+    !Number.isFinite(bounds.height) ||
+    bounds.width <= 0 ||
+    bounds.height <= 0
+  ) {
+    return safeFallback;
+  }
+  const left = Number.isFinite(bounds.left) ? bounds.left : 0;
+  const top = Number.isFinite(bounds.top) ? bounds.top : 0;
+  const margin = 6;
+  let radius = Math.min(
+    centerX - left,
+    left + bounds.width - centerX,
+    centerY - top,
+    top + bounds.height - centerY,
+  );
+  for (const rect of reserved) {
+    if (!rect) continue;
+    const dx = Math.max(rect.left - centerX, 0, centerX - rect.right);
+    const dy = Math.max(rect.top - centerY, 0, centerY - rect.bottom);
+    radius = Math.min(radius, Math.hypot(dx, dy) - margin);
+  }
+  return Number.isFinite(radius) && radius >= 1 ? radius : safeFallback;
 }

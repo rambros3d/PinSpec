@@ -10,17 +10,18 @@ configuration stays shareable across STM32, CH32, and RP parts.
 
 ### Requirement: Peripheral configuration is edited in the right drawer
 
-The workspace SHALL present peripheral configuration in a right-drawer detail
-surface selected from the tree, not in an expanded tree row, a split left pane,
-or a floating panel. Selecting a tree row SHALL open the detail surface and
-SHALL keep the existing pin assignment, remap, and mode commit behavior. The
-landscape layout SHALL keep one tree instance, one canvas instance, and one
+The workspace SHALL present peripheral configuration in a detail column of the
+combined left-pane sidebar selected from the tree, not in the right drawer, an
+expanded tree row, a floating panel, or a stacked portrait section. Selecting a
+tree row SHALL open the detail surface beside the tree and SHALL keep the
+existing pin assignment, remap, and mode commit behavior. The landscape layout
+SHALL keep one tree instance, one detail column, one canvas instance, and one
 drawer instance.
 
 #### Scenario: Select a peripheral from the tree
 
 - **WHEN** a user activates a peripheral row in the tree
-- **THEN** the right drawer shows Configuration for that peripheral and the tree rows stay compact
+- **THEN** the sidebar detail column shows the detail surface for that peripheral and the tree rows stay compact
 
 #### Scenario: Commit behavior is unchanged
 
@@ -30,23 +31,26 @@ drawer instance.
 #### Scenario: Landscape keeps single mounts
 
 - **WHEN** the workspace is shown in landscape
-- **THEN** one tree, one package canvas, and one summary drawer are mounted
+- **THEN** one tree, one detail column, one package canvas, and one summary drawer are mounted
 
 ### Requirement: Tree rows are compact
 
-Each peripheral row SHALL show only the peripheral name, a status dot, and an
-inline mode label. A row SHALL NOT render signal toggles, mode selectors, remap
-selectors, or tag pills inline.
+Each peripheral row SHALL show only a status circle and the peripheral name.
+The circle hue SHALL encode solver status as neutral, success, warning, or
+error, and its fill SHALL encode mode present versus disabled or absent, with
+the exact state exposed through `title` and `aria-label`. A row SHALL NOT render
+an inline mode label, a placement or selection marker, signal toggles, mode
+selectors, remap selectors, or tag pills.
 
 #### Scenario: Fresh workspace row content
 
 - **WHEN** a fresh STM32G431CBU6 workspace is opened
-- **THEN** each visible row shows a name, status dot, and inline mode label with no inline signal list
+- **THEN** each visible row shows a name and status circle with no inline mode label, inline signal list, or placement marker
 
 #### Scenario: Activating a row does not expand detail inline
 
 - **WHEN** a user activates a peripheral row
-- **THEN** the peripheral is selected without an expanded detail body inside the tree
+- **THEN** the peripheral is selected with a row highlight and without an expanded detail body inside the tree
 
 ### Requirement: Configured peripherals precede unconfigured ones
 
@@ -88,14 +92,14 @@ SHALL NOT render an empty pane.
 
 ### Requirement: View preferences are persisted only in localStorage
 
-Selected peripheral, filter text, category expansion, the active detail tab,
-and the active dock tab are UI preferences. They SHALL persist in browser
-localStorage across reloads and SHALL NOT be serialized into share URLs or
-project JSON. Absent or unknown values SHALL use documented defaults.
+Selected peripheral, filter text, category expansion, the active sidebar
+section, and the active dock tab are UI preferences. They SHALL persist in
+browser localStorage across reloads and SHALL NOT be serialized into share URLs
+or project JSON. Absent or unknown values SHALL use documented defaults.
 
 #### Scenario: Preferences survive reload
 
-- **WHEN** a user selects a peripheral, types a filter, collapses a category, and reloads the workspace
+- **WHEN** a user selects a peripheral, types a filter, collapses a category, switches the sidebar section, and reloads the workspace
 - **THEN** those values are restored from localStorage
 
 #### Scenario: Preferences are not shared or exported

@@ -29,6 +29,7 @@ describe('localStorage-only view preferences', () => {
     const preferences = new WorkspacePreferencesStore();
     expect(preferences.selectedPeripheral).toBeNull();
     expect(preferences.filterText).toBe('');
+    expect(preferences.sidebarSection).toBe('detail');
     expect(preferences.summaryTab).toBe('pins');
     expect(preferences.dockTab).toBe('peripherals');
     expect(preferences.isCategoryOpen('system')).toBe(true);
@@ -43,8 +44,9 @@ describe('localStorage-only view preferences', () => {
     first.filterText = 'SPI';
     first.setCategoryOpen('analog', true);
     first.setCategoryOpen('system', false);
-    first.summaryTab = 'configuration';
-    first.dockTab = 'configuration';
+    first.sidebarSection = 'place';
+    first.summaryTab = 'audit';
+    first.dockTab = 'dma';
 
     const raw = storage.get(VIEW_PREFERENCES_STORAGE_KEY);
     expect(raw).toBeTruthy();
@@ -54,6 +56,7 @@ describe('localStorage-only view preferences', () => {
       'filterText',
       'openCategories',
       'selectedPeripheral',
+      'sidebarSection',
       'summaryTab',
     ]);
 
@@ -63,8 +66,9 @@ describe('localStorage-only view preferences', () => {
     expect(second.isCategoryOpen('analog')).toBe(true);
     expect(second.isCategoryOpen('system')).toBe(false);
     expect(second.isCategoryOpen('other')).toBe(false);
-    expect(second.summaryTab).toBe('configuration');
-    expect(second.dockTab).toBe('configuration');
+    expect(second.sidebarSection).toBe('place');
+    expect(second.summaryTab).toBe('audit');
+    expect(second.dockTab).toBe('dma');
   });
 
   it('falls back to defaults for unknown stored values', async () => {
@@ -75,6 +79,7 @@ describe('localStorage-only view preferences', () => {
         selectedPeripheral: 42,
         filterText: null,
         openCategories: { other: 'yes', timers: false },
+        sidebarSection: 'configuration',
         summaryTab: 'missing',
         dockTab: 'unknown',
       }),
@@ -83,6 +88,7 @@ describe('localStorage-only view preferences', () => {
     const preferences = new WorkspacePreferencesStore();
     expect(preferences.selectedPeripheral).toBeNull();
     expect(preferences.filterText).toBe('');
+    expect(preferences.sidebarSection).toBe('detail');
     expect(preferences.isCategoryOpen('other')).toBe(false);
     expect(preferences.isCategoryOpen('timers')).toBe(false);
     expect(preferences.summaryTab).toBe('pins');
@@ -93,10 +99,12 @@ describe('localStorage-only view preferences', () => {
     installStorage();
     const { WorkspacePreferencesStore, VIEW_PREFERENCES_STORAGE_KEY: key } = await freshPreferences();
     const preferences = new WorkspacePreferencesStore();
-    for (const tab of ['peripherals', 'pins', 'configuration', 'diagnostics', 'dma', 'pio', 'audit'] as const) {
+    for (const tab of ['peripherals', 'pins', 'diagnostics', 'dma', 'pio', 'audit'] as const) {
       preferences.dockTab = tab;
       expect(preferences.dockTab).toBe(tab);
     }
+    preferences.sidebarSection = 'place';
+    expect(preferences.sidebarSection).toBe('place');
     expect(JSON.parse(window.localStorage.getItem(key) ?? '{}').dockTab).toBe('audit');
 
     vi.stubGlobal('window', {});
@@ -106,9 +114,11 @@ describe('localStorage-only view preferences', () => {
     expect(() => {
       offline.selectedPeripheral = 'SPI1';
       offline.filterText = 'SPI';
-      offline.dockTab = 'configuration';
+      offline.dockTab = 'dma';
+      offline.sidebarSection = 'place';
     }).not.toThrow();
     expect(offline.selectedPeripheral).toBe('SPI1');
-    expect(offline.dockTab).toBe('configuration');
+    expect(offline.dockTab).toBe('dma');
+    expect(offline.sidebarSection).toBe('place');
   });
 });

@@ -1,18 +1,16 @@
 <script lang="ts">
-  import { RotateCw, X } from 'lucide-svelte';
-  import { normalizeAngle } from '../../core/placement';
+  /**
+   * Canvas-only placement rings and draggable indicators. Per-peripheral
+   * properties are edited in the sidebar Place section; only interaction with
+   * the rings and indicators happens here.
+   */
   import {
     PLACEMENT_RINGS,
+    PLACEMENT_RING_LABELS,
     type PinPlacementPreference,
     type PlacementRing,
   } from '../../core/types';
-
-  /** One draggable peripheral indicator shown by the placement overlay. */
-  export interface PlacementIndicator {
-    name: string;
-    preference: PinPlacementPreference | null;
-    claimed: string[];
-  }
+  import { normalizeAngle, type PlacementIndicator } from '../../core/placement';
 
   interface Props {
     stageEl: HTMLElement | null;
@@ -20,14 +18,10 @@
     centerY: number;
     radius: number;
     indicators: PlacementIndicator[];
-    options: string[];
     selected: string | null;
     overlayRotation: number;
     onSelect: (name: string) => void;
     onAngle: (name: string, angle: number, ring: PlacementRing, commit: boolean) => void;
-    onEnable: (name: string) => void;
-    onRotate: () => void;
-    onClose: () => void;
   }
 
   let {
@@ -36,35 +30,22 @@
     centerY,
     radius,
     indicators,
-    options,
     selected,
     overlayRotation,
     onSelect,
     onAngle,
-    onEnable,
-    onRotate,
-    onClose,
   }: Props = $props();
 
-  /** Display-only ring radii relative to the overlay radius, inner first. */
+  /** Display-only ring radii relative to the safe outer radius, high first. */
   const RING_FACTORS: Record<PlacementRing, number> = {
-    inner: 0.5,
-    middle: 0.72,
-    outer: 0.98,
+    high: 0.5,
+    medium: 0.72,
+    low: 0.98,
   };
 
   let dragTarget: Element | null = null;
   let dragPointerId = 0;
   let draggingName = $state<string | null>(null);
-  let numericAngle = $state('0');
-
-  const selectedIndicator = $derived(indicators.find((item) => item.name === selected) ?? null);
-  const enabledNames = $derived(new Set(indicators.map((item) => item.name)));
-
-  $effect(() => {
-    const angle = selectedIndicator?.preference?.angle;
-    if (angle !== undefined) numericAngle = String(Math.round(angle));
-  });
 
   /** Draw at the stored angle plus the display-only rotation offset. */
   function pointFor(preference: PinPlacementPreference): { x: number; y: number } {
@@ -91,7 +72,7 @@
     const x = event.clientX - (rect?.left ?? 0) - centerX;
     const y = centerY - (event.clientY - (rect?.top ?? 0));
     const distance = Math.hypot(x, y);
-    let nearest: PlacementRing = 'outer';
+    let nearest: PlacementRing = 'low';
     let bestDelta = Number.POSITIVE_INFINITY;
     for (const ring of PLACEMENT_RINGS) {
       const delta = Math.abs(distance - radius * RING_FACTORS[ring]);
@@ -144,18 +125,6 @@
     cancelActiveDrag();
   }
 
-  function handleNumberChange(): void {
-    const name = selected;
-    const preference = selectedIndicator?.preference;
-    if (!name || !preference) return;
-    const parsed = Number(numericAngle);
-    if (!Number.isFinite(parsed)) {
-      numericAngle = String(Math.round(preference.angle));
-      return;
-    }
-    onAngle(name, parsed, preference.ring, true);
-  }
-
   function handleIndicatorKey(event: KeyboardEvent, indicator: PlacementIndicator): void {
     if (event.key === 'Escape' && draggingName) {
       event.preventDefault();
@@ -187,20 +156,20 @@
     onpointercancel={cancelDrag}
     role="presentation"
   >
-    {#each PLACEMENT_RINGS as ring}
+    {#each PLACEMENT_RINGS as ring (ring)}
       <circle
         cx={centerX}
         cy={centerY}
         r={Math.max(1, radius * RING_FACTORS[ring])}
         class="fill-none stroke-current text-info opacity-40"
-        stroke-dasharray={ring === 'outer' ? '5 4' : undefined}
+        stroke-dasharray={ring === 'low' ? '5 4' : undefined}
       />
       <text
         x={centerX + 5}
         y={centerY - Math.max(1, radius * RING_FACTORS[ring]) - 4}
         class="fill-current text-info text-[10px]"
       >
-        {ring}
+        {PLACEMENT_RING_LABELS[ring]}
       </text>
     {/each}
 
@@ -226,9 +195,7 @@
             cx={point.x}
             cy={point.y}
             r={selected === indicator.name ? 11 : 9}
-            class={selected === indicator.name
-              ? 'fill-current text-info'
-              : 'fill-current text-info'}
+            class="fill-current text-info"
           />
           <text
             x={point.x + 13}
@@ -241,76 +208,4 @@
       {/if}
     {/each}
   </svg>
-
-  <div
-    class="card card-border pointer-events-auto absolute top-16 left-3 w-60 bg-base-100/95 p-2.5 space-y-2 text-xs shadow-sm"
-  >
-    <div class="flex items-center justify-between gap-2">
-      <span class="font-medium text-foreground">Placement affinity</span>
-      <div class="flex items-center gap-0.5">
-        <button
-          type="button"
-          onclick={onRotate}
-          title="Rotate overlay view"
-          aria-label="Rotate overlay view"
-          class="btn btn-ghost btn-xs btn-square"
-        >
-          <RotateCw class="size-3" />
-        </button>
-        <button
-          type="button"
-          onclick={onClose}
-          title="Hide placement overlay"
-          class="btn btn-ghost btn-xs btn-square"
-        >
-          <X class="size-3" />
-        </button>
-      </div>
-    </div>
-    <p class="text-[11px] text-base-content/60 leading-relaxed">
-      Inner ring has highest priority. Drag an indicator or enter an angle to bias pin allocation.
-    </p>
-
-    <label class="block space-y-1">
-      <span class="text-[11px] text-base-content/60">Peripheral</span>
-      <select
-        value={selected ?? ''}
-        onchange={(event) => onSelect((event.currentTarget as HTMLSelectElement).value)}
-        class="select select-xs w-full"
-      >
-        <option value="" disabled>Select peripheral</option>
-        {#each options as option (option)}
-          <option value={option}>{option}{enabledNames.has(option) ? '' : ' (off)'}</option>
-        {/each}
-      </select>
-    </label>
-
-    {#if selected}
-      {#if selectedIndicator?.preference?.enabled}
-        <label class="block space-y-1">
-          <span class="text-[11px] text-base-content/60">Angle (package coordinates)</span>
-          <input
-            bind:value={numericAngle}
-            type="number"
-            min="0"
-            max="359"
-            step="1"
-            onchange={handleNumberChange}
-            class="input input-xs w-full font-mono-tabular"
-          />
-        </label>
-        <div class="text-[11px] text-base-content/60 font-mono break-words">
-          Claimed: {selectedIndicator.claimed.join(', ') || 'none'}
-        </div>
-      {:else}
-        <button
-          type="button"
-          onclick={() => onEnable(selected)}
-          class="btn btn-sm btn-primary w-full font-medium"
-        >
-          Enable {selected}
-        </button>
-      {/if}
-    {/if}
-  </div>
 </div>

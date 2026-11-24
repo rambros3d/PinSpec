@@ -112,7 +112,12 @@ describe('multi-vendor package rendering', () => {
 });
 
 describe('peripheral configuration detail and RP PIO panel', () => {
-  it('offers remap options with register notes in the detail surface', () => {
+  it('offers remap options with register notes in the sidebar detail surface', () => {
+    const sidebar = readSource('src/components/workspace/CombinedSidebar.svelte');
+    expect(sidebar).toContain('<PeripheralDetail');
+    expect(readSource('src/components/workspace/SummaryDrawer.svelte')).not.toContain(
+      '<PeripheralDetail',
+    );
     const detail = readSource('src/components/workspace/PeripheralDetail.svelte');
     expect(detail).toContain('pInfo.remaps && pInfo.remaps.length > 1');
     expect(detail).toContain('registerNote');

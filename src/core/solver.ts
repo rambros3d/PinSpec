@@ -1098,7 +1098,7 @@ export function reallocatePeripheralPlacement(
   return next;
 }
 
-/** Reallocate enabled peripherals in strict ring order (inner first). */
+/** Reallocate enabled peripherals in strict ring order (high priority first). */
 export function reallocatePlacementOrdered(
   chip: ChipData,
   state: WorkspaceState,
@@ -1114,8 +1114,8 @@ export function reallocatePlacementOrdered(
           .filter((name) => name !== 'GPIO'),
       ]),
     );
-  // Clear every unlocked assignment up front so an inner-ring peripheral can
-  // claim a pin currently held by an outer-ring one.
+  // Clear every unlocked assignment up front so a high-ring peripheral can
+  // claim a pin currently held by a low-ring one.
   const signalsByPeripheral = new Map<string, Set<string>>();
   for (const [pos, asgn] of Object.entries(state.assignments)) {
     if (!names.includes(asgn.peripheral)) continue;

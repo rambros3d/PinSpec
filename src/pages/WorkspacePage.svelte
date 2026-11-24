@@ -2,11 +2,11 @@
   import { AlertCircle, CircuitBoard, FileUp, PanelLeft, PanelRight, X } from 'lucide-svelte';
   import { onMount } from 'svelte';
   import BoardSelectorModal from '../components/workspace/BoardSelectorModal.svelte';
+  import CombinedSidebar from '../components/workspace/CombinedSidebar.svelte';
   import CompatibleMcuFinder from '../components/workspace/CompatibleMcuFinder.svelte';
   import ExportModal from '../components/workspace/ExportModal.svelte';
   import McuSwitcherModal from '../components/workspace/McuSwitcherModal.svelte';
   import PackageCanvas from '../components/workspace/PackageCanvas.svelte';
-  import PeripheralTree from '../components/workspace/PeripheralTree.svelte';
   import PinoutDiffModal from '../components/workspace/PinoutDiffModal.svelte';
   import ShortcutHelpDialog from '../components/workspace/ShortcutHelpDialog.svelte';
   import SummaryDrawer from '../components/workspace/SummaryDrawer.svelte';
@@ -39,14 +39,14 @@
   const DOCK_TAB_LABELS: Record<DockTab, string> = {
     peripherals: 'Peripherals',
     pins: 'Pins',
-    configuration: 'Configuration',
     diagnostics: 'Diagnostics',
     dma: 'DMA',
     pio: 'PIO',
     audit: 'Audit',
   };
 
-  let leftWidth = $state(280);
+  /** Combined tree and detail column; 160 + 280 with a 260px detail minimum. */
+  let leftWidth = $state(440);
   let rightWidth = $state(330);
   let leftCollapsed = $state(false);
   let rightCollapsed = $state(false);
@@ -74,14 +74,13 @@
   }
 
   /**
-   * A tree row selects the peripheral for editing and opens the Configuration
-   * tab in both orientations. Selection and tab choice are local UI state.
+   * A tree row selects the peripheral for editing and activates the sidebar
+   * Detail section in both orientations. Selection and section are local UI
+   * state and stay out of share URLs and project files.
    */
   function selectPeripheral(name: string): void {
     viewPreferences.selectedPeripheral = name;
-    viewPreferences.summaryTab = 'configuration';
-    summaryTab = 'configuration';
-    workspaceStore.setDockTab('configuration');
+    viewPreferences.sidebarSection = 'detail';
   }
 
   // Keep the drawer's own tab clicks in localStorage view preferences.
@@ -130,7 +129,8 @@
     const onMove = (ev: PointerEvent) => {
       const dx = ev.clientX - startX;
       if (side === 'left') {
-        leftWidth = Math.max(220, Math.min(420, startWidth + dx));
+        // Combined minimum: 120px tree + 260px detail + resize gutters.
+        leftWidth = Math.max(400, Math.min(680, startWidth + dx));
       } else {
         rightWidth = Math.max(260, Math.min(480, startWidth - dx));
       }
@@ -417,14 +417,20 @@
       </div>
     </div>
   {:else}
-      <!-- Left Pane: Peripheral Tree -->
+      <!-- Left Pane: Combined peripheral tree and detail sidebar -->
       {#if !leftCollapsed}
         <div class="workspace-peripherals h-full">
-          <PeripheralTree
+          <CombinedSidebar
             chip={workspaceStore.chip}
+            assignments={workspaceStore.state.assignments}
             peripheralModes={workspaceStore.state.peripheralModes}
             peripheralStatus={workspaceStore.report.peripheralStatus}
+            activeRemaps={workspaceStore.state.activeRemaps ?? {}}
             onSelectPeripheral={selectPeripheral}
+            onModeChange={(p, m) => workspaceStore.setPeripheralMode(p, m)}
+            onRemapChange={(p, id) => workspaceStore.setActiveRemap(p, id)}
+            onToggleSignal={(p, s) => workspaceStore.toggleSignal(p, s)}
+            onFocusPin={(pos) => workspaceStore.focusPin(pos)}
           />
         </div>
         <!-- Left Drag Resizer (landscape only) -->
@@ -444,6 +450,7 @@
           type="button"
           onclick={() => (leftCollapsed = !leftCollapsed)}
           title={leftCollapsed ? 'Show Peripherals' : 'Hide Peripherals'}
+          data-placement-furniture
           class="btn btn-ghost btn-sm btn-square workspace-landscape-only hidden md:flex absolute top-3 left-3 z-20 shadow-xs"
         >
           <PanelLeft class="size-3.5" />
@@ -453,6 +460,7 @@
           type="button"
           onclick={() => (rightCollapsed = !rightCollapsed)}
           title={rightCollapsed ? 'Show Summary Drawer' : 'Hide Summary Drawer'}
+          data-placement-furniture
           class="btn btn-ghost btn-sm btn-square workspace-landscape-only hidden lg:flex absolute top-14 right-3 z-20 shadow-xs"
         >
           <PanelRight class="size-3.5" />
@@ -464,6 +472,7 @@
             onclick={() => iocFileInput?.click()}
             title="Import an STM32CubeIDE .ioc project file"
             aria-label="Import .ioc project file"
+            data-placement-furniture
             class="btn btn-ghost btn-sm gap-1.5 shadow-xs"
           >
             <FileUp class="size-3.5" />
@@ -474,6 +483,7 @@
             onclick={() => (showBoardSelector = true)}
             title="Start from an official ST board preset"
             aria-label="Open board preset selector"
+            data-placement-furniture
             class="btn btn-ghost btn-sm gap-1.5 shadow-xs"
           >
             <CircuitBoard class="size-3.5" />
@@ -533,14 +543,7 @@
             locked={workspaceStore.state.locked}
             pioAssignments={workspaceStore.state.pioAssignments ?? {}}
             report={workspaceStore.report}
-            peripheralName={viewPreferences.selectedPeripheral}
-            peripheralModes={workspaceStore.state.peripheralModes}
-            peripheralStatus={workspaceStore.report.peripheralStatus}
-            activeRemaps={workspaceStore.state.activeRemaps ?? {}}
             bind:activeTab={summaryTab}
-            onModeChange={(p, m) => workspaceStore.setPeripheralMode(p, m)}
-            onRemapChange={(p, id) => workspaceStore.setActiveRemap(p, id)}
-            onToggleSignal={(p, s) => workspaceStore.toggleSignal(p, s)}
             onFocusPin={(pos) => workspaceStore.focusPin(pos)}
             onSetLabel={(pos, lbl) => workspaceStore.setLabel(pos, lbl)}
             onToggleLock={(pos) => workspaceStore.toggleLock(pos)}

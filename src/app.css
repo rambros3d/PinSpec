@@ -104,7 +104,7 @@ body {
     'toolbar toolbar toolbar toolbar toolbar'
     'banner banner banner banner banner'
     'peripherals leftresizer canvas rightresizer summary';
-  grid-template-columns: var(--left-pane-width, 280px) 4px minmax(0, 1fr) 4px var(--right-pane-width, 330px);
+  grid-template-columns: minmax(400px, var(--left-pane-width, 440px)) 4px minmax(0, 1fr) 4px minmax(260px, var(--right-pane-width, 330px));
   grid-template-rows: 3rem auto minmax(0, 1fr);
   height: 100dvh;
   width: 100%;
@@ -131,6 +131,31 @@ body {
   min-width: 0;
   min-height: 0;
   overflow: hidden;
+}
+
+/*
+ * Combined sidebar columns. The tree defaults to 160px and never drops below
+ * 120px or exceeds 240px; the detail column keeps a 260-320px minimum so both
+ * sections stay visible at narrow landscape widths.
+ */
+.combined-sidebar {
+  min-width: 0;
+}
+
+.combined-tree-column {
+  width: var(--tree-column-width, 160px);
+  min-width: 120px;
+  max-width: 240px;
+  min-height: 0;
+}
+
+.combined-tree-resizer {
+  flex: 0 0 4px;
+}
+
+.combined-detail-column {
+  min-width: 260px;
+  --detail-column-preferred: 320px;
 }
 
 .workspace-canvas {
@@ -189,12 +214,22 @@ body {
   .workspace-summary {
     grid-area: dock;
     display: none;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .workspace-summary {
     flex-direction: column;
+  }
+
+  /* The Peripherals tab reuses the same side-by-side combined sidebar. */
+  .workspace-peripherals .combined-tree-column {
+    width: 120px;
   }
 
   .workspace-root[data-dock-tab='peripherals'] .workspace-peripherals,
   .workspace-root[data-dock-tab='pins'] .workspace-summary,
-  .workspace-root[data-dock-tab='configuration'] .workspace-summary,
   .workspace-root[data-dock-tab='diagnostics'] .workspace-summary,
   .workspace-root[data-dock-tab='dma'] .workspace-summary,
   .workspace-root[data-dock-tab='pio'] .workspace-summary,

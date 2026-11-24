@@ -8,7 +8,13 @@ Defines a workspace layout that keeps pin planning inside the visible viewport i
 
 ### Requirement: The document never scrolls
 
-The workspace SHALL fit entirely within the visible viewport in both orientations. The root document SHALL NOT scroll or overscroll regardless of viewport size, dynamic mobile browser toolbar height, or content height. Individual panes and modal bodies SHALL scroll internally instead. The landing page is exempt from the document lock through its own scroll container: vertical landing content SHALL scroll inside that container while the root document and the workspace stay viewport-locked.
+The workspace SHALL fit entirely within the visible viewport in both
+orientations. The root document SHALL NOT scroll or overscroll regardless of
+viewport size, dynamic mobile browser toolbar height, or content height.
+Individual panes and modal bodies SHALL scroll internally instead. The landing
+page is exempt from the document lock through its own scroll container:
+vertical landing content SHALL scroll inside that container while the root
+document and the workspace stay viewport-locked.
 
 #### Scenario: Small viewport does not scroll the document
 
@@ -17,7 +23,7 @@ The workspace SHALL fit entirely within the visible viewport in both orientation
 
 #### Scenario: Internal panes scroll independently
 
-- **WHEN** the user scrolls inside the peripheral tree, summary drawer, dock body, or a modal body
+- **WHEN** the user scrolls inside the peripheral tree, detail column, summary drawer, dock body, or a modal body
 - **THEN** that content scrolls within its own container while the document stays fixed
 
 #### Scenario: Landing page scrolls inside its own container
@@ -32,17 +38,23 @@ The workspace SHALL fit entirely within the visible viewport in both orientation
 
 ### Requirement: Orientation alone selects the layout
 
-The system SHALL choose the layout from viewport orientation only, without JavaScript orientation detection and without a width-only rule. Landscape SHALL show three panes: peripheral tree, pin canvas, and summary drawer. Portrait SHALL show the pin canvas and a bottom dock. A width change that does not change orientation SHALL NOT switch layouts.
+The system SHALL choose the layout from viewport orientation only, without
+JavaScript orientation detection and without a width-only rule. Landscape
+SHALL show the combined peripheral sidebar with its slim tree and detail
+column, the pin canvas, and the summary drawer. Portrait SHALL show the pin
+canvas and a bottom dock whose Peripherals tab presents the combined sidebar
+side by side. A width change that does not change orientation SHALL NOT switch
+layouts.
 
 #### Scenario: Landscape shows three panes
 
 - **WHEN** the workspace is opened in landscape
-- **THEN** the peripheral tree, pin canvas, and summary drawer are all present in the three-pane arrangement
+- **THEN** the combined sidebar with its tree and detail column, the pin canvas, and the summary drawer are all present in the three-pane arrangement
 
 #### Scenario: Portrait shows the bottom dock
 
 - **WHEN** the viewport orientation changes to portrait
-- **THEN** the pin canvas remains and the peripheral tree, pin table, diagnostics, DMA, and PIO content are presented through the bottom dock
+- **THEN** the pin canvas remains and the peripheral tree, detail column, pin table, placement properties, diagnostics, DMA, and PIO content are presented through the bottom dock, with the tree and detail column side by side in the Peripherals tab
 
 #### Scenario: Width-only resize does not change layout
 
@@ -52,12 +64,11 @@ The system SHALL choose the layout from viewport orientation only, without JavaS
 ### Requirement: Portrait dock shows one tab at a time
 
 Portrait SHALL present a single bottom dock whose tab set is Peripherals, Pins,
-Configuration, Diagnostics, DMA, PIO, and Audit. Only the selected tab's body
-SHALL be visible at a time. The Configuration tab SHALL show the peripheral
-detail surface for the selected peripheral through the same summary pane used
-by the other non-tree tabs. The dock SHALL occupy approximately 40 to 45
-percent of the visible viewport height, and its body SHALL scroll internally
-when its content exceeds that height.
+Diagnostics, DMA, PIO, and Audit. Only the selected tab's body SHALL be visible
+at a time. The Peripherals tab SHALL show the combined sidebar with the
+peripheral tree and detail column side by side. The dock SHALL occupy about 40
+to 45 percent of the viewport height, and its body SHALL scroll internally when
+its content exceeds that height.
 
 #### Scenario: Selecting a tab changes the visible body
 
@@ -66,8 +77,8 @@ when its content exceeds that height.
 
 #### Scenario: Configuration tab shows peripheral detail
 
-- **WHEN** the user selects the Configuration dock tab in portrait
-- **THEN** the dock shows the detail surface for the selected peripheral and the tree and canvas stay mounted
+- **WHEN** the user needs peripheral detail in portrait
+- **THEN** the Peripherals dock tab shows the detail surface beside the tree and no Configuration tab is rendered
 
 #### Scenario: Dock body scrolls internally
 
@@ -76,7 +87,11 @@ when its content exceeds that height.
 
 ### Requirement: Pane resize handles are unavailable in portrait
 
-The left and right pane resize handles SHALL be unavailable in the portrait layout and SHALL remain available in landscape.
+The left and right pane resize handles SHALL be unavailable in the portrait
+layout and SHALL remain available in landscape. The left resize handle SHALL
+resize the combined sidebar subject to the tree width clamp and the detail
+column minimum width, and the right resize handle SHALL resize the summary
+drawer.
 
 #### Scenario: Resize handles follow the layout
 
@@ -85,7 +100,10 @@ The left and right pane resize handles SHALL be unavailable in the portrait layo
 
 ### Requirement: Toolbar stays within the viewport width
 
-The top toolbar SHALL remain within the viewport width on narrow screens. Its controls SHALL compact where possible and, when they do not fit, SHALL be reachable through horizontal scrolling inside the toolbar. The toolbar SHALL NOT widen the document.
+The top toolbar SHALL remain within the viewport width on narrow screens. Its
+controls SHALL compact where possible and, when they do not fit, SHALL be
+reachable through horizontal scrolling inside the toolbar. The toolbar SHALL
+NOT widen the document.
 
 #### Scenario: Narrow toolbar scrolls internally
 
@@ -99,7 +117,9 @@ The top toolbar SHALL remain within the viewport width on narrow screens. Its co
 
 ### Requirement: Modals stay within the viewport
 
-Every workspace modal SHALL have a maximum height no greater than the visible viewport and SHALL scroll its content internally so that neither the dialog nor its controls extend beyond the viewport.
+Every workspace modal SHALL have a maximum height no greater than the visible
+viewport and SHALL scroll its content internally so that neither the dialog
+nor its controls extend beyond the viewport.
 
 #### Scenario: Tall modal content scrolls internally
 
@@ -108,7 +128,11 @@ Every workspace modal SHALL have a maximum height no greater than the visible vi
 
 ### Requirement: Floating overlays are clamped to the viewport
 
-Pin popovers and context menus SHALL remain floating overlays in both orientations and SHALL be positioned so their full bounds lie inside the visible viewport. When a computed position would place an overlay outside the viewport, its coordinates SHALL be clamped so the overlay remains fully visible. Portrait SHALL NOT replace these overlays with bottom sheets.
+Pin popovers and context menus SHALL remain floating overlays in both
+orientations and SHALL be positioned so their full bounds lie inside the
+visible viewport. When a computed position would place an overlay outside the
+viewport, its coordinates SHALL be clamped so the overlay remains fully
+visible. Portrait SHALL NOT replace these overlays with bottom sheets.
 
 #### Scenario: Popover near an edge stays visible
 
@@ -122,12 +146,14 @@ Pin popovers and context menus SHALL remain floating overlays in both orientatio
 
 ### Requirement: Orientation changes preserve workspace state
 
-Switching between landscape and portrait SHALL reposition the workspace content without clearing pin assignments, labels, locks, peripheral modes, diagnostics, or undo and redo history.
+Switching between landscape and portrait SHALL reposition the workspace
+content without clearing pin assignments, labels, locks, peripheral modes,
+diagnostics, placement preferences, or undo and redo history.
 
 #### Scenario: Assignments survive an orientation change
 
 - **WHEN** the viewport changes orientation after pins have been assigned and locked
-- **THEN** every assignment, label, lock, peripheral mode, diagnostic, and history entry remains intact
+- **THEN** every assignment, label, lock, peripheral mode, diagnostic, placement preference, and history entry remains intact
 
 ### Requirement: Active dock tab is persisted
 
@@ -159,16 +185,22 @@ be carried in shareable pin configuration.
 
 ### Requirement: Theme presentation is preserved
 
-All workspace layout surfaces SHALL use existing theme tokens, and all four supported themes SHALL remain functional in both orientations. The layout SHALL NOT introduce hardcoded colors.
+All workspace layout surfaces SHALL use existing theme tokens, and all four
+supported themes SHALL remain functional in both orientations. The layout
+SHALL NOT introduce hardcoded colors.
 
 #### Scenario: Theme switch in portrait
 
 - **WHEN** the user switches between the supported themes while in portrait
-- **THEN** the dock, canvas, toolbar, and modals use the active theme's tokens and remain readable
+- **THEN** the dock, combined sidebar, canvas, toolbar, and modals use the active theme's tokens and remain readable
 
 ### Requirement: Workspace shortcuts are inactive while a dialog is open
 
-Global workspace keyboard shortcuts SHALL NOT act while a native dialog is open. The guard SHALL cover the search, switcher, undo, redo, and fit-view shortcuts. Closing the dialog SHALL restore every shortcut with its prior behavior and without reloading the workspace. Dialog-native input and dialog Escape or cancel behavior SHALL continue to work.
+Global workspace keyboard shortcuts SHALL NOT act while a native dialog is
+open. The guard SHALL cover the search, switcher, undo, redo, and fit-view
+shortcuts. Closing the dialog SHALL restore every shortcut with its prior
+behavior and without reloading the workspace. Dialog-native input and dialog
+Escape or cancel behavior SHALL continue to work.
 
 #### Scenario: Shortcuts do not act behind an open dialog
 

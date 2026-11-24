@@ -117,22 +117,46 @@ describe('orientation-driven grid layout', () => {
 
   it('repositions single mounts and selects layout without JavaScript', () => {
     const page = readSource('src/pages/WorkspacePage.svelte');
-    for (const component of ['PeripheralTree', 'PackageCanvas', 'SummaryDrawer']) {
+    for (const component of ['CombinedSidebar', 'PackageCanvas', 'SummaryDrawer']) {
       expect(page.match(new RegExp(`<${component}\\b`, 'g'))?.length, component).toBe(1);
-      expect(page).toContain(`workspace-${component === 'PeripheralTree' ? 'peripherals' : component === 'PackageCanvas' ? 'canvas' : 'summary'}`);
+      expect(page).toContain(`workspace-${component === 'CombinedSidebar' ? 'peripherals' : component === 'PackageCanvas' ? 'canvas' : 'summary'}`);
     }
     expect(page.match(/data-dock-tab=/g)?.length).toBe(1);
-    for (const tab of ['Peripherals', 'Pins', 'Configuration', 'Diagnostics', 'DMA', 'PIO']) {
+    for (const tab of ['Peripherals', 'Pins', 'Diagnostics', 'DMA', 'PIO', 'Audit']) {
       expect(page, tab).toContain(tab);
     }
+    expect(page).not.toContain('Configuration');
     expect(page).not.toContain('matchMedia');
     expect(page).not.toContain("addEventListener('resize'");
     expect(page).not.toContain('addEventListener("resize"');
     const css = readSource('src/app.css');
-    for (const tab of ['peripherals', 'pins', 'configuration', 'diagnostics', 'dma', 'pio']) {
+    for (const tab of ['peripherals', 'pins', 'diagnostics', 'dma', 'pio', 'audit']) {
       expect(css, tab).toContain(`[data-dock-tab='${tab}']`);
     }
+    expect(css).not.toContain("[data-dock-tab='configuration']");
     expect(css).toMatch(/\.workspace-summary \.summary-tab-strip \{\s*display: none/);
+  });
+
+  it('keeps the combined sidebar side by side in both orientations', () => {
+    const css = readSource('src/app.css');
+    const rootBlock = css.match(/\.workspace-root\s*\{[\s\S]*?\}/)?.[0] ?? '';
+    expect(rootBlock).toContain('minmax(400px, var(--left-pane-width, 440px))');
+    expect(css).toContain('.combined-tree-column');
+    expect(css).toContain('width: var(--tree-column-width, 160px)');
+    expect(css).toContain('min-width: 120px');
+    expect(css).toContain('max-width: 240px');
+    expect(css).toContain('min-width: 260px');
+    const portrait = css.slice(css.indexOf('@media (orientation: portrait)'));
+    expect(portrait).toContain("[data-dock-tab='peripherals'] .workspace-peripherals");
+    expect(portrait).not.toContain('configuration');
+    const sidebar = readSource('src/components/workspace/CombinedSidebar.svelte');
+    expect(sidebar).toContain('flex flex-row');
+    expect(sidebar).toContain('combined-tree-column');
+    expect(sidebar).toContain('combined-detail-column');
+    const tree = readSource('src/components/workspace/PeripheralTree.svelte');
+    const detail = readSource('src/components/workspace/PeripheralDetail.svelte');
+    expect(tree).toContain('overflow-y-auto');
+    expect(detail).toContain('overflow-y-auto');
   });
 
   it('propagates minimum sizes through scrolling panes', () => {
@@ -325,7 +349,7 @@ describe('dock tab persistence', () => {
   it('normalizes absent and unknown values to Peripherals', () => {
     expect(normalizeDockTab(undefined)).toBe('peripherals');
     expect(normalizeDockTab('invalid')).toBe('peripherals');
-    expect(normalizeDockTab('configuration')).toBe('configuration');
+    expect(normalizeDockTab('configuration')).toBe('peripherals');
     expect(normalizeDockTab('pio')).toBe('pio');
     expect(Object.keys(createEmptyWorkspace(chip.id))).not.toContain('dockTab');
   });
@@ -427,13 +451,13 @@ describe('dock tab persistence', () => {
       expect(workspaceStore.canUndo).toBe(canUndoBefore);
       expect(workspaceStore.canRedo).toBe(canRedoBefore);
 
-      workspaceStore.setDockTab('configuration');
-      expect(workspaceStore.dockTab).toBe('configuration');
+      workspaceStore.setDockTab('audit');
+      expect(workspaceStore.dockTab).toBe('audit');
       const preferences = JSON.parse(
         storage.get(VIEW_PREFERENCES_STORAGE_KEY) ?? '{}',
       ) as Record<string, unknown>;
-      expect(preferences.dockTab).toBe('configuration');
-      expect(viewPreferences.dockTab).toBe('configuration');
+      expect(preferences.dockTab).toBe('audit');
+      expect(viewPreferences.dockTab).toBe('audit');
 
       const sessions = JSON.parse(storage.get('pincraft:recent_sessions_v1') ?? '[]') as Array<{
         state: WorkspaceState;
@@ -447,7 +471,7 @@ describe('dock tab persistence', () => {
 
       // Undo still targets pin configuration rather than the dock selection.
       workspaceStore.undo();
-      expect(workspaceStore.dockTab).toBe('configuration');
+      expect(workspaceStore.dockTab).toBe('audit');
       expect(workspaceStore.state.peripheralModes).toEqual({});
     } finally {
       vi.unstubAllGlobals();

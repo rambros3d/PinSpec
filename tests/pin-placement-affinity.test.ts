@@ -10,9 +10,14 @@ import {
 } from '../src/core/history';
 import {
   buildPinGeometryMap,
+  canonicalPinPlacementPreference,
+  configuredPeripheralNames,
+  measuredSafeRadius,
   normalizeAngle,
   normalizePlacement,
+  normalizePlacementRing,
   orderPeripheralsByPlacement,
+  parsePinPlacementPreference,
   placementAffinityForPin,
 } from '../src/core/placement';
 import {
@@ -24,7 +29,14 @@ import {
   reallocatePlacementOrdered,
   togglePeripheralSignal,
 } from '../src/core/solver';
-import type { ChipData, WorkspaceState } from '../src/core/types';
+import {
+  PLACEMENT_RING_LABELS,
+  PLACEMENT_RING_RANK,
+  PLACEMENT_RINGS,
+  type ChipData,
+  type PinPlacementPreference,
+  type WorkspaceState,
+} from '../src/core/types';
 import { decodeWorkspaceState, encodeWorkspaceState } from '../src/core/url-state';
 
 const ROOT = process.cwd();
@@ -153,16 +165,16 @@ describe('placement scoring hook', () => {
   it('is exactly zero when placement is disabled', () => {
     expect(placementAffinityForPin(chip.pins[3], chip, null, { geometry })).toBe(0);
     expect(
-      placementAffinityForPin(chip.pins[3], chip, { angle: 0, ring: 'inner', enabled: false }, { geometry }),
+      placementAffinityForPin(chip.pins[3], chip, { angle: 0, ring: 'high', enabled: false }, { geometry }),
     ).toBe(0);
   });
 
   it('enforces strict inter-ring ordering before angular score', () => {
-    const make = (ring: 'inner' | 'middle' | 'outer') =>
+    const make = (ring: 'high' | 'medium' | 'low') =>
       placementAffinityForPin(chip.pins[3], chip, { angle: target.angle, ring, enabled: true }, { geometry });
-    const inner = make('inner');
-    const middle = make('middle');
-    const outer = make('outer');
+    const inner = make('high');
+    const middle = make('medium');
+    const outer = make('low');
     expect(inner).toBeLessThan(middle);
     expect(middle).toBeLessThan(outer);
     expect(outer - middle).toBe(10000);
@@ -170,7 +182,7 @@ describe('placement scoring hook', () => {
   });
 
   it('prefers the angularly closer pin and, on a tie, the outer ball', () => {
-    const preference = { angle: target.angle, ring: 'inner' as const, enabled: true };
+    const preference = { angle: target.angle, ring: 'high' as const, enabled: true };
     const near = placementAffinityForPin(chip.pins[3], chip, preference, { geometry });
     const far = placementAffinityForPin(chip.pins[1], chip, preference, { geometry });
     expect(near).toBeLessThan(far);
@@ -191,7 +203,7 @@ describe('placement scoring hook', () => {
       })),
     });
     const gridGeometry = buildPinGeometryMap(grid);
-    const gridPreference = { angle: 0, ring: 'inner' as const, enabled: true };
+    const gridPreference = { angle: 0, ring: 'high' as const, enabled: true };
     // Centre and right-edge pins both lie on angle 0; the outer ball wins.
     const centre = placementAffinityForPin(grid.pins[4], grid, gridPreference, { geometry: gridGeometry });
     const outer = placementAffinityForPin(grid.pins[5], grid, gridPreference, { geometry: gridGeometry });
@@ -202,10 +214,10 @@ describe('placement scoring hook', () => {
     const state: WorkspaceState = {
       ...empty,
       placement: {
-        OUT: { angle: 0, ring: 'outer', enabled: true },
-        MID: { angle: 0, ring: 'middle', enabled: true },
-        IN: { angle: 0, ring: 'inner', enabled: true },
-        OFF: { angle: 0, ring: 'inner', enabled: false },
+        OUT: { angle: 0, ring: 'low', enabled: true },
+        MID: { angle: 0, ring: 'medium', enabled: true },
+        IN: { angle: 0, ring: 'high', enabled: true },
+        OFF: { angle: 0, ring: 'high', enabled: false },
       },
     };
     expect(orderPeripheralsByPlacement(['OUT', 'PLAIN', 'MID', 'OFF', 'IN'], state)).toEqual([
@@ -233,7 +245,7 @@ describe('default allocation stays byte-identical', () => {
 
     const withDisabledPlacement: WorkspaceState = {
       ...empty,
-      placement: { SPI1: { angle: 90, ring: 'inner', enabled: false } },
+      placement: { SPI1: { angle: 90, ring: 'high', enabled: false } },
       placementOverlayVisible: true,
     };
     const disabledScores = chip.pins
@@ -297,7 +309,7 @@ describe('placement-driven reallocation', () => {
       ...empty,
       assignments: { '2': { peripheral: 'SPI1', signal: 'SCK', af: 5 } },
       placement: {
-        SPI1: { angle: geometry.byPos.get('5')!.angle, ring: 'inner', enabled: true },
+        SPI1: { angle: geometry.byPos.get('5')!.angle, ring: 'high', enabled: true },
       },
     };
     const next = reallocatePeripheralPlacement(chip, state, 'SPI1');
@@ -328,8 +340,8 @@ describe('placement-driven reallocation', () => {
         '5': { peripheral: 'USART1', signal: 'TX', af: 7 },
       },
       placement: {
-        SPI1: { angle: preferredAngle, ring: 'inner', enabled: true },
-        USART1: { angle: preferredAngle, ring: 'outer', enabled: true },
+        SPI1: { angle: preferredAngle, ring: 'high', enabled: true },
+        USART1: { angle: preferredAngle, ring: 'low', enabled: true },
       },
     };
     const next = reallocatePlacementOrdered(sharedChip, state);
@@ -355,7 +367,7 @@ describe('placement-driven reallocation', () => {
     const geometry = buildPinGeometryMap(chip);
     const preference = {
       angle: geometry.byPos.get('5')!.angle,
-      ring: 'inner' as const,
+      ring: 'high' as const,
       enabled: true,
     };
     workspaceStore.previewPlacement('SPI1', preference);
@@ -380,8 +392,8 @@ describe('placement persistence', () => {
     ...empty,
     placementOverlayVisible: true,
     placement: {
-      SPI1: { angle: 123.5, ring: 'inner', enabled: true },
-      USART1: { angle: 300, ring: 'outer', enabled: false },
+      SPI1: { angle: 123.5, ring: 'high', enabled: true },
+      USART1: { angle: 300, ring: 'low', enabled: false },
     },
   };
 
@@ -395,7 +407,7 @@ describe('placement persistence', () => {
         ...placementState,
         placement: {
           ...placementState.placement,
-          SPI1: { angle: 90, ring: 'inner', enabled: true },
+          SPI1: { angle: 90, ring: 'high', enabled: true },
         },
       }),
     ).toBe(false);
@@ -405,7 +417,7 @@ describe('placement persistence', () => {
   it('normalizes absent fields to disabled defaults', () => {
     expect(normalizePlacement(empty)).toEqual({ overlayVisible: false, preferences: {} });
     const normalized = normalizePlacement({
-      placement: { BAD: { angle: Number.NaN, ring: 'inner', enabled: true } },
+      placement: { BAD: { angle: Number.NaN, ring: 'high', enabled: true } },
     });
     expect(normalized.preferences).toEqual({});
   });
@@ -467,13 +479,13 @@ describe('placement persistence', () => {
     const { catalogStore } = await import('../src/state/catalog.svelte.ts');
     catalogStore.primeChip(chip);
     await workspaceStore.openMcu(chip.id);
-    workspaceStore.setPlacement('SPI1', { angle: 123.5, ring: 'inner', enabled: true });
+    workspaceStore.setPlacement('SPI1', { angle: 123.5, ring: 'high', enabled: true });
     workspaceStore.setPlacementOverlayVisible(true);
 
     const sessions = JSON.parse(storage.get('pincraft:recent_sessions_v1') ?? '[]') as Array<{
       state: WorkspaceState;
     }>;
-    expect(sessions[0].state.placement).toEqual({ SPI1: { angle: 123.5, ring: 'inner', enabled: true } });
+    expect(sessions[0].state.placement).toEqual({ SPI1: { angle: 123.5, ring: 'high', enabled: true } });
     expect(sessions[0].state.placementOverlayVisible).toBe(true);
     vi.unstubAllGlobals();
   });
@@ -498,17 +510,17 @@ describe('placement overlay wiring', () => {
     for (const token of [
       'PLACEMENT_RINGS',
       'setPointerCapture',
-      'type="number"',
       'indicator.name',
       'ringFromEvent',
       'overlayRotation',
-      'onRotate',
+      'PLACEMENT_RING_LABELS',
     ]) {
       expect(overlay, token).toContain(token);
     }
     expect(overlay).not.toContain('onRing');
-    expect(overlay).not.toContain('handleRingChange');
-    expect(canvas).not.toContain('onRing=');
+    expect(overlay).not.toContain('type="number"');
+    expect(overlay).not.toContain('pointer-events-auto absolute top-16');
+    expect(canvas).toContain('setPlacementOverlayRotation(overlayRotation + 90)');
     expect(canvas).not.toContain('handlePlacementRing');
   });
 
@@ -551,9 +563,9 @@ describe('placement overlay interaction refresh', () => {
 
   it('uses tighter ring spacing with a larger outer ring', () => {
     const overlay = readOverlay();
-    expect(overlay).toContain('inner: 0.5');
-    expect(overlay).toContain('middle: 0.72');
-    expect(overlay).toContain('outer: 0.98');
+    expect(overlay).toContain('high: 0.5');
+    expect(overlay).toContain('medium: 0.72');
+    expect(overlay).toContain('low: 0.98');
     expect(overlay).not.toContain('0.34');
     expect(overlay).not.toContain('0.66');
     expect(overlay).not.toContain('0.96');
@@ -619,7 +631,7 @@ describe('placement overlay interaction refresh', () => {
   });
 
   it('does not change scoring geometry or allocation when the overlay rotates', () => {
-    const placement = { SPI1: { angle: 30, ring: 'inner' as const, enabled: true } };
+    const placement = { SPI1: { angle: 30, ring: 'high' as const, enabled: true } };
     const plain: WorkspaceState = { ...createEmptyWorkspace(chip.id), placement };
     const rotated: WorkspaceState = {
       ...plain,
@@ -661,21 +673,21 @@ describe('placement overlay interaction refresh', () => {
     catalogStore.primeChip(chip);
     await workspaceStore.openMcu(chip.id);
 
-    workspaceStore.setPlacement('SPI1', { angle: 10, ring: 'inner', enabled: true });
-    workspaceStore.previewPlacement('SPI1', { angle: 20, ring: 'middle', enabled: true });
+    workspaceStore.setPlacement('SPI1', { angle: 10, ring: 'high', enabled: true });
+    workspaceStore.previewPlacement('SPI1', { angle: 20, ring: 'medium', enabled: true });
     expect(workspaceStore.state.placement?.SPI1?.angle).toBe(20);
     workspaceStore.undo();
     expect(workspaceStore.state.placement).toBeUndefined();
     workspaceStore.redo();
     expect(workspaceStore.state.placement?.SPI1).toEqual({
       angle: 10,
-      ring: 'inner',
+      ring: 'high',
       enabled: true,
     });
 
-    workspaceStore.commitPlacement('SPI1', { angle: 30, ring: 'outer', enabled: true });
+    workspaceStore.commitPlacement('SPI1', { angle: 30, ring: 'low', enabled: true });
     workspaceStore.undo();
-    expect(workspaceStore.state.placement?.SPI1?.ring).toBe('inner');
+    expect(workspaceStore.state.placement?.SPI1?.ring).toBe('high');
 
     workspaceStore.setPlacementOverlayRotation(90);
     expect(workspaceStore.state.placementOverlayRotation).toBe(90);
@@ -693,17 +705,171 @@ describe('placement overlay interaction refresh', () => {
     vi.unstubAllGlobals();
   });
 
-  it('derives ring indicators only from enabled preferences', () => {
+  it('derives ring indicators from configured peripherals with enabled preferences', () => {
     const canvas = readCanvas();
-    expect(canvas).toContain('placementOptions');
-    expect(canvas).toContain('info.signals.length > 0 || info.kind === \'sys\'');
-    expect(canvas).toContain('placementSettings.preferences[name]?.enabled');
-    expect(canvas).toContain('if (preference.enabled) names.add(name)');
-    expect(canvas).toContain(
-      "workspaceStore.setPlacement(name, { angle: 0, ring: 'outer', enabled: true })",
+    expect(canvas).toContain('configuredPeripheralNames');
+    expect(canvas).toContain('.filter((name) => placementSettings.preferences[name]?.enabled)');
+    expect(canvas).toContain('measuredSafeRadius');
+    expect(canvas).toContain('data-placement-furniture');
+    const panel = fs.readFileSync(
+      path.join(ROOT, 'src/components/workspace/PlacementPanel.svelte'),
+      'utf8',
     );
-    const overlay = readOverlay();
-    expect(overlay).toContain('{enabledNames.has(option) ? \'\' : \' (off)\'}');
-    expect(overlay).toContain('Enable {selected}');
+    expect(panel).toContain('configuredPeripheralNames');
+    expect(panel).toContain("ring: 'low', enabled: true");
+    expect(panel).toContain('type="number"');
+    expect(panel).not.toContain('setPlacementOverlayVisible');
+  });
+});
+
+describe('priority ring identifiers', () => {
+  const readChip = (id: string): ChipData =>
+    JSON.parse(
+      fs.readFileSync(path.join(ROOT, 'public', 'data', 'chips', `${id}.json`), 'utf8'),
+    ) as ChipData;
+
+  it('uses high-first ranks and matching display labels', () => {
+    expect(PLACEMENT_RINGS).toEqual(['high', 'medium', 'low']);
+    expect(PLACEMENT_RING_RANK).toEqual({ high: 0, medium: 1, low: 2 });
+    expect(PLACEMENT_RING_LABELS).toEqual({ high: 'High', medium: 'Medium', low: 'Low' });
+    expect(PLACEMENT_RING_RANK.high).toBeLessThan(PLACEMENT_RING_RANK.medium);
+    expect(PLACEMENT_RING_RANK.medium).toBeLessThan(PLACEMENT_RING_RANK.low);
+    const overlay = fs.readFileSync(
+      path.join(ROOT, 'src/components/workspace/PlacementOverlay.svelte'),
+      'utf8',
+    );
+    expect(overlay).toContain('high: 0.5');
+    expect(overlay).toContain('medium: 0.72');
+    expect(overlay).toContain('low: 0.98');
+    const panel = fs.readFileSync(
+      path.join(ROOT, 'src/components/workspace/PlacementPanel.svelte'),
+      'utf8',
+    );
+    expect(panel).toContain("ring: 'low', enabled: true");
+  });
+
+  it('normalizes legacy spatial ring names through every parse surface', () => {
+    expect(normalizePlacementRing('inner')).toBe('high');
+    expect(normalizePlacementRing('middle')).toBe('medium');
+    expect(normalizePlacementRing('outer')).toBe('low');
+    expect(normalizePlacementRing('other')).toBeNull();
+    expect(parsePinPlacementPreference({ angle: 45, ring: 'inner', enabled: true })).toEqual({
+      angle: 45,
+      ring: 'high',
+      enabled: true,
+    });
+    expect(
+      canonicalPinPlacementPreference({
+        angle: 45,
+        ring: 'middle',
+        enabled: true,
+      } as unknown as PinPlacementPreference),
+    ).toEqual({ angle: 45, ring: 'medium', enabled: true });
+    expect(
+      normalizePlacement({
+        placement: {
+          SPI1: { angle: 90, ring: 'outer', enabled: true },
+        },
+      } as unknown as Pick<WorkspaceState, 'placement' | 'placementOverlayVisible'>).preferences
+        .SPI1,
+    ).toEqual({ angle: 90, ring: 'low', enabled: true });
+  });
+
+  it('normalizes legacy rings from share links and project files', () => {
+    const raw = JSON.stringify({
+      v: 2,
+      m: chip.id,
+      y: { SPI1: [123.5, 'inner', 1], USART1: [300, 'middle', 0] },
+    });
+    const encoded = Buffer.from(deflateSync(strToU8(raw), { level: 9 })).toString('base64url');
+    const decoded = decodeWorkspaceState(encoded);
+    expect(decoded.ok).toBe(true);
+    if (decoded.ok) {
+      expect(decoded.state.placement).toEqual({
+        SPI1: { angle: 123.5, ring: 'high', enabled: true },
+        USART1: { angle: 300, ring: 'medium', enabled: false },
+      });
+    }
+
+    const parsed = parsePinoutJson(
+      JSON.stringify({
+        format: 'pincraft-pinout',
+        version: 2,
+        mcuId: chip.id,
+        peripheralModes: {},
+        assignments: {},
+        labels: {},
+        locked: [],
+        placement: { SPI1: { angle: 10, ring: 'middle', enabled: true }, USART1: { angle: 20, ring: 'outer', enabled: false } },
+      }),
+    );
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) {
+      expect(parsed.state.placement).toEqual({
+        SPI1: { angle: 10, ring: 'medium', enabled: true },
+        USART1: { angle: 20, ring: 'low', enabled: false },
+      });
+    }
+  });
+
+  it('round-trips current ring names through both codecs', () => {
+    const state: WorkspaceState = {
+      ...empty,
+      placementOverlayVisible: true,
+      placement: {
+        SPI1: { angle: 30, ring: 'high', enabled: true },
+        USART1: { angle: 200, ring: 'medium', enabled: true },
+      },
+    };
+    const decoded = decodeWorkspaceState(encodeWorkspaceState(state));
+    expect(decoded.ok).toBe(true);
+    if (decoded.ok) expect(decoded.state).toEqual(state);
+    const parsed = parsePinoutJson(exportPinoutJson(state));
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) expect(parsed.state).toEqual(state);
+  });
+
+  it('partitions configured peripherals for all three vendors', () => {
+    const stm32 = readChip('STM32G431CBU6');
+    expect(configuredPeripheralNames(stm32, {}, {})).toEqual([]);
+    const stm32Modes = Object.fromEntries(
+      Object.keys(stm32.peripherals).map((name) => [name, name === 'SPI1' ? 'full_duplex' : 'disabled']),
+    );
+    const stm32Configured = configuredPeripheralNames(stm32, {}, stm32Modes);
+    expect(stm32Configured).toContain('SPI1');
+    expect(stm32Configured).not.toContain('USART1');
+
+    const ch32 = readChip('CH32V203C8T6');
+    const rp = readChip('RP2350B');
+    for (const part of [ch32, rp]) {
+      const names = Object.keys(part.peripherals);
+      const target = names.find((name) => name !== 'GPIO') ?? names[0];
+      const modes = Object.fromEntries(
+        names.map((name) => [name, name === target ? 'enabled' : 'disabled']),
+      );
+      const configured = configuredPeripheralNames(part, {}, modes);
+      expect(configured).toEqual([target]);
+      expect(configured.length).toBeLessThan(names.length);
+    }
+  });
+
+  it('computes a finite safe radius that clears every reserved rectangle', () => {
+    const bounds = { left: 0, top: 0, width: 800, height: 600 };
+    const reserved = [
+      { left: 600, top: 0, right: 790, bottom: 40 },
+      { left: 340, top: 560, right: 460, bottom: 595 },
+    ];
+    const radius = measuredSafeRadius(400, 300, bounds, reserved, 40);
+    expect(Number.isFinite(radius)).toBe(true);
+    expect(radius).toBeGreaterThan(250);
+    for (const rect of reserved) {
+      const dx = Math.max(rect.left - 400, 0, 400 - rect.right);
+      const dy = Math.max(rect.top - 300, 0, 300 - rect.bottom);
+      expect(radius).toBeLessThan(Math.hypot(dx, dy));
+    }
+    expect(
+      measuredSafeRadius(Number.NaN, 300, { left: 0, top: 0, width: 0, height: 0 }, [], 40),
+    ).toBe(40);
+    expect(measuredSafeRadius(400, 300, bounds, [])).toBe(300);
   });
 });

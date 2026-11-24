@@ -273,7 +273,6 @@ export function parseGpioConfig(value: unknown): GpioConfig | null {
 export const DOCK_TABS = [
   'peripherals',
   'pins',
-  'configuration',
   'diagnostics',
   'dma',
   'pio',
@@ -294,7 +293,6 @@ export function normalizeDockTab(value: unknown): DockTab {
 /** Tabs hosted by the right-hand summary drawer in both orientations. */
 export const SUMMARY_TABS = [
   'pins',
-  'configuration',
   'diagnostics',
   'dma',
   'pio',
@@ -321,16 +319,30 @@ export function normalizePackageRotation(value: unknown): PackageRotation {
   return value === -90 ? -90 : 0;
 }
 
-/** Priority rings for the optional pin-placement overlay, inner highest. */
-export const PLACEMENT_RINGS = ['inner', 'middle', 'outer'] as const;
+/** Priority rings for the optional pin-placement overlay, high priority first. */
+export const PLACEMENT_RINGS = ['high', 'medium', 'low'] as const;
 export type PlacementRing = (typeof PLACEMENT_RINGS)[number];
+
+/** Display labels for the three placement priority rings. */
+export const PLACEMENT_RING_LABELS: Record<PlacementRing, string> = {
+  high: 'High',
+  medium: 'Medium',
+  low: 'Low',
+};
 
 /** Fast inter-ring ordering; lower ranks are allocated first. */
 export const PLACEMENT_RING_RANK: Record<PlacementRing, number> = {
-  inner: 0,
-  middle: 1,
-  outer: 2,
+  high: 0,
+  medium: 1,
+  low: 2,
 };
+
+/**
+ * Spatial ring names used by earlier version-2 payloads. Decode paths map these
+ * onto the priority names above so existing links and project files stay valid.
+ */
+export const LEGACY_PLACEMENT_RINGS = ['inner', 'middle', 'outer'] as const;
+export type LegacyPlacementRing = (typeof LEGACY_PLACEMENT_RINGS)[number];
 
 /**
  * Opt-in placement preference for one peripheral. Storage is additive and

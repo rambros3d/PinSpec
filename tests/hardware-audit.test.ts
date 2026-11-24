@@ -320,7 +320,7 @@ describe('workspace UI and dock integration', () => {
 
   it('adds the audit value to the dock set without persisting it as pin configuration', () => {
     expect(DOCK_TABS).toContain('audit');
-    expect(DOCK_TABS).toContain('configuration');
+    expect(DOCK_TABS).not.toContain('configuration');
     expect(normalizeDockTab('audit')).toBe('audit');
     expect(normalizeDockTab('bootsel')).toBe('peripherals');
 

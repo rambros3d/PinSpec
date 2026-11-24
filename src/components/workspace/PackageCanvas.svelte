@@ -1,7 +1,14 @@
 <script lang="ts">
   import { Crosshair, Maximize2, Minus, Plus, RotateCw, X } from 'lucide-svelte';
   import { onMount } from 'svelte';
-  import { normalizeAngle, normalizePlacement } from '../../core/placement';
+  import {
+    configuredPeripheralNames,
+    measuredSafeRadius,
+    normalizeAngle,
+    normalizePlacement,
+    type MeasuredRect,
+    type PlacementIndicator,
+  } from '../../core/placement';
   import { clampOverlayPosition } from '../../core/overlay-position';
   import {
     formatMuxLabel,
@@ -14,12 +21,13 @@
     type PinVisualStatus,
     type PlacementRing,
   } from '../../core/types';
+  import { placementSelection } from '../../state/placement-selection.svelte';
   import { workspaceStore } from '../../state/workspace.svelte';
   import GridPackage from './GridPackage.svelte';
   import PerimeterPackage from './PerimeterPackage.svelte';
   import PinContextMenu from './PinContextMenu.svelte';
   import PinPopover from './PinPopover.svelte';
-  import PlacementOverlay, { type PlacementIndicator } from './PlacementOverlay.svelte';
+  import PlacementOverlay from './PlacementOverlay.svelte';
   import PinTagPills from './PinTagPills.svelte';
 
   interface Props {
@@ -100,67 +108,89 @@
   const overlayRotation = $derived(
     normalizeAngle(workspaceStore.state.placementOverlayRotation ?? 0),
   );
-  let selectedPlacementPeripheral = $state<string | null>(null);
 
-  // Selector options: allocatable peripherals from the chip plus system
-  // peripherals that hold assignments. GPIO is never an allocatable option.
-  const placementOptions = $derived.by<string[]>(() => {
-    const names = new Set<string>();
-    for (const [name, info] of Object.entries(chip.peripherals)) {
-      if (name === 'GPIO') continue;
-      if (info.signals.length > 0 || info.kind === 'sys') names.add(name);
-    }
-    for (const asgn of Object.values(assignments)) {
-      if (asgn.peripheral === 'GPIO') continue;
-      const info = chip.peripherals[asgn.peripheral];
-      if (!info || info.signals.length === 0 || info.kind === 'sys') {
-        names.add(asgn.peripheral);
-      }
-    }
-    return Array.from(names).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
-  });
+  // Only configured peripherals with an opted-in preference get an indicator.
+  const placementOptions = $derived(
+    configuredPeripheralNames(
+      chip,
+      workspaceStore.report?.peripheralStatus ?? {},
+      workspaceStore.state.peripheralModes,
+      assignments,
+    ),
+  );
 
-  // Only opted-in peripherals get a ring indicator; assigned but unconfigured
-  // peripherals remain selectable without biasing the allocator.
-  const placementIndicators = $derived.by<PlacementIndicator[]>(() => {
-    const names = new Set<string>(
-      placementOptions.filter((name) => placementSettings.preferences[name]?.enabled),
-    );
-    for (const [name, preference] of Object.entries(placementSettings.preferences)) {
-      if (preference.enabled) names.add(name);
-    }
-    return Array.from(names)
-      .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+  const placementIndicators = $derived.by<PlacementIndicator[]>(() =>
+    placementOptions
+      .filter((name) => placementSettings.preferences[name]?.enabled)
       .map((name) => ({
         name,
         preference: placementSettings.preferences[name] ?? null,
         claimed: Object.entries(assignments)
           .filter(([, asgn]) => asgn.peripheral === name)
           .map(([pos]) => pos),
-      }));
-  });
+      })),
+  );
 
   // Reuse the established highlight plumbing for the selected peripheral.
   const highlightSet = $derived.by(() => {
     const set = new Set<string>(highlightedPins);
-    if (placementSettings.overlayVisible && selectedPlacementPeripheral) {
+    if (placementSettings.overlayVisible && placementSelection.selected) {
       const indicator = placementIndicators.find(
-        (item) => item.name === selectedPlacementPeripheral,
+        (item) => item.name === placementSelection.selected,
       );
       for (const pos of indicator?.claimed ?? []) set.add(pos);
     }
     return set;
   });
 
+  /** Ring geometry stays centred on the stage; only the radius is measured. */
   const overlayCenterX = $derived(stageWidth / 2);
   const overlayCenterY = $derived(stageHeight / 2);
-  const overlayRadius = $derived(Math.max(40, Math.min(stageWidth, stageHeight) * 0.36));
+  let safeRadius = $state(40);
+
+  /**
+   * Measure canvas furniture in the DOM and pass plain rectangles to the pure
+   * radius helper. Transient overlays are deliberately not measured.
+   */
+  function measureSafeRadiusFromDom(): void {
+    if (!stageEl || stageWidth <= 0 || stageHeight <= 0) return;
+    const stageRect = stageEl.getBoundingClientRect();
+    const canvas = stageEl.closest('.workspace-canvas') ?? stageEl;
+    const reserved: MeasuredRect[] = [];
+    for (const node of Array.from(canvas.querySelectorAll('[data-placement-furniture]'))) {
+      const rect = (node as HTMLElement).getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) continue;
+      reserved.push({
+        left: rect.left - stageRect.left,
+        top: rect.top - stageRect.top,
+        right: rect.right - stageRect.left,
+        bottom: rect.bottom - stageRect.top,
+      });
+    }
+    safeRadius = measuredSafeRadius(
+      overlayCenterX,
+      overlayCenterY,
+      { left: 0, top: 0, width: stageWidth, height: stageHeight },
+      reserved,
+      Math.max(40, Math.min(stageWidth, stageHeight) * 0.25),
+    );
+  }
+
+  // Re-measure on resize, zoom and furniture changes such as the remap banner.
+  $effect(() => {
+    void stageWidth;
+    void stageHeight;
+    void zoom;
+    void placementSettings.overlayVisible;
+    void remapSourcePos;
+    queueMicrotask(measureSafeRadiusFromDom);
+  });
 
   function placementPreference(name: string): PinPlacementPreference {
     return (
       placementSettings.preferences[name] ?? {
         angle: 0,
-        ring: 'outer',
+        ring: 'low',
         enabled: true,
       }
     );
@@ -179,11 +209,6 @@
     };
     if (commit) workspaceStore.commitPlacement(name, preference);
     else workspaceStore.previewPlacement(name, preference);
-  }
-
-  function handlePlacementEnable(name: string): void {
-    workspaceStore.setPlacement(name, { angle: 0, ring: 'outer', enabled: true });
-    selectedPlacementPeripheral = name;
   }
 
   const remapSourceLabel = $derived.by(() => {
@@ -402,7 +427,16 @@
 
   onMount(() => {
     fitView();
+    measureSafeRadiusFromDom();
     const stage = stageEl;
+    const canvas = stage?.closest('.workspace-canvas') ?? null;
+    const observer =
+      typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measureSafeRadiusFromDom);
+    if (observer) {
+      if (stage) observer.observe(stage);
+      if (canvas) observer.observe(canvas);
+    }
+    window.addEventListener('resize', measureSafeRadiusFromDom);
     if (stage) {
       stage.addEventListener('wheel', handleWheel, { passive: false });
       stage.addEventListener('gesturestart', handleGestureStart, { passive: false });
@@ -422,6 +456,8 @@
     };
     window.addEventListener('keydown', onKey);
     return () => {
+      observer?.disconnect();
+      window.removeEventListener('resize', measureSafeRadiusFromDom);
       if (stage) {
         stage.removeEventListener('wheel', handleWheel);
         stage.removeEventListener('gesturestart', handleGestureStart);
@@ -537,43 +573,52 @@
       {stageEl}
       centerX={overlayCenterX}
       centerY={overlayCenterY}
-      radius={overlayRadius}
+      radius={safeRadius}
       indicators={placementIndicators}
-      options={placementOptions}
-      selected={selectedPlacementPeripheral}
+      selected={placementSelection.selected}
       {overlayRotation}
-      onSelect={(name) => (selectedPlacementPeripheral = name)}
+      onSelect={(name) => placementSelection.select(name)}
       onAngle={handlePlacementAngle}
-      onEnable={handlePlacementEnable}
-      onRotate={() => workspaceStore.setPlacementOverlayRotation(overlayRotation + 90)}
-      onClose={() => {
-        selectedPlacementPeripheral = null;
-        workspaceStore.setPlacementOverlayVisible(false);
-      }}
     />
   {/if}
 
-  <!-- Bottom-centre placement toggle -->
+  <!-- Bottom-centre placement toggle and canvas-only display rotation -->
   <div class="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
-    <button
-      type="button"
-      onclick={() => {
-        const next = !placementSettings.overlayVisible;
-        if (!next) selectedPlacementPeripheral = null;
-        workspaceStore.setPlacementOverlayVisible(next);
-      }}
-      title={placementSettings.overlayVisible ? 'Hide placement overlay' : 'Show placement overlay'}
-      aria-pressed={placementSettings.overlayVisible}
+    <div
       class="card card-border pointer-events-auto flex flex-row items-center gap-1.5 px-2.5 py-1 bg-base-100/95 text-xs shadow-sm"
+      data-placement-furniture
     >
-      <Crosshair class="size-3.5" />
-      <span class="font-medium">Placement</span>
-    </button>
+      <button
+        type="button"
+        onclick={() => {
+          const next = !placementSettings.overlayVisible;
+          if (!next) placementSelection.select(null);
+          workspaceStore.setPlacementOverlayVisible(next);
+        }}
+        title={placementSettings.overlayVisible ? 'Hide placement overlay' : 'Show placement overlay'}
+        aria-pressed={placementSettings.overlayVisible}
+        class="btn btn-ghost btn-sm gap-1.5"
+      >
+        <Crosshair class="size-3.5" />
+        <span class="font-medium">Placement</span>
+      </button>
+      {#if placementSettings.overlayVisible}
+        <button
+          type="button"
+          onclick={() => workspaceStore.setPlacementOverlayRotation(overlayRotation + 90)}
+          title="Rotate placement rings"
+          aria-label="Rotate placement rings"
+          class="btn btn-ghost btn-sm btn-square"
+        >
+          <RotateCw class="size-3.5" />
+        </button>
+      {/if}
+    </div>
   </div>
 
   <!-- Top-centre remap banner -->
   {#if remapSourcePos}
-    <div role="status" class="alert alert-info absolute top-3 left-1/2 -translate-x-1/2 z-20 pointer-events-auto flex flex-row items-center gap-3 px-3.5 py-2 text-xs shadow-lg">
+    <div role="status" data-placement-furniture class="alert alert-info absolute top-3 left-1/2 -translate-x-1/2 z-20 pointer-events-auto flex flex-row items-center gap-3 px-3.5 py-2 text-xs shadow-lg">
       <span class="font-mono font-medium">
         Remap Mode: click any pulsing cyan pin to move {remapSourceLabel}
       </span>
@@ -589,7 +634,7 @@
   {/if}
 
   <!-- Top-Right Canvas HUD Controls -->
-  <div class="card card-border absolute top-3 right-3 z-20 flex flex-row items-center gap-1 p-1 bg-base-100/95 shadow-sm text-xs">
+  <div data-placement-furniture class="card card-border absolute top-3 right-3 z-20 flex flex-row items-center gap-1 p-1 bg-base-100/95 shadow-sm text-xs">
     <button
       type="button"
       onclick={() => zoomBy(1 / 1.2)}
@@ -630,7 +675,7 @@
   </div>
 
   <!-- Bottom-Left Semantic Legend -->
-  <div class="card card-border absolute bottom-3 left-3 z-20 flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-1.5 bg-base-100/95 text-[11px] text-base-content/60">
+  <div data-placement-furniture class="card card-border absolute bottom-3 left-3 z-20 flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-1.5 bg-base-100/95 text-[11px] text-base-content/60">
     <span class="inline-flex items-center gap-1.5">
       <span class="size-2.5 rounded-xs bg-base-300"></span>
       Unused
@@ -658,7 +703,7 @@
   </div>
 
   <!-- Bottom-Right Interaction Hint -->
-  <div class="card card-border hidden xl:flex absolute bottom-3 right-3 z-20 items-center gap-2 px-2.5 py-1 bg-base-100/95 text-[11px] text-base-content/60">
+  <div data-placement-furniture class="card card-border hidden xl:flex absolute bottom-3 right-3 z-20 items-center gap-2 px-2.5 py-1 bg-base-100/95 text-[11px] text-base-content/60">
     <span>Left-click: Assign</span>
     <span aria-hidden="true">·</span>
     <span>Right-click: Label / Lock</span>

@@ -2,14 +2,26 @@
  * Browser-local view preferences for the workspace.
  *
  * These values are presentation state only: the selected peripheral, the tree
- * filter, category expansion and the active summary/dock tabs stay in
- * localStorage and are never serialized into share URLs or project files.
+ * filter, category expansion, the combined-sidebar section and the active
+ * summary/dock tabs stay in localStorage and are never serialized into share
+ * URLs or project files.
  * Pin configuration continues to live in `workspaceStore.state`.
  */
 
 import { normalizeDockTab, normalizeSummaryTab, type DockTab, type SummaryTab } from '../core/types';
 
 export const VIEW_PREFERENCES_STORAGE_KEY = 'pincraft:workspace_view_preferences_v1';
+
+/** Sections hosted by the detail column of the combined workspace sidebar. */
+export const SIDEBAR_SECTIONS = ['detail', 'place'] as const;
+export type SidebarSection = (typeof SIDEBAR_SECTIONS)[number];
+
+/** Absent or unknown sidebar sections fall back to peripheral detail. */
+export function normalizeSidebarSection(value: unknown): SidebarSection {
+  return typeof value === 'string' && (SIDEBAR_SECTIONS as readonly string[]).includes(value)
+    ? (value as SidebarSection)
+    : 'detail';
+}
 
 /** Default expansion state; the catch-all category starts collapsed. */
 export const DEFAULT_CATEGORY_EXPANSION: Readonly<Record<string, boolean>> = {
@@ -25,6 +37,7 @@ interface StoredViewPreferences {
   selectedPeripheral?: unknown;
   filterText?: unknown;
   openCategories?: unknown;
+  sidebarSection?: unknown;
   summaryTab?: unknown;
   dockTab?: unknown;
 }
@@ -69,6 +82,7 @@ export class WorkspacePreferencesStore {
   private selected = $state<string | null>(validateSelectedPeripheral(null));
   private filter = $state(validateFilterText(null));
   private categories = $state<Record<string, boolean>>(validateCategoryExpansion(null));
+  private sidebar = $state<SidebarSection>(normalizeSidebarSection(null));
   private summary = $state<SummaryTab>(normalizeSummaryTab(null));
   private dock = $state<DockTab>(normalizeDockTab(null));
 
@@ -77,6 +91,7 @@ export class WorkspacePreferencesStore {
     this.selected = validateSelectedPeripheral(stored.selectedPeripheral);
     this.filter = validateFilterText(stored.filterText);
     this.categories = validateCategoryExpansion(stored.openCategories);
+    this.sidebar = normalizeSidebarSection(stored.sidebarSection);
     this.summary = normalizeSummaryTab(stored.summaryTab);
     this.dock = normalizeDockTab(stored.dockTab);
   }
@@ -115,6 +130,18 @@ export class WorkspacePreferencesStore {
     this.persist();
   }
 
+  /** Active combined-sidebar section; selectDetail() is called on tree selection. */
+  get sidebarSection(): SidebarSection {
+    return this.sidebar;
+  }
+
+  set sidebarSection(value: SidebarSection) {
+    const next = normalizeSidebarSection(value);
+    if (this.sidebar === next) return;
+    this.sidebar = next;
+    this.persist();
+  }
+
   get summaryTab(): SummaryTab {
     return this.summary;
   }
@@ -147,6 +174,7 @@ export class WorkspacePreferencesStore {
           selectedPeripheral: this.selected,
           filterText: this.filter,
           openCategories: this.categories,
+          sidebarSection: this.sidebar,
           summaryTab: this.summary,
           dockTab: this.dock,
         }),

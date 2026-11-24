@@ -127,6 +127,32 @@ describe('daisyUI token integration', () => {
     }
   });
 
+  it('encodes tree status with theme tokens and no raw colors', () => {
+    const tree = fs.readFileSync(
+      path.join(ROOT, 'src', 'components', 'workspace', 'PeripheralTree.svelte'),
+      'utf8',
+    );
+    for (const token of [
+      'bg-success',
+      'bg-warning',
+      'bg-error',
+      'bg-base-300',
+      'bg-transparent',
+      'border-success',
+      'border-warning',
+      'border-error',
+      'border-base-content/50',
+    ]) {
+      expect(tree, token).toContain(token);
+    }
+    expect(tree).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
+    const sidebar = fs.readFileSync(
+      path.join(ROOT, 'src', 'components', 'workspace', 'CombinedSidebar.svelte'),
+      'utf8',
+    );
+    expect(sidebar).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
+  });
+
   it('maps status surfaces onto daisyUI status utilities', () => {
     const markup = sourceFiles()
       .filter((file) => /\.svelte$/.test(file) && file.includes(`${path.sep}src${path.sep}`))

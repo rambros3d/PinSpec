@@ -4,18 +4,23 @@ import type {
   ChipData,
   DiagnosticItem,
   DmaAnalysisEntry,
+  MuxModel,
   OneHopFix,
   PeripheralInfo,
   PeripheralKind,
   PeripheralModeTemplate,
+  PeripheralRemapOption,
   PeripheralStatus,
   PinAssignment,
   PinInfo,
   PinSignal,
+  PinTag,
   PinVisualStatus,
+  RemapMove,
   SolverReport,
   WorkspaceState,
 } from './types';
+import { formatMuxLabel, getChipMuxModel } from './types';
 
 export const PERIPHERAL_MODE_TEMPLATES: Record<PeripheralKind, PeripheralModeTemplate[]> = {
   spi: [
@@ -195,33 +200,83 @@ function buildPinMap(chip: ChipData): Map<string, PinInfo> {
   return map;
 }
 
-function isSwdPin(pin: PinInfo): boolean {
-  const baseName = pin.name.split(/[\s/\-[\]()]/)[0];
-  if (baseName === 'PA13' || baseName === 'PA14') return true;
-  return pin.signals.some(
-    (s) =>
-      (s.peripheral === 'SYS' || s.peripheral === 'DEBUG') &&
-      (s.signal.includes('SWDIO') || s.signal.includes('SWCLK')),
-  );
+const DEBUG_PERIPHERALS = new Set(['SYS', 'DEBUG', 'SDI']);
+const DEBUG_SIGNAL_RE = /SWDIO|SWCLK|SWD|JTMS|JTCK|SWIO/;
+
+function pinHasTag(pin: PinInfo, tag: PinTag): boolean {
+  return Boolean(pin.tags?.includes(tag));
 }
 
-function isSwdAssignment(asgn: PinAssignment): boolean {
-  if (asgn.peripheral !== 'SYS' && asgn.peripheral !== 'DEBUG') return false;
-  return (
-    asgn.signal.includes('SWDIO') ||
-    asgn.signal.includes('SWCLK') ||
-    asgn.signal.includes('JTMS') ||
-    asgn.signal.includes('JTCK')
-  );
+/** True when a signal is a debug-port role, independent of the vendor's pin naming. */
+function isDebugSignalRole(signal: PinSignal): boolean {
+  return DEBUG_PERIPHERALS.has(signal.peripheral) && DEBUG_SIGNAL_RE.test(signal.signal);
 }
 
-function isHsePin(pin: PinInfo): 'OSC_IN' | 'OSC_OUT' | null {
+/**
+ * Debug-pin detection driven by emitted tags first, then by signal roles.
+ * Signal-role fallback covers STM32 shards that carry no tags; no hardcoded
+ * STM32 pin names are used.
+ */
+function isDebugPin(pin: PinInfo): PinTag | null {
+  if (pinHasTag(pin, 'debug-swd')) return 'debug-swd';
+  if (pinHasTag(pin, 'debug-sdi')) return 'debug-sdi';
+  return pin.signals.some(isDebugSignalRole) ? 'debug-swd' : null;
+}
+
+function isDebugAssignment(asgn: PinAssignment): boolean {
+  return DEBUG_PERIPHERALS.has(asgn.peripheral) && DEBUG_SIGNAL_RE.test(asgn.signal);
+}
+
+/** High-speed external clock roles, derived from signal names rather than RCC mode strings. */
+function clockRoleForPin(pin: PinInfo): 'OSC_IN' | 'OSC_OUT' | null {
   for (const s of pin.signals) {
-    if (s.peripheral === 'RCC' && (s.signal === 'OSC_IN' || s.signal === 'OSC_OUT')) {
-      return s.signal;
-    }
+    if (s.signal === 'OSC_IN' || s.signal === 'OSC_OUT') return s.signal;
   }
   return null;
+}
+
+function isClockAssignment(asgn: PinAssignment): boolean {
+  return asgn.signal === 'OSC_IN' || asgn.signal === 'OSC_OUT';
+}
+
+/**
+ * Build an assignment from a pin signal without dropping vendor mux metadata.
+ * A matching signal's metadata wins; otherwise the source metadata is kept.
+ */
+function assignmentFromSignal(source: PinAssignment, match: PinSignal): PinAssignment {
+  return {
+    ...source,
+    signal: match.signal,
+    af: match.af,
+    ...(match.funcLabel !== undefined ? { funcLabel: match.funcLabel } : {}),
+    ...(match.remapId !== undefined ? { remapId: match.remapId } : {}),
+    ...(match.resourceId !== undefined ? { resourceId: match.resourceId } : {}),
+  };
+}
+
+/** Optional mux metadata of a pin signal, used to enrich one-hop fixes. */
+function muxMetadata(signal: PinSignal): Partial<PinAssignment> {
+  return {
+    ...(signal.funcLabel !== undefined ? { funcLabel: signal.funcLabel } : {}),
+    ...(signal.remapId !== undefined ? { remapId: signal.remapId } : {}),
+    ...(signal.resourceId !== undefined ? { resourceId: signal.resourceId } : {}),
+  };
+}
+
+/** Locate an emitted pin by its display name (bonded pins may list several names). */
+function findPinByName(chip: ChipData, name: string): PinInfo | undefined {
+  const normalized = name.trim();
+  return chip.pins.find(
+    (pin) =>
+      pin.name === normalized ||
+      pin.name.split(/\s*\/\s*/).some((part) => part.trim() === normalized),
+  );
+}
+
+/** GPIO number encoded in an RP pin name (e.g. "GPIO16" -> 16). */
+function gpioNumber(pin: PinInfo): number | null {
+  const match = pin.name.match(/GPIO(\d+)/);
+  return match ? Number.parseInt(match[1], 10) : null;
 }
 
 function computeSignalPinCounts(chip: ChipData): Map<string, number> {
@@ -249,13 +304,16 @@ function computePinScarcityScore(
 ): number {
   let score = 0;
 
-  // Strongly preserve SWD pins unless allocating SYS/DEBUG
-  if (targetPeripheral !== 'SYS' && targetPeripheral !== 'DEBUG' && isSwdPin(pin)) {
+  // Strongly preserve debug pins unless allocating a debug peripheral
+  if (
+    !DEBUG_PERIPHERALS.has(targetPeripheral) &&
+    isDebugPin(pin) !== null
+  ) {
     score += 120;
   }
 
-  // Strongly preserve HSE pins unless allocating RCC
-  if (targetPeripheral !== 'RCC' && isHsePin(pin) !== null) {
+  // Strongly preserve clock pins unless allocating a clock peripheral
+  if (targetPeripheral !== 'RCC' && targetPeripheral !== 'OSC' && clockRoleForPin(pin) !== null) {
     score += 90;
   }
 
@@ -321,6 +379,9 @@ export function findAlternatePins(
       pos: pin.pos,
       pinName: pin.name,
       af: match.af,
+      ...(match.funcLabel !== undefined ? { funcLabel: match.funcLabel } : {}),
+      ...(match.remapId !== undefined ? { remapId: match.remapId } : {}),
+      ...(match.resourceId !== undefined ? { resourceId: match.resourceId } : {}),
       status,
       occupant,
     });
@@ -351,11 +412,12 @@ export function remapPinAssignment(
 
   const next = cloneWorkspaceState(state);
   delete next.assignments[fromPos];
-  next.assignments[toPos] = {
-    peripheral: source.peripheral,
-    signal: match.signal,
-    af: match.af,
-  };
+  next.assignments[toPos] = assignmentFromSignal(source, match);
+
+  // A CH32 group move updates the active remap slot alongside the pin move.
+  if (getChipMuxModel(chip) === 'remap-group' && match.remapId !== undefined) {
+    next.activeRemaps = { ...(next.activeRemaps ?? {}), [source.peripheral]: match.remapId };
+  }
 
   // Preserve custom user label on remap
   if (next.labels[fromPos]) {
@@ -367,6 +429,208 @@ export function remapPinAssignment(
   }
 
   return next;
+}
+
+/** Result of an atomic remap-group switch; state is unchanged when blocked. */
+export interface RemapGroupResult {
+  state: WorkspaceState;
+  applied: boolean;
+  diagnostics: DiagnosticItem[];
+}
+
+function findRemapOption(
+  chip: ChipData,
+  peripheral: string,
+  remapId: number,
+): PeripheralRemapOption | undefined {
+  return chip.peripherals[peripheral]?.remaps?.find((option) => option.id === remapId);
+}
+
+/**
+ * Plan and apply a coupled CH32-style remap group in one operation.
+ * Every target is validated before the cloned state is mutated; a locked or
+ * occupied target blocks the whole move and returns a resolvable diagnostic.
+ */
+export function applyRemapGroup(
+  chip: ChipData,
+  state: WorkspaceState,
+  peripheral: string,
+  remapId: number,
+): RemapGroupResult {
+  const option = findRemapOption(chip, peripheral, remapId);
+  const unchanged = (diagnostics: DiagnosticItem[]): RemapGroupResult => ({
+    state,
+    applied: false,
+    diagnostics,
+  });
+  if (!option) {
+    return unchanged([
+      {
+        id: `remap:${peripheral}:${remapId}:missing`,
+        severity: 'error',
+        code: 'REMAP_MISMATCH',
+        pins: [],
+        peripheral,
+        message: `${peripheral} has no remap option with ID ${remapId}.`,
+      },
+    ]);
+  }
+
+  const moves: Array<{ move: RemapMove; source: PinAssignment }> = [];
+  const diagnostics: DiagnosticItem[] = [];
+
+  for (const [signal, pinName] of Object.entries(option.signals)) {
+    // Only signals currently active are relocated; inactive ones need no target.
+    const sourceEntry = Object.entries(state.assignments).find(
+      ([, a]) => a.peripheral === peripheral && a.signal === signal,
+    );
+    const targetPin = findPinByName(chip, pinName);
+    if (!sourceEntry || !targetPin || sourceEntry[0] === targetPin.pos) continue;
+    const [fromPos, source] = sourceEntry;
+
+    if (state.locked[fromPos]) {
+      diagnostics.push({
+        id: `remap:${peripheral}:${remapId}:${signal}:sourcelocked`,
+        severity: 'error',
+        code: 'REMAP_LOCKED',
+        pins: [fromPos],
+        peripheral,
+        message: `${peripheral} remap ${option.name} is blocked: source pin ${fromPos} is locked.`,
+      });
+      continue;
+    }
+    if (state.locked[targetPin.pos]) {
+      diagnostics.push({
+        id: `remap:${peripheral}:${remapId}:${signal}:locked`,
+        severity: 'error',
+        code: 'REMAP_LOCKED',
+        pins: [targetPin.pos],
+        peripheral,
+        message: `${peripheral} remap ${option.name} is blocked: target pin ${targetPin.name} (${targetPin.pos}) is locked.`,
+      });
+      continue;
+    }
+    const match = pinSupportsSignal(targetPin, peripheral, signal);
+    if (!match) {
+      diagnostics.push({
+        id: `remap:${peripheral}:${remapId}:${signal}:unsupported`,
+        severity: 'error',
+        code: 'REMAP_MISMATCH',
+        pins: [fromPos, targetPin.pos],
+        peripheral,
+        message: `${targetPin.name} (${targetPin.pos}) does not support ${peripheral}_${signal}.`,
+      });
+      continue;
+    }
+    const occupant = state.assignments[targetPin.pos];
+    if (occupant && (occupant.peripheral !== peripheral || occupant.signal !== signal)) {
+      diagnostics.push({
+        id: `remap:${peripheral}:${remapId}:${signal}:occupied`,
+        severity: 'error',
+        code: 'REMAP_MISMATCH',
+        pins: [fromPos, targetPin.pos],
+        peripheral,
+        message: `${peripheral} remap ${option.name} cannot place ${signal} on ${targetPin.name} (${targetPin.pos}): occupied by ${occupant.peripheral}_${occupant.signal}.`,
+      });
+      continue;
+    }
+
+    moves.push({
+      source,
+      move: {
+        signal: match.signal,
+        fromPos,
+        toPos: targetPin.pos,
+        af: match.af,
+        ...muxMetadata(match),
+      },
+    });
+  }
+
+  if (diagnostics.length > 0) return unchanged(diagnostics);
+
+  const next = cloneWorkspaceState(state);
+  for (const { move, source } of moves) {
+    delete next.assignments[move.fromPos];
+    const targetPin = chip.pins.find((p) => p.pos === move.toPos)!;
+    const match = pinSupportsSignal(targetPin, peripheral, move.signal)!;
+    next.assignments[move.toPos] = assignmentFromSignal(source, match);
+    if (next.labels[move.fromPos]) {
+      next.labels[move.toPos] = next.labels[move.fromPos];
+      delete next.labels[move.fromPos];
+    }
+  }
+  next.activeRemaps = { ...(next.activeRemaps ?? {}), [peripheral]: remapId };
+  return { state: next, applied: true, diagnostics: [] };
+}
+
+/** Diagnostic describing a failed remap-group move, offered as a one-click fix. */
+export function remapGroupFix(
+  chip: ChipData,
+  state: WorkspaceState,
+  peripheral: string,
+  remapId: number,
+): OneHopFix | null {
+  const option = findRemapOption(chip, peripheral, remapId);
+  if (!option) return null;
+  const remapMoves = planMoves(chip, state, peripheral, option);
+  if (remapMoves.length === 0) return null;
+  const primary = remapMoves[0];
+  const targetPin = chip.pins.find((p) => p.pos === primary.toPos)!;
+  return {
+    label: `Switch ${peripheral} to ${option.name} (${remapMoves.length} signal${remapMoves.length > 1 ? 's' : ''})`,
+    targetPeripheral: peripheral,
+    targetSignal: primary.signal,
+    targetAf: primary.af,
+    targetPos: primary.toPos,
+    displacedFromPos: primary.fromPos,
+    displacedToPos: primary.toPos,
+    displacedPeripheral: peripheral,
+    displacedSignal: primary.signal,
+    displacedAf: primary.af,
+    targetMetadata: {
+      ...(primary.funcLabel !== undefined ? { funcLabel: primary.funcLabel } : {}),
+      ...(primary.remapId !== undefined ? { remapId: primary.remapId } : {}),
+      ...(primary.resourceId !== undefined ? { resourceId: primary.resourceId } : {}),
+    },
+    remapPeripheral: peripheral,
+    remapId,
+    remapMoves,
+  };
+}
+
+function planMoves(
+  chip: ChipData,
+  state: WorkspaceState,
+  peripheral: string,
+  option: PeripheralRemapOption,
+): RemapMove[] {
+  const moves: RemapMove[] = [];
+  for (const [signal, pinName] of Object.entries(option.signals)) {
+    const sourceEntry = Object.entries(state.assignments).find(
+      ([, a]) => a.peripheral === peripheral && a.signal === signal,
+    );
+    if (!sourceEntry) continue;
+    const targetPin = findPinByName(chip, pinName);
+    if (
+      !targetPin ||
+      targetPin.pos === sourceEntry[0] ||
+      state.locked[sourceEntry[0]] ||
+      state.locked[targetPin.pos]
+    ) {
+      continue;
+    }
+    const match = pinSupportsSignal(targetPin, peripheral, signal);
+    if (!match) continue;
+    moves.push({
+      signal: match.signal,
+      fromPos: sourceEntry[0],
+      toPos: targetPin.pos,
+      af: match.af,
+      ...muxMetadata(match),
+    });
+  }
+  return moves;
 }
 
 export function findOneHopFixForSignal(
@@ -423,6 +687,12 @@ export function findOneHopFixForSignal(
         displacedPeripheral: blocker.peripheral,
         displacedSignal: altSig.signal,
         displacedAf: altSig.af,
+        ...(Object.keys(muxMetadata(targetSig)).length > 0
+          ? { targetMetadata: muxMetadata(targetSig) }
+          : {}),
+        ...(Object.keys(muxMetadata(altSig)).length > 0
+          ? { displacedMetadata: muxMetadata(altSig) }
+          : {}),
       };
     }
   }
@@ -433,6 +703,39 @@ export function findOneHopFixForSignal(
 export function applyOneHopFix(state: WorkspaceState, fix: OneHopFix): WorkspaceState {
   const next = cloneWorkspaceState(state);
 
+  if (fix.remapMoves && fix.remapMoves.length > 0) {
+    // Atomic group move: rebuild every relocation from the current assignments.
+    const moves = fix.remapMoves.map((move) => ({
+      move,
+      source: next.assignments[move.fromPos],
+    }));
+    if (moves.some(({ source }) => !source)) return state;
+    if (moves.some(({ move }) => next.locked[move.toPos])) return state;
+    for (const { move, source } of moves) {
+      if (!source) continue;
+      delete next.assignments[move.fromPos];
+      next.assignments[move.toPos] = {
+        ...source,
+        signal: move.signal,
+        af: move.af,
+        ...(move.funcLabel !== undefined ? { funcLabel: move.funcLabel } : {}),
+        ...(move.remapId !== undefined ? { remapId: move.remapId } : {}),
+        ...(move.resourceId !== undefined ? { resourceId: move.resourceId } : {}),
+      };
+      if (next.labels[move.fromPos]) {
+        next.labels[move.toPos] = next.labels[move.fromPos];
+        delete next.labels[move.fromPos];
+      }
+    }
+    if (fix.remapPeripheral && fix.remapId !== undefined) {
+      next.activeRemaps = {
+        ...(next.activeRemaps ?? {}),
+        [fix.remapPeripheral]: fix.remapId,
+      };
+    }
+    return next;
+  }
+
   // Move displaced assignment first
   const displacedLabel = next.labels[fix.displacedFromPos];
   delete next.assignments[fix.displacedFromPos];
@@ -442,6 +745,7 @@ export function applyOneHopFix(state: WorkspaceState, fix: OneHopFix): Workspace
   }
 
   next.assignments[fix.displacedToPos] = {
+    ...fix.displacedMetadata,
     peripheral: fix.displacedPeripheral,
     signal: fix.displacedSignal,
     af: fix.displacedAf,
@@ -449,6 +753,7 @@ export function applyOneHopFix(state: WorkspaceState, fix: OneHopFix): Workspace
 
   // Place target assignment on newly freed pin
   next.assignments[fix.targetPos] = {
+    ...fix.targetMetadata,
     peripheral: fix.targetPeripheral,
     signal: fix.targetSignal,
     af: fix.targetAf,
@@ -620,6 +925,7 @@ export function allocatePeripheralMode(
   for (const item of bestPick) {
     if (item.option) {
       next.assignments[item.option.pin.pos] = {
+        ...item.option.sig,
         peripheral: peripheralName,
         signal: item.option.sig.signal,
         af: item.option.sig.af,
@@ -685,6 +991,7 @@ export function togglePeripheralSignal(
     const chosen = candidates[0];
     const match = pinSupportsSignal(chosen, peripheralName, signal)!;
     next.assignments[chosen.pos] = {
+      ...match,
       peripheral: peripheralName,
       signal: match.signal,
       af: match.af,
@@ -828,6 +1135,156 @@ function analyzeDma(
   return { entries, diagnostics };
 }
 
+/** Group active assignments by shared hardware resource (RP PWM slices, EXTI, etc.). */
+function analyzeResourceConflicts(
+  state: WorkspaceState,
+  pinMap: Map<string, PinInfo>,
+): DiagnosticItem[] {
+  const byResource = new Map<string, string[]>();
+  for (const [pos, asgn] of Object.entries(state.assignments)) {
+    const resourceId = asgn.resourceId?.trim();
+    if (!resourceId) continue;
+    const positions = byResource.get(resourceId) ?? [];
+    positions.push(pos);
+    byResource.set(resourceId, positions);
+  }
+
+  const diagnostics: DiagnosticItem[] = [];
+  for (const [resourceId, positions] of byResource) {
+    const unique = Array.from(new Set(positions)).sort((a, b) =>
+      a.localeCompare(b, undefined, { numeric: true }),
+    );
+    if (unique.length < 2) continue;
+    const names = unique.map((pos) => `${pinMap.get(pos)?.name ?? pos} (${pos})`).join(', ');
+    diagnostics.push({
+      id: `resource:${resourceId}`,
+      severity: 'error',
+      code: 'RESOURCE_CONFLICT',
+      pins: unique,
+      peripheral: state.assignments[unique[0]]?.peripheral,
+      message: `Shared hardware resource ${resourceId} is activated by multiple pins: ${names}.`,
+    });
+  }
+
+  return diagnostics;
+}
+
+/** Validate RP PIO state-machine reservations and gpioBaseOptions windows. */
+function analyzePio(
+  chip: ChipData,
+  state: WorkspaceState,
+  pinMap: Map<string, PinInfo>,
+): DiagnosticItem[] {
+  const pio = chip.pio;
+  const bindings = state.pioAssignments;
+  if (!pio || !bindings) return [];
+
+  const diagnostics: DiagnosticItem[] = [];
+  const reservations = new Map<string, string[]>();
+  const windows = pio.gpioBaseOptions.map((base) => `${base}-${base + 31}`).join(', ');
+
+  for (const pos of Object.keys(bindings).sort((a, b) =>
+    a.localeCompare(b, undefined, { numeric: true }),
+  )) {
+    const binding = bindings[pos];
+    const pin = pinMap.get(pos);
+    if (!pin) continue;
+
+    const number = gpioNumber(pin);
+    if (number !== null && !pio.gpioBaseOptions.some((base) => number >= base && number < base + 32)) {
+      diagnostics.push({
+        id: `pio:gpiobase:${pos}`,
+        severity: 'error',
+        code: 'PIO_GPIOBASE_CONFLICT',
+        pins: [pos],
+        peripheral: binding.instance,
+        message: `PIO pin ${pin.name} (${pos}) lies outside every valid GPIOBASE window (${windows}).`,
+      });
+    }
+
+    if (!pio.instances.includes(binding.instance)) {
+      diagnostics.push({
+        id: `pio:instance:${pos}`,
+        severity: 'error',
+        code: 'RESOURCE_CONFLICT',
+        pins: [pos],
+        peripheral: binding.instance,
+        message: `PIO instance ${binding.instance} on pin ${pin.name} (${pos}) is not available on ${chip.id}.`,
+      });
+      continue;
+    }
+
+    if (binding.sm === undefined) continue;
+    const resourceId = `${binding.instance}:SM${binding.sm}`;
+    if (binding.sm < 0 || binding.sm >= pio.stateMachinesPerInstance) {
+      diagnostics.push({
+        id: `pio:sm:${pos}`,
+        severity: 'error',
+        code: 'RESOURCE_CONFLICT',
+        pins: [pos],
+        peripheral: binding.instance,
+        message: `PIO state machine ${resourceId} on pin ${pin.name} (${pos}) is out of range for ${binding.instance}.`,
+      });
+      continue;
+    }
+    const owners = reservations.get(resourceId) ?? [];
+    owners.push(pos);
+    reservations.set(resourceId, owners);
+  }
+
+  for (const [resourceId, positions] of reservations) {
+    const unique = Array.from(new Set(positions)).sort((a, b) =>
+      a.localeCompare(b, undefined, { numeric: true }),
+    );
+    if (unique.length < 2) continue;
+    const names = unique.map((pos) => `${pinMap.get(pos)?.name ?? pos} (${pos})`).join(', ');
+    diagnostics.push({
+      id: `pio:reserved:${resourceId}`,
+      severity: 'error',
+      code: 'RESOURCE_CONFLICT',
+      pins: unique,
+      peripheral: resourceId.split(':')[0],
+      message: `PIO state machine ${resourceId} is reserved by multiple pins: ${names}.`,
+    });
+  }
+
+  return diagnostics;
+}
+
+/** Diagnose active remap slots that no longer match the emitted remap tables. */
+function analyzeActiveRemaps(
+  chip: ChipData,
+  state: WorkspaceState,
+  pinMap: Map<string, PinInfo>,
+): DiagnosticItem[] {
+  const diagnostics: DiagnosticItem[] = [];
+  for (const [peripheral, remapId] of Object.entries(state.activeRemaps ?? {})) {
+    const option = findRemapOption(chip, peripheral, remapId);
+    if (!option) continue;
+    for (const [signal, pinName] of Object.entries(option.signals)) {
+      const expected = findPinByName(chip, pinName);
+      if (!expected) continue;
+      const actualPos = Object.entries(state.assignments).find(
+        ([, a]) => a.peripheral === peripheral && a.signal === signal,
+      )?.[0];
+      if (!actualPos || actualPos === expected.pos) continue;
+      const locked = Boolean(state.locked[expected.pos] || state.locked[actualPos]);
+      const occupant = state.assignments[expected.pos];
+      diagnostics.push({
+        id: `remap:active:${peripheral}:${signal}`,
+        severity: 'error',
+        code: locked ? 'REMAP_LOCKED' : 'REMAP_MISMATCH',
+        pins: [actualPos, expected.pos],
+        peripheral,
+        message: locked
+          ? `${peripheral} remap ${option.name} is blocked by locked pin ${pinMap.get(actualPos)?.name ?? actualPos} (${actualPos}).`
+          : `${peripheral} remap ${option.name} expects ${signal} on ${expected.name} (${expected.pos}), but it is on ${pinMap.get(actualPos)?.name ?? actualPos} (${actualPos})${occupant ? `; target is occupied by ${occupant.peripheral}_${occupant.signal}` : ''}.`,
+      });
+    }
+  }
+  return diagnostics;
+}
+
 export function evaluateWorkspace(chip: ChipData, state: WorkspaceState): SolverReport {
   const pinMap = buildPinMap(chip);
   const diagnostics: DiagnosticItem[] = [];
@@ -893,16 +1350,52 @@ export function evaluateWorkspace(chip: ChipData, state: WorkspaceState): Solver
       signalUsage.set(key, list);
     }
 
-    // 2. SWD repurposing warning
-    if (isSwdPin(pin) && !isSwdAssignment(asgn)) {
+    // 2. Tag- and role-driven vendor diagnostics
+    const debugTag = isDebugPin(pin);
+    if (debugTag && !isDebugAssignment(asgn)) {
+      const tagDriven = pinHasTag(pin, 'debug-swd') || pinHasTag(pin, 'debug-sdi');
+      const oneWire = debugTag === 'debug-sdi';
       diagnostics.push({
         id: `swd:${pos}`,
         severity: 'warning',
-        code: 'SWD_REPURPOSED',
+        code: tagDriven ? 'DEBUG_PIN_REPURPOSED' : 'SWD_REPURPOSED',
         pins: [pos],
         peripheral: asgn.peripheral,
-        message: `${pin.name} (Pin ${pos}) is assigned to ${asgn.peripheral}_${asgn.signal}, which disables SWD debugging unless intended.`,
+        message: oneWire
+          ? `${pin.name} (Pin ${pos}) is assigned to ${asgn.peripheral}_${asgn.signal}, which disables one-wire debugging unless intended.`
+          : `${pin.name} (Pin ${pos}) is assigned to ${asgn.peripheral}_${asgn.signal}, which disables SWD debugging unless intended.`,
       });
+    }
+    if (pinHasTag(pin, 'bonded')) {
+      const bondedNames = pin.bondedNames?.join(' / ');
+      diagnostics.push({
+        id: `bonded:${pos}`,
+        severity: 'info',
+        code: 'BONDED_PIN_NOTE',
+        pins: [pos],
+        peripheral: asgn.peripheral,
+        message: `${pin.name} (Pin ${pos}) bonds multiple pads${bondedNames ? ` (${bondedNames})` : ''}; only one internal peripheral can be used at a time.`,
+      });
+    }
+    if (getChipMuxModel(chip) === 'funcsel-pio') {
+      const hintRoles: Array<[PinTag, string]> = [
+        ['hstx', 'HSTX'],
+        ['qspi', 'QSPI'],
+        ['usb', 'USB'],
+        ['adc', 'ADC'],
+        ['5v-tolerant', '5V-tolerant'],
+      ];
+      for (const [tag, role] of hintRoles) {
+        if (!pinHasTag(pin, tag)) continue;
+        diagnostics.push({
+          id: `pio:hint:${pos}:${tag}`,
+          severity: 'info',
+          code: 'RP_HARDWARE_HINT',
+          pins: [pos],
+          peripheral: asgn.peripheral,
+          message: `${pin.name} (Pin ${pos}) is a ${role}-capable pin on ${chip.id}; check the RP datasheet before using it for ${formatMuxLabel(asgn, 'funcsel-pio')}.`,
+        });
+      }
     }
   }
 
@@ -928,24 +1421,27 @@ export function evaluateWorkspace(chip: ChipData, state: WorkspaceState): Solver
     }
   }
 
-  // 4. HSE overlap warning
+  // 4. Clock-pin overlap warning, derived from signal roles rather than RCC-only modes
   const hseModeActive =
     state.peripheralModes.RCC === 'hse' || state.peripheralModes.RCC === 'hse_lse';
-  const oscInAssigned = Array.from(signalUsage.keys()).some((k) => k === 'RCC:OSC_IN');
-  const oscOutAssigned = Array.from(signalUsage.keys()).some((k) => k === 'RCC:OSC_OUT');
-  if (hseModeActive || oscInAssigned || oscOutAssigned) {
-    for (const pin of chip.pins) {
-      const oscRole = isHsePin(pin);
-      if (!oscRole) continue;
+  const clockPins = chip.pins
+    .map((pin) => ({ pin, role: clockRoleForPin(pin) }))
+    .filter((entry): entry is { pin: PinInfo; role: 'OSC_IN' | 'OSC_OUT' } => entry.role !== null);
+  const clockAssignmentActive = clockPins.some(({ pin, role }) => {
+    const asgn = state.assignments[pin.pos];
+    return Boolean(asgn && isClockAssignment(asgn) && asgn.signal === role);
+  });
+  if (hseModeActive || clockAssignmentActive) {
+    for (const { pin, role } of clockPins) {
       const asgn = state.assignments[pin.pos];
-      if (asgn && !(asgn.peripheral === 'RCC' && asgn.signal === oscRole)) {
+      if (asgn && !isClockAssignment(asgn)) {
         diagnostics.push({
           id: `hse:${pin.pos}`,
           severity: 'warning',
           code: 'HSE_CONFLICT',
           pins: [pin.pos],
           peripheral: 'RCC',
-          message: `HSE crystal pin ${pin.name} (${oscRole}) is occupied by ${asgn.peripheral}_${asgn.signal}.`,
+          message: `HSE crystal pin ${pin.name} (${role}) is occupied by ${asgn.peripheral}_${asgn.signal}.`,
         });
       }
     }
@@ -1013,15 +1509,31 @@ export function evaluateWorkspace(chip: ChipData, state: WorkspaceState): Solver
   const dmaResult = analyzeDma(chip, state);
   diagnostics.push(...dmaResult.diagnostics);
 
+  // 7. Vendor-aware mux analysis
+  const remapDiagnostics = analyzeActiveRemaps(chip, state, pinMap);
+  const resourceDiagnostics = analyzeResourceConflicts(state, pinMap);
+  const pioDiagnostics = analyzePio(chip, state, pinMap);
+  diagnostics.push(...remapDiagnostics, ...resourceDiagnostics, ...pioDiagnostics);
+  for (const d of [...resourceDiagnostics, ...pioDiagnostics]) {
+    for (const pos of d.pins) {
+      pinStatus[pos] = 'conflict';
+      if (d.peripheral && peripheralStatus[d.peripheral] !== undefined) {
+        peripheralStatus[d.peripheral] = 'error';
+      }
+    }
+  }
+
   // Sort diagnostics: errors first, then warnings, then info
   const severityOrder = { error: 0, warning: 1, info: 2 };
   diagnostics.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity]);
 
   let errorCount = 0;
   let warningCount = 0;
+  let infoCount = 0;
   for (const d of diagnostics) {
     if (d.severity === 'error') errorCount++;
     else if (d.severity === 'warning') warningCount++;
+    else infoCount++;
   }
 
   return {
@@ -1031,5 +1543,6 @@ export function evaluateWorkspace(chip: ChipData, state: WorkspaceState): Solver
     dmaAnalysis: dmaResult.entries,
     errorCount,
     warningCount,
+    infoCount,
   };
 }

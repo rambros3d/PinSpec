@@ -225,11 +225,7 @@
               type="button"
               disabled={isLocked}
               onclick={() => {
-                onAssign({
-                  peripheral: sig.peripheral,
-                  signal: sig.signal,
-                  af: sig.af,
-                });
+                onAssign({ ...sig });
                 onClose();
               }}
               class={`w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded text-left transition-colors disabled:opacity-40 ${

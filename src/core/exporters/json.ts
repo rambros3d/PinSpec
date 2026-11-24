@@ -30,11 +30,7 @@ export function exportPinoutJson(state: WorkspaceState): string {
     a.localeCompare(b, undefined, { numeric: true }),
   )) {
     const a = state.assignments[key];
-    cleanAssignments[key] = {
-      peripheral: a.peripheral,
-      signal: a.signal,
-      af: a.af,
-    };
+    cleanAssignments[key] = { ...a };
   }
 
   const cleanLabels: Record<string, string> = {};
@@ -89,6 +85,9 @@ export function parsePinoutJson(raw: string): JsonImportResult {
               peripheral: rec.peripheral,
               signal: rec.signal,
               af: typeof rec.af === 'number' ? rec.af : null,
+              ...(typeof rec.funcLabel === 'string' ? { funcLabel: rec.funcLabel } : {}),
+              ...(typeof rec.remapId === 'number' ? { remapId: rec.remapId } : {}),
+              ...(typeof rec.resourceId === 'string' ? { resourceId: rec.resourceId } : {}),
             };
           }
         }

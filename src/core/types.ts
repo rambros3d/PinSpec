@@ -182,6 +182,17 @@ export type PeripheralStatus = 'none' | 'partial' | 'active' | 'error';
 
 export type DiagnosticSeverity = 'error' | 'warning' | 'info';
 
+/** One signal relocation inside a coupled remap-group move. */
+export interface RemapMove {
+  signal: string;
+  fromPos: string;
+  toPos: string;
+  af: number | null;
+  funcLabel?: string;
+  remapId?: number;
+  resourceId?: string;
+}
+
 export interface OneHopFix {
   label: string;
   targetPeripheral: string;
@@ -193,6 +204,14 @@ export interface OneHopFix {
   displacedPeripheral: string;
   displacedSignal: string;
   displacedAf: number | null;
+  /** Mux metadata of the target assignment, preserved by applyOneHopFix. */
+  targetMetadata?: Partial<PinAssignment>;
+  /** Mux metadata of the displaced assignment, preserved by applyOneHopFix. */
+  displacedMetadata?: Partial<PinAssignment>;
+  /** Set when the fix describes an atomic CH32-style remap-group move. */
+  remapPeripheral?: string;
+  remapId?: number;
+  remapMoves?: RemapMove[];
 }
 
 export interface DiagnosticItem {
@@ -225,6 +244,7 @@ export interface AlternatePinCandidate {
   af: number | null;
   funcLabel?: string;
   remapId?: number;
+  resourceId?: string;
   status: 'free' | 'occupied' | 'locked';
   occupant?: PinAssignment;
 }
@@ -253,7 +273,7 @@ export interface SolverReport {
   dmaAnalysis: DmaAnalysisEntry[];
   errorCount: number;
   warningCount: number;
-  infoCount?: number;
+  infoCount: number;
 }
 
 export const GPIO_MODES = ['Input', 'Output', 'Analog', 'EXTI'] as const;

@@ -121,4 +121,49 @@ describe('exporters', () => {
     }
     expect(parsePinoutJson('{ bad json').ok).toBe(false);
   });
+
+  it('round-trips extended mux fields through URL, JSON and history', () => {
+    const extended: WorkspaceState = {
+      ...sampleState,
+      mcuId: 'RP2350BTEST',
+      assignments: {
+        '15': {
+          peripheral: 'PWM',
+          signal: 'PWM0A',
+          af: 4,
+          funcLabel: 'F4',
+          resourceId: 'PWM0A',
+        },
+        '16': {
+          peripheral: 'USART1',
+          signal: 'TX',
+          af: null,
+          funcLabel: 'RM1',
+          remapId: 1,
+        },
+      },
+      activeRemaps: { USART1: 1 },
+      pioAssignments: { '15': { instance: 'PIO0', sm: 0, role: 'TX' } },
+    };
+
+    const decoded = decodeWorkspaceState(encodeWorkspaceState(extended));
+    expect(decoded.ok).toBe(true);
+    if (decoded.ok) {
+      expect(decoded.state.assignments['15']).toEqual(extended.assignments['15']);
+      expect(decoded.state.assignments['16']).toEqual(extended.assignments['16']);
+    }
+
+    const imported = parsePinoutJson(exportPinoutJson(extended));
+    expect(imported.ok).toBe(true);
+    if (imported.ok) {
+      expect(imported.state.assignments['15']).toEqual(extended.assignments['15']);
+      expect(imported.state.assignments['16']).toEqual(extended.assignments['16']);
+    }
+
+    const history = createWorkspaceHistory(extended);
+    history.push({ ...extended, labels: { ...extended.labels, '15': 'SPARE_CLK' } });
+    history.undo();
+    expect(history.current.assignments['15']).toEqual(extended.assignments['15']);
+    expect(history.current.assignments['16']).toEqual(extended.assignments['16']);
+  });
 });

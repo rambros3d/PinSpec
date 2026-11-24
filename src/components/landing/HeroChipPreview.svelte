@@ -65,6 +65,8 @@
     if (!match) return;
     const next = cloneWorkspaceState(demoState);
     next.assignments[pos] = {
+      ...asgn,
+      ...match,
       peripheral: asgn.peripheral,
       signal: match.signal,
       af: match.af,

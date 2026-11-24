@@ -236,4 +236,68 @@ describe('core constraint solver and auto-allocator', () => {
     expect(report.peripheralStatus.SPI1).toBe('partial');
     expect(report.pinStatus['4']).toBe('partial');
   });
+
+  it('preserves funcLabel, remapId and resourceId through solver operations', () => {
+    const chip = makeFixtureChip();
+    chip.pins[6].signals.push({
+      peripheral: 'SPI1',
+      signal: 'SCK',
+      af: 5,
+      funcLabel: 'AF5',
+      resourceId: 'EXTI3',
+    });
+    const state = createEmptyWorkspace(chip.id);
+    state.assignments['4'] = {
+      peripheral: 'SPI1',
+      signal: 'SCK',
+      af: 5,
+      funcLabel: 'AF5',
+      remapId: 2,
+      resourceId: 'EXTI3',
+    };
+
+    const remapped = remapPinAssignment(chip, state, '4', '7');
+    expect(remapped.assignments['7']).toEqual({
+      peripheral: 'SPI1',
+      signal: 'SCK',
+      af: 5,
+      funcLabel: 'AF5',
+      remapId: 2,
+      resourceId: 'EXTI3',
+    });
+
+    const fix = applyOneHopFix(state, {
+      label: 'test',
+      targetPeripheral: 'TIM2',
+      targetSignal: 'CH1',
+      targetAf: 1,
+      targetPos: '4',
+      displacedFromPos: '4',
+      displacedToPos: '7',
+      displacedPeripheral: 'SPI1',
+      displacedSignal: 'SCK',
+      displacedAf: 5,
+      displacedMetadata: { funcLabel: 'AF5', remapId: 2, resourceId: 'EXTI3' },
+    });
+    expect(fix.assignments['7']).toEqual({
+      peripheral: 'SPI1',
+      signal: 'SCK',
+      af: 5,
+      funcLabel: 'AF5',
+      remapId: 2,
+      resourceId: 'EXTI3',
+    });
+  });
+
+  it('keeps STM32 SWD and HSE diagnostic outcomes tag-free', () => {
+    const chip = makeFixtureChip();
+    const state = createEmptyWorkspace(chip.id);
+    state.assignments['12'] = { peripheral: 'USART2', signal: 'TX', af: 7 };
+    state.assignments['2'] = { peripheral: 'GPIO', signal: 'Output', af: null };
+    state.peripheralModes.RCC = 'hse';
+    const report = evaluateWorkspace(chip, state);
+    expect(report.diagnostics.some((d) => d.code === 'SWD_REPURPOSED')).toBe(true);
+    expect(report.diagnostics.some((d) => d.code === 'HSE_CONFLICT')).toBe(true);
+    expect(report.diagnostics.some((d) => d.code === 'DEBUG_PIN_REPURPOSED')).toBe(false);
+  });
 });

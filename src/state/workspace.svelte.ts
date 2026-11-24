@@ -233,6 +233,8 @@ class WorkspaceStore {
 
     const next = cloneWorkspaceState(this.state);
     next.assignments[pos] = {
+      ...assignment,
+      ...match,
       peripheral: assignment.peripheral,
       signal: match.signal,
       af: match.af,

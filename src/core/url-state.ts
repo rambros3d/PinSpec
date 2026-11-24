@@ -4,7 +4,8 @@ import type { PinAssignment, WorkspaceState } from './types';
 interface CompactUrlPayload {
   v: 1;
   m: string;
-  a?: Record<string, [string, string, number | null]>;
+  // Optional 4th-6th slots carry the generalized mux metadata (v1 payload, extended tuple).
+  a?: Record<string, Array<string | number | null>>;
   l?: Record<string, string>;
   k?: string[];
   p?: Record<string, string>;
@@ -58,7 +59,19 @@ export function encodeWorkspaceState(state: WorkspaceState): string {
   if (assignmentEntries.length > 0) {
     payload.a = {};
     for (const [pos, asgn] of assignmentEntries) {
-      payload.a[pos] = [asgn.peripheral, asgn.signal, asgn.af];
+      const row: Array<string | number | null> = [
+        asgn.peripheral,
+        asgn.signal,
+        asgn.af,
+      ];
+      if (
+        asgn.funcLabel !== undefined ||
+        asgn.remapId !== undefined ||
+        asgn.resourceId !== undefined
+      ) {
+        row.push(asgn.funcLabel ?? null, asgn.remapId ?? null, asgn.resourceId ?? null);
+      }
+      payload.a[pos] = row;
     }
   }
 
@@ -110,12 +123,15 @@ export function decodeWorkspaceState(encoded: string): DecodeResult {
     if (obj.a && typeof obj.a === 'object' && !Array.isArray(obj.a)) {
       for (const [pos, val] of Object.entries(obj.a as Record<string, unknown>)) {
         if (Array.isArray(val) && val.length >= 2) {
-          const [peripheral, signal, af] = val;
+          const [peripheral, signal, af, funcLabel, remapId, resourceId] = val;
           if (typeof peripheral === 'string' && typeof signal === 'string') {
             assignments[pos] = {
               peripheral,
               signal,
               af: typeof af === 'number' ? af : null,
+              ...(typeof funcLabel === 'string' ? { funcLabel } : {}),
+              ...(typeof remapId === 'number' ? { remapId } : {}),
+              ...(typeof resourceId === 'string' ? { resourceId } : {}),
             };
           }
         } else if (val && typeof val === 'object') {
@@ -125,6 +141,9 @@ export function decodeWorkspaceState(encoded: string): DecodeResult {
               peripheral: rec.peripheral,
               signal: rec.signal,
               af: typeof rec.af === 'number' ? rec.af : null,
+              ...(typeof rec.funcLabel === 'string' ? { funcLabel: rec.funcLabel } : {}),
+              ...(typeof rec.remapId === 'number' ? { remapId: rec.remapId } : {}),
+              ...(typeof rec.resourceId === 'string' ? { resourceId: rec.resourceId } : {}),
             };
           }
         }

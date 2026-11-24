@@ -104,33 +104,33 @@
 <div
   bind:clientWidth={measuredWidth}
   bind:clientHeight={measuredHeight}
-  class="fixed z-50 w-[236px] rounded-panel border-ui border-hairline bg-surface shadow-xl py-1 text-xs"
+  class="card card-border fixed z-50 w-[236px] bg-base-100 shadow-xl py-1 text-xs"
   style={`left: ${clampedPos.left}px; top: ${clampedPos.top}px; max-height: 88dvh; overflow-y: auto;`}
   role="menu"
 >
-  <div class="px-3 py-1.5 border-ui-b border-hairline flex items-center justify-between font-mono-tabular">
-    <span class="font-semibold text-primary">{pin.name}</span>
-    <span class="text-muted">Pin {pin.pos}</span>
+  <div class="px-3 py-1.5 border-b border-base-300 flex items-center justify-between font-mono-tabular">
+    <span class="font-semibold text-foreground">{pin.name}</span>
+    <span class="text-base-content/60">Pin {pin.pos}</span>
   </div>
 
   {#if assignment || pin.bondedNames?.length || pin.tags?.length}
-    <div class="px-3 py-1.5 border-ui-b border-hairline space-y-1">
+    <div class="px-3 py-1.5 border-b border-base-300 space-y-1">
       {#if assignment}
-        <div class="font-mono text-[11px] text-primary">
+        <div class="font-mono text-[11px] text-foreground">
           {assignment.peripheral}_{assignment.signal}
-          <span class="text-muted">[{muxLabel}]</span>
+          <span class="text-base-content/60">[{muxLabel}]</span>
         </div>
       {/if}
       {#if extiLine}
         <div
-          class="font-mono text-[11px] text-hint"
+          class="font-mono text-[11px] text-info"
           title={`GPIO_EXTI uses hardware line ${extiLine}`}
         >
           EXTI line: {extiLine}
         </div>
       {/if}
       {#if pin.bondedNames?.length}
-        <div class="text-[11px] text-muted font-mono">
+        <div class="text-[11px] text-base-content/60 font-mono">
           Bonded: {pin.bondedNames.join(' / ')}
         </div>
       {/if}
@@ -146,7 +146,7 @@
         commitLabel();
       }}
     >
-      <label class="block text-[11px] text-muted" for="pin-label-input">
+      <label class="block text-[11px] text-base-content/60" for="pin-label-input">
         Custom Net Label
       </label>
       <input
@@ -155,19 +155,19 @@
         bind:value={draftLabel}
         type="text"
         placeholder="e.g. MOTOR_U_HI"
-        class="w-full px-2 py-1.5 rounded-control bg-elevated border-ui border-strong font-mono text-primary focus:outline-none focus:border-hint"
+        class="input input-xs w-full font-mono"
       />
       <div class="flex justify-end gap-1.5">
         <button
           type="button"
           onclick={onClose}
-          class="px-2.5 py-1 rounded-control border-ui border-hairline text-muted hover:bg-elevated"
+          class="btn btn-xs btn-ghost"
         >
           Cancel
         </button>
         <button
           type="submit"
-          class="px-2.5 py-1 rounded-control bg-action hover:bg-action-hover text-on-action font-medium"
+          class="btn btn-xs btn-primary font-medium"
         >
           Save
         </button>
@@ -178,9 +178,9 @@
       <button
         type="button"
         onclick={startEditLabel}
-        class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-primary hover:bg-elevated"
+        class="btn btn-ghost btn-sm w-full justify-start gap-2 text-left"
       >
-        <Tag class="size-ui-md text-faint" />
+        <Tag class="size-3.5 text-base-content/40" />
         <span>{label ? 'Edit Net Label' : 'Set Net Label'}</span>
       </button>
 
@@ -190,13 +190,13 @@
           onToggleLock();
           onClose();
         }}
-        class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-primary hover:bg-elevated"
+        class="btn btn-ghost btn-sm w-full justify-start gap-2 text-left"
       >
         {#if isLocked}
-          <Unlock class="size-ui-md text-pin-power" />
+          <Unlock class="size-3.5 text-warning" />
           <span>Unlock Pin</span>
         {:else}
-          <Lock class="size-ui-md text-faint" />
+          <Lock class="size-3.5 text-base-content/40" />
           <span>Lock Pin</span>
         {/if}
       </button>
@@ -208,9 +208,9 @@
           onHighlightAlternates();
           onClose();
         }}
-        class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-primary hover:bg-elevated disabled:opacity-40"
+        class="btn btn-ghost btn-sm w-full justify-start gap-2 text-left"
       >
-        <Crosshair class="size-ui-md text-hint" />
+        <Crosshair class="size-3.5 text-info" />
         <span>Highlight Alternate Pins</span>
       </button>
 
@@ -221,13 +221,13 @@
           onEnterRemap();
           onClose();
         }}
-        class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-primary hover:bg-elevated disabled:opacity-40"
+        class="btn btn-ghost btn-sm w-full justify-start gap-2 text-left"
       >
-        <ArrowLeftRight class="size-ui-md text-hint" />
+        <ArrowLeftRight class="size-3.5 text-info" />
         <span>Remap Pin (Ctrl+Click)</span>
       </button>
 
-      <div class="my-1 border-ui-t border-hairline"></div>
+      <div class="my-1 border-t border-base-300"></div>
 
       <button
         type="button"
@@ -236,9 +236,9 @@
           onClear();
           onClose();
         }}
-        class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-danger hover:bg-danger-soft disabled:opacity-40"
+        class="btn btn-ghost btn-sm w-full justify-start gap-2 text-left text-error"
       >
-        <Trash2 class="size-ui-md" />
+        <Trash2 class="size-3.5" />
         <span>Clear Assignment</span>
       </button>
     </div>

@@ -98,19 +98,17 @@
   }
 </script>
 
-<div class="rounded-panel border-ui border-hairline bg-surface overflow-hidden flex flex-col">
+<div class="card card-border bg-base-100 overflow-hidden flex flex-col">
   <!-- Vendor switcher: each chip is fetched from generated data on demand -->
-  <div class="flex flex-wrap items-center gap-1.5 px-4 py-2 border-ui-b border-hairline bg-subtle text-xs">
-    <span class="text-muted mr-1">Preview:</span>
+  <div class="flex flex-wrap items-center gap-1.5 px-4 py-2 border-b border-base-300 bg-base-200 text-xs">
+    <span class="text-base-content/60 mr-1">Preview:</span>
     {#each HERO_CHIPS as hero (hero.vendor)}
       <button
         type="button"
         onclick={() => onVendorChange(hero.vendor)}
         title={hero.id}
-        class={`px-2.5 py-1 rounded-control font-mono transition-colors ${
-          vendor === hero.vendor
-            ? 'bg-action text-on-action font-medium'
-            : 'bg-elevated text-primary hover:bg-elevated border-ui border-hairline'
+        class={`btn btn-sm font-mono ${
+          vendor === hero.vendor ? 'btn-primary' : 'btn-outline'
         }`}
       >
         {hero.label}
@@ -119,13 +117,13 @@
   </div>
 
   <!-- Top Interactive Control Bar -->
-  <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 border-ui-b border-hairline bg-subtle">
+  <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 border-b border-base-300 bg-base-200">
     <div class="flex items-center gap-2 text-xs font-mono-tabular">
-      <span class="font-semibold text-primary">{chip.id}</span>
-      <span class="text-faint">·</span>
-      <span class="text-muted">{chip.package.name}</span>
-      <span class="text-faint">·</span>
-      <span class="text-pin-success">
+      <span class="font-semibold text-foreground">{chip.id}</span>
+      <span class="text-base-content/40">·</span>
+      <span class="text-base-content/60">{chip.package.name}</span>
+      <span class="text-base-content/40">·</span>
+      <span class="text-success">
         {Object.keys(demoState.assignments).length} pins assigned
       </span>
     </div>
@@ -135,41 +133,41 @@
         type="button"
         onclick={resetDemo}
         title="Reset hero demo pinout"
-        class="p-1.5 rounded-control border-ui border-hairline hover:bg-elevated text-muted"
+        class="btn btn-ghost btn-sm btn-square"
       >
-        <RotateCcw class="size-ui-md" />
+        <RotateCcw class="size-3.5" />
       </button>
       <button
         type="button"
         onclick={() => onOpenWorkspace(demoState)}
-        class="inline-flex items-center gap-1 px-3 py-1.5 rounded-control bg-action hover:bg-action-hover text-xs font-semibold text-on-action whitespace-nowrap transition-colors"
+        class="btn btn-sm btn-primary gap-1 text-xs font-semibold whitespace-nowrap"
       >
         <span>Open in Full Workspace</span>
-        <ArrowUpRight class="size-ui-md" />
+        <ArrowUpRight class="size-3.5" />
       </button>
     </div>
   </div>
 
   <!-- Quick Peripheral Toggles -->
-  <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-2 border-ui-b border-hairline text-xs">
+  <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-2 border-b border-base-300 text-xs">
     <div class="flex flex-wrap items-center gap-1.5">
-      <span class="text-muted text-[11px] mr-0.5">Live modes:</span>
+      <span class="text-base-content/60 text-[11px] mr-0.5">Live modes:</span>
       {#each activeModes as item (`${item.peripheral}:${item.mode}`)}
         <button
           type="button"
           onclick={() => handleToggleDemoPeripheral(item.peripheral, item.mode)}
           title={`Disable ${item.peripheral} (${item.mode})`}
-          class="px-2 py-0.5 rounded-control font-mono text-[11px] transition-colors border-ui bg-success-soft border-pin-success text-pin-success font-medium"
+          class="btn btn-xs btn-success font-mono text-[11px]"
         >
           {item.peripheral} · {item.mode}
         </button>
       {/each}
     </div>
-    <span class="text-[11px] text-faint">Click any pin to edit</span>
+    <span class="text-[11px] text-base-content/40">Click any pin to edit</span>
   </div>
 
   <!-- Live Interactive SVG Chip -->
-  <div class="relative bg-canvas bg-dot-grid flex items-center justify-center p-3 overflow-hidden min-h-[380px]">
+  <div class="relative bg-base-200 bg-dot-grid flex items-center justify-center p-3 overflow-hidden min-h-[380px]">
     <div class="w-full max-w-[540px] flex items-center justify-center">
       <div class="w-full [&_svg]:w-full [&_svg]:h-auto">
         <PerimeterPackage
@@ -193,21 +191,21 @@
   </div>
 
   <!-- Live Hover Inspector Bar -->
-  <div class="px-4 py-2 border-ui-t border-hairline bg-subtle text-[11px] font-mono-tabular flex items-center justify-between gap-3 min-h-[34px]">
+  <div class="px-4 py-2 border-t border-base-300 bg-base-200 text-[11px] font-mono-tabular flex items-center justify-between gap-3 min-h-[34px]">
     {#if hoveredPin}
       {@const hAsgn = demoState.assignments[hoveredPin.pos]}
       <div class="flex items-center gap-2 min-w-0 truncate">
-        <span class="font-semibold text-primary shrink-0">
+        <span class="font-semibold text-foreground shrink-0">
           Pin {hoveredPin.pos} ({hoveredPin.name})
         </span>
-        <span class="text-faint">·</span>
+        <span class="text-base-content/40">·</span>
         {#if hAsgn}
-          <span class="text-pin-success shrink-0">
+          <span class="text-success shrink-0">
             {hAsgn.peripheral}_{hAsgn.signal} [{formatMuxLabel(hAsgn, muxModel)}]
           </span>
-          <span class="text-faint">·</span>
+          <span class="text-base-content/40">·</span>
         {/if}
-        <span class="text-muted truncate">
+        <span class="text-base-content/60 truncate">
           {hoveredPin.signals.length > 0
             ? hoveredPin.signals
                 .slice(0, 4)
@@ -217,16 +215,16 @@
         </span>
       </div>
     {:else}
-      <span class="text-muted">
+      <span class="text-base-content/60">
         Hover any pin to inspect alternate functions, or click a pin to assign a signal.
       </span>
     {/if}
     {#if report.warningCount > 0 || report.errorCount > 0}
-      <span class="shrink-0 text-pin-partial">
+      <span class="shrink-0 text-warning">
         {report.errorCount}E / {report.warningCount}W
       </span>
     {:else}
-      <span class="shrink-0 text-pin-success">0 conflicts</span>
+      <span class="shrink-0 text-success">0 conflicts</span>
     {/if}
   </div>
 

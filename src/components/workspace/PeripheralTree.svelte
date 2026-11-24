@@ -115,13 +115,13 @@
   function statusColor(status: PeripheralStatus): string {
     switch (status) {
       case 'active':
-        return 'bg-pin-success';
+        return 'bg-success';
       case 'partial':
-        return 'bg-pin-partial';
+        return 'bg-warning';
       case 'error':
-        return 'bg-pin-conflict';
+        return 'bg-error';
       default:
-        return 'bg-pin-unused';
+        return 'bg-base-300';
     }
   }
 
@@ -147,22 +147,22 @@
   }
 </script>
 
-<aside class="h-full min-h-0 flex flex-col bg-surface border-ui-r border-hairline select-none overflow-hidden">
+<aside class="h-full min-h-0 flex flex-col bg-base-100 border-r border-base-300 select-none overflow-hidden">
   <!-- Header + Filter -->
-  <div class="p-2.5 border-ui-b border-hairline space-y-2">
+  <div class="p-2.5 border-b border-base-300 space-y-2">
     <div class="flex items-center justify-between">
-      <h2 class="text-xs font-semibold text-primary">Peripherals</h2>
-      <span class="font-mono-tabular text-[11px] text-muted">
+      <h2 class="text-xs font-semibold text-foreground">Peripherals</h2>
+      <span class="font-mono-tabular text-[11px] text-base-content/60">
         {Object.keys(chip.peripherals).length} blocks
       </span>
     </div>
     <div class="relative flex items-center">
-      <Search class="size-ui-md text-faint absolute left-2.5 pointer-events-none" />
+      <Search class="size-3.5 text-base-content/40 absolute left-2.5 pointer-events-none" />
       <input
         bind:value={filterText}
         type="text"
         placeholder="Filter SPI, TIM, USART, PWM, PIO..."
-        class="w-full pl-8 pr-2.5 py-1.5 rounded-control bg-elevated border-ui border-hairline text-xs text-primary placeholder:text-faint focus:outline-none focus:border-hint"
+        class="input input-xs w-full pl-8 pr-2.5"
       />
     </div>
   </div>
@@ -171,21 +171,21 @@
   <div class="flex-1 min-h-0 overflow-y-auto py-1">
     {#each grouped as cat (cat.id)}
       {@const isCatOpen = filterText.trim().length > 0 || openCategories[cat.id]}
-      <div class="border-ui-b border-hairline last:border-b-0">
+      <div class="border-b border-base-300 last:border-b-0">
         <button
           type="button"
           onclick={() => toggleCategory(cat.id)}
-          class="w-full flex items-center justify-between px-3 py-2 text-left text-xs font-semibold text-primary hover:bg-elevated"
+          class="btn btn-ghost btn-sm w-full justify-between text-xs font-semibold"
         >
           <span class="flex items-center gap-1.5">
             {#if isCatOpen}
-              <ChevronDown class="size-ui-md text-faint" />
+              <ChevronDown class="size-3.5 text-base-content/40" />
             {:else}
-              <ChevronRight class="size-ui-md text-faint" />
+              <ChevronRight class="size-3.5 text-base-content/40" />
             {/if}
             <span>{cat.label}</span>
           </span>
-          <span class="font-mono-tabular text-[11px] text-faint">
+          <span class="font-mono-tabular text-[11px] text-base-content/40">
             {cat.names.length}
           </span>
         </button>
@@ -203,43 +203,41 @@
                 <button
                   type="button"
                   onclick={() => togglePeripheral(pName)}
-                  class={`w-full flex items-center justify-between px-4 py-1.5 text-left text-xs transition-colors ${
-                    isOpen
-                      ? 'bg-elevated text-primary'
-                      : 'hover:bg-elevated text-primary'
+                  class={`btn btn-ghost btn-sm w-full justify-between text-xs ${
+                    isOpen ? 'btn-active' : ''
                   }`}
                 >
                   <span class="flex items-center gap-2 min-w-0">
                     {#if isOpen}
-                      <ChevronDown class="size-ui-sm text-faint shrink-0" />
+                      <ChevronDown class="size-3 text-base-content/40 shrink-0" />
                     {:else}
-                      <ChevronRight class="size-ui-sm text-faint shrink-0" />
+                      <ChevronRight class="size-3 text-base-content/40 shrink-0" />
                     {/if}
                     <span class="font-mono font-medium truncate">{pName}</span>
                   </span>
                   <span class="flex items-center gap-1.5 shrink-0" title={statusLabel(pStatus)}>
                     {#if pStatus !== 'none'}
                       <span
-                        class={`text-[10px] font-medium ${
+                        class={`badge badge-xs ${
                           pStatus === 'active'
-                            ? 'text-pin-success'
+                            ? 'badge-success'
                             : pStatus === 'partial'
-                              ? 'text-pin-partial'
-                              : 'text-danger'
+                              ? 'badge-warning'
+                              : 'badge-error'
                         }`}
                       >
                         {statusLabel(pStatus)}
                       </span>
                     {/if}
-                    <span class={`size-selector-dot rounded-pill ${statusColor(pStatus)}`}></span>
+                    <span class={`status status-sm ${statusColor(pStatus)}`}></span>
                   </span>
                 </button>
 
                 {#if isOpen}
-                  <div class="px-4 py-2 bg-subtle border-ui-y border-hairline space-y-2">
+                  <div class="px-4 py-2 bg-base-200 border-y border-base-300 space-y-2">
                     {#if (peripheralTags.get(pName) ?? []).length > 0}
                       <div class="flex items-center gap-1.5">
-                        <span class="text-[10px] text-faint">Pins:</span>
+                        <span class="text-[10px] text-base-content/40">Pins:</span>
                         <PinTagPills tags={peripheralTags.get(pName) ?? []} compact={true} />
                       </div>
                     {/if}
@@ -249,7 +247,7 @@
                       <div class="space-y-1">
                         <label
                           for={`mode-${pName}`}
-                          class="block text-[10px] font-medium text-muted"
+                          class="block text-[10px] font-medium text-base-content/60"
                         >
                           Mode
                         </label>
@@ -258,7 +256,7 @@
                           value={activeMode}
                           onchange={(e) =>
                             onModeChange(pName, (e.currentTarget as HTMLSelectElement).value)}
-                          class="w-full px-2 py-1.5 rounded-control bg-surface border-ui border-hairline text-xs text-primary focus:outline-none focus:border-hint"
+                          class="select select-xs w-full"
                         >
                           {#each modes as m (m.id)}
                             <option value={m.id}>{m.label}</option>
@@ -274,7 +272,7 @@
                       <div class="space-y-1">
                         <label
                           for={`remap-${pName}`}
-                          class="block text-[10px] font-medium text-muted"
+                          class="block text-[10px] font-medium text-base-content/60"
                         >
                           Remap group
                         </label>
@@ -283,17 +281,17 @@
                           value={activeRemaps[pName] ?? 0}
                           onchange={(e) =>
                             onRemapChange(pName, Number((e.currentTarget as HTMLSelectElement).value))}
-                          class="w-full px-2 py-1.5 rounded-control bg-surface border-ui border-hairline text-xs text-primary focus:outline-none focus:border-hint"
+                          class="select select-xs w-full"
                         >
                           {#each pInfo.remaps as option (option.id)}
                             <option value={option.id}>{option.name}</option>
                           {/each}
                         </select>
-                        <div class="font-mono text-[10px] text-faint break-words">
+                        <div class="font-mono text-[10px] text-base-content/40 break-words">
                           {summarizeRemapSignals(selectedRemap.signals)}
                         </div>
                         {#if selectedRemap.registerNote}
-                          <div class="font-mono text-[10px] text-muted">
+                          <div class="font-mono text-[10px] text-base-content/60">
                             {selectedRemap.registerNote}
                           </div>
                         {/if}
@@ -305,12 +303,12 @@
                       {#each pInfo.signals as sig (sig)}
                         {@const assigned = assignedLookup.get(`${pName}:${sig}`)}
                         <div class="flex items-center justify-between gap-2 py-0.5">
-                          <label class="flex items-center gap-2 min-w-0 cursor-pointer text-[11px] text-primary">
+                          <label class="flex items-center gap-2 min-w-0 cursor-pointer text-[11px] text-foreground">
                             <input
                               type="checkbox"
                               checked={Boolean(assigned)}
                               onchange={() => onToggleSignal(pName, sig)}
-                              class="rounded-control border-strong text-hint focus:ring-hint"
+                              class="checkbox checkbox-xs"
                             />
                             <span class="font-mono truncate">{sig}</span>
                           </label>
@@ -319,7 +317,7 @@
                               type="button"
                               onclick={() => onFocusPin(assigned.pos)}
                               title="Locate pin on package"
-                              class="font-mono-tabular text-[10px] text-pin-success hover:underline shrink-0"
+                              class="btn btn-link btn-xs font-mono-tabular shrink-0"
                             >
                               {assigned.pinName} / {assigned.muxLabel}
                             </button>

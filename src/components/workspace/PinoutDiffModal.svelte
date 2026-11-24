@@ -40,11 +40,11 @@
   }
 
   const MARKER_CLASSES: Record<PinChangeKind, string> = {
-    added: 'border-pin-success',
-    removed: 'border-pin-conflict',
-    moved: 'border-pin-remap',
-    relabeled: 'border-pin-power',
-    reassigned: 'border-pin-partial',
+    added: 'border-success',
+    removed: 'border-error',
+    moved: 'border-info',
+    relabeled: 'border-warning',
+    reassigned: 'border-warning',
   };
 
   function emptySlot(): SlotState {
@@ -58,6 +58,7 @@
   let afterPreviewEl = $state<HTMLDivElement | null>(null);
   let beforeMarkers = $state<MarkerRect[]>([]);
   let afterMarkers = $state<MarkerRect[]>([]);
+  let dialogEl = $state<HTMLDialogElement | null>(null);
 
   let beforeGeneration = 0;
   let afterGeneration = 0;
@@ -239,7 +240,12 @@
     });
   });
 
+  /** Native dialog close path; the close event notifies the parent once. */
   function close(): void {
+    dialogEl?.close();
+  }
+
+  function handleClose(): void {
     diffGeneration += 1;
     beforeGeneration += 1;
     afterGeneration += 1;
@@ -252,49 +258,59 @@
     return `${format(change.from)} -> ${format(change.to)}`;
   }
 
-  onMount(() => () => {
-    diffGeneration += 1;
-    beforeGeneration += 1;
-    afterGeneration += 1;
+  onMount(() => {
+    dialogEl?.showModal();
+    return () => {
+      diffGeneration += 1;
+      beforeGeneration += 1;
+      afterGeneration += 1;
+    };
   });
 </script>
 
-<!-- svelte-ignore a11y_click_events_have_key_events -->
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="fixed inset-0 z-50 bg-overlay flex items-center justify-center p-4" onclick={close}>
+<dialog
+  bind:this={dialogEl}
+  class="modal"
+  onclose={handleClose}
+  oncancel={(e) => {
+    e.preventDefault();
+    close();
+  }}
+  onclick={(e) => {
+    if (e.target === dialogEl) close();
+  }}
+  aria-label="Compare two pinouts"
+>
   <div
-    class="w-full max-w-5xl max-h-[92dvh] min-h-0 flex flex-col rounded-panel border-ui border-hairline bg-surface shadow-2xl overflow-hidden"
-    onclick={(e) => e.stopPropagation()}
-    role="dialog"
-    tabindex="-1"
-    aria-label="Compare two pinouts"
+    class="modal-box w-full max-w-5xl max-h-[92dvh] min-h-0 flex flex-col p-0 shadow-2xl overflow-hidden"
   >
-    <div class="flex items-center justify-between gap-3 px-4 py-3 border-ui-b border-hairline shrink-0">
+    <div class="flex items-center justify-between gap-3 px-4 py-3 border-b border-base-300 shrink-0">
       <div class="min-w-0">
-        <h2 class="text-sm font-semibold text-primary">Compare Project Pinouts</h2>
-        <p class="text-[11px] text-muted">
+        <h2 class="text-sm font-semibold text-foreground">Compare Project Pinouts</h2>
+        <p class="text-[11px] text-base-content/60">
           Select two version-2 project files. Previews are read-only and the active workspace is unchanged.
         </p>
       </div>
       <button
         type="button"
         onclick={close}
-        class="p-1 rounded-control hover:bg-elevated text-muted shrink-0"
+        class="btn btn-ghost btn-sm btn-square shrink-0"
+        aria-label="Close pinout comparison"
         title="Close comparison"
       >
-        <X class="size-ui" />
+        <X class="size-4" />
       </button>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 px-4 py-3 border-ui-b border-hairline bg-subtle shrink-0">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 px-4 py-3 border-b border-base-300 bg-base-200 shrink-0">
       <div class="min-w-0 space-y-1.5">
-        <label class="flex items-center gap-2 text-xs font-medium text-primary">
-          <FileUp class="size-ui-md text-faint" />
+        <label class="flex items-center gap-2 text-xs font-medium text-foreground">
+          <FileUp class="size-3.5 text-base-content/40" />
           Before
           <input
             type="file"
             accept=".json,.ioc,application/json"
-            class="min-w-0 flex-1 text-[11px] text-muted"
+            class="file-input file-input-xs min-w-0 flex-1 text-[11px]"
             onchange={(e) => {
               const file = (e.currentTarget as HTMLInputElement).files?.[0];
               if (file) void readFile('before', file);
@@ -302,28 +318,28 @@
             }}
           />
         </label>
-        <p class="font-mono text-[11px] text-muted truncate" title={beforeSlot.fileName}>
+        <p class="font-mono text-[11px] text-base-content/60 truncate" title={beforeSlot.fileName}>
           {beforeSlot.status === 'idle' ? 'No file selected' : beforeSlot.fileName}
         </p>
         {#if beforeSlot.status === 'loading'}
-          <p class="text-[11px] text-muted">Loading project file...</p>
+          <p class="text-[11px] text-base-content/60">Loading project file...</p>
         {:else if beforeSlot.status === 'error'}
-          <p class="unsupported-format text-[11px] text-pin-conflict">{beforeSlot.error}</p>
+          <p role="alert" class="unsupported-format alert alert-error py-1 text-[11px]">{beforeSlot.error}</p>
         {:else if beforeSlot.status === 'ready'}
-          <p class="text-[11px] text-pin-success">
+          <p class="text-[11px] text-success">
             {beforeSlot.snapshot?.mcuId}{beforeSlot.chip ? ` - ${beforeSlot.chip.package.name}` : ' - shard loading'}
           </p>
         {/if}
       </div>
 
       <div class="min-w-0 space-y-1.5">
-        <label class="flex items-center gap-2 text-xs font-medium text-primary">
-          <FileUp class="size-ui-md text-faint" />
+        <label class="flex items-center gap-2 text-xs font-medium text-foreground">
+          <FileUp class="size-3.5 text-base-content/40" />
           After
           <input
             type="file"
             accept=".json,.ioc,application/json"
-            class="min-w-0 flex-1 text-[11px] text-muted"
+            class="file-input file-input-xs min-w-0 flex-1 text-[11px]"
             onchange={(e) => {
               const file = (e.currentTarget as HTMLInputElement).files?.[0];
               if (file) void readFile('after', file);
@@ -331,15 +347,15 @@
             }}
           />
         </label>
-        <p class="font-mono text-[11px] text-muted truncate" title={afterSlot.fileName}>
+        <p class="font-mono text-[11px] text-base-content/60 truncate" title={afterSlot.fileName}>
           {afterSlot.status === 'idle' ? 'No file selected' : afterSlot.fileName}
         </p>
         {#if afterSlot.status === 'loading'}
-          <p class="text-[11px] text-muted">Loading project file...</p>
+          <p class="text-[11px] text-base-content/60">Loading project file...</p>
         {:else if afterSlot.status === 'error'}
-          <p class="unsupported-format text-[11px] text-pin-conflict">{afterSlot.error}</p>
+          <p role="alert" class="unsupported-format alert alert-error py-1 text-[11px]">{afterSlot.error}</p>
         {:else if afterSlot.status === 'ready'}
-          <p class="text-[11px] text-pin-success">
+          <p class="text-[11px] text-success">
             {afterSlot.snapshot?.mcuId}{afterSlot.chip ? ` - ${afterSlot.chip.package.name}` : ' - shard loading'}
           </p>
         {/if}
@@ -348,17 +364,17 @@
 
     <div class="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
       {#if !diff}
-        <p class="text-xs text-muted">
+        <p class="text-xs text-base-content/60">
           Select two valid project files to compute the pinout difference.
         </p>
       {:else}
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div class="min-w-0 rounded-panel border-ui border-hairline bg-subtle p-2">
-            <p class="font-mono text-[11px] text-primary mb-2">
+          <div class="min-w-0 rounded-box border border-base-300 bg-base-200 p-2">
+            <p class="font-mono text-[11px] text-foreground mb-2">
               Before: {beforeSlot.snapshot?.mcuId}
             </p>
             {#if beforeSlot.chip && beforeSlot.snapshot}
-              <div class="relative overflow-auto max-h-[40dvh] bg-mcu-canvas bg-dot-grid">
+              <div class="relative overflow-auto max-h-[40dvh] bg-base-100 bg-dot-grid">
                 <div bind:this={beforePreviewEl}>
                   {#if beforeSlot.chip.package.kind === 'grid'}
                     <GridPackage
@@ -386,7 +402,7 @@
                 <div class="pointer-events-none absolute inset-0">
                   {#each beforeMarkers as marker (marker.pos)}
                     <div
-                      class={`diff-marker absolute rounded-control border-ui-strong ${MARKER_CLASSES[marker.kind]}`}
+                      class={`diff-marker absolute rounded-field border-2 ${MARKER_CLASSES[marker.kind]}`}
                       style={`left: ${marker.left}px; top: ${marker.top}px; width: ${marker.width}px; height: ${marker.height}px;`}
                     ></div>
                   {/each}
@@ -395,12 +411,12 @@
             {/if}
           </div>
 
-          <div class="min-w-0 rounded-panel border-ui border-hairline bg-subtle p-2">
-            <p class="font-mono text-[11px] text-primary mb-2">
+          <div class="min-w-0 rounded-box border border-base-300 bg-base-200 p-2">
+            <p class="font-mono text-[11px] text-foreground mb-2">
               After: {afterSlot.snapshot?.mcuId}
             </p>
             {#if afterSlot.chip && afterSlot.snapshot}
-              <div class="relative overflow-auto max-h-[40dvh] bg-mcu-canvas bg-dot-grid">
+              <div class="relative overflow-auto max-h-[40dvh] bg-base-100 bg-dot-grid">
                 <div bind:this={afterPreviewEl}>
                   {#if afterSlot.chip.package.kind === 'grid'}
                     <GridPackage
@@ -428,7 +444,7 @@
                 <div class="pointer-events-none absolute inset-0">
                   {#each afterMarkers as marker (marker.pos)}
                     <div
-                      class={`diff-marker absolute rounded-control border-ui-strong ${MARKER_CLASSES[marker.kind]}`}
+                      class={`diff-marker absolute rounded-field border-2 ${MARKER_CLASSES[marker.kind]}`}
                       style={`left: ${marker.left}px; top: ${marker.top}px; width: ${marker.width}px; height: ${marker.height}px;`}
                     ></div>
                   {/each}
@@ -438,16 +454,16 @@
           </div>
         </div>
 
-        <div class="flex flex-wrap gap-3 text-[11px] text-muted">
-          <span><span class="diff-legend inline-block w-3 h-3 border-pin-success border-ui-strong rounded-control"></span> added</span>
-          <span><span class="diff-legend inline-block w-3 h-3 border-pin-conflict border-ui-strong rounded-control"></span> removed</span>
-          <span><span class="diff-legend inline-block w-3 h-3 border-pin-remap border-ui-strong border-ui rounded-control"></span> moved</span>
-          <span><span class="diff-legend inline-block w-3 h-3 border-pin-power border-ui-strong rounded-control"></span> relabeled</span>
-          <span><span class="diff-legend inline-block w-3 h-3 border-pin-partial border-ui-strong rounded-control"></span> reassigned</span>
+        <div class="flex flex-wrap gap-3 text-[11px] text-base-content/60">
+          <span><span class="diff-legend inline-block w-3 h-3 border-success border-2 rounded-field"></span> added</span>
+          <span><span class="diff-legend inline-block w-3 h-3 border-error border-2 rounded-field"></span> removed</span>
+          <span><span class="diff-legend inline-block w-3 h-3 border-info border-2 border rounded-field"></span> moved</span>
+          <span><span class="diff-legend inline-block w-3 h-3 border-warning border-2 rounded-field"></span> relabeled</span>
+          <span><span class="diff-legend inline-block w-3 h-3 border-warning border-2 rounded-field"></span> reassigned</span>
         </div>
 
-        <table class="w-full text-left border-collapse text-xs">
-          <thead class="text-[11px] text-muted uppercase tracking-wide">
+        <table class="table table-sm w-full text-left text-xs">
+          <thead class="text-[11px] text-base-content/60 uppercase tracking-wide">
             <tr>
               <th class="px-2 py-1.5 font-medium">Change</th>
               <th class="px-2 py-1.5 font-medium">Position</th>
@@ -458,14 +474,14 @@
           </thead>
           <tbody>
             {#each diff.changes as change (`${change.kind}:${change.pinName}:${change.fromPos ?? ''}:${change.toPos ?? ''}`)}
-              <tr class="border-ui-t border-hairline">
-                <td class="px-2 py-1.5 font-medium text-primary">{change.kind}</td>
-                <td class="px-2 py-1.5 font-mono-tabular text-muted">
+              <tr class="border-t border-base-300">
+                <td class="px-2 py-1.5 font-medium text-foreground">{change.kind}</td>
+                <td class="px-2 py-1.5 font-mono-tabular text-base-content/60">
                   {change.fromPos ?? '-'} -> {change.toPos ?? '-'}
                 </td>
-                <td class="px-2 py-1.5 font-mono text-primary">{change.pinName}</td>
-                <td class="px-2 py-1.5 font-mono text-muted">{changeValues(change)}</td>
-                <td class="px-2 py-1.5 font-mono text-muted">
+                <td class="px-2 py-1.5 font-mono text-foreground">{change.pinName}</td>
+                <td class="px-2 py-1.5 font-mono text-base-content/60">{changeValues(change)}</td>
+                <td class="px-2 py-1.5 font-mono text-base-content/60">
                   {change.fromLabel ?? '-'} -> {change.toLabel ?? '-'}
                 </td>
               </tr>
@@ -473,9 +489,12 @@
           </tbody>
         </table>
         {#if diff.changes.length === 0}
-          <p class="text-xs text-muted">The two projects have no pin-level differences.</p>
+          <p class="text-xs text-base-content/60">The two projects have no pin-level differences.</p>
         {/if}
       {/if}
     </div>
   </div>
-</div>
+  <form method="dialog" class="modal-backdrop">
+    <button aria-label="Close pinout comparison">close</button>
+  </form>
+</dialog>

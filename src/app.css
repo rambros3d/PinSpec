@@ -1,235 +1,40 @@
 @import 'tailwindcss';
 @import './themes/daisyui.css';
+@plugin "daisyui" {
+  themes: false;
+  logs: false;
+  exclude: rootcolor, rootscrolllock, rootscrollgutter;
+}
 
 /*
- * Semantic token layer. The vendored daisyUI theme variables in
- * src/themes/daisyui.css are the only source of raw color values; every token
- * below is derived from them with var()/color-mix(). Tailwind utilities
- * (bg-canvas, text-primary, border-hairline, bg-pin-success, ...) are exposed
- * through @theme inline so components never need literal colors.
+ * Font aliases are the only theme-inline declarations. Color, radius and size
+ * values come from the four vendored [data-theme] blocks in
+ * src/themes/daisyui.css and are consumed through daisyUI component classes.
  */
 @theme inline {
   --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-
-  --color-canvas: var(--bg-canvas);
-  --color-mcu-canvas: var(--color-base-100);
-  --color-surface: var(--bg-surface);
-  --color-surface-alpha: var(--bg-surface-alpha);
-  --color-elevated: var(--bg-elevated);
-  --color-subtle: var(--bg-subtle);
-  --color-hairline: var(--border-hairline);
-  --color-strong: var(--border-strong);
-  --color-ic-body: var(--color-neutral);
-  --color-ic-top: color-mix(in oklab, var(--color-neutral) 72%, var(--color-base-content));
-  --color-ic-bottom: color-mix(in oklab, var(--color-neutral) 84%, var(--color-neutral-content));
-  --color-muted: var(--text-muted);
-  --color-faint: var(--text-faint);
-
-  --color-action: var(--action-bg);
-  --color-action-hover: var(--action-bg-hover);
-  --color-action-soft: var(--action-soft-bg);
-  --color-action-soft-strong: var(--action-soft-strong-bg);
-  --color-on-action: var(--action-text);
-  --color-danger: var(--color-error);
-  --color-danger-hover: var(--danger-bg-hover);
-  --color-danger-soft: var(--danger-soft-bg);
-  --color-danger-soft-strong: var(--danger-soft-strong-bg);
-  --color-on-danger: var(--color-error-content);
-  --color-hint: var(--info-color);
-  --color-info-soft: var(--info-soft-bg);
-  --color-success-soft: var(--success-soft-bg);
-  --color-warning-soft: var(--warning-soft-bg);
-  --color-overlay: var(--scrim-bg);
-  --color-selection: var(--selection-bg);
-  --color-remap-panel: var(--remap-panel-bg);
-  --color-toast-success: var(--toast-success-bg);
-  --color-toast-warning: var(--toast-warning-bg);
-  --color-toast-info: var(--toast-info-bg);
-
-  --color-pin-unused: var(--pin-unused);
-  --color-pin-power: var(--pin-power);
-  --color-pin-success: var(--pin-assigned);
-  --color-pin-partial: var(--pin-partial);
-  --color-pin-conflict: var(--pin-conflict);
-  --color-pin-remap: var(--pin-remap);
-  --color-pin-text: var(--pin-text);
-}
-
-/* text-primary is a custom utility name: defining --color-primary here would
- * shadow the daisyUI brand token of the same name. */
-@utility text-primary {
-  color: var(--text-primary);
-}
-
-@utility fill-primary {
-  fill: var(--text-primary);
-}
-
-@utility stroke-primary {
-  stroke: var(--text-primary);
 }
 
 /*
- * Semantic shape utilities. Tailwind's default radius/border scales are not
- * theme-aware; every non-package surface uses these instead so daisyUI shape
- * tokens survive a theme switch. The IC package bodies keep their own fixed
- * SVG geometry and are intentionally excluded.
+ * Foreground text utility. The former text-primary name is retired so that
+ * daisyUI's brand-color text-primary keeps an unambiguous meaning.
  */
-@utility rounded-panel {
-  border-radius: var(--radius-box);
+@utility text-foreground {
+  color: var(--color-base-content);
 }
 
-@utility rounded-control {
-  border-radius: var(--radius-field);
-}
-
-@utility rounded-pill {
-  border-radius: var(--radius-selector);
-}
-
-@utility rounded-mark {
-  border-radius: min(var(--radius-field), 0.125rem);
-}
-
-@utility rounded-top-control {
-  border-top-left-radius: var(--radius-field);
-  border-top-right-radius: var(--radius-field);
-}
-
-@utility border-ui {
-  border-width: var(--border);
-}
-
-@utility border-ui-t {
-  border-top-width: var(--border);
-}
-
-@utility border-ui-b {
-  border-bottom-width: var(--border);
-}
-
-@utility border-ui-l {
-  border-left-width: var(--border);
-}
-
-@utility border-ui-r {
-  border-right-width: var(--border);
-}
-
-@utility border-ui-x {
-  border-left-width: var(--border);
-  border-right-width: var(--border);
-}
-
-@utility border-ui-y {
-  border-top-width: var(--border);
-  border-bottom-width: var(--border);
-}
-
-@utility border-ui-strong {
-  border-width: calc(var(--border) * 2);
-}
-
-/* Icon/glyph sizing derived from daisyUI's field and selector size tokens. */
-@utility size-selector-dot {
-  width: calc(var(--size-selector) * 2);
-  height: calc(var(--size-selector) * 2);
-}
-
-@utility size-ui-xs {
-  width: calc(var(--size-field) * 2.5);
-  height: calc(var(--size-field) * 2.5);
-}
-
-@utility size-ui-sm {
-  width: calc(var(--size-field) * 3);
-  height: calc(var(--size-field) * 3);
-}
-
-@utility size-ui-md {
-  width: calc(var(--size-field) * 3.5);
-  height: calc(var(--size-field) * 3.5);
-}
-
-@utility size-ui {
-  width: calc(var(--size-field) * 4);
-  height: calc(var(--size-field) * 4);
-}
-
-@utility size-ui-lg {
-  width: calc(var(--size-field) * 5);
-  height: calc(var(--size-field) * 5);
-}
-
-/* Brand accents are separate from pin status colors. */
-@utility text-brand-secondary {
-  color: var(--color-secondary);
-}
-
-@utility text-on-secondary {
-  color: var(--color-secondary-content);
-}
-
-@utility bg-brand-secondary {
-  background-color: var(--color-secondary);
-}
-
-@utility text-brand-accent {
-  color: var(--color-accent);
-}
-
-@utility text-on-accent {
-  color: var(--color-accent-content);
-}
-
-@utility bg-brand-accent {
-  background-color: var(--color-accent);
-}
-
-@utility text-on-success {
-  color: var(--color-success-content);
-}
-
-@utility text-on-warning {
-  color: var(--color-warning-content);
-}
-
-@utility text-on-error {
-  color: var(--color-error-content);
-}
-
+/*
+ * Derived values used by the EDA SVG renderers and the viewport-locked shell.
+ * Pin colors keep their existing semantic mapping and are intentionally not
+ * replaced by component classes; the SVG bodies own their geometry and texture.
+ */
 :root {
-  --info-color: var(--color-info);
-  --bg-canvas: var(--color-base-200);
-  --bg-surface: var(--color-base-100);
-  --bg-surface-alpha: color-mix(in oklab, var(--color-base-100) 95%, transparent);
-  --bg-elevated: var(--color-base-300);
-  --bg-subtle: color-mix(in oklab, var(--color-base-200) 55%, var(--color-base-100));
-  --border-hairline: var(--color-base-300);
-  --border-strong: color-mix(in oklab, var(--color-base-content) 22%, transparent);
-  --text-primary: var(--color-base-content);
-  --text-muted: color-mix(in oklab, var(--color-base-content) 62%, transparent);
-  --text-faint: color-mix(in oklab, var(--color-base-content) 42%, transparent);
   --dot-grid: color-mix(in oklab, var(--color-base-content) 8%, transparent);
 
-  --action-bg: var(--color-primary);
-  --action-bg-hover: color-mix(in oklab, var(--color-primary) 82%, var(--color-base-content));
-  --action-soft-bg: color-mix(in oklab, var(--color-primary) 14%, transparent);
-  --action-soft-strong-bg: color-mix(in oklab, var(--color-primary) 25%, transparent);
-  --action-text: var(--color-primary-content);
-  --danger-bg-hover: color-mix(in oklab, var(--color-error) 82%, var(--color-base-content));
-  --danger-soft-bg: color-mix(in oklab, var(--color-error) 12%, transparent);
-  --danger-soft-strong-bg: color-mix(in oklab, var(--color-error) 22%, transparent);
-  --info-soft-bg: color-mix(in oklab, var(--color-info) 14%, transparent);
-  --success-soft-bg: color-mix(in oklab, var(--color-success) 18%, transparent);
-  --warning-soft-bg: color-mix(in oklab, var(--color-warning) 12%, transparent);
-  --scrim-bg: color-mix(in oklab, var(--color-neutral) 68%, transparent);
-  --selection-bg: color-mix(in oklab, var(--color-info) 25%, transparent);
-  --remap-panel-bg: color-mix(in oklab, var(--color-info) 16%, var(--color-base-100));
-  --toast-success-bg: color-mix(in oklab, var(--color-success) 16%, var(--color-base-100));
-  --toast-warning-bg: color-mix(in oklab, var(--color-warning) 16%, var(--color-base-100));
-  --toast-info-bg: color-mix(in oklab, var(--color-info) 16%, var(--color-base-100));
+  /* IC body gradient stops derived from the active theme's neutral token. */
+  --color-ic-top: color-mix(in oklab, var(--color-neutral) 72%, var(--color-base-content));
+  --color-ic-bottom: color-mix(in oklab, var(--color-neutral) 84%, var(--color-neutral-content));
 
   --pin-unused: color-mix(in oklab, var(--color-base-content) 55%, transparent);
   --pin-power: var(--color-warning);
@@ -259,8 +64,8 @@
 html,
 body {
   font-family: var(--font-sans);
-  background-color: var(--bg-canvas);
-  color: var(--text-primary);
+  background-color: var(--color-base-200);
+  color: var(--color-base-content);
   margin: 0;
   padding: 0;
   height: 100%;

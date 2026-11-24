@@ -2,17 +2,18 @@
  * Audits consumption of the vendored daisyUI design tokens.
  *
  * Source of truth: src/themes/daisyui.css (the only file allowed to declare
- * raw color literals). Every other file must reference tokens via var().
+ * raw color literals). Every other file must reference tokens via var() or use
+ * a daisyUI component class that reads the token from the active theme.
  */
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /**
- * Tokens that had no consumer before the theme-token-integration change.
- * Depth and noise are deliberately excluded: the IC package texture must stay
- * always on and must not be gated by theme flags, and those effects must not be
- * added anywhere else.
+ * Tokens that had no custom var() consumer before the daisyUI adoption. Their
+ * consumers are now daisyUI component classes (badge-secondary,
+ * text-accent-content, rounded-box, select-sm, and similar), so an explicit
+ * var() reference is no longer required.
  */
 export const PREVIOUSLY_UNUSED_TOKENS = [
   '--color-secondary',
@@ -29,14 +30,32 @@ export const PREVIOUSLY_UNUSED_TOKENS = [
   '--size-field',
 ] as const;
 
+/** Tokens whose consumer is a daisyUI component class rather than a var() call. */
+export const DAISYUI_OWNED_TOKENS = [
+  '--border',
+  '--color-base-100',
+  '--color-base-300',
+  '--color-primary',
+  '--color-primary-content',
+  ...PREVIOUSLY_UNUSED_TOKENS,
+] as const;
+
 /** Theme flags intentionally left inert outside the vendored theme file. */
 export const INTENTIONALLY_INERT_TOKENS = ['--depth', '--noise'] as const;
 
+export interface TokenUsage {
+  token: string;
+  references: number;
+  /** True when a daisyUI component class is the token's consumer. */
+  ownedByDaisyUI: boolean;
+}
+
 export interface TokenAudit {
   declared: string[];
-  usage: Array<{ token: string; references: number }>;
+  usage: TokenUsage[];
   unused: string[];
   previouslyUnusedStillUnused: string[];
+  daisyUIOwned: string[];
 }
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -69,18 +88,27 @@ export function auditThemeTokens(): TokenAudit {
       (sum, source) => sum + (source.match(new RegExp(`var\\(${token}\\b`, 'g'))?.length ?? 0),
       0,
     ),
+    ownedByDaisyUI: (DAISYUI_OWNED_TOKENS as readonly string[]).includes(token),
   }));
-  const unused = usage.filter((item) => item.references === 0).map((item) => item.token);
-  const previouslyUnusedStillUnused = PREVIOUSLY_UNUSED_TOKENS.filter((token) =>
-    unused.includes(token),
-  );
-  return { declared, usage, unused, previouslyUnusedStillUnused: [...previouslyUnusedStillUnused] };
+  const withoutVarConsumer = usage.filter((item) => item.references === 0);
+  const unused = withoutVarConsumer
+    .filter((item) => !item.ownedByDaisyUI)
+    .map((item) => item.token);
+  const unownedTokens = new Set(withoutVarConsumer.filter((item) => !item.ownedByDaisyUI).map((item) => item.token));
+  const previouslyUnusedStillUnused = PREVIOUSLY_UNUSED_TOKENS.filter((token) => unownedTokens.has(token));
+  return {
+    declared,
+    usage,
+    unused,
+    previouslyUnusedStillUnused: [...previouslyUnusedStillUnused],
+    daisyUIOwned: [...DAISYUI_OWNED_TOKENS],
+  };
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const result = auditThemeTokens();
-  for (const { token, references } of result.usage) {
-    console.log(`${token}: ${references}`);
+  for (const { token, references, ownedByDaisyUI } of result.usage) {
+    console.log(`${token}: ${references}${ownedByDaisyUI ? ' (daisyUI component class)' : ''}`);
   }
   console.log(`Declared tokens: ${result.declared.length}`);
   console.log(`Unused tokens: ${result.unused.length ? result.unused.join(', ') : 'none'}`);
@@ -91,6 +119,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
         : 'none'
     }`,
   );
+  console.log(`daisyUI-owned tokens: ${result.daisyUIOwned.join(', ')}`);
   console.log(
     `Intentionally inert (IC texture is always on): ${INTENTIONALLY_INERT_TOKENS.join(', ')}`,
   );

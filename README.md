@@ -96,21 +96,23 @@ mapper with no DOM or Svelte imports; UI handoff reuses
 ## Themes
 
 PinCraft uses four vendored [daisyUI](https://github.com/saadeghi/daisyui) theme
-variable blocks (`src/themes/daisyui.css`); no daisyUI runtime dependency is
-installed. The available theme ids are `lofi` (light), `forest` (dark),
-`caramellatte` (light), and `halloween` (dark). `forest` is the dark-first
-default; when no theme has been saved and the system prefers a light color
-scheme, `lofi` is used instead. The compact theme picker in the landing nav and
-workspace toolbar selects any of the four themes and writes the chosen id to
-`localStorage` under `pincraft:theme`. Legacy `light` and `dark` values are
-migrated to `lofi` and `forest` respectively. An inline bootstrap in
-`index.html` reads the same key and sets `data-theme` on `<html>` before paint
-to avoid a flash of unthemed content.
+variable blocks (`src/themes/daisyui.css`). daisyUI is licensed under MIT
+(https://github.com/saadeghi/daisyui/blob/master/LICENSE); its component layer
+is registered as a build-time plugin. The available theme
+ids are `lofi` (light), `forest` (dark), `caramellatte` (light), and `halloween`
+(dark). `forest` is the dark-first default; when no theme has been saved and the
+system prefers a light color scheme, `lofi` is used instead. The compact theme
+picker in the landing nav and workspace toolbar selects any of the four themes
+and writes the chosen id to `localStorage` under `pincraft:theme`. Legacy `light`
+and `dark` values are migrated to `lofi` and `forest` respectively. An inline
+bootstrap in `index.html` reads the same key and sets `data-theme` on `<html>`
+before paint to avoid a flash of unthemed content.
 
-All colors in the application resolve from these theme variables through
-semantic tokens in `src/app.css` (`bg-canvas`, `bg-surface`, `text-primary`,
-`border-hairline`, `bg-pin-success`, and so on). Raw color literals exist only
-in the vendored theme CSS file.
+Non-SVG surfaces use daisyUI component classes and semantic color utilities;
+`text-foreground` is the application's foreground text utility, distinct from
+daisyUI's brand-color `text-primary`. The IC package renderers keep their own
+SVG geometry, pin-state colors, and always-on depth and noise texture. Raw
+color literals exist only in the vendored theme CSS file.
 
 ## Keyboard Shortcuts
 

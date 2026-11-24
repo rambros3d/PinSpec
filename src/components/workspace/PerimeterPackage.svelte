@@ -283,7 +283,7 @@
   viewBox={`0 0 ${layout.totalWidth} ${layout.totalHeight}`}
   width={layout.totalWidth}
   height={layout.totalHeight}
-  class="select-none text-primary overflow-visible"
+  class="select-none text-foreground overflow-visible"
   role="img"
   aria-label={`${chip.id} ${chip.package.name} pinout diagram`}
 >
@@ -316,7 +316,7 @@
       width={layout.bodyWidth}
       height={layout.bodyHeight}
       rx="6"
-      class="fill-ic-body stroke-hairline"
+      class="fill-neutral stroke-base-300"
       stroke-width="2"
       style={`filter: drop-shadow(0 3px 5px color-mix(in oklab, var(--color-neutral) 55%, transparent));`}
     />
@@ -351,7 +351,7 @@
       height={layout.bodyHeight - 24}
       rx="3"
       fill="none"
-      class="stroke-hairline"
+      class="stroke-base-300"
       stroke-width="1"
     />
 
@@ -364,7 +364,7 @@
           width="38"
           height="15"
           rx="2"
-          class="fill-elevated stroke-hairline"
+          class="fill-base-300 stroke-base-300"
           stroke-width="1"
           stroke-dasharray="3 2"
         />
@@ -372,7 +372,7 @@
           x={layout.originX + layout.bodyWidth / 2}
           y={layout.originY + layout.bodyHeight - 17}
           text-anchor="middle"
-          class="font-mono fill-faint pointer-events-none"
+          class="font-mono fill-base-content/40 pointer-events-none"
           font-size="8"
         >
           EP
@@ -383,14 +383,14 @@
     <!-- Pin 1 Chamfer + Orientation Dot at Top-Left -->
     <path
       d={`M ${layout.originX} ${layout.originY + 20} L ${layout.originX + 20} ${layout.originY}`}
-      class="stroke-strong"
+      class="stroke-base-content/20"
       stroke-width="1.5"
     />
     <circle
       cx={layout.originX + 22}
       cy={layout.originY + 22}
       r="5"
-      class="fill-pin-power"
+      class="fill-warning"
     />
 
     <!-- Center IC Marking -->
@@ -398,7 +398,7 @@
       x={layout.originX + layout.bodyWidth / 2}
       y={layout.originY + layout.bodyHeight / 2 - 10}
       text-anchor="middle"
-      class="font-mono fill-primary font-semibold"
+      class="font-mono fill-base-content font-semibold"
       font-size={compact ? 14 : 16}
     >
       {chip.id}
@@ -407,7 +407,7 @@
       x={layout.originX + layout.bodyWidth / 2}
       y={layout.originY + layout.bodyHeight / 2 + 12}
       text-anchor="middle"
-      class="font-mono fill-muted"
+      class="font-mono fill-base-content/60"
       font-size={compact ? 11 : 12}
     >
       {chip.package.name} · {chip.core}
@@ -416,7 +416,7 @@
       x={layout.originX + layout.bodyWidth / 2}
       y={layout.originY + layout.bodyHeight / 2 + 29}
       text-anchor="middle"
-      class="font-mono fill-faint"
+      class="font-mono fill-base-content/40"
       font-size="10"
     >
       {chip.flashKb} KB Flash · {chip.ramKb} KB RAM
@@ -477,7 +477,7 @@
           height={item.height - 6}
           rx="1.5"
           fill="none"
-          class="stroke-hairline pointer-events-none"
+          class="stroke-base-300 pointer-events-none"
           stroke-width="0.8"
           stroke-dasharray="2 1.5"
         />
@@ -489,7 +489,7 @@
           x={cx}
           y={cy + 3.5}
           text-anchor="middle"
-          class="font-mono font-medium pointer-events-none fill-primary"
+          class="font-mono font-medium pointer-events-none fill-base-content"
           font-size={layout.pitch < 24 ? 8.5 : 10}
         >
           {shortPinName(padLabel)}
@@ -500,7 +500,7 @@
           y={cy + 3.5}
           text-anchor="middle"
           transform={`rotate(-90 ${cx} ${cy})`}
-          class="font-mono font-medium pointer-events-none fill-primary"
+          class="font-mono font-medium pointer-events-none fill-base-content"
           font-size={layout.pitch < 24 ? 8.5 : 10}
         >
           {shortPinName(padLabel)}
@@ -513,7 +513,7 @@
           x={layout.originX + 6}
           y={cy + 3}
           text-anchor="start"
-          class="font-mono fill-faint pointer-events-none"
+          class="font-mono fill-base-content/40 pointer-events-none"
           font-size="8.5"
         >
           {item.pin.pos}
@@ -523,7 +523,7 @@
           x={layout.originX + layout.bodyWidth - 6}
           y={cy + 3}
           text-anchor="end"
-          class="font-mono fill-faint pointer-events-none"
+          class="font-mono fill-base-content/40 pointer-events-none"
           font-size="8.5"
         >
           {item.pin.pos}
@@ -533,7 +533,7 @@
           x={cx}
           y={layout.originY + layout.bodyHeight - 6}
           text-anchor="middle"
-          class="font-mono fill-faint pointer-events-none"
+          class="font-mono fill-base-content/40 pointer-events-none"
           font-size="8.5"
         >
           {item.pin.pos}
@@ -543,7 +543,7 @@
           x={cx}
           y={layout.originY + 13}
           text-anchor="middle"
-          class="font-mono fill-faint pointer-events-none"
+          class="font-mono fill-base-content/40 pointer-events-none"
           font-size="8.5"
         >
           {item.pin.pos}
@@ -607,7 +607,7 @@
             x={item.x - 13}
             y={cy + 3.5}
             text-anchor="end"
-            class="font-mono font-medium fill-primary pointer-events-none"
+            class="font-mono font-medium fill-base-content pointer-events-none"
             font-size={layout.pitch < 24 ? 8.5 : 9.5}
           >
             {displayTag}
@@ -635,7 +635,7 @@
             x={item.x + item.width + 13}
             y={cy + 3.5}
             text-anchor="start"
-            class="font-mono font-medium fill-primary pointer-events-none"
+            class="font-mono font-medium fill-base-content pointer-events-none"
             font-size={layout.pitch < 24 ? 8.5 : 9.5}
           >
             {displayTag}
@@ -664,7 +664,7 @@
               x="6"
               y="3.5"
               text-anchor="start"
-              class="font-mono font-medium fill-primary pointer-events-none"
+              class="font-mono font-medium fill-base-content pointer-events-none"
               font-size={layout.pitch < 24 ? 8.5 : 9.5}
             >
               {displayTag}
@@ -694,7 +694,7 @@
               x="-6"
               y="3.5"
               text-anchor="end"
-              class="font-mono font-medium fill-primary pointer-events-none"
+              class="font-mono font-medium fill-base-content pointer-events-none"
               font-size={layout.pitch < 24 ? 8.5 : 9.5}
             >
               {displayTag}

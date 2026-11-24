@@ -158,16 +158,16 @@
   }
 </script>
 
-<aside class="h-full min-h-0 flex flex-col bg-surface border-ui-l border-hairline overflow-hidden">
+<aside class="h-full min-h-0 flex flex-col bg-base-100 border-l border-base-300 overflow-hidden">
   <!-- Tabs -->
-  <div class="summary-tab-strip flex items-center border-ui-b border-hairline bg-subtle px-2 pt-1.5 gap-1 shrink-0 text-xs">
+  <div role="tablist" class="summary-tab-strip tabs tabs-border flex items-center border-b border-base-300 bg-base-200 px-2 pt-1.5 gap-1 shrink-0 text-xs">
     <button
       type="button"
       onclick={() => (activeTab = 'pins')}
-      class={`px-2.5 py-1.5 rounded-top-control font-medium whitespace-nowrap transition-colors ${
+      class={`tab text-xs font-medium whitespace-nowrap ${
         activeTab === 'pins'
-          ? 'bg-surface text-primary border-ui-t border-ui-x border-hairline -mb-px'
-          : 'text-muted hover:text-primary'
+          ? 'tab-active bg-base-100 text-foreground'
+          : 'text-base-content/60 hover:text-foreground'
       }`}
     >
       Pin Table <span class="font-mono-tabular text-[11px] opacity-75">({Object.keys(assignments).length})</span>
@@ -176,20 +176,20 @@
     <button
       type="button"
       onclick={() => (activeTab = 'diagnostics')}
-      class={`px-2.5 py-1.5 rounded-top-control font-medium whitespace-nowrap transition-colors flex items-center gap-1.5 ${
+      class={`px-2.5 py-1.5 rounded-t-field font-medium whitespace-nowrap transition-colors flex items-center gap-1.5 ${
         activeTab === 'diagnostics'
-          ? 'bg-surface text-primary border-ui-t border-ui-x border-hairline -mb-px'
-          : 'text-muted hover:text-primary'
+          ? 'tab-active bg-base-100 text-foreground'
+          : 'text-base-content/60 hover:text-foreground'
       }`}
     >
       <span>Diagnostics</span>
       {#if report.errorCount > 0}
-        <span class="font-mono-tabular text-[11px] font-semibold text-danger">
+        <span class="font-mono-tabular text-[11px] font-semibold text-error">
           {report.errorCount}E
         </span>
       {/if}
       {#if report.warningCount > 0}
-        <span class="font-mono-tabular text-[11px] font-semibold text-pin-partial">
+        <span class="font-mono-tabular text-[11px] font-semibold text-warning">
           {report.warningCount}W
         </span>
       {/if}
@@ -198,10 +198,10 @@
     <button
       type="button"
       onclick={() => (activeTab = 'dma')}
-      class={`px-2.5 py-1.5 rounded-top-control font-medium whitespace-nowrap transition-colors ${
+      class={`tab text-xs font-medium whitespace-nowrap ${
         activeTab === 'dma'
-          ? 'bg-surface text-primary border-ui-t border-ui-x border-hairline -mb-px'
-          : 'text-muted hover:text-primary'
+          ? 'tab-active bg-base-100 text-foreground'
+          : 'text-base-content/60 hover:text-foreground'
       }`}
     >
       DMA <span class="font-mono-tabular text-[11px] opacity-75">({report.dmaAnalysis.length})</span>
@@ -211,10 +211,10 @@
       <button
         type="button"
         onclick={() => (activeTab = 'pio')}
-        class={`px-2.5 py-1.5 rounded-top-control font-medium whitespace-nowrap transition-colors ${
+        class={`tab text-xs font-medium whitespace-nowrap ${
           activeTab === 'pio'
-            ? 'bg-surface text-primary border-ui-t border-ui-x border-hairline -mb-px'
-            : 'text-muted hover:text-primary'
+            ? 'tab-active bg-base-100 text-foreground'
+            : 'text-base-content/60 hover:text-foreground'
         }`}
       >
         PIO
@@ -224,10 +224,10 @@
     <button
       type="button"
       onclick={() => (activeTab = 'gpio')}
-      class={`px-2.5 py-1.5 rounded-top-control font-medium whitespace-nowrap transition-colors ${
+      class={`tab text-xs font-medium whitespace-nowrap ${
         activeTab === 'gpio'
-          ? 'bg-surface text-primary border-ui-t border-ui-x border-hairline -mb-px'
-          : 'text-muted hover:text-primary'
+          ? 'tab-active bg-base-100 text-foreground'
+          : 'text-base-content/60 hover:text-foreground'
       }`}
     >
       GPIO
@@ -236,10 +236,10 @@
     <button
       type="button"
       onclick={() => (activeTab = 'audit')}
-      class={`px-2.5 py-1.5 rounded-top-control font-medium whitespace-nowrap transition-colors ${
+      class={`tab text-xs font-medium whitespace-nowrap ${
         activeTab === 'audit'
-          ? 'bg-surface text-primary border-ui-t border-ui-x border-hairline -mb-px'
-          : 'text-muted hover:text-primary'
+          ? 'tab-active bg-base-100 text-foreground'
+          : 'text-base-content/60 hover:text-foreground'
       }`}
     >
       Audit
@@ -248,65 +248,65 @@
 
   <!-- Tab 1: Pin Table -->
   {#if activeTab === 'pins'}
-    <div class="p-2 border-ui-b border-hairline shrink-0">
+    <div class="p-2 border-b border-base-300 shrink-0">
       <div class="relative flex items-center">
-        <Search class="size-ui-md text-faint absolute left-2.5 pointer-events-none" />
+        <Search class="size-3.5 text-base-content/40 absolute left-2.5 pointer-events-none" />
         <input
           bind:value={tableFilter}
           type="text"
           placeholder="Filter assigned pins or labels..."
-          class="w-full pl-8 pr-2.5 py-1.5 rounded-control bg-elevated border-ui border-hairline text-xs text-primary placeholder:text-faint focus:outline-none focus:border-hint"
+          class="input input-xs w-full pl-8 pr-2.5"
         />
       </div>
     </div>
 
     <div class="flex-1 min-h-0 overflow-y-auto">
       {#if rows.length === 0}
-        <div class="p-6 text-center text-xs text-muted space-y-1">
-          <p class="font-medium text-primary">No assigned pins yet</p>
+        <div class="p-6 text-center text-xs text-base-content/60 space-y-1">
+          <p class="font-medium text-foreground">No assigned pins yet</p>
           <p>Enable a peripheral mode on the left or left-click any I/O pin on the package.</p>
         </div>
       {:else}
-        <table class="w-full text-left border-collapse text-[11px]">
-          <thead class="sticky top-0 bg-subtle border-ui-b border-hairline text-muted">
+        <table class="table table-xs w-full text-left text-[11px]">
+          <thead class="sticky top-0 bg-base-200 border-b border-base-300 text-base-content/60">
             <tr>
               <th class="py-1.5 pl-2.5 pr-1 font-medium">
-                <button type="button" onclick={() => toggleSort('pos')} class="inline-flex items-center gap-0.5 hover:text-primary">
-                  Pos <ArrowUpDown class="size-ui-xs" />
+                <button type="button" onclick={() => toggleSort('pos')} class="inline-flex items-center gap-0.5 hover:text-foreground">
+                  Pos <ArrowUpDown class="size-2.5" />
                 </button>
               </th>
               <th class="py-1.5 px-1 font-medium">
-                <button type="button" onclick={() => toggleSort('pin')} class="inline-flex items-center gap-0.5 hover:text-primary">
-                  Pin <ArrowUpDown class="size-ui-xs" />
+                <button type="button" onclick={() => toggleSort('pin')} class="inline-flex items-center gap-0.5 hover:text-foreground">
+                  Pin <ArrowUpDown class="size-2.5" />
                 </button>
               </th>
               <th class="py-1.5 px-1 font-medium">
-                <button type="button" onclick={() => toggleSort('signal')} class="inline-flex items-center gap-0.5 hover:text-primary">
-                  Signal <ArrowUpDown class="size-ui-xs" />
+                <button type="button" onclick={() => toggleSort('signal')} class="inline-flex items-center gap-0.5 hover:text-foreground">
+                  Signal <ArrowUpDown class="size-2.5" />
                 </button>
               </th>
               <th class="py-1.5 px-1 font-medium">Label</th>
               <th class="py-1.5 pr-2 text-right font-medium">Act</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-hairline">
+          <tbody class="divide-y divide-base-300">
             {#each rows as row (row.pos)}
               <tr
-                class="hover:bg-elevated cursor-pointer"
+                class="hover:bg-base-300 cursor-pointer"
                 onclick={() => {
                   inspectorPos = row.pos;
                   onFocusPin(row.pos);
                 }}
               >
-                <td class="py-1.5 pl-2.5 pr-1 font-mono-tabular text-muted">
+                <td class="py-1.5 pl-2.5 pr-1 font-mono-tabular text-base-content/60">
                   {row.pos}
                 </td>
-                <td class="py-1.5 px-1 font-mono font-medium text-primary whitespace-nowrap">
-                  <span class={row.bondedNames.length > 0 ? 'border-ui-b border-dashed border-current' : ''}>
+                <td class="py-1.5 px-1 font-mono font-medium text-foreground whitespace-nowrap">
+                  <span class={row.bondedNames.length > 0 ? 'border-b border-dashed border-current' : ''}>
                     {row.pinName}
                   </span>
                   {#if row.bondedNames.length > 0}
-                    <span class="block text-[10px] font-normal text-faint">
+                    <span class="block text-[10px] font-normal text-base-content/40">
                       {row.bondedNames.join(' / ')}
                     </span>
                   {/if}
@@ -317,22 +317,22 @@
                 <td class="py-1.5 px-1 font-mono whitespace-nowrap">
                   <span
                     class={row.status === 'conflict'
-                      ? 'text-danger font-semibold'
+                      ? 'text-error font-semibold'
                       : row.status === 'partial'
-                        ? 'text-pin-partial'
-                        : 'text-pin-success'}
+                        ? 'text-warning'
+                        : 'text-success'}
                   >
                     {row.signalFull}
                   </span>
                   {#if row.extiLine}
                     <span
-                      class="text-hint ml-1"
+                      class="text-info ml-1"
                       title={`GPIO_EXTI uses hardware line ${row.extiLine}`}
                     >
                       {row.extiLine}
                     </span>
                   {/if}
-                  <span class="text-faint ml-1">{row.muxLabel}</span>
+                  <span class="text-base-content/40 ml-1">{row.muxLabel}</span>
                 </td>
                 <!-- svelte-ignore a11y_click_events_have_key_events -->
                 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
@@ -343,7 +343,7 @@
                     placeholder="—"
                     onchange={(e) =>
                       onSetLabel(row.pos, (e.currentTarget as HTMLInputElement).value)}
-                    class="w-full min-w-[68px] px-1.5 py-0.5 rounded-control bg-transparent hover:bg-elevated focus:bg-elevated border-ui border-transparent focus:border-hint font-mono text-[11px] text-primary focus:outline-none"
+                    class="input input-ghost input-xs w-full min-w-[68px] font-mono"
                   />
                 </td>
                 <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -353,12 +353,12 @@
                     type="button"
                     onclick={() => onToggleLock(row.pos)}
                     title={row.isLocked ? 'Unlock pin' : 'Lock pin'}
-                    class="p-1 rounded-control hover:bg-elevated text-muted"
+                    class="btn btn-ghost btn-xs btn-square"
                   >
                     {#if row.isLocked}
-                      <Lock class="size-ui-sm text-pin-power" />
+                      <Lock class="size-3 text-warning" />
                     {:else}
-                      <Unlock class="size-ui-sm" />
+                      <Unlock class="size-3" />
                     {/if}
                   </button>
                   <button
@@ -366,9 +366,9 @@
                     disabled={row.isLocked}
                     onclick={() => onClearPin(row.pos)}
                     title="Clear pin"
-                    class="p-1 rounded-control hover:bg-danger-soft text-faint hover:text-danger disabled:opacity-30"
+                    class="btn btn-ghost btn-xs btn-square hover:text-error"
                   >
-                    <Trash2 class="size-ui-sm" />
+                    <Trash2 class="size-3" />
                   </button>
                 </td>
               </tr>
@@ -382,44 +382,41 @@
   {:else if activeTab === 'diagnostics'}
     <div class="flex-1 min-h-0 overflow-y-auto p-2.5 space-y-2">
       {#if report.diagnostics.length === 0}
-        <div class="p-6 text-center text-xs text-muted space-y-1.5">
-          <CheckCircle2 class="w-6 h-6 text-pin-success mx-auto" />
-          <span class="inline-block px-2 py-0.5 rounded-pill bg-pin-success text-on-success font-medium">No conflicts or warnings</span>
+        <div class="p-6 text-center text-xs text-base-content/60 space-y-1.5">
+          <CheckCircle2 class="w-6 h-6 text-success mx-auto" />
+          <span class="badge badge-success">No conflicts or warnings</span>
           <p>All active peripherals and pin assignments satisfy hardware invariants.</p>
         </div>
       {:else}
         {#each report.diagnostics as diag (diag.id)}
           <div
-            class={`rounded-panel border-ui p-2.5 text-xs space-y-2 ${
-              diag.severity === 'error'
-                ? 'border-danger bg-danger-soft'
-                : 'border-pin-partial bg-warning-soft'
+            role="alert"
+            class={`alert p-2.5 text-xs space-y-2 ${
+              diag.severity === 'error' ? 'alert-error' : 'alert-warning'
             }`}
           >
             <div class="flex items-start gap-2">
               {#if diag.severity === 'error'}
-                <XCircle class="size-ui text-danger shrink-0 mt-0.5" />
+                <XCircle class="size-4 text-error shrink-0 mt-0.5" />
               {:else}
-                <AlertTriangle class="size-ui text-pin-partial shrink-0 mt-0.5" />
+                <AlertTriangle class="size-4 text-warning shrink-0 mt-0.5" />
               {/if}
               <div class="min-w-0 flex-1 space-y-1">
                 <div class="flex items-center justify-between gap-2">
                   <span
-                    class={`px-1.5 py-0.5 rounded-pill text-[11px] font-semibold ${
-                      diag.severity === 'error'
-                        ? 'bg-danger text-on-error'
-                        : 'bg-pin-partial text-on-warning'
+                    class={`badge badge-sm ${
+                      diag.severity === 'error' ? 'badge-error' : 'badge-warning'
                     }`}
                   >
                     {diag.severity === 'error' ? 'Error' : 'Warning'}
                   </span>
                   {#if diag.peripheral}
-                    <span class="font-mono text-[11px] text-muted">
+                    <span class="font-mono text-[11px] text-base-content/60">
                       {diag.peripheral}
                     </span>
                   {/if}
                 </div>
-                <p class="text-primary leading-relaxed">
+                <p class="text-foreground leading-relaxed">
                   {diag.message}
                 </p>
               </div>
@@ -430,7 +427,7 @@
                 <button
                   type="button"
                   onclick={() => onFocusPin(pPos)}
-                  class="px-2 py-0.5 rounded-control border-ui border-strong bg-surface hover:border-hint font-mono text-[11px] text-primary"
+                  class="btn btn-xs btn-outline font-mono"
                 >
                   Inspect {pinMap.get(pPos)?.name ?? pPos}
                 </button>
@@ -440,9 +437,9 @@
                 <button
                   type="button"
                   onclick={() => onApplyFix(diag.fix!)}
-                  class="inline-flex items-center gap-1 px-2.5 py-1 rounded-control bg-action hover:bg-action-hover text-on-action font-medium text-[11px]"
+                  class="btn btn-xs btn-primary gap-1 font-medium"
                 >
-                  <Wrench class="size-ui-sm" />
+                  <Wrench class="size-3" />
                   <span>Apply 1-Hop Remap</span>
                 </button>
               {/if}
@@ -456,30 +453,26 @@
   {:else if activeTab === 'dma'}
     <div class="flex-1 min-h-0 overflow-y-auto p-2.5 space-y-2">
       {#if report.dmaAnalysis.length === 0}
-        <div class="p-6 text-center text-xs text-muted space-y-1">
-          <p class="font-medium text-primary">No active DMA requests</p>
+        <div class="p-6 text-center text-xs text-base-content/60 space-y-1">
+          <p class="font-medium text-foreground">No active DMA requests</p>
           <p>Enable peripherals like SPI, USART, ADC, or TIM to inspect DMA streams and DMAMUX mappings.</p>
         </div>
       {:else}
         {#each report.dmaAnalysis as item (`${item.peripheral}:${item.signal}`)}
           <div
-            class={`rounded-panel border-ui p-2.5 text-xs space-y-1 ${
-              item.status === 'contention'
-                ? 'border-pin-partial bg-warning-soft'
-                : 'border-hairline bg-subtle'
+            class={`card card-border p-2.5 text-xs space-y-1 ${
+              item.status === 'contention' ? 'alert alert-warning' : 'bg-base-200'
             }`}
           >
             <div class="flex items-center justify-between gap-2">
-              <span class="font-mono font-semibold text-primary">
+              <span class="font-mono font-semibold text-foreground">
                 {item.peripheral}_{item.signal}
               </span>
               <span
-                class={`text-[10px] font-medium ${
-                  item.status === 'contention'
-                    ? 'text-pin-partial'
-                    : item.status === 'shared'
-                      ? 'text-pin-power'
-                      : 'text-pin-success'
+                class={`badge badge-xs ${
+                  item.status === 'contention' || item.status === 'shared'
+                    ? 'badge-warning'
+                    : 'badge-success'
                 }`}
               >
                 {item.status === 'contention'
@@ -491,11 +484,11 @@
                       : 'Available'}
               </span>
             </div>
-            <div class="font-mono-tabular text-[11px] text-muted break-words">
+            <div class="font-mono-tabular text-[11px] text-base-content/60 break-words">
               {item.channels.join(', ')}
             </div>
             {#if item.contendingWith.length > 0}
-              <div class="text-[11px] text-pin-partial">
+              <div class="text-[11px] text-warning">
                 Shares channel with: {item.contendingWith.join(', ')}
               </div>
             {/if}
@@ -517,31 +510,31 @@
   {:else if activeTab === 'gpio'}
     <div class="flex-1 min-h-0 overflow-y-auto p-2.5 space-y-3">
       {#if !inspectorPin}
-        <div class="p-6 text-center text-xs text-muted space-y-1">
-          <p class="font-medium text-primary">No pin selected</p>
+        <div class="p-6 text-center text-xs text-base-content/60 space-y-1">
+          <p class="font-medium text-foreground">No pin selected</p>
           <p>Select a pin in the pin table or on the package to edit its electrical settings.</p>
         </div>
       {:else}
-        <div class="rounded-panel border-ui border-hairline bg-subtle p-2.5 text-xs">
+        <div class="card card-border bg-base-200 p-2.5 text-xs">
           <div class="flex items-center justify-between gap-2">
-            <span class="font-mono font-semibold text-primary">{inspectorPin.name}</span>
-            <span class="font-mono-tabular text-[11px] text-muted">Pin {inspectorPin.pos}</span>
+            <span class="font-mono font-semibold text-foreground">{inspectorPin.name}</span>
+            <span class="font-mono-tabular text-[11px] text-base-content/60">Pin {inspectorPin.pos}</span>
           </div>
           {#if assignments[inspectorPin.pos]}
-            <div class="font-mono text-[11px] text-muted mt-1">
+            <div class="font-mono text-[11px] text-base-content/60 mt-1">
               {assignments[inspectorPin.pos].peripheral}_{assignments[inspectorPin.pos].signal}
             </div>
           {/if}
         </div>
 
-        <div class="rounded-panel border-ui border-hairline bg-surface p-2.5 space-y-2.5 text-xs">
+        <div class="card card-border bg-base-100 p-2.5 space-y-2.5 text-xs">
           <div class="flex items-center justify-between gap-2">
-            <span class="font-medium text-primary">Electrical settings</span>
+            <span class="font-medium text-foreground">Electrical settings</span>
             {#if inspectorConfig}
               <button
                 type="button"
                 onclick={() => workspaceStore.setGpioConfig(inspectorPin!.pos, null)}
-                class="text-[11px] text-muted hover:text-primary underline"
+                class="btn btn-link btn-xs"
               >
                 Reset
               </button>
@@ -549,7 +542,7 @@
           </div>
 
           <label class="block space-y-1">
-            <span class="text-[11px] text-muted">Output level</span>
+            <span class="text-[11px] text-base-content/60">Output level</span>
             <select
               value={inspectorConfig?.outputLevel ?? DEFAULT_GPIO_CONFIG.outputLevel}
               onchange={(e) =>
@@ -557,7 +550,7 @@
                   'outputLevel',
                   (e.currentTarget as HTMLSelectElement).value as GpioConfig['outputLevel'],
                 )}
-              class="w-full px-2 py-1.5 rounded-control bg-elevated border-ui border-hairline text-xs text-primary focus:outline-none focus:border-hint"
+              class="select select-xs w-full"
             >
               {#each GPIO_OUTPUT_LEVELS as level}
                 <option value={level}>{level}</option>
@@ -566,7 +559,7 @@
           </label>
 
           <label class="block space-y-1">
-            <span class="text-[11px] text-muted">Drive</span>
+            <span class="text-[11px] text-base-content/60">Drive</span>
             <select
               value={inspectorConfig?.drive ?? DEFAULT_GPIO_CONFIG.drive}
               onchange={(e) =>
@@ -574,7 +567,7 @@
                   'drive',
                   (e.currentTarget as HTMLSelectElement).value as GpioConfig['drive'],
                 )}
-              class="w-full px-2 py-1.5 rounded-control bg-elevated border-ui border-hairline text-xs text-primary focus:outline-none focus:border-hint"
+              class="select select-xs w-full"
             >
               {#each GPIO_DRIVES as drive}
                 <option value={drive}>{drive}</option>
@@ -583,7 +576,7 @@
           </label>
 
           <label class="block space-y-1">
-            <span class="text-[11px] text-muted">Pull resistor</span>
+            <span class="text-[11px] text-base-content/60">Pull resistor</span>
             <select
               value={inspectorConfig?.pull ?? DEFAULT_GPIO_CONFIG.pull}
               onchange={(e) =>
@@ -591,7 +584,7 @@
                   'pull',
                   (e.currentTarget as HTMLSelectElement).value as GpioConfig['pull'],
                 )}
-              class="w-full px-2 py-1.5 rounded-control bg-elevated border-ui border-hairline text-xs text-primary focus:outline-none focus:border-hint"
+              class="select select-xs w-full"
             >
               {#each GPIO_PULLS as pull}
                 <option value={pull}>{pull}</option>
@@ -600,7 +593,7 @@
           </label>
 
           <label class="block space-y-1">
-            <span class="text-[11px] text-muted">Speed</span>
+            <span class="text-[11px] text-base-content/60">Speed</span>
             <select
               value={inspectorConfig?.speed ?? DEFAULT_GPIO_CONFIG.speed}
               onchange={(e) =>
@@ -608,7 +601,7 @@
                   'speed',
                   (e.currentTarget as HTMLSelectElement).value as GpioConfig['speed'],
                 )}
-              class="w-full px-2 py-1.5 rounded-control bg-elevated border-ui border-hairline text-xs text-primary focus:outline-none focus:border-hint"
+              class="select select-xs w-full"
             >
               {#each GPIO_SPEEDS as speed}
                 <option value={speed}>{speed}</option>
@@ -616,7 +609,7 @@
             </select>
           </label>
         </div>
-        <p class="text-[11px] text-muted">
+        <p class="text-[11px] text-base-content/60">
           Settings are stored with the pinout and included in share links, project files, and exports.
         </p>
       {/if}

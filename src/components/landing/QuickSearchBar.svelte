@@ -100,7 +100,7 @@
 <div bind:this={wrapperEl} class="relative w-full space-y-2.5">
   <!-- Search Input Box -->
   <div class="relative flex items-center">
-    <Search class="size-ui text-faint absolute left-3.5 pointer-events-none" />
+    <Search class="size-4 text-base-content/40 absolute left-3.5 pointer-events-none" />
     <input
       bind:this={inputEl}
       bind:value={query}
@@ -108,7 +108,7 @@
       onkeydown={handleKeydown}
       type="text"
       placeholder="Jump to any MCU (e.g. STM32G431CBU6, CH32V003J4M6, RP2350B)..."
-      class="w-full pl-10 pr-20 py-3 rounded-panel border-ui border-strong bg-surface text-sm font-mono text-primary placeholder:text-faint focus:outline-none focus:border-hint shadow-xs transition-colors"
+      class="input input-lg w-full pl-10 pr-20 font-mono"
     />
     <div class="absolute right-3 flex items-center gap-1.5">
       {#if query}
@@ -118,13 +118,14 @@
             query = '';
             inputEl?.focus();
           }}
-          class="p-1 rounded-control hover:bg-elevated text-faint"
+          class="btn btn-ghost btn-sm btn-square"
+          aria-label="Clear search"
           title="Clear"
         >
-          <X class="size-ui-md" />
+          <X class="size-3.5" />
         </button>
       {:else}
-        <kbd class="hidden sm:inline-block px-1.5 py-0.5 text-[11px] font-mono text-faint border-ui border-hairline rounded-control bg-subtle">
+        <kbd class="kbd kbd-sm hidden sm:inline-block text-[11px] font-mono">
           Ctrl+K
         </kbd>
       {/if}
@@ -133,7 +134,7 @@
 
   <!-- Vendor tabs plus vendor-neutral family/package filters -->
   <div class="flex flex-wrap items-center gap-1.5 text-xs">
-    <span class="text-muted mr-1">Vendor:</span>
+    <span class="text-base-content/60 mr-1">Vendor:</span>
     {#each vendorTabs as tab (tab.id)}
       <button
         type="button"
@@ -142,10 +143,8 @@
           focused = true;
           inputEl?.focus();
         }}
-        class={`px-2.5 py-1 rounded-control font-mono whitespace-nowrap transition-colors ${
-          vendorFilter === tab.id
-            ? 'bg-action text-on-action font-medium'
-            : 'bg-elevated text-primary hover:bg-elevated border-ui border-hairline'
+        class={`btn btn-sm font-mono whitespace-nowrap ${
+          vendorFilter === tab.id ? 'btn-primary' : 'btn-outline'
         }`}
       >
         {tab.label}
@@ -153,13 +152,14 @@
       </button>
     {/each}
 
-    <span class="text-faint mx-0.5">|</span>
+    <span class="text-base-content/40 mx-0.5">|</span>
 
-    <label class="inline-flex items-center gap-1 text-muted">
+    <label class="inline-flex items-center gap-1 text-base-content/60">
       Family
       <select
         bind:value={familyFilter}
-        class="px-1.5 py-1 rounded-control bg-elevated border-ui border-hairline text-xs text-primary focus:outline-none focus:border-hint"
+        class="select select-sm"
+        aria-label="Filter by family"
       >
         <option value="">All</option>
         {#each familyOptions as fam (fam)}
@@ -167,11 +167,12 @@
         {/each}
       </select>
     </label>
-    <label class="inline-flex items-center gap-1 text-muted">
+    <label class="inline-flex items-center gap-1 text-base-content/60">
       Package
       <select
         bind:value={pkgFilter}
-        class="px-1.5 py-1 rounded-control bg-elevated border-ui border-hairline text-xs text-primary focus:outline-none focus:border-hint"
+        class="select select-sm"
+        aria-label="Filter by package"
       >
         <option value="">All</option>
         {#each packageOptions as pkg (pkg)}
@@ -187,7 +188,7 @@
           familyFilter = '';
           pkgFilter = '';
         }}
-        class="ml-1 text-muted hover:text-primary underline"
+        class="btn btn-link btn-sm ml-1"
       >
         Reset
       </button>
@@ -196,8 +197,8 @@
 
   <!-- Live Dropdown Results -->
   {#if showDropdown}
-    <div class="absolute left-0 right-0 top-[52px] z-30 rounded-panel border-ui border-hairline bg-surface shadow-2xl overflow-hidden max-h-[340px] flex flex-col">
-      <div class="flex items-center justify-between px-3.5 py-2 border-ui-b border-hairline bg-subtle text-[11px] font-mono-tabular text-muted">
+    <div class="card card-border absolute left-0 right-0 top-[52px] z-30 bg-base-100 shadow-2xl overflow-hidden max-h-[340px] flex flex-col">
+      <div class="flex items-center justify-between px-3.5 py-2 border-b border-base-300 bg-base-200 text-[11px] font-mono-tabular text-base-content/60">
         <span>
           {#if catalogStore.loadingIndex}
             Loading multi-vendor catalog...
@@ -208,9 +209,9 @@
         <span>Enter to open · Up/Down to navigate</span>
       </div>
 
-      <div class="overflow-y-auto divide-y divide-hairline">
+      <div class="overflow-y-auto divide-y divide-base-300">
         {#if results.length === 0 && !catalogStore.loadingIndex}
-          <div class="py-8 text-center text-xs text-muted">
+          <div class="py-8 text-center text-xs text-base-content/60">
             No parts matched your filter criteria.
           </div>
         {:else}
@@ -221,32 +222,32 @@
               onmouseenter={() => (activeIdx = i)}
               class={`w-full flex items-center justify-between gap-3 px-3.5 py-2.5 text-left transition-colors ${
                 i === activeIdx
-                  ? 'bg-info-soft'
-                  : 'hover:bg-elevated'
+                  ? 'bg-info/15'
+                  : 'hover:bg-base-300'
               }`}
             >
               <div class="flex items-center gap-2.5 min-w-0">
-                <Cpu class="size-ui text-faint shrink-0" />
+                <Cpu class="size-4 text-base-content/40 shrink-0" />
                 <div class="min-w-0">
                   <div class="flex items-center gap-1.5">
-                    <span class="font-mono font-semibold text-xs text-primary">
+                    <span class="font-mono font-semibold text-xs text-foreground">
                       {entry.id}
                     </span>
-                    <span class="px-1 py-px rounded-control border-ui border-hairline bg-subtle font-mono text-[9px] uppercase text-muted">
+                    <span class="badge badge-xs badge-ghost font-mono text-[9px] uppercase">
                       {entry.vendor ?? 'stm32'}
                     </span>
                   </div>
-                  <div class="font-mono-tabular text-[11px] text-muted truncate">
+                  <div class="font-mono-tabular text-[11px] text-base-content/60 truncate">
                     {entry.family} · {entry.core} · {entry.flashKb} KB Flash · {entry.ramKb} KB RAM
                   </div>
                 </div>
               </div>
               <div class="flex items-center gap-2 shrink-0">
                 <div class="text-right font-mono-tabular text-[11px]">
-                  <div class="text-primary">{entry.package}</div>
-                  <div class="text-faint">{entry.pinCount} pins</div>
+                  <div class="text-foreground">{entry.package}</div>
+                  <div class="text-base-content/40">{entry.pinCount} pins</div>
                 </div>
-                <ArrowRight class="size-ui-md text-faint" />
+                <ArrowRight class="size-3.5 text-base-content/40" />
               </div>
             </button>
           {/each}

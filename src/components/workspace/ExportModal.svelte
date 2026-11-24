@@ -26,6 +26,7 @@
   let importError = $state<string | null>(null);
   let draggingFile = $state(false);
   let fileInput = $state<HTMLInputElement | null>(null);
+  let dialogEl = $state<HTMLDialogElement | null>(null);
 
   const vendor = $derived(getChipVendor(chip));
 
@@ -99,6 +100,11 @@
     URL.revokeObjectURL(url);
   }
 
+  /** Native dialog close path; the close event notifies the parent once. */
+  function closeDialog(): void {
+    dialogEl?.close();
+  }
+
   async function handleFile(file: File): Promise<void> {
     importError = null;
     const text = await file.text();
@@ -108,61 +114,63 @@
       return;
     }
     onImportState(parsed.state);
-    onClose();
+    closeDialog();
   }
 
   onMount(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    dialogEl?.showModal();
   });
 </script>
 
-<!-- svelte-ignore a11y_click_events_have_key_events -->
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<div
-  class="fixed inset-0 z-50 bg-overlay flex items-center justify-center p-4"
-  onclick={onClose}
+<dialog
+  bind:this={dialogEl}
+  class="modal"
+  onclose={onClose}
+  oncancel={(e) => {
+    e.preventDefault();
+    closeDialog();
+  }}
+  onclick={(e) => {
+    if (e.target === dialogEl) closeDialog();
+  }}
+  aria-label="Export and import pinout"
 >
   <div
-    class="w-full max-w-3xl max-h-[92dvh] min-h-0 flex flex-col rounded-panel border-ui border-hairline bg-surface shadow-2xl overflow-hidden"
-    onclick={(e) => e.stopPropagation()}
-    role="dialog"
-    tabindex="-1"
-    aria-label="Export and import pinout"
+    class="modal-box w-full max-w-3xl max-h-[92dvh] min-h-0 flex flex-col p-0 shadow-2xl overflow-hidden"
   >
     <!-- Header -->
-    <div class="flex items-center justify-between px-5 py-3.5 border-ui-b border-hairline">
+    <div class="flex items-center justify-between px-5 py-3.5 border-b border-base-300">
       <div>
-        <h2 class="text-sm font-semibold text-primary">
+        <h2 class="text-sm font-semibold text-foreground">
           Export & Share Pinout
         </h2>
-        <p class="text-xs font-mono text-muted">
+        <p class="text-xs font-mono text-base-content/60">
           {chip.id} · {chip.package.name} · {Object.keys(wsState.assignments).length} assigned pins
         </p>
       </div>
       <button
         type="button"
-        onclick={onClose}
-        class="p-1.5 rounded-control hover:bg-elevated text-muted"
+        onclick={closeDialog}
+        class="btn btn-ghost btn-sm btn-square"
+        aria-label="Close export dialog"
       >
-        <X class="size-ui" />
+        <X class="size-4" />
       </button>
     </div>
 
     <!-- Format Tabs -->
-    <div class="flex flex-wrap items-center justify-between gap-2 px-5 py-2.5 border-ui-b border-hairline bg-subtle">
-      <div class="flex items-center gap-1 p-0.5 rounded-panel bg-elevated">
+    <div class="flex flex-wrap items-center justify-between gap-2 px-5 py-2.5 border-b border-base-300 bg-base-200">
+      <div role="tablist" class="tabs tabs-box flex items-center gap-1 p-0.5 rounded-box bg-base-300">
         {#each formatTabs as tab (tab.id)}
           <button
             type="button"
+            role="tab"
+            aria-selected={activeTab === tab.id}
             onclick={() => (activeTab = tab.id)}
-            class={`px-3 py-1 rounded-control text-xs font-medium whitespace-nowrap transition-colors ${
+            class={`tab px-3 py-1 text-xs font-medium whitespace-nowrap transition-colors ${
               activeTab === tab.id
-                ? 'bg-surface text-primary shadow-xs'
-                : 'text-muted hover:text-primary'
+                ? 'tab-active bg-base-100 text-foreground shadow-xs'
+                : 'text-base-content/60 hover:text-foreground'
             }`}
           >
             {tab.label}
@@ -172,8 +180,8 @@
 
       <div class="flex items-center gap-2">
         {#if activeTab === 'csv'}
-          <label class="flex items-center gap-1.5 text-xs text-muted cursor-pointer mr-1">
-            <input type="checkbox" bind:checked={includeUnassignedCsv} class="rounded-control" />
+          <label class="flex items-center gap-1.5 text-xs text-base-content/60 cursor-pointer mr-1">
+            <input type="checkbox" bind:checked={includeUnassignedCsv} class="checkbox checkbox-sm" />
             <span>Include unassigned</span>
           </label>
         {/if}
@@ -181,13 +189,13 @@
         <button
           type="button"
           onclick={copyContent}
-          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-control border-ui border-hairline hover:bg-elevated text-xs font-medium text-primary whitespace-nowrap"
+          class="btn btn-sm btn-outline gap-1.5 text-xs font-medium whitespace-nowrap"
         >
           {#if copied}
-            <Check class="size-ui-md text-pin-success" />
+            <Check class="size-3.5 text-success" />
             <span>Copied</span>
           {:else}
-            <Copy class="size-ui-md" />
+            <Copy class="size-3.5" />
             <span>Copy</span>
           {/if}
         </button>
@@ -196,9 +204,9 @@
           <button
             type="button"
             onclick={downloadFile}
-            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-control bg-action hover:bg-action-hover text-xs font-semibold text-on-action whitespace-nowrap"
+            class="btn btn-sm btn-primary gap-1.5 text-xs font-semibold whitespace-nowrap"
           >
-            <Download class="size-ui-md" />
+            <Download class="size-3.5" />
             <span>Download</span>
           </button>
         {/if}
@@ -207,11 +215,12 @@
 
     <!-- JSON Import Dropzone -->
     {#if activeTab === 'json'}
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div
-        class={`mx-5 mt-3 p-3 rounded-panel border-ui border-dashed text-xs flex items-center justify-between gap-3 transition-colors ${
+        class={`mx-5 mt-3 p-3 rounded-box border border-dashed text-xs flex items-center justify-between gap-3 transition-colors ${
           draggingFile
-            ? 'border-hint bg-info-soft'
-            : 'border-strong bg-subtle'
+            ? 'border-info bg-info/15'
+            : 'border-base-content/20 bg-base-200'
         }`}
         ondragover={(e) => {
           e.preventDefault();
@@ -225,14 +234,14 @@
           if (file) handleFile(file);
         }}
       >
-        <div class="flex items-center gap-2 text-muted">
-          <Upload class="size-ui text-hint shrink-0" />
+        <div class="flex items-center gap-2 text-base-content/60">
+          <Upload class="size-4 text-info shrink-0" />
           <span>Drag and drop a <code class="font-mono">pinout.json</code> file here to import, or choose a file.</span>
         </div>
         <button
           type="button"
           onclick={() => fileInput?.click()}
-          class="px-2.5 py-1 rounded-control border-ui border-strong bg-surface hover:border-hint font-medium text-primary whitespace-nowrap"
+          class="btn btn-sm btn-outline font-medium whitespace-nowrap"
         >
           Browse JSON
         </button>
@@ -248,13 +257,16 @@
         />
       </div>
       {#if importError}
-        <p class="mx-5 mt-2 text-xs text-danger">{importError}</p>
+        <p role="alert" class="alert alert-error mx-5 mt-2 text-xs">{importError}</p>
       {/if}
     {/if}
 
     <!-- Monospace Code Preview -->
     <div class="flex-1 min-h-0 overflow-auto p-5">
-      <pre class="p-4 rounded-panel border-ui border-hairline bg-subtle font-mono text-xs leading-relaxed text-primary overflow-x-auto whitespace-pre-wrap break-all">{previewContent}</pre>
+      <pre class="p-4 rounded-box border border-base-300 bg-base-200 font-mono text-xs leading-relaxed text-foreground overflow-x-auto whitespace-pre-wrap break-all">{previewContent}</pre>
     </div>
   </div>
-</div>
+  <form method="dialog" class="modal-backdrop">
+    <button aria-label="Close export dialog">close</button>
+  </form>
+</dialog>

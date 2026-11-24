@@ -55,6 +55,8 @@
   let iocDropActive = $state(false);
   let iocFileInput = $state<HTMLInputElement | null>(null);
   let ambiguousImport = $state<{ record: IocRawRecord; candidates: string[] } | null>(null);
+  let ambiguousChoice = $state<string | null>(null);
+  let ambiguousDialogEl = $state<HTMLDialogElement | null>(null);
 
   let canvasRef = $state<{ fitView: () => void } | null>(null);
   let searchInputRef = $state<HTMLInputElement | null>(null);
@@ -78,6 +80,13 @@
       workspaceStore.openSharedPayload(sharedPayload);
     } else if (mcuId) {
       workspaceStore.openMcu(mcuId);
+    }
+  });
+
+  // The ambiguous-import dialog is conditional, so promote it when it mounts.
+  $effect(() => {
+    if (ambiguousImport && ambiguousDialogEl && !ambiguousDialogEl.open) {
+      ambiguousDialogEl.showModal();
     }
   });
 
@@ -191,10 +200,22 @@
     await applyIocRecord(prepared.record, prepared.mcuId);
   }
 
-  async function handleAmbiguousSelect(mcuId: string): Promise<void> {
-    const pending = ambiguousImport;
+  /** Close the native dialog; the close event applies a choice or cancels it. */
+  function closeAmbiguousDialog(): void {
+    ambiguousDialogEl?.close();
+  }
+
+  function handleAmbiguousClose(): void {
+    const record = ambiguousImport?.record;
+    const mcuId = ambiguousChoice;
+    ambiguousChoice = null;
     ambiguousImport = null;
-    if (pending) await applyIocRecord(pending.record, mcuId);
+    if (record && mcuId) void applyIocRecord(record, mcuId);
+  }
+
+  function handleAmbiguousSelect(mcuId: string): void {
+    ambiguousChoice = mcuId;
+    closeAmbiguousDialog();
   }
 
   async function handleBoardSelect(preset: BoardPreset): Promise<void> {
@@ -278,7 +299,7 @@
 </script>
 
 <div
-  class="workspace-root h-[100dvh] w-full overflow-hidden overscroll-none bg-canvas text-primary"
+  class="workspace-root h-[100dvh] w-full overflow-hidden overscroll-none bg-base-200 text-foreground"
   data-dock-tab={workspaceStore.dockTab}
   style={`--left-pane-width: ${leftWidth}px; --right-pane-width: ${rightWidth}px;`}
 >
@@ -308,25 +329,25 @@
 
   <!-- Dismissible Error Banner (e.g. malformed #/s/... link) -->
   {#if workspaceStore.bannerError}
-    <div class="workspace-banner flex items-center justify-between gap-3 px-4 py-2 bg-danger-soft border-ui-b border-danger text-xs text-danger shrink-0">
+    <div role="alert" class="workspace-banner alert alert-error flex items-center justify-between gap-3 px-4 py-2 border-b text-xs shrink-0">
       <div class="flex items-center gap-2">
-        <AlertCircle class="size-ui shrink-0" />
+        <AlertCircle class="size-4 shrink-0" />
         <span>{workspaceStore.bannerError}</span>
       </div>
       <div class="flex items-center gap-2">
         <button
           type="button"
           onclick={() => router.navigateHome()}
-          class="underline font-medium hover:text-danger"
+          class="btn btn-link btn-sm font-medium"
         >
           Browse Catalog
         </button>
         <button
           type="button"
           onclick={() => workspaceStore.dismissBanner()}
-          class="p-0.5 rounded-control hover:bg-danger-soft-strong"
+          class="btn btn-ghost btn-xs btn-square"
         >
-          <X class="size-ui-md" />
+          <X class="size-3.5" />
         </button>
       </div>
     </div>
@@ -336,32 +357,32 @@
   {#if workspaceStore.loading}
     <div class="workspace-canvas flex items-center justify-center">
       <div class="text-center space-y-2">
-        <div class="w-8 h-8 border-ui-strong border-hint border-t-transparent rounded-pill animate-spin mx-auto"></div>
-        <p class="text-xs font-mono text-muted">
+        <div class="w-8 h-8 border-2 border-info border-t-transparent rounded-selector animate-spin mx-auto"></div>
+        <p class="text-xs font-mono text-base-content/60">
           Loading {mcuId ?? 'shared pinout'}...
         </p>
       </div>
     </div>
   {:else if workspaceStore.loadError || !workspaceStore.chip || !workspaceStore.report}
     <div class="workspace-canvas flex items-center justify-center p-6">
-      <div class="max-w-md w-full rounded-panel border-ui border-hairline bg-surface p-6 text-center space-y-3">
-        <AlertCircle class="w-8 h-8 text-danger mx-auto" />
+      <div class="card card-border max-w-md w-full bg-base-100 p-6 text-center space-y-3">
+        <AlertCircle class="w-8 h-8 text-error mx-auto" />
         <h2 class="text-base font-semibold">Unable to Open MCU</h2>
-        <p class="text-xs text-muted">
+        <p class="text-xs text-base-content/60">
           {workspaceStore.loadError ?? 'The requested part could not be loaded.'}
         </p>
         <div class="flex justify-center gap-2 pt-2">
           <button
             type="button"
             onclick={() => router.navigateHome()}
-            class="px-3.5 py-2 rounded-panel border-ui border-hairline text-xs font-medium hover:bg-elevated"
+            class="btn btn-sm btn-outline text-xs font-medium"
           >
             Back to Home
           </button>
           <button
             type="button"
             onclick={() => (showSwitcher = true)}
-            class="px-3.5 py-2 rounded-panel bg-action hover:bg-action-hover text-on-action text-xs font-semibold"
+            class="btn btn-sm btn-primary text-xs font-semibold"
           >
             Choose Another MCU
           </button>
@@ -386,7 +407,7 @@
         </div>
         <!-- Left Drag Resizer (landscape only) -->
         <div
-          class="workspace-resizer-left w-1 cursor-col-resize hover:bg-action/60 transition-colors"
+          class="workspace-resizer-left w-1 cursor-col-resize hover:bg-primary/60 transition-colors"
           onpointerdown={(e) => startResize('left', e)}
           role="separator"
           aria-orientation="vertical"
@@ -401,18 +422,18 @@
           type="button"
           onclick={() => (leftCollapsed = !leftCollapsed)}
           title={leftCollapsed ? 'Show Peripherals' : 'Hide Peripherals'}
-          class="workspace-landscape-only hidden md:flex absolute top-3 left-3 z-20 p-1.5 rounded-control border-ui border-hairline bg-surface-alpha text-muted hover:border-hint shadow-xs"
+          class="btn btn-ghost btn-sm btn-square workspace-landscape-only hidden md:flex absolute top-3 left-3 z-20 shadow-xs"
         >
-          <PanelLeft class="size-ui-md" />
+          <PanelLeft class="size-3.5" />
         </button>
 
         <button
           type="button"
           onclick={() => (rightCollapsed = !rightCollapsed)}
           title={rightCollapsed ? 'Show Summary Drawer' : 'Hide Summary Drawer'}
-          class="workspace-landscape-only hidden lg:flex absolute top-14 right-3 z-20 p-1.5 rounded-control border-ui border-hairline bg-surface-alpha text-muted hover:border-hint shadow-xs"
+          class="btn btn-ghost btn-sm btn-square workspace-landscape-only hidden lg:flex absolute top-14 right-3 z-20 shadow-xs"
         >
-          <PanelRight class="size-ui-md" />
+          <PanelRight class="size-3.5" />
         </button>
 
         <div class="absolute top-3 left-12 z-20 flex items-center gap-1">
@@ -421,9 +442,9 @@
             onclick={() => iocFileInput?.click()}
             title="Import an STM32CubeIDE .ioc project file"
             aria-label="Import .ioc project file"
-            class="flex items-center gap-1.5 px-2 py-1.5 rounded-control border-ui border-hairline bg-surface-alpha text-muted hover:border-hint hover:text-primary shadow-xs"
+            class="btn btn-ghost btn-sm gap-1.5 shadow-xs"
           >
-            <FileUp class="size-ui-md" />
+            <FileUp class="size-3.5" />
             <span class="hidden xl:inline text-[11px] font-medium">Import .ioc</span>
           </button>
           <button
@@ -431,9 +452,9 @@
             onclick={() => (showBoardSelector = true)}
             title="Start from an official ST board preset"
             aria-label="Open board preset selector"
-            class="flex items-center gap-1.5 px-2 py-1.5 rounded-control border-ui border-hairline bg-surface-alpha text-muted hover:border-hint hover:text-primary shadow-xs"
+            class="btn btn-ghost btn-sm gap-1.5 shadow-xs"
           >
-            <CircuitBoard class="size-ui-md" />
+            <CircuitBoard class="size-3.5" />
             <span class="hidden xl:inline text-[11px] font-medium">Board preset</span>
           </button>
         </div>
@@ -476,7 +497,7 @@
       {#if !rightCollapsed}
         <!-- Right Drag Resizer (landscape only) -->
         <div
-          class="workspace-resizer-right w-1 cursor-col-resize hover:bg-action/60 transition-colors"
+          class="workspace-resizer-right w-1 cursor-col-resize hover:bg-primary/60 transition-colors"
           onpointerdown={(e) => startResize('right', e)}
           role="separator"
           aria-orientation="vertical"
@@ -503,7 +524,7 @@
 
       <!-- Portrait dock tab strip; the panes above occupy the dock area. -->
       <nav
-        class="workspace-dock-tabs shrink-0 items-center gap-1 border-ui-b border-hairline bg-subtle px-2 py-1 text-xs"
+        class="dock workspace-dock-tabs shrink-0 items-center gap-1 border-b border-base-300 bg-base-200 px-2 py-1 text-xs"
         aria-label="Workspace panels"
       >
         {#each DOCK_TABS as tab (tab)}
@@ -511,10 +532,8 @@
             type="button"
             onclick={() => selectDockTab(tab)}
             aria-pressed={workspaceStore.dockTab === tab}
-            class={`px-2.5 py-1.5 rounded-control font-medium whitespace-nowrap shrink-0 ${
-              workspaceStore.dockTab === tab
-                ? 'bg-action text-on-action'
-                : 'text-muted hover:bg-elevated hover:text-primary'
+            class={`btn btn-sm whitespace-nowrap shrink-0 ${
+              workspaceStore.dockTab === tab ? 'dock-active btn-primary' : 'btn-ghost'
             }`}
           >
             {DOCK_TAB_LABELS[tab]}
@@ -526,12 +545,13 @@
   <!-- Toast Notification -->
   {#if workspaceStore.toast}
     <div
-      class={`fixed bottom-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-panel border-ui text-xs font-medium shadow-lg ${
+      role="status"
+      class={`alert fixed bottom-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2 text-xs font-medium shadow-lg ${
         workspaceStore.toast.tone === 'success'
-          ? 'bg-toast-success border-pin-success text-primary'
+          ? 'alert-success'
           : workspaceStore.toast.tone === 'warning'
-            ? 'bg-toast-warning border-pin-power text-primary'
-            : 'bg-toast-info border-hairline text-primary'
+            ? 'alert-warning'
+            : 'alert-info'
       }`}
     >
       {workspaceStore.toast.text}
@@ -539,52 +559,56 @@
   {/if}
 
   {#if iocDropActive}
-    <div class="pointer-events-none fixed inset-0 z-40 flex items-center justify-center bg-overlay/70">
-      <div class="px-8 py-6 rounded-panel border-ui border-dashed border-hint bg-surface text-center shadow-lg">
-        <FileUp class="w-8 h-8 mx-auto text-hint" />
-        <p class="mt-2 text-sm font-semibold text-primary">Drop an .ioc file to import</p>
-        <p class="text-xs text-muted mt-1">Pins are matched by name against the loaded catalog.</p>
+    <div class="pointer-events-none fixed inset-0 z-40 flex items-center justify-center bg-neutral/50">
+      <div class="card card-border border-dashed border-info bg-base-100 px-8 py-6 text-center shadow-lg">
+        <FileUp class="w-8 h-8 mx-auto text-info" />
+        <p class="mt-2 text-sm font-semibold text-foreground">Drop an .ioc file to import</p>
+        <p class="text-xs text-base-content/60 mt-1">Pins are matched by name against the loaded catalog.</p>
       </div>
     </div>
   {/if}
 
   <!-- Ambiguous part ID confirmation -->
   {#if ambiguousImport}
-    <!-- svelte-ignore a11y_click_events_have_key_events -->
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div
-      class="fixed inset-0 z-50 bg-overlay flex items-center justify-center p-4"
-      onclick={() => (ambiguousImport = null)}
+    <dialog
+      bind:this={ambiguousDialogEl}
+      class="modal"
+      onclose={handleAmbiguousClose}
+      oncancel={(e) => {
+        e.preventDefault();
+        closeAmbiguousDialog();
+      }}
+      onclick={(e) => {
+        if (e.target === ambiguousDialogEl) closeAmbiguousDialog();
+      }}
+      aria-label="Confirm MCU for .ioc import"
     >
       <div
-        class="w-full max-w-md max-h-[92dvh] min-h-0 flex flex-col rounded-panel border-ui border-hairline bg-surface shadow-2xl overflow-hidden"
-        onclick={(e) => e.stopPropagation()}
-        role="dialog"
-        tabindex="-1"
-        aria-label="Confirm MCU for .ioc import"
+        class="modal-box w-full max-w-md max-h-[92dvh] min-h-0 flex flex-col p-0 shadow-2xl overflow-hidden"
       >
-        <div class="flex items-center justify-between px-5 py-3.5 border-ui-b border-hairline">
-          <h2 class="text-sm font-semibold text-primary">Confirm MCU for Import</h2>
+        <div class="flex items-center justify-between px-5 py-3.5 border-b border-base-300">
+          <h2 class="text-sm font-semibold text-foreground">Confirm MCU for Import</h2>
           <button
             type="button"
-            onclick={() => (ambiguousImport = null)}
-            class="p-1 rounded-control hover:bg-elevated text-muted"
+            onclick={closeAmbiguousDialog}
+            class="btn btn-ghost btn-sm btn-square"
+            aria-label="Cancel import"
             title="Cancel import"
           >
-            <X class="size-ui" />
+            <X class="size-4" />
           </button>
         </div>
         <div class="px-5 py-4 space-y-3 min-h-0 overflow-y-auto">
-          <p class="text-xs text-muted">
+          <p class="text-xs text-base-content/60">
             The part ID in this file matches more than one catalog MCU. Select the part used by your board.
           </p>
-          <p class="font-mono text-xs text-primary break-all">{ambiguousImport.record.mcuName}</p>
+          <p class="font-mono text-xs text-foreground break-all">{ambiguousImport.record.mcuName}</p>
           <div class="flex flex-wrap gap-2">
             {#each ambiguousImport.candidates as candidate (candidate)}
               <button
                 type="button"
                 onclick={() => handleAmbiguousSelect(candidate)}
-                class="px-3 py-1.5 rounded-control border-ui border-strong bg-subtle hover:bg-elevated font-mono text-xs font-medium text-primary"
+                class="btn btn-sm btn-outline font-mono text-xs"
               >
                 {candidate}
               </button>
@@ -592,7 +616,10 @@
           </div>
         </div>
       </div>
-    </div>
+      <form method="dialog" class="modal-backdrop">
+        <button aria-label="Cancel import">close</button>
+      </form>
+    </dialog>
   {/if}
 
   <!-- Modals -->

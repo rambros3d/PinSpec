@@ -16,8 +16,8 @@
   <span class="inline-flex flex-wrap items-center gap-1">
     {#each pills as tag (tag)}
       <span
-        class={`inline-flex items-center rounded-control border-ui border-hairline bg-subtle font-mono uppercase tracking-wide text-muted ${
-          compact ? 'px-1 py-px text-[9px]' : 'px-1.5 py-0.5 text-[10px]'
+        class={`badge badge-ghost badge-xs font-mono uppercase tracking-wide ${
+          compact ? 'text-[9px]' : 'text-[10px]'
         }`}
         title={`Pin tag: ${PIN_TAG_LABELS[tag]}`}
       >

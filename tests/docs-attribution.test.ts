@@ -72,6 +72,8 @@ describe('multi-vendor documentation and attribution', () => {
     expect(readme).toMatch(/no compatibility shim/i);
     expect(readme).toContain('pico-sdk');
     expect(readme).toContain('gate');
+    expect(readme).toMatch(/daisyUI[^\n]*MIT/);
+    expect(readme).toContain('text-foreground');
   });
 
   it('describes shipped multi-vendor behavior in AGENTS.md', () => {

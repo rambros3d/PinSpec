@@ -130,7 +130,7 @@
   viewBox={`0 0 ${layout.totalWidth} ${layout.totalHeight}`}
   width={layout.totalWidth}
   height={layout.totalHeight}
-  class="select-none text-primary overflow-visible"
+  class="select-none text-foreground overflow-visible"
   role="img"
   aria-label={`${chip.id} ${chip.package.name} BGA matrix diagram`}
 >
@@ -162,7 +162,7 @@
     width={layout.gridWidth + 16}
     height={layout.gridHeight + 16}
     rx="8"
-    class="fill-ic-body stroke-hairline"
+    class="fill-neutral stroke-base-300"
     stroke-width="2"
     style={`filter: drop-shadow(0 3px 5px color-mix(in oklab, var(--color-neutral) 55%, transparent));`}
   />
@@ -193,14 +193,14 @@
   <!-- Pin A1 Corner Chamfer Indicator -->
   <path
     d={`M ${layout.outerPad + layout.headerPad - 8} ${layout.outerPad + layout.headerPad + 16} L ${layout.outerPad + layout.headerPad + 16} ${layout.outerPad + layout.headerPad - 8}`}
-    class="stroke-pin-power"
+    class="stroke-warning"
     stroke-width="2.5"
   />
   <text
     x={layout.outerPad + layout.headerPad - 12}
     y={layout.outerPad + layout.headerPad - 14}
     text-anchor="end"
-    class="font-mono font-semibold fill-pin-power"
+    class="font-mono font-semibold fill-warning"
     font-size="10"
   >
     A1
@@ -212,7 +212,7 @@
       x={layout.outerPad + layout.headerPad + ci * layout.cellSize + layout.cellSize / 2}
       y={layout.outerPad + layout.headerPad - 16}
       text-anchor="middle"
-      class="font-mono fill-muted font-medium"
+      class="font-mono fill-base-content/60 font-medium"
       font-size="11"
     >
       {col}
@@ -225,7 +225,7 @@
       x={layout.outerPad + layout.headerPad - 18}
       y={layout.outerPad + layout.headerPad + ri * layout.cellSize + layout.cellSize / 2 + 4}
       text-anchor="end"
-      class="font-mono fill-muted font-medium"
+      class="font-mono fill-base-content/60 font-medium"
       font-size="11"
     >
       {row}
@@ -285,7 +285,7 @@
           x={ball.cx}
           y={ball.cy + 3.5}
           text-anchor="middle"
-          class="font-mono font-medium fill-primary pointer-events-none"
+          class="font-mono font-medium fill-base-content pointer-events-none"
           font-size="8.5"
         >
           {compactLabel(ball.pin.name, 5)}
@@ -296,7 +296,7 @@
           x={ball.cx}
           y={asgn ? ball.cy - 2 : ball.cy + 3}
           text-anchor="middle"
-          class="font-mono font-semibold fill-primary pointer-events-none"
+          class="font-mono font-semibold fill-base-content pointer-events-none"
           font-size="8.5"
         >
           {compactLabel(ball.pin.name, 6)}
@@ -306,7 +306,7 @@
             x={ball.cx}
             y={ball.cy + 8.5}
             text-anchor="middle"
-            class="font-mono fill-pin-text pointer-events-none"
+            class="font-mono fill-base-content pointer-events-none"
             font-size="6.8"
           >
             {compactLabel(`${asgn.peripheral}_${asgn.signal} ${formatMuxLabel(asgn, muxModel)}`, 12)}
@@ -318,7 +318,7 @@
           x={ball.cx}
           y={ball.cy - 8.5}
           text-anchor="middle"
-          class="font-mono fill-muted pointer-events-none"
+          class="font-mono fill-base-content/60 pointer-events-none"
           font-size="6"
         >
           {ball.pin.pos}
@@ -327,7 +327,7 @@
           x={ball.cx}
           y={ball.cy - 0.5}
           text-anchor="middle"
-          class="font-mono font-semibold fill-primary pointer-events-none"
+          class="font-mono font-semibold fill-base-content pointer-events-none"
           font-size="7.5"
         >
           {compactLabel(ball.pin.name, 7)}
@@ -337,7 +337,7 @@
             x={ball.cx}
             y={ball.cy + 7.5}
             text-anchor="middle"
-            class="font-mono fill-pin-text pointer-events-none"
+            class="font-mono fill-base-content pointer-events-none"
             font-size="6"
           >
             {compactLabel(`${asgn.peripheral}_${asgn.signal} ${formatMuxLabel(asgn, muxModel)}`, 13)}
@@ -348,7 +348,7 @@
             x={ball.cx}
             y={ball.cy + 14}
             text-anchor="middle"
-            class="font-mono fill-hint pointer-events-none"
+            class="font-mono fill-info pointer-events-none"
             font-size="5.5"
           >
             {compactLabel(lbl, 10)}
@@ -373,7 +373,7 @@
     x={layout.outerPad + layout.headerPad + layout.gridWidth / 2}
     y={layout.totalHeight - 8}
     text-anchor="middle"
-    class="font-mono fill-muted"
+    class="font-mono fill-base-content/60"
     font-size="12"
   >
     {chip.id} · {chip.package.name} ({chip.package.pinCount} balls) · {chip.core}

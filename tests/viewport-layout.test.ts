@@ -142,6 +142,45 @@ describe('toolbar and modal viewport fit', () => {
   });
 });
 
+describe('native dialog contract', () => {
+  it('opens all six dialog surfaces through the modal API', () => {
+    const components = [
+      'src/components/workspace/ExportModal.svelte',
+      'src/components/workspace/McuSwitcherModal.svelte',
+      'src/components/workspace/BoardSelectorModal.svelte',
+      'src/components/workspace/CompatibleMcuFinder.svelte',
+      'src/components/workspace/PinoutDiffModal.svelte',
+    ];
+    for (const file of components) {
+      const source = readSource(file);
+      expect(source, file).toContain('<dialog');
+      expect(source, file).toContain('class="modal"');
+      expect(source, file).toContain('bind:this=');
+      expect(source, file).toContain('showModal()');
+      expect(source, file).toMatch(/\.close\(\)/);
+      expect(source, file).toContain('onclose=');
+      expect(source, file).toContain('oncancel=');
+      expect(source, file).toContain('modal-backdrop');
+      expect(source, file).not.toContain("addEventListener('keydown'");
+    }
+    const page = readSource('src/pages/WorkspacePage.svelte');
+    expect(page).toContain('<dialog');
+    expect(page).toContain('bind:this={ambiguousDialogEl}');
+    expect(page).toContain('showModal()');
+    expect(page).toContain('onclose={handleAmbiguousClose}');
+    expect(page).toContain('modal-backdrop');
+    expect(page).not.toContain("e.key === 'Escape'");
+  });
+
+  it('keeps the shared workspace shortcuts without dialog Escape handling', () => {
+    const page = readSource('src/pages/WorkspacePage.svelte');
+    const handler = page.match(/const onKeyDown = \(e: KeyboardEvent\) => \{[\s\S]*?\n    \};/)?.[0] ?? '';
+    expect(handler).toContain("e.key.toLowerCase() === 'f'");
+    expect(handler).toContain("e.key.toLowerCase() === 'k'");
+    expect(handler).not.toContain('Escape');
+  });
+});
+
 describe('pure overlay clamping', () => {
   it('keeps an already-inside overlay unchanged', () => {
     expect(clampOverlayPosition(100, 120, 200, 100, 800, 600)).toEqual({ left: 100, top: 120 });

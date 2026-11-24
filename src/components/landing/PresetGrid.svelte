@@ -83,27 +83,27 @@
   {#if recentSessions.length > 0}
     <div class="space-y-4">
       <div class="flex items-baseline justify-between">
-        <h2 class="text-lg font-semibold text-primary">
+        <h2 class="text-lg font-semibold text-foreground">
           Recent Local Sessions
         </h2>
-        <span class="text-xs text-muted">
+        <span class="text-xs text-base-content/60">
           Stored in browser localStorage
         </span>
       </div>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {#each recentSessions.slice(0, 6) as session (session.mcuId)}
-          <div class="group rounded-panel border-ui border-hairline bg-surface p-4 hover:border-hint transition-colors flex flex-col justify-between gap-3">
+          <div class="card card-border group bg-base-100 p-4 hover:border-info transition-colors flex flex-col justify-between gap-3">
             <div class="flex items-start justify-between gap-2">
               <button
                 type="button"
                 onclick={() => onOpenMcu(session.mcuId)}
                 class="text-left min-w-0 flex-1"
               >
-                <div class="font-mono font-semibold text-sm text-primary group-hover:text-hint transition-colors">
+                <div class="font-mono font-semibold text-sm text-foreground group-hover:text-info transition-colors">
                   {session.mcuId}
                 </div>
-                <div class="mt-1 font-mono-tabular text-xs text-muted">
+                <div class="mt-1 font-mono-tabular text-xs text-base-content/60">
                   {session.packageName} · {session.assignedCount}/{session.pinCount} pins assigned
                 </div>
               </button>
@@ -111,24 +111,24 @@
                 type="button"
                 onclick={() => onDeleteRecent(session.mcuId)}
                 title="Remove session"
-                class="p-1.5 rounded-control hover:bg-danger-soft text-faint hover:text-danger"
+                class="btn btn-ghost btn-sm btn-square text-base-content/40 hover:text-error"
               >
-                <Trash2 class="size-ui-md" />
+                <Trash2 class="size-3.5" />
               </button>
             </div>
 
-            <div class="flex items-center justify-between pt-2 border-ui-t border-hairline text-xs">
-              <span class="inline-flex items-center gap-1 text-faint font-mono-tabular">
-                <Clock class="size-ui-sm" />
+            <div class="flex items-center justify-between pt-2 border-t border-base-300 text-xs">
+              <span class="inline-flex items-center gap-1 text-base-content/40 font-mono-tabular">
+                <Clock class="size-3" />
                 {formatRelativeTime(session.updatedAt)}
               </span>
               <button
                 type="button"
                 onclick={() => onOpenMcu(session.mcuId)}
-                class="inline-flex items-center gap-1 font-medium text-hint hover:underline"
+                class="btn btn-link btn-sm gap-1 font-medium"
               >
                 <span>Reopen</span>
-                <ArrowRight class="size-ui-sm" />
+                <ArrowRight class="size-3" />
               </button>
             </div>
           </div>
@@ -141,10 +141,10 @@
   <div class="space-y-4">
     <div class="flex items-baseline justify-between gap-4">
       <div>
-        <h2 class="text-lg font-semibold text-primary">
+        <h2 class="text-lg font-semibold text-foreground">
           Cross-Vendor Starter Chips
         </h2>
-        <p class="text-sm text-muted">
+        <p class="text-sm text-base-content/60">
           Jump straight into STM32, CH32 and RP parts across SOP, QFN, LQFP and matrix BGA packages.
         </p>
       </div>
@@ -155,32 +155,32 @@
         <button
           type="button"
           onclick={() => onOpenMcu(item.id)}
-          class="group text-left rounded-panel border-ui border-hairline bg-surface p-4 hover:border-hint transition-colors flex flex-col justify-between gap-3"
+          class="card card-border group text-left bg-base-100 p-4 hover:border-info transition-colors flex flex-col justify-between gap-3"
         >
           <div class="space-y-1.5">
             <div class="flex items-center justify-between gap-2">
               <span class="flex items-center gap-1.5 min-w-0">
-                <span class="font-mono font-semibold text-sm text-primary group-hover:text-hint transition-colors truncate">
+                <span class="font-mono font-semibold text-sm text-foreground group-hover:text-info transition-colors truncate">
                   {item.id}
                 </span>
-                <span class="px-1 py-px rounded-control border-ui border-hairline bg-subtle font-mono text-[9px] text-muted">
+                <span class="badge badge-xs badge-ghost font-mono text-[9px]">
                   {item.vendor}
                 </span>
               </span>
-              <span class="font-mono text-[11px] text-muted shrink-0">
+              <span class="font-mono text-[11px] text-base-content/60 shrink-0">
                 {item.pkg} · {item.renderer}
               </span>
             </div>
-            <div class="font-mono-tabular text-xs text-muted">
+            <div class="font-mono-tabular text-xs text-base-content/60">
               {item.core} · {item.memory}
             </div>
-            <p class="text-xs text-muted leading-relaxed pt-1">
+            <p class="text-xs text-base-content/60 leading-relaxed pt-1">
               {item.note}
             </p>
           </div>
-          <div class="flex items-center justify-end text-xs font-medium text-hint">
+          <div class="flex items-center justify-end text-xs font-medium text-info">
             <span class="inline-flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
-              Open workspace <ArrowRight class="size-ui-md" />
+              Open workspace <ArrowRight class="size-3.5" />
             </span>
           </div>
         </button>

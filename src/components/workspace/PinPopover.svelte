@@ -123,32 +123,32 @@
 <div
   bind:clientWidth={measuredWidth}
   bind:clientHeight={measuredHeight}
-  class="fixed z-50 w-[310px] flex flex-col rounded-panel border-ui border-hairline bg-surface shadow-xl overflow-hidden text-xs"
+  class="card card-border fixed z-50 w-[310px] flex flex-col bg-base-100 shadow-xl overflow-hidden text-xs"
   style={`left: ${clampedPos.left}px; top: ${clampedPos.top}px; max-height: min(410px, 88dvh);`}
   role="dialog"
   aria-label={`Assign signal to ${pin.name}`}
 >
   <!-- Header -->
-  <div class="flex items-center justify-between gap-2 px-3 py-2 border-ui-b border-hairline bg-subtle">
+  <div class="flex items-center justify-between gap-2 px-3 py-2 border-b border-base-300 bg-base-200">
     <div class="min-w-0">
-      <div class="flex items-center gap-1.5 font-mono-tabular font-semibold text-primary">
+      <div class="flex items-center gap-1.5 font-mono-tabular font-semibold text-foreground">
         <span>{pin.name}</span>
-        <span class="text-faint">·</span>
-        <span class="text-muted">Pin {pin.pos}</span>
+        <span class="text-base-content/40">·</span>
+        <span class="text-base-content/60">Pin {pin.pos}</span>
       </div>
       {#if bondedNames.length > 0}
-        <div class="text-[11px] font-mono text-hint truncate" title={bondedNames.join(' / ')}>
+        <div class="text-[11px] font-mono text-info truncate" title={bondedNames.join(' / ')}>
           Bonded: {bondedNames.join(' / ')}
         </div>
       {/if}
       {#if currentLabel}
-        <div class="text-[11px] font-mono text-hint truncate">
+        <div class="text-[11px] font-mono text-info truncate">
           {currentLabel}
         </div>
       {/if}
       {#if extiLine}
         <div
-          class="text-[11px] font-mono text-hint truncate"
+          class="text-[11px] font-mono text-info truncate"
           title={`GPIO_EXTI uses hardware line ${extiLine}`}
         >
           EXTI line: {extiLine}
@@ -163,12 +163,12 @@
         type="button"
         onclick={onToggleLock}
         title={isLocked ? 'Unlock pin' : 'Lock pin'}
-        class="p-1.5 rounded-control hover:bg-elevated text-muted"
+        class="btn btn-ghost btn-sm btn-square"
       >
         {#if isLocked}
-          <Lock class="size-ui-md text-pin-power" />
+          <Lock class="size-3.5 text-warning" />
         {:else}
-          <Unlock class="size-ui-md" />
+          <Unlock class="size-3.5" />
         {/if}
       </button>
       {#if currentAssignment}
@@ -180,36 +180,36 @@
           }}
           disabled={isLocked}
           title="Clear assignment"
-          class="p-1.5 rounded-control hover:bg-danger-soft text-danger disabled:opacity-40"
+          class="btn btn-ghost btn-sm btn-square text-error"
         >
-          <Trash2 class="size-ui-md" />
+          <Trash2 class="size-3.5" />
         </button>
       {/if}
       <button
         type="button"
         onclick={onClose}
         title="Close"
-        class="p-1.5 rounded-control hover:bg-elevated text-muted"
+        class="btn btn-ghost btn-sm btn-square"
       >
-        <X class="size-ui-md" />
+        <X class="size-3.5" />
       </button>
     </div>
   </div>
 
   <!-- Search Input -->
-  <div class="px-2.5 py-2 border-ui-b border-hairline">
+  <div class="px-2.5 py-2 border-b border-base-300">
     <div class="relative flex items-center">
-      <Search class="size-ui-md text-faint absolute left-2.5 pointer-events-none" />
+      <Search class="size-3.5 text-base-content/40 absolute left-2.5 pointer-events-none" />
       <input
         bind:this={searchInput}
         bind:value={query}
         type="text"
         placeholder="Filter signals, peripheral, mux..."
-        class="w-full pl-8 pr-2.5 py-1.5 rounded-control bg-elevated border-ui border-hairline text-primary placeholder:text-faint focus:outline-none focus:border-hint text-xs"
+        class="input input-xs w-full pl-8 pr-2.5"
       />
     </div>
     {#if isLocked}
-      <p class="mt-1.5 text-[11px] text-pin-power">
+      <p class="mt-1.5 text-[11px] text-warning">
         Pin is locked. Unlock above to change assignment.
       </p>
     {/if}
@@ -219,7 +219,7 @@
   <div class="flex-1 overflow-y-auto p-1.5 space-y-2">
     {#if filteredGpio.length > 0}
       <div>
-        <div class="px-2 py-1 text-[11px] font-medium text-muted">
+        <div class="px-2 py-1 text-[11px] font-medium text-base-content/60">
           GPIO
         </div>
         <div class="grid grid-cols-2 gap-1">
@@ -238,15 +238,15 @@
                 onAssign({ peripheral: 'GPIO', signal: mode, af: null });
                 onClose();
               }}
-              class={`flex items-center justify-between px-2 py-1.5 rounded-control text-left transition-colors disabled:opacity-40 ${
+              class={`btn btn-ghost btn-sm w-full justify-between text-left ${
                 isActive
-                  ? 'bg-success-soft text-pin-success font-medium'
-                  : 'hover:bg-elevated text-primary'
+                  ? 'bg-success/20 text-success font-medium'
+                  : 'hover:bg-base-300 text-foreground'
               }`}
             >
               <span class="font-mono">GPIO_{mode}</span>
               {#if isActive}
-                <Check class="size-ui-sm shrink-0" />
+                <Check class="size-3 shrink-0" />
               {/if}
             </button>
           {/each}
@@ -256,7 +256,7 @@
 
     {#each groupedSignals as [peripheral, sigs] (peripheral)}
       <div>
-        <div class="px-2 py-1 text-[11px] font-semibold text-muted border-ui-t border-hairline">
+        <div class="px-2 py-1 text-[11px] font-semibold text-base-content/60 border-t border-base-300">
           {peripheral}
         </div>
         <div class="space-y-0.5">
@@ -272,24 +272,24 @@
                 onAssign({ ...sig });
                 onClose();
               }}
-              class={`w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-control text-left transition-colors disabled:opacity-40 ${
+              class={`btn btn-ghost btn-sm w-full justify-between gap-2 text-left ${
                 isActive
-                  ? 'bg-success-soft text-pin-success font-medium'
-                  : 'hover:bg-elevated text-primary'
+                  ? 'bg-success/20 text-success font-medium'
+                  : 'hover:bg-base-300 text-foreground'
               }`}
             >
               <span class="font-mono truncate">{sig.peripheral}_{sig.signal}</span>
               <span class="flex items-center gap-1.5 shrink-0 font-mono-tabular text-[11px]">
                 {#if conflictPin}
-                  <span class="text-danger" title={`Already assigned on ${conflictPin}`}>
+                  <span class="text-error" title={`Already assigned on ${conflictPin}`}>
                     on {conflictPin}
                   </span>
                 {/if}
-                <span class="text-muted">
+                <span class="text-base-content/60">
                   {formatMuxLabel(sig, muxModel)}
                 </span>
                 {#if isActive}
-                  <Check class="size-ui-sm text-pin-success" />
+                  <Check class="size-3 text-success" />
                 {/if}
               </span>
             </button>
@@ -299,7 +299,7 @@
     {/each}
 
     {#if filteredGpio.length === 0 && groupedSignals.length === 0}
-      <div class="py-6 text-center text-muted">
+      <div class="py-6 text-center text-base-content/60">
         No matching signals for "{query}".
       </div>
     {/if}

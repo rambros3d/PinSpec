@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
+  DAISYUI_OWNED_TOKENS,
   INTENTIONALLY_INERT_TOKENS,
   PREVIOUSLY_UNUSED_TOKENS,
   auditThemeTokens,
@@ -26,17 +27,60 @@ function sourceFiles(): string[] {
   return files;
 }
 
+/** Retired custom utilities that daisyUI component classes now replace. */
+const RETIRED_UTILITIES = [
+  'rounded-panel',
+  'rounded-control',
+  'rounded-pill',
+  'rounded-mark',
+  'rounded-top-control',
+  'border-ui',
+  'size-selector-dot',
+  'size-ui',
+  'bg-canvas',
+  'bg-surface',
+  'bg-elevated',
+  'bg-subtle',
+  'bg-action',
+  'bg-danger',
+  'bg-pin-',
+  'text-muted',
+  'text-faint',
+  'text-hint',
+  'text-pin-',
+  'text-danger',
+  'border-hairline',
+  'border-strong',
+  'border-hint',
+];
+
 describe('daisyUI token integration', () => {
-  it('gives every actionable previously unused token a consumer', () => {
+  it('gives every actionable token a consumer, owned by daisyUI where appropriate', () => {
     const audit = auditThemeTokens();
     expect(audit.declared.length).toBe(28);
+    expect(audit.daisyUIOwned).toEqual([...DAISYUI_OWNED_TOKENS]);
+    expect(audit.unused).toEqual([...INTENTIONALLY_INERT_TOKENS]);
     expect(audit.previouslyUnusedStillUnused).toEqual([]);
+    for (const token of DAISYUI_OWNED_TOKENS) {
+      expect(audit.usage.find((item) => item.token === token)?.ownedByDaisyUI).toBe(true);
+    }
     for (const token of PREVIOUSLY_UNUSED_TOKENS) {
-      expect(audit.usage.find((item) => item.token === token)?.references ?? 0).toBeGreaterThan(0);
+      expect(DAISYUI_OWNED_TOKENS).toContain(token);
     }
     for (const token of INTENTIONALLY_INERT_TOKENS) {
-      expect(audit.usage.find((item) => item.token === token)?.references ?? 0).toBe(0);
+      const usage = audit.usage.find((item) => item.token === token);
+      expect(usage?.references ?? 0).toBe(0);
+      expect(usage?.ownedByDaisyUI).toBe(false);
     }
+  });
+
+  it('registers all daisyUI families without built-in themes or startup logs', () => {
+    const css = fs.readFileSync(path.join(ROOT, 'src', 'app.css'), 'utf8');
+    const plugin = css.match(/@plugin "daisyui" \{[\s\S]*?\}/)?.[0] ?? '';
+    expect(plugin).toContain('themes: false');
+    expect(plugin).toContain('logs: false');
+    expect(plugin).toContain('rootcolor, rootscrolllock, rootscrollgutter');
+    expect(plugin).not.toContain('include:');
   });
 
   it('keeps raw color literals confined to the vendored theme file', () => {
@@ -68,6 +112,61 @@ describe('daisyUI token integration', () => {
       path.join(ROOT, 'src', 'components', 'workspace', 'PackageCanvas.svelte'),
       'utf8',
     );
-    expect(canvas).toContain('bg-mcu-canvas');
+    expect(canvas).toContain('bg-base-100');
+  });
+
+  it('maps status surfaces onto daisyUI status utilities', () => {
+    const markup = sourceFiles()
+      .filter((file) => /\.svelte$/.test(file) && file.includes(`${path.sep}src${path.sep}`))
+      .map((file) => fs.readFileSync(file, 'utf8'))
+      .join('\n');
+    for (const token of [
+      'badge-success',
+      'badge-warning',
+      'badge-error',
+      'alert-success',
+      'alert-warning',
+      'alert-error',
+      'bg-base-100',
+    ]) {
+      expect(markup, token).toContain(token);
+    }
+  });
+
+  it('uses the renamed foreground utility without leaving the former name behind', () => {
+    const markup = sourceFiles().filter(
+      (file) => /\.svelte$/.test(file) && file.includes(`${path.sep}src${path.sep}`),
+    );
+    const all = markup.map((file) => fs.readFileSync(file, 'utf8')).join('\n');
+    expect(all).toContain('text-foreground');
+    expect(all).not.toMatch(/\btext-primary\b(?!-)/);
+    const css = fs.readFileSync(path.join(ROOT, 'src', 'app.css'), 'utf8');
+    expect(css).toContain('@utility text-foreground');
+    expect(css).not.toContain('@utility text-primary');
+  });
+
+  it('keeps retired custom shape, border, surface, and action utilities out of markup', () => {
+    const markupDirs = [
+      path.join(ROOT, 'src', 'components'),
+      path.join(ROOT, 'src', 'pages'),
+    ];
+    const files: string[] = [];
+    for (const dir of markupDirs) {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        if (entry.isDirectory()) {
+          for (const nested of fs.readdirSync(path.join(dir, entry.name))) {
+            if (nested.endsWith('.svelte')) files.push(path.join(dir, entry.name, nested));
+          }
+        } else if (entry.name.endsWith('.svelte')) {
+          files.push(path.join(dir, entry.name));
+        }
+      }
+    }
+    for (const file of files) {
+      const source = fs.readFileSync(file, 'utf8');
+      for (const utility of RETIRED_UTILITIES) {
+        expect(source, `${path.basename(file)}: ${utility}`).not.toContain(utility);
+      }
+    }
   });
 });

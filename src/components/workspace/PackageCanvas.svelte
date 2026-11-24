@@ -362,7 +362,7 @@
   bind:this={stageEl}
   bind:clientWidth={stageWidth}
   bind:clientHeight={stageHeight}
-  class={`relative flex-1 h-full overflow-hidden bg-mcu-canvas bg-dot-grid select-none ${
+  class={`relative flex-1 h-full overflow-hidden bg-base-100 bg-dot-grid select-none ${
     dragging ? 'cursor-grabbing' : 'cursor-grab'
   }`}
   onwheel={handleWheel}
@@ -441,61 +441,61 @@
 
   <!-- Remap Mode Top-Center Banner -->
   {#if remapSourcePos}
-    <div class="absolute top-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3 px-3.5 py-2 rounded-panel border-ui border-hint bg-remap-panel text-primary text-xs shadow-lg">
+    <div role="status" class="alert alert-info absolute top-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3 px-3.5 py-2 text-xs shadow-lg">
       <span class="font-mono font-medium">
         Remap Mode: click any pulsing cyan pin to move {remapSourceLabel}
       </span>
       <button
         type="button"
         onclick={onCancelRemap}
-        class="inline-flex items-center gap-1 px-2 py-0.5 rounded-control bg-action-soft-strong hover:bg-action-soft-strong text-primary whitespace-nowrap"
+        class="btn btn-xs btn-primary whitespace-nowrap"
       >
-        <X class="size-ui-sm" />
+        <X class="size-3" />
         <span>Cancel (Esc)</span>
       </button>
     </div>
   {/if}
 
   <!-- Top-Right Canvas HUD Controls -->
-  <div class="absolute top-3 right-3 z-20 flex items-center gap-1 p-1 rounded-panel border-ui border-hairline bg-surface-alpha shadow-sm text-xs">
+  <div class="card card-border absolute top-3 right-3 z-20 flex items-center gap-1 p-1 bg-base-100/95 shadow-sm text-xs">
     <button
       type="button"
       onclick={() => zoomBy(1 / 1.2)}
       title="Zoom Out"
-      class="p-1.5 rounded-control hover:bg-elevated text-primary"
+      class="btn btn-ghost btn-sm btn-square"
     >
-      <Minus class="size-ui-md" />
+      <Minus class="size-3.5" />
     </button>
-    <span class="px-1.5 font-mono-tabular text-muted min-w-[44px] text-center">
+    <span class="px-1.5 font-mono-tabular text-base-content/60 min-w-[44px] text-center">
       {Math.round(zoom * 100)}%
     </span>
     <button
       type="button"
       onclick={() => zoomBy(1.2)}
       title="Zoom In"
-      class="p-1.5 rounded-control hover:bg-elevated text-primary"
+      class="btn btn-ghost btn-sm btn-square"
     >
-      <Plus class="size-ui-md" />
+      <Plus class="size-3.5" />
     </button>
-    <div class="w-px h-4 bg-elevated mx-0.5"></div>
+    <div class="w-px h-4 bg-base-300 mx-0.5"></div>
     <button
       type="button"
       onclick={fitView}
       title="Fit View (0)"
-      class="p-1.5 rounded-control hover:bg-elevated text-primary"
+      class="btn btn-ghost btn-sm btn-square"
     >
-      <Maximize2 class="size-ui-md" />
+      <Maximize2 class="size-3.5" />
     </button>
     <button
       type="button"
       onclick={onRotate}
       title="Rotate Package 90 deg"
-      class="inline-flex items-center gap-1 px-1.5 py-1 rounded-control hover:bg-elevated text-primary font-mono-tabular"
+      class="btn btn-ghost btn-sm gap-1 font-mono-tabular"
     >
-      <RotateCw class="size-ui-md" />
+      <RotateCw class="size-3.5" />
       <span>{rotation}°</span>
     </button>
-    <div class="w-px h-4 bg-elevated mx-0.5"></div>
+    <div class="w-px h-4 bg-base-300 mx-0.5"></div>
     <button
       type="button"
       onclick={() => {
@@ -505,45 +505,45 @@
       }}
       title={placementSettings.overlayVisible ? 'Hide placement overlay' : 'Show placement overlay'}
       aria-pressed={placementSettings.overlayVisible}
-      class={`inline-flex items-center gap-1 px-1.5 py-1 rounded-control hover:bg-elevated font-medium ${
-        placementSettings.overlayVisible ? 'text-pin-remap' : 'text-muted'
+      class={`btn btn-ghost btn-sm gap-1 font-medium ${
+        placementSettings.overlayVisible ? 'btn-active text-info' : ''
       }`}
     >
-      <Crosshair class="size-ui-md" />
+      <Crosshair class="size-3.5" />
       <span class="hidden xl:inline text-[11px]">Placement</span>
     </button>
   </div>
 
   <!-- Bottom-Left Semantic Legend -->
-  <div class="absolute bottom-3 left-3 z-20 flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-1.5 rounded-panel border-ui border-hairline bg-surface-alpha text-[11px] text-muted">
+  <div class="card card-border absolute bottom-3 left-3 z-20 flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-1.5 bg-base-100/95 text-[11px] text-base-content/60">
     <span class="inline-flex items-center gap-1.5">
-      <span class="size-ui-xs rounded-mark bg-pin-unused"></span>
+      <span class="size-2.5 rounded-xs bg-base-300"></span>
       Unused
     </span>
     <span class="inline-flex items-center gap-1.5">
-      <span class="size-ui-xs rounded-mark bg-pin-power"></span>
+      <span class="size-2.5 rounded-xs bg-warning"></span>
       Power / Reset
     </span>
     <span class="inline-flex items-center gap-1.5">
-      <span class="size-ui-xs rounded-mark bg-pin-success"></span>
+      <span class="size-2.5 rounded-xs bg-success"></span>
       Assigned
     </span>
     <span class="inline-flex items-center gap-1.5">
-      <span class="size-ui-xs rounded-mark bg-pin-partial"></span>
+      <span class="size-2.5 rounded-xs bg-warning"></span>
       Partial
     </span>
     <span class="inline-flex items-center gap-1.5">
-      <span class="size-ui-xs rounded-mark bg-pin-conflict"></span>
+      <span class="size-2.5 rounded-xs bg-error"></span>
       Conflict
     </span>
     <span class="inline-flex items-center gap-1.5">
-      <span class="size-ui-xs rounded-mark bg-pin-remap"></span>
+      <span class="size-2.5 rounded-xs bg-info"></span>
       Remap / Search
     </span>
   </div>
 
   <!-- Bottom-Right Interaction Hint -->
-  <div class="hidden xl:flex absolute bottom-3 right-3 z-20 items-center gap-2 px-2.5 py-1 rounded-control border-ui border-hairline bg-surface-alpha text-[11px] text-muted">
+  <div class="card card-border hidden xl:flex absolute bottom-3 right-3 z-20 items-center gap-2 px-2.5 py-1 bg-base-100/95 text-[11px] text-base-content/60">
     <span>Left-click: Assign</span>
     <span aria-hidden="true">·</span>
     <span>Right-click: Label / Lock</span>
@@ -559,20 +559,20 @@
     <div
       bind:clientWidth={tooltipWidth}
       bind:clientHeight={tooltipHeight}
-      class="fixed z-30 w-[268px] pointer-events-none rounded-panel border-ui border-hairline bg-surface-alpha shadow-lg p-2.5 text-xs"
+      class="card card-border fixed z-30 w-[268px] pointer-events-none bg-base-100/95 shadow-lg p-2.5 text-xs"
       style={`left: ${tooltipPos.left}px; top: ${tooltipPos.top}px; max-height: 88dvh; overflow: hidden;`}
     >
-      <div class="flex items-center justify-between gap-2 pb-1.5 border-ui-b border-hairline">
-        <span class="font-mono font-semibold text-primary">
+      <div class="flex items-center justify-between gap-2 pb-1.5 border-b border-base-300">
+        <span class="font-mono font-semibold text-foreground">
           {hPin.name}
         </span>
-        <span class="font-mono-tabular text-[11px] text-muted">
+        <span class="font-mono-tabular text-[11px] text-base-content/60">
           Pin {hPin.pos} · {hPin.type.toUpperCase()}
         </span>
       </div>
 
       {#if hPin.bondedNames?.length}
-        <div class="mt-1 font-mono text-[11px] text-hint">
+        <div class="mt-1 font-mono text-[11px] text-info">
           Bonded pads: {hPin.bondedNames.join(' / ')}
         </div>
       {/if}
@@ -583,8 +583,8 @@
 
       {#if hAsgn}
         <div class="mt-1.5 flex items-center justify-between text-[11px]">
-          <span class="text-muted">Active</span>
-          <span class="font-mono font-medium text-pin-success">
+          <span class="text-base-content/60">Active</span>
+          <span class="font-mono font-medium text-success">
             {hAsgn.peripheral}_{hAsgn.signal} ({formatMuxLabel(hAsgn, muxModel)})
           </span>
         </div>
@@ -592,36 +592,36 @@
 
       {#if hLabel}
         <div class="mt-1 flex items-center justify-between text-[11px]">
-          <span class="text-muted">Label</span>
-          <span class="font-mono text-hint">{hLabel}</span>
+          <span class="text-base-content/60">Label</span>
+          <span class="font-mono text-info">{hLabel}</span>
         </div>
       {/if}
 
       {#if hPin.signals.length > 0}
-        <div class="mt-2 pt-1.5 border-ui-t border-hairline">
-          <div class="text-[10px] font-medium text-muted mb-1">
+        <div class="mt-2 pt-1.5 border-t border-base-300">
+          <div class="text-[10px] font-medium text-base-content/60 mb-1">
             Mux options ({hPin.signals.length})
           </div>
           <div class="grid grid-cols-1 gap-0.5 max-h-[140px] overflow-hidden">
             {#each hPin.signals.slice(0, 10) as sig}
               <div class="flex items-center justify-between font-mono-tabular text-[11px]">
-                <span class="text-primary truncate">
+                <span class="text-foreground truncate">
                   {sig.peripheral}_{sig.signal}
                 </span>
-                <span class="text-faint ml-2 shrink-0">
+                <span class="text-base-content/40 ml-2 shrink-0">
                   {formatMuxLabel(sig, muxModel)}
                 </span>
               </div>
             {/each}
             {#if hPin.signals.length > 10}
-              <div class="text-[10px] text-faint">
+              <div class="text-[10px] text-base-content/40">
                 +{hPin.signals.length - 10} more signals (click to inspect)
               </div>
             {/if}
           </div>
         </div>
       {:else}
-        <div class="mt-1.5 text-[11px] text-muted">
+        <div class="mt-1.5 text-[11px] text-base-content/60">
           Dedicated {hPin.type} pin.
         </div>
       {/if}

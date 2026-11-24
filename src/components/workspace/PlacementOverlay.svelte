@@ -139,13 +139,13 @@
         cx={centerX}
         cy={centerY}
         r={Math.max(1, radius * RING_FACTORS[ring])}
-        class="fill-none stroke-current text-hint opacity-40"
+        class="fill-none stroke-current text-info opacity-40"
         stroke-dasharray={ring === 'outer' ? '5 4' : undefined}
       />
       <text
         x={centerX + 5}
         y={centerY - Math.max(1, radius * RING_FACTORS[ring]) - 4}
-        class="fill-current text-hint text-[10px]"
+        class="fill-current text-info text-[10px]"
       >
         {ring}
       </text>
@@ -176,13 +176,13 @@
             cy={point.y}
             r={selected === indicator.name ? 11 : 9}
             class={selected === indicator.name
-              ? 'fill-current text-pin-remap'
-              : 'fill-current text-hint'}
+              ? 'fill-current text-info'
+              : 'fill-current text-info'}
           />
           <text
             x={point.x + 13}
             y={point.y + 4}
-            class="fill-current text-primary font-mono text-[11px]"
+            class="fill-current text-foreground font-mono text-[11px]"
           >
             {indicator.name} {Math.round(indicator.preference.angle)} deg
           </text>
@@ -192,29 +192,29 @@
   </svg>
 
   <div
-    class="pointer-events-auto absolute top-16 left-3 w-60 rounded-panel border-ui border-hairline bg-surface-alpha p-2.5 space-y-2 text-xs shadow-sm"
+    class="card card-border pointer-events-auto absolute top-16 left-3 w-60 bg-base-100/95 p-2.5 space-y-2 text-xs shadow-sm"
   >
     <div class="flex items-center justify-between gap-2">
-      <span class="font-medium text-primary">Placement affinity</span>
+      <span class="font-medium text-foreground">Placement affinity</span>
       <button
         type="button"
         onclick={onClose}
         title="Hide placement overlay"
-        class="p-0.5 rounded-control hover:bg-elevated text-muted"
+        class="btn btn-ghost btn-xs btn-square"
       >
-        <X class="size-ui-sm" />
+        <X class="size-3" />
       </button>
     </div>
-    <p class="text-[11px] text-muted leading-relaxed">
+    <p class="text-[11px] text-base-content/60 leading-relaxed">
       Inner ring has highest priority. Drag an indicator or enter an angle to bias pin allocation.
     </p>
 
     <label class="block space-y-1">
-      <span class="text-[11px] text-muted">Peripheral</span>
+      <span class="text-[11px] text-base-content/60">Peripheral</span>
       <select
         value={selected ?? ''}
         onchange={(event) => onSelect((event.currentTarget as HTMLSelectElement).value)}
-        class="w-full px-2 py-1 rounded-control bg-elevated border-ui border-hairline text-xs text-primary focus:outline-none focus:border-hint"
+        class="select select-xs w-full"
       >
         <option value="" disabled>Select peripheral</option>
         {#each indicators as indicator (indicator.name)}
@@ -229,11 +229,11 @@
       {#if selectedIndicator.preference?.enabled}
         <div class="flex items-center gap-2">
           <label class="flex-1 space-y-1">
-            <span class="text-[11px] text-muted">Ring</span>
+            <span class="text-[11px] text-base-content/60">Ring</span>
             <select
               value={selectedIndicator.preference.ring}
               onchange={handleRingChange}
-              class="w-full px-2 py-1 rounded-control bg-elevated border-ui border-hairline text-xs text-primary focus:outline-none focus:border-hint"
+              class="select select-xs w-full"
             >
               {#each PLACEMENT_RINGS as ring}
                 <option value={ring}>{ring}</option>
@@ -241,7 +241,7 @@
             </select>
           </label>
           <label class="w-20 space-y-1">
-            <span class="text-[11px] text-muted">Angle</span>
+            <span class="text-[11px] text-base-content/60">Angle</span>
             <input
               bind:value={numericAngle}
               type="number"
@@ -249,18 +249,18 @@
               max="359"
               step="1"
               onchange={handleNumberChange}
-              class="w-full px-2 py-1 rounded-control bg-elevated border-ui border-hairline text-xs font-mono-tabular text-primary focus:outline-none focus:border-hint"
+              class="input input-xs w-full font-mono-tabular"
             />
           </label>
         </div>
-        <div class="text-[11px] text-muted font-mono break-words">
+        <div class="text-[11px] text-base-content/60 font-mono break-words">
           Claimed: {selectedIndicator.claimed.join(', ') || 'none'}
         </div>
       {:else}
         <button
           type="button"
           onclick={() => onEnable(selectedIndicator.name)}
-          class="w-full px-2 py-1 rounded-control bg-action hover:bg-action-hover text-on-action font-medium text-[11px]"
+          class="btn btn-sm btn-primary w-full font-medium"
         >
           Enable {selectedIndicator.name}
         </button>

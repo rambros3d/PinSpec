@@ -187,7 +187,7 @@
         <AlertCircle class="w-8 h-8 text-danger mx-auto" />
         <h2 class="text-base font-semibold">Unable to Open MCU</h2>
         <p class="text-xs text-muted">
-          {workspaceStore.loadError ?? 'The requested STM32 part could not be loaded.'}
+          {workspaceStore.loadError ?? 'The requested part could not be loaded.'}
         </p>
         <div class="flex justify-center gap-2 pt-2">
           <button
@@ -217,7 +217,9 @@
             assignments={workspaceStore.state.assignments}
             peripheralModes={workspaceStore.state.peripheralModes}
             peripheralStatus={workspaceStore.report.peripheralStatus}
+            activeRemaps={workspaceStore.state.activeRemaps ?? {}}
             onModeChange={(p, m) => workspaceStore.setPeripheralMode(p, m)}
+            onRemapChange={(p, id) => workspaceStore.setActiveRemap(p, id)}
             onToggleSignal={(p, s) => workspaceStore.toggleSignal(p, s)}
             onFocusPin={(pos) => workspaceStore.focusPin(pos)}
           />
@@ -292,12 +294,14 @@
             assignments={workspaceStore.state.assignments}
             labels={workspaceStore.state.labels}
             locked={workspaceStore.state.locked}
+            pioAssignments={workspaceStore.state.pioAssignments ?? {}}
             report={workspaceStore.report}
             onFocusPin={(pos) => workspaceStore.focusPin(pos)}
             onSetLabel={(pos, lbl) => workspaceStore.setLabel(pos, lbl)}
             onToggleLock={(pos) => workspaceStore.toggleLock(pos)}
             onClearPin={(pos) => workspaceStore.clearPin(pos)}
             onApplyFix={(fix) => workspaceStore.applyFix(fix)}
+            onSetPioAssignment={(pos, binding) => workspaceStore.setPioAssignment(pos, binding)}
           />
         </div>
       {/if}

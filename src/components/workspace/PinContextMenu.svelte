@@ -1,9 +1,11 @@
 <script lang="ts">
   import { ArrowLeftRight, Crosshair, Lock, Tag, Trash2, Unlock } from 'lucide-svelte';
   import { onMount } from 'svelte';
-  import type { PinAssignment, PinInfo } from '../../core/types';
+  import { formatMuxLabel, getChipMuxModel, type ChipData, type PinAssignment, type PinInfo } from '../../core/types';
+  import PinTagPills from './PinTagPills.svelte';
 
   interface Props {
+    chip: ChipData;
     pin: PinInfo;
     x: number;
     y: number;
@@ -19,6 +21,7 @@
   }
 
   let {
+    chip,
     pin,
     x,
     y,
@@ -52,6 +55,9 @@
   });
 
   const canRemap = $derived(Boolean(assignment && assignment.peripheral !== 'GPIO'));
+  const muxLabel = $derived(
+    assignment ? formatMuxLabel(assignment, getChipMuxModel(chip)) : '',
+  );
 
   function startEditLabel(): void {
     draftLabel = label;
@@ -89,6 +95,23 @@
     <span class="font-semibold text-primary">{pin.name}</span>
     <span class="text-muted">Pin {pin.pos}</span>
   </div>
+
+  {#if assignment || pin.bondedNames?.length || pin.tags?.length}
+    <div class="px-3 py-1.5 border-b border-hairline space-y-1">
+      {#if assignment}
+        <div class="font-mono text-[11px] text-primary">
+          {assignment.peripheral}_{assignment.signal}
+          <span class="text-muted">[{muxLabel}]</span>
+        </div>
+      {/if}
+      {#if pin.bondedNames?.length}
+        <div class="text-[11px] text-muted font-mono">
+          Bonded: {pin.bondedNames.join(' / ')}
+        </div>
+      {/if}
+      <PinTagPills tags={pin.tags} compact={true} />
+    </div>
+  {/if}
 
   {#if editingLabel}
     <form

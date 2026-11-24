@@ -1,19 +1,26 @@
 <script lang="ts">
   import { ChevronDown, ChevronRight, Search } from 'lucide-svelte';
   import { getModesForPeripheral } from '../../core/solver';
-  import type {
-    ChipData,
-    PeripheralKind,
-    PeripheralStatus,
-    PinAssignment,
+  import {
+    formatMuxLabel,
+    getChipMuxModel,
+    type ChipData,
+    type PeripheralKind,
+    type PeripheralStatus,
+    type PinAssignment,
+    type PinTag,
   } from '../../core/types';
+  import { summarizeRemapSignals } from '../../core/vendor-view';
+  import PinTagPills from './PinTagPills.svelte';
 
   interface Props {
     chip: ChipData;
     assignments: Record<string, PinAssignment>;
     peripheralModes: Record<string, string>;
     peripheralStatus: Record<string, PeripheralStatus>;
+    activeRemaps: Record<string, number>;
     onModeChange: (peripheralName: string, modeId: string) => void;
+    onRemapChange: (peripheralName: string, remapId: number) => void;
     onToggleSignal: (peripheralName: string, signal: string) => void;
     onFocusPin: (pos: string) => void;
   }
@@ -23,17 +30,20 @@
     assignments,
     peripheralModes,
     peripheralStatus,
+    activeRemaps,
     onModeChange,
+    onRemapChange,
     onToggleSignal,
     onFocusPin,
   }: Props = $props();
 
-  type CategoryId = 'system' | 'analog' | 'timers' | 'connectivity' | 'other';
+  type CategoryId = 'system' | 'analog' | 'timers' | 'programmable' | 'connectivity' | 'other';
 
   const CATEGORIES: Array<{ id: CategoryId; label: string; kinds: PeripheralKind[] }> = [
     { id: 'system', label: 'System Core', kinds: ['sys'] },
     { id: 'analog', label: 'Analog', kinds: ['adc', 'dac'] },
     { id: 'timers', label: 'Timers', kinds: ['tim'] },
+    { id: 'programmable', label: 'Programmable I/O', kinds: ['pwm', 'pio'] },
     { id: 'connectivity', label: 'Connectivity', kinds: ['spi', 'i2c', 'usart', 'can', 'usb'] },
     { id: 'other', label: 'Other', kinds: ['other'] },
   ];
@@ -43,22 +53,43 @@
     system: true,
     analog: false,
     timers: true,
+    programmable: true,
     connectivity: true,
     other: false,
   });
   let expandedPeriphs = $state<Record<string, boolean>>({});
 
-  // Map (peripheral:signal) -> { pos, pinName, af }
+  const muxModel = $derived(getChipMuxModel(chip));
+
+  // Map (peripheral:signal) -> { pos, pinName, muxLabel }
   const assignedLookup = $derived.by(() => {
     const pinMap = new Map(chip.pins.map((p) => [p.pos, p.name]));
-    const map = new Map<string, { pos: string; pinName: string; af: number | null }>();
+    const map = new Map<string, { pos: string; pinName: string; muxLabel: string }>();
     for (const [pos, asgn] of Object.entries(assignments)) {
       if (asgn.peripheral === 'GPIO') continue;
       map.set(`${asgn.peripheral}:${asgn.signal}`, {
         pos,
         pinName: pinMap.get(pos) ?? pos,
-        af: asgn.af,
+        muxLabel: formatMuxLabel(asgn, muxModel),
       });
+    }
+    return map;
+  });
+
+  /** Tags of pins that host or are assigned to each peripheral. */
+  const peripheralTags = $derived.by(() => {
+    const map = new Map<string, PinTag[]>();
+    const add = (peripheral: string, tags: PinTag[] | undefined) => {
+      if (!tags?.length) return;
+      const existing = map.get(peripheral) ?? [];
+      for (const tag of tags) if (!existing.includes(tag)) existing.push(tag);
+      map.set(peripheral, existing);
+    };
+    for (const pin of chip.pins) {
+      for (const sig of pin.signals) add(sig.peripheral, pin.tags);
+    }
+    for (const [pos, asgn] of Object.entries(assignments)) {
+      add(asgn.peripheral, chip.pins.find((p) => p.pos === pos)?.tags);
     }
     return map;
   });
@@ -130,7 +161,7 @@
       <input
         bind:value={filterText}
         type="text"
-        placeholder="Filter SPI, TIM, USART..."
+        placeholder="Filter SPI, TIM, USART, PWM, PIO..."
         class="w-full pl-8 pr-2.5 py-1.5 rounded-md bg-elevated border border-hairline text-xs text-primary placeholder:text-faint focus:outline-none focus:border-hint"
       />
     </div>
@@ -206,6 +237,13 @@
 
                 {#if isOpen}
                   <div class="px-4 py-2 bg-subtle border-y border-hairline space-y-2">
+                    {#if (peripheralTags.get(pName) ?? []).length > 0}
+                      <div class="flex items-center gap-1.5">
+                        <span class="text-[10px] text-faint">Pins:</span>
+                        <PinTagPills tags={peripheralTags.get(pName) ?? []} compact={true} />
+                      </div>
+                    {/if}
+
                     <!-- Mode Selector Dropdown -->
                     {#if modes.length > 1}
                       <div class="space-y-1">
@@ -226,6 +264,39 @@
                             <option value={m.id}>{m.label}</option>
                           {/each}
                         </select>
+                      </div>
+                    {/if}
+
+                    <!-- Coupled remap-group selector (CH32 and other remap chips) -->
+                    {#if pInfo.remaps && pInfo.remaps.length > 1}
+                      {@const selectedRemap =
+                        pInfo.remaps.find((r) => r.id === (activeRemaps[pName] ?? 0)) ?? pInfo.remaps[0]}
+                      <div class="space-y-1">
+                        <label
+                          for={`remap-${pName}`}
+                          class="block text-[10px] font-medium text-muted"
+                        >
+                          Remap group
+                        </label>
+                        <select
+                          id={`remap-${pName}`}
+                          value={activeRemaps[pName] ?? 0}
+                          onchange={(e) =>
+                            onRemapChange(pName, Number((e.currentTarget as HTMLSelectElement).value))}
+                          class="w-full px-2 py-1.5 rounded bg-surface border border-hairline text-xs text-primary focus:outline-none focus:border-hint"
+                        >
+                          {#each pInfo.remaps as option (option.id)}
+                            <option value={option.id}>{option.name}</option>
+                          {/each}
+                        </select>
+                        <div class="font-mono text-[10px] text-faint break-words">
+                          {summarizeRemapSignals(selectedRemap.signals)}
+                        </div>
+                        {#if selectedRemap.registerNote}
+                          <div class="font-mono text-[10px] text-muted">
+                            {selectedRemap.registerNote}
+                          </div>
+                        {/if}
                       </div>
                     {/if}
 
@@ -250,7 +321,7 @@
                               title="Locate pin on package"
                               class="font-mono-tabular text-[10px] text-pin-success hover:underline shrink-0"
                             >
-                              {assigned.pinName}{assigned.af !== null ? ` / AF${assigned.af}` : ''}
+                              {assigned.pinName} / {assigned.muxLabel}
                             </button>
                           {/if}
                         </div>

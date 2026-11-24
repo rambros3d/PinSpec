@@ -5,6 +5,7 @@
     Check,
     Copy,
     Cpu,
+    Download,
     FileCode2,
     RefreshCw,
     Upload,
@@ -14,12 +15,14 @@
   import HeroChipPreview from '../components/landing/HeroChipPreview.svelte';
   import PresetGrid from '../components/landing/PresetGrid.svelte';
   import QuickSearchBar from '../components/landing/QuickSearchBar.svelte';
+  import { buildHeroDemoState } from '../core/hero-demo';
   import { exportCHeader } from '../core/exporters/c-header';
   import { exportCsv } from '../core/exporters/csv';
   import { exportEmbassyRust } from '../core/exporters/embassy-rust';
-  import { parsePinoutJson } from '../core/exporters/json';
-  import { allocatePeripheralMode, createEmptyWorkspace } from '../core/solver';
-  import type { ChipData, WorkspaceState } from '../core/types';
+  import { exportPinoutJson, parsePinoutJson } from '../core/exporters/json';
+  import { createEmptyWorkspace } from '../core/solver';
+  import { getChipVendor, type ChipData, type VendorId, type WorkspaceState } from '../core/types';
+  import { HERO_CHIPS } from '../core/vendor-view';
   import { catalogStore } from '../state/catalog.svelte';
   import { router } from '../state/router.svelte';
   import { workspaceStore } from '../state/workspace.svelte';
@@ -27,57 +30,81 @@
   const HERO_CHIP_ID = 'STM32G431CBU6';
 
   let heroChip = $state<ChipData | null>(null);
+  let heroVendor = $state<VendorId>('stm32');
+  let heroChipId = $state<string>(HERO_CHIP_ID);
   let heroLoading = $state(true);
   let heroError = $state<string | null>(null);
 
   function makeInitialDemo(chip: ChipData): WorkspaceState {
-    let s = createEmptyWorkspace(chip.id);
-    s = allocatePeripheralMode(chip, s, 'SYS', 'swd').state;
-    s = allocatePeripheralMode(chip, s, 'SPI1', 'full_duplex').state;
-    s = allocatePeripheralMode(chip, s, 'USART2', 'async').state;
-    s = allocatePeripheralMode(chip, s, 'TIM1', 'pwm_3phase_comp').state;
-    for (const [pos, asgn] of Object.entries(s.assignments)) {
-      if (asgn.peripheral === 'SPI1' && asgn.signal === 'SCK') s.labels[pos] = 'IMU_CLK';
-      if (asgn.peripheral === 'SPI1' && asgn.signal === 'MISO') s.labels[pos] = 'IMU_MISO';
-      if (asgn.peripheral === 'SPI1' && asgn.signal === 'MOSI') s.labels[pos] = 'IMU_MOSI';
-      if (asgn.peripheral === 'USART2' && asgn.signal === 'TX') s.labels[pos] = 'DBG_TX';
-      if (asgn.peripheral === 'USART2' && asgn.signal === 'RX') s.labels[pos] = 'DBG_RX';
-      if (asgn.peripheral === 'TIM1' && asgn.signal === 'CH1') s.labels[pos] = 'MOTOR_UH';
-      if (asgn.peripheral === 'TIM1' && asgn.signal === 'CH1N') s.labels[pos] = 'MOTOR_UL';
-      if (asgn.peripheral === 'TIM1' && asgn.signal === 'CH2') s.labels[pos] = 'MOTOR_VH';
-      if (asgn.peripheral === 'TIM1' && asgn.signal === 'CH2N') s.labels[pos] = 'MOTOR_VL';
-      if (asgn.peripheral === 'TIM1' && asgn.signal === 'CH3') s.labels[pos] = 'MOTOR_WH';
-      if (asgn.peripheral === 'TIM1' && asgn.signal === 'CH3N') s.labels[pos] = 'MOTOR_WL';
-    }
-    return s;
+    return buildHeroDemoState(chip);
   }
 
   let demoState = $state<WorkspaceState>(createEmptyWorkspace(HERO_CHIP_ID));
-  let exportTab = $state<'rust' | 'c' | 'csv'>('rust');
+  let exportTab = $state<'rust' | 'c' | 'csv' | 'json'>('rust');
   let copiedExport = $state(false);
   let importError = $state<string | null>(null);
   let fileInputEl = $state<HTMLInputElement | null>(null);
+  let heroLoadToken = 0;
+
+  const rustCrate = $derived.by(() => {
+    const vendor = heroChip ? getChipVendor(heroChip) : heroVendor;
+    if (vendor === 'rp') return 'embassy-rp';
+    if (vendor === 'ch32') return 'ch32-hal';
+    return 'embassy-stm32';
+  });
+
+  const exportTabs = $derived([
+    { id: 'rust', label: `Rust · ${rustCrate}` },
+    { id: 'c', label: 'C Header' },
+    { id: 'csv', label: 'CSV' },
+    { id: 'json', label: 'JSON' },
+  ] as const);
+
+  const exportFilename = $derived.by(() => {
+    const id = (heroChip?.id ?? HERO_CHIP_ID).toLowerCase();
+    if (exportTab === 'rust') return `${id}_pins.rs`;
+    if (exportTab === 'c') return `${id}_pinout.h`;
+    if (exportTab === 'csv') return `${id}_pinout.csv`;
+    return `${id}_pinout.json`;
+  });
 
   const exportPreview = $derived.by(() => {
     if (!heroChip) return '';
     if (exportTab === 'rust') return exportEmbassyRust(heroChip, demoState);
     if (exportTab === 'c') return exportCHeader(heroChip, demoState);
-    return exportCsv(heroChip, demoState, false);
+    if (exportTab === 'csv') return exportCsv(heroChip, demoState, false);
+    return exportPinoutJson(demoState, getChipVendor(heroChip));
   });
 
-  async function loadHero(): Promise<void> {
+  async function loadHero(targetId: string = HERO_CHIP_ID): Promise<void> {
+    const token = ++heroLoadToken;
     heroLoading = true;
     heroError = null;
     try {
-      const chip = await catalogStore.loadChip(HERO_CHIP_ID);
+      // Default hero is always loaded from the generated catalog, never a
+      // committed snapshot. Vendor switching reuses the same lazy loader.
+      const chip =
+        targetId === HERO_CHIP_ID
+          ? await catalogStore.loadChip(HERO_CHIP_ID)
+          : await catalogStore.loadChip(targetId);
+      if (token !== heroLoadToken) return;
+      heroChipId = chip.id;
       heroChip = chip;
       demoState = makeInitialDemo(chip);
       catalogStore.primeChip(chip);
     } catch (err) {
+      if (token !== heroLoadToken) return;
       heroError = err instanceof Error ? err.message : 'Unable to load hero chip data.';
     } finally {
-      heroLoading = false;
+      if (token === heroLoadToken) heroLoading = false;
     }
+  }
+
+  function selectHeroVendor(vendor: VendorId): void {
+    const hero = HERO_CHIPS.find((item) => item.vendor === vendor);
+    if (!hero) return;
+    heroVendor = vendor;
+    void loadHero(hero.id);
   }
 
   function openHeroInWorkspace(state: WorkspaceState): void {
@@ -110,6 +137,17 @@
     } catch {
       // ignore
     }
+  }
+
+  function downloadPreview(): void {
+    if (!exportPreview || typeof document === 'undefined') return;
+    const blob = new Blob([exportPreview], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = exportFilename;
+    anchor.click();
+    URL.revokeObjectURL(url);
   }
 
   function formatSyncDate(iso: string | undefined): string {
@@ -156,12 +194,10 @@
           Exports
         </a>
         <a
-          href="https://github.com/STMicroelectronics/STM32_open_pin_data"
-          target="_blank"
-          rel="noreferrer"
+          href="#provenance"
           class="hover:text-primary transition-colors whitespace-nowrap shrink-0"
         >
-          Open Data
+          Data Sources
         </a>
       </nav>
 
@@ -189,16 +225,16 @@
           {#if catalogStore.meta}
             {catalogStore.meta.chipCount.toLocaleString()} MCUs indexed · {catalogStore.meta.families.length} families · Static & offline-ready
           {:else}
-            STM32 pinout planning · Open ST & Embassy datasets
+            STM32, CH32 & RP pinout planning · Open upstream datasets
           {/if}
         </div>
 
         <h1 class="text-3xl sm:text-4xl lg:text-[2.75rem] font-bold tracking-tight leading-[1.12] text-primary [text-wrap:balance]">
-          Fast STM32 pinout planning, directly in your browser.
+          Fast pinout planning for STM32, CH32 and RP, directly in your browser.
         </h1>
 
         <p class="text-base text-muted leading-relaxed max-w-xl">
-          Zero-install CubeMX-style pin allocation backed by official ST open pin geometry and Embassy peripheral tables. Check signal and DMA conflicts in real time, remap alternate pins with <kbd class="px-1.5 py-0.5 text-xs font-mono rounded border border-strong bg-surface">Ctrl+Click</kbd>, and export clean Embassy Rust, C headers, CSV, or shareable URLs.
+          Zero-install CubeMX-style pin allocation backed by ST open pin geometry, Embassy peripheral tables, WCH CH32 data and Raspberry Pi RP data. Check signal, remap, PIO and DMA conflicts in real time, move pins with <kbd class="px-1.5 py-0.5 text-xs font-mono rounded border border-strong bg-surface">Ctrl+Click</kbd>, and export Rust, C headers, CSV, or shareable URLs.
         </p>
 
         <!-- Instant Fuzzy MCU Search -->
@@ -236,7 +272,9 @@
         {#if heroChip}
           <HeroChipPreview
             chip={heroChip}
+            vendor={heroVendor}
             bind:demoState
+            onVendorChange={selectHeroVendor}
             onOpenWorkspace={openHeroInWorkspace}
           />
         {:else if heroLoading}
@@ -292,7 +330,7 @@
             Parametric Perimeter & BGA Renderers
           </h3>
           <p class="text-xs text-muted leading-relaxed">
-            Accurate counter-clockwise LQFP, QFN, UFQFPN, and TSSOP layouts alongside zoom-adaptive JEDEC UFBGA, TFBGA, and WLCSP ball matrices.
+            Two-sided SOP and TSSOP bodies, exposed-pad QFN and LQFP outlines, bonded CH32 pins and zoom-adaptive BGA ball matrices.
           </p>
         </div>
 
@@ -302,7 +340,7 @@
             Mode Allocation & Ctrl+Click Remapping
           </h3>
           <p class="text-xs text-muted leading-relaxed">
-            Scarcity-aware backtracking preserves USB, HSE, and SWD pins, flags DMA contention, and surfaces 1-hop remap fixes in one click.
+            Scarcity-aware allocation preserves scarce pins, flags DMA and shared-resource contention, and surfaces 1-hop fixes, CH32 remap groups and RP PIO windows.
           </p>
         </div>
 
@@ -312,7 +350,7 @@
             Embassy Rust, C Header, CSV & URL Links
           </h3>
           <p class="text-xs text-muted leading-relaxed">
-            Export idiomatic Embassy peripheral structs, include-guarded C macros, KiCad/EasyEDA CSV cross-checks, or deflate-compressed share links.
+            Export embassy-stm32, embassy-rp or ch32-hal structs, include-guarded C macros, CSV, JSON, or deflate-compressed share links.
           </p>
         </div>
 
@@ -322,7 +360,7 @@
             Automated Weekly Open-Data Sync
           </h3>
           <p class="text-xs text-muted leading-relaxed">
-            Static per-MCU JSON shards are compiled directly from ST open pin XMLs and Embassy stm32-data with zero runtime servers.
+            Static per-MCU JSON shards are compiled from ST, WCH and Raspberry Pi upstream data with zero runtime servers.
           </p>
         </div>
       </div>
@@ -336,20 +374,16 @@
             Live Export Preview
           </h2>
           <p class="text-sm text-muted">
-            Synchronized in real time with the {heroChip?.id ?? HERO_CHIP_ID} chip above — edit any hero pin to watch the generated code update.
+            Synchronized in real time with the {heroChipId} chip above — switch vendors or edit any hero pin to watch the generated code update.
           </p>
         </div>
 
         <div class="flex items-center gap-2">
           <div class="flex items-center gap-1 p-1 rounded-lg bg-elevated border border-hairline">
-            {#each [
-              { id: 'rust', label: 'Embassy Rust' },
-              { id: 'c', label: 'C Header' },
-              { id: 'csv', label: 'CSV' },
-            ] as tab (tab.id)}
+            {#each exportTabs as tab (tab.id)}
               <button
                 type="button"
-                onclick={() => (exportTab = tab.id as 'rust' | 'c' | 'csv')}
+                onclick={() => (exportTab = tab.id)}
                 class={`px-3 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-colors ${
                   exportTab === tab.id
                     ? 'bg-surface text-primary shadow-xs'
@@ -374,6 +408,14 @@
               <span>Copy</span>
             {/if}
           </button>
+          <button
+            type="button"
+            onclick={downloadPreview}
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-action hover:bg-action-hover text-xs font-semibold text-on-action whitespace-nowrap"
+          >
+            <Download class="w-3.5 h-3.5" />
+            <span>Download</span>
+          </button>
         </div>
       </div>
 
@@ -384,9 +426,10 @@
   </main>
 
   <!-- Technical Attribution Footer -->
-  <footer class="border-t border-hairline bg-surface">
+  <footer id="provenance" class="border-t border-hairline bg-surface">
     <div class="max-w-7xl mx-auto px-6 py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs text-muted">
       <div class="font-mono-tabular space-y-1">
+        <div class="font-semibold text-primary">Per-vendor chip counts and source revisions</div>
         <div>
           PinCraft ·
           {#if catalogStore.meta}
@@ -440,6 +483,7 @@
       </div>
 
       <div class="text-[11px] space-y-1 sm:text-right">
+        <div class="font-semibold text-primary">Upstream data sources and licenses</div>
         <div>
           Pinout geometry: <a class="underline hover:text-primary" href="https://github.com/STMicroelectronics/STM32_open_pin_data" target="_blank" rel="noreferrer">STMicroelectronics/STM32_open_pin_data</a> (BSD-3-Clause)
         </div>

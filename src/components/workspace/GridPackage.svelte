@@ -1,9 +1,11 @@
 <script lang="ts">
-  import type {
-    ChipData,
-    PinAssignment,
-    PinInfo,
-    PinVisualStatus,
+  import {
+    formatMuxLabel,
+    type ChipData,
+    type MuxModel,
+    type PinAssignment,
+    type PinInfo,
+    type PinVisualStatus,
   } from '../../core/types';
 
   interface Props {
@@ -13,6 +15,7 @@
     locked: Record<string, boolean>;
     pinStatus: Record<string, PinVisualStatus>;
     zoom?: number;
+    muxModel?: MuxModel;
     highlightedPins?: Set<string>;
     remapSourcePos?: string | null;
     selectedPinPos?: string | null;
@@ -28,6 +31,7 @@
     locked,
     pinStatus,
     zoom = 1,
+    muxModel = 'af',
     highlightedPins = new Set<string>(),
     remapSourcePos = null,
     selectedPinPos = null,
@@ -247,7 +251,7 @@
             class="font-mono fill-pin-text pointer-events-none"
             font-size="6.8"
           >
-            {compactLabel(`${asgn.peripheral}_${asgn.signal}`, 9)}
+            {compactLabel(`${asgn.peripheral}_${asgn.signal} ${formatMuxLabel(asgn, muxModel)}`, 12)}
           </text>
         {/if}
       {:else}
@@ -278,7 +282,7 @@
             class="font-mono fill-pin-text pointer-events-none"
             font-size="6"
           >
-            {compactLabel(`${asgn.peripheral}_${asgn.signal}`, 10)}
+            {compactLabel(`${asgn.peripheral}_${asgn.signal} ${formatMuxLabel(asgn, muxModel)}`, 13)}
           </text>
         {/if}
         {#if lbl}

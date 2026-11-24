@@ -1,9 +1,11 @@
 <script lang="ts">
-  import type {
-    ChipData,
-    PinAssignment,
-    PinInfo,
-    PinVisualStatus,
+  import {
+    formatMuxLabel,
+    type ChipData,
+    type MuxModel,
+    type PinAssignment,
+    type PinInfo,
+    type PinVisualStatus,
   } from '../../core/types';
 
   interface Props {
@@ -12,6 +14,8 @@
     labels: Record<string, string>;
     locked: Record<string, boolean>;
     pinStatus: Record<string, PinVisualStatus>;
+    zoom?: number;
+    muxModel?: MuxModel;
     highlightedPins?: Set<string>;
     remapSourcePos?: string | null;
     selectedPinPos?: string | null;
@@ -27,6 +31,8 @@
     labels,
     locked,
     pinStatus,
+    zoom = 1,
+    muxModel = 'af',
     highlightedPins = new Set<string>(),
     remapSourcePos = null,
     selectedPinPos = null,
@@ -48,12 +54,20 @@
   }
 
   const layout = $derived.by(() => {
-    const sides = chip.package.sides ?? [
+    // SOP-family packages are two-sided even if an upstream shard declares
+    // four equal sides. Keep four-sided QFN/LQFP layouts untouched.
+    const packageName = chip.package.name.toUpperCase();
+    const twoSidedPackage = /SOP|SOIC|SSOP|DIP|SO-/.test(packageName);
+    const declaredSides = chip.package.sides ?? [
       Math.ceil(chip.pins.length / 4),
       Math.floor(chip.pins.length / 4),
       Math.ceil(chip.pins.length / 4),
       Math.floor(chip.pins.length / 4),
     ];
+    const sides =
+      twoSidedPackage && (declaredSides[1] > 0 || declaredSides[2] > 0)
+        ? [Math.ceil(chip.pins.length / 2), 0, Math.floor(chip.pins.length / 2), 0]
+        : declaredSides;
     const [leftCount, bottomCount, rightCount, topCount] = sides;
     const maxVertical = Math.max(leftCount, rightCount, 4);
     const maxHorizontal = Math.max(bottomCount, topCount, 4);
@@ -235,6 +249,21 @@
   function shortPinName(name: string): string {
     return name.length > 9 ? name.slice(0, 9) : name;
   }
+
+  /** Full SVG tooltip text: bonded pads, tags and the vendor-correct mux. */
+  function pinTitle(pin: PinInfo): string {
+    const parts = [`${pin.name} (pos ${pin.pos})`];
+    if (pin.bondedNames?.length) parts.push(`Bonded pads: ${pin.bondedNames.join(' / ')}`);
+    if (pin.tags?.length) parts.push(`Tags: ${pin.tags.join(', ')}`);
+    const asgn = assignments[pin.pos];
+    if (asgn) {
+      parts.push(
+        `${asgn.peripheral}_${asgn.signal} [${formatMuxLabel(asgn, muxModel)}]`,
+      );
+    }
+    if (pin.note) parts.push(pin.note);
+    return parts.join(' | ');
+  }
 </script>
 
 <svg
@@ -267,6 +296,31 @@
       class="stroke-hairline"
       stroke-width="1"
     />
+
+    {#if chip.package.hasExposedPad}
+      <!-- Exposed thermal/ground pad declared by the generated package -->
+      <g>
+        <rect
+          x={layout.originX + layout.bodyWidth / 2 - 19}
+          y={layout.originY + layout.bodyHeight - 28}
+          width="38"
+          height="15"
+          rx="2"
+          class="fill-elevated stroke-hairline"
+          stroke-width="1"
+          stroke-dasharray="3 2"
+        />
+        <text
+          x={layout.originX + layout.bodyWidth / 2}
+          y={layout.originY + layout.bodyHeight - 17}
+          text-anchor="middle"
+          class="font-mono fill-faint pointer-events-none"
+          font-size="8"
+        >
+          EP
+        </text>
+      </g>
+    {/if}
 
     <!-- Pin 1 Chamfer + Orientation Dot at Top-Left -->
     <path
@@ -318,6 +372,9 @@
     {@const isHighlighted = highlightedPins.has(item.pin.pos)}
     {@const isLocked = Boolean(locked[item.pin.pos])}
     {@const isInteractive = item.pin.type === 'io'}
+    {@const bondedNames = item.pin.bondedNames ?? []}
+    {@const isBonded = bondedNames.length > 0 || Boolean(item.pin.tags?.includes('bonded'))}
+    {@const padLabel = bondedNames.length > 0 ? bondedNames.join('/') : item.pin.name}
     {@const cx = item.x + item.width / 2}
     {@const cy = item.y + item.height / 2}
 
@@ -338,6 +395,8 @@
       onmouseenter={(e) => onPinHover?.(item.pin, e)}
       onmouseleave={() => onPinHover?.(null)}
     >
+      <title>{pinTitle(item.pin)}</title>
+
       <!-- Pad rectangle -->
       <rect
         x={item.x}
@@ -348,8 +407,23 @@
         fill={colors.fill}
         stroke={colors.stroke}
         stroke-width={isHighlighted || selectedPinPos === item.pin.pos ? 2 : 1.2}
+        stroke-dasharray={isBonded ? '4 2' : undefined}
         class={isHighlighted ? 'animate-pin-pulse' : ''}
       />
+
+      {#if isBonded}
+        <rect
+          x={item.x + 3}
+          y={item.y + 3}
+          width={item.width - 6}
+          height={item.height - 6}
+          rx="1.5"
+          fill="none"
+          class="stroke-hairline pointer-events-none"
+          stroke-width="0.8"
+          stroke-dasharray="2 1.5"
+        />
+      {/if}
 
       <!-- Pin Port Name inside pad -->
       {#if item.side === 'left' || item.side === 'right'}
@@ -360,7 +434,7 @@
           class="font-mono font-medium pointer-events-none fill-primary"
           font-size={layout.pitch < 24 ? 8.5 : 10}
         >
-          {shortPinName(item.pin.name)}
+          {shortPinName(padLabel)}
         </text>
       {:else}
         <text
@@ -371,7 +445,7 @@
           class="font-mono font-medium pointer-events-none fill-primary"
           font-size={layout.pitch < 24 ? 8.5 : 10}
         >
-          {shortPinName(item.pin.name)}
+          {shortPinName(padLabel)}
         </text>
       {/if}
 
@@ -446,8 +520,8 @@
         </g>
       {/if}
 
-      <!-- External Signal + User Label Tag -->
-      {#if tag}
+      <!-- External Signal + User Label Tag (suppressed at minimum zoom to avoid overlap) -->
+      {#if tag && zoom >= 0.6}
         {@const tagW = Math.min(compact ? 108 : 152, Math.max(46, tag.length * 6.3 + 12))}
         {@const tagH = Math.min(18, layout.padThick)}
         {@const displayTag = tag.length > (compact ? 16 : 22) ? `${tag.slice(0, compact ? 15 : 21)}...` : tag}

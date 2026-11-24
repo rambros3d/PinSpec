@@ -26,6 +26,22 @@
   let draggingFile = $state(false);
   let fileInput = $state<HTMLInputElement | null>(null);
 
+  const vendor = $derived(getChipVendor(chip));
+
+  const rustTabLabel = $derived.by(() => {
+    if (vendor === 'rp') return 'Rust · embassy-rp';
+    if (vendor === 'ch32') return 'Rust · ch32-hal';
+    return 'Rust · embassy-stm32';
+  });
+
+  const formatTabs = $derived([
+    { id: 'rust' as TabId, label: rustTabLabel },
+    { id: 'c' as TabId, label: 'C Header' },
+    { id: 'csv' as TabId, label: 'CSV' },
+    { id: 'json' as TabId, label: 'JSON' },
+    { id: 'share' as TabId, label: 'Share URL' },
+  ]);
+
   const previewContent = $derived.by(() => {
     switch (activeTab) {
       case 'rust':
@@ -133,16 +149,10 @@
     <!-- Format Tabs -->
     <div class="flex flex-wrap items-center justify-between gap-2 px-5 py-2.5 border-b border-hairline bg-subtle">
       <div class="flex items-center gap-1 p-0.5 rounded-lg bg-elevated">
-        {#each [
-          { id: 'rust', label: 'Embassy Rust' },
-          { id: 'c', label: 'C Header' },
-          { id: 'csv', label: 'CSV' },
-          { id: 'json', label: 'JSON' },
-          { id: 'share', label: 'Share URL' },
-        ] as tab (tab.id)}
+        {#each formatTabs as tab (tab.id)}
           <button
             type="button"
-            onclick={() => (activeTab = tab.id as TabId)}
+            onclick={() => (activeTab = tab.id)}
             class={`px-3 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-colors ${
               activeTab === tab.id
                 ? 'bg-surface text-primary shadow-xs'

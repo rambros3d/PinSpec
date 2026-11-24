@@ -2,12 +2,15 @@
   import { Check, Lock, Search, Trash2, Unlock, X } from 'lucide-svelte';
   import { onMount } from 'svelte';
   import {
+    formatMuxLabel,
+    getChipMuxModel,
     GPIO_MODES,
     type ChipData,
     type PinAssignment,
     type PinInfo,
     type PinSignal,
   } from '../../core/types';
+  import PinTagPills from './PinTagPills.svelte';
 
   interface Props {
     chip: ChipData;
@@ -42,6 +45,9 @@
   let query = $state('');
   let searchInput = $state<HTMLInputElement | null>(null);
 
+  const muxModel = $derived(getChipMuxModel(chip));
+  const bondedNames = $derived(pin.bondedNames ?? []);
+
   const clampedPos = $derived.by(() => {
     if (typeof window === 'undefined') return { left: x, top: y };
     const width = 310;
@@ -73,8 +79,8 @@
     const groups = new Map<string, PinSignal[]>();
     for (const sig of pin.signals) {
       const full = `${sig.peripheral}_${sig.signal}`.toUpperCase();
-      const afStr = sig.af !== null ? `AF${sig.af}` : 'AFIO';
-      if (q && !full.includes(q) && !afStr.includes(q)) continue;
+      const muxStr = formatMuxLabel(sig, muxModel).toUpperCase();
+      if (q && !full.includes(q) && !muxStr.includes(q)) continue;
       const list = groups.get(sig.peripheral) ?? [];
       list.push(sig);
       groups.set(sig.peripheral, list);
@@ -113,11 +119,19 @@
         <span class="text-faint">·</span>
         <span class="text-muted">Pin {pin.pos}</span>
       </div>
+      {#if bondedNames.length > 0}
+        <div class="text-[11px] font-mono text-hint truncate" title={bondedNames.join(' / ')}>
+          Bonded: {bondedNames.join(' / ')}
+        </div>
+      {/if}
       {#if currentLabel}
         <div class="text-[11px] font-mono text-hint truncate">
           {currentLabel}
         </div>
       {/if}
+      <div class="mt-1 flex items-center gap-1">
+        <PinTagPills tags={pin.tags} compact={true} />
+      </div>
     </div>
     <div class="flex items-center gap-1 shrink-0">
       <button
@@ -165,7 +179,7 @@
         bind:this={searchInput}
         bind:value={query}
         type="text"
-        placeholder="Filter signals, peripheral, AF..."
+        placeholder="Filter signals, peripheral, mux..."
         class="w-full pl-8 pr-2.5 py-1.5 rounded-md bg-elevated border border-hairline text-primary placeholder:text-faint focus:outline-none focus:border-hint text-xs"
       />
     </div>
@@ -242,7 +256,7 @@
                   </span>
                 {/if}
                 <span class="text-muted">
-                  {sig.af !== null ? `AF${sig.af}` : 'AFIO'}
+                  {formatMuxLabel(sig, muxModel)}
                 </span>
                 {#if isActive}
                   <Check class="w-3 h-3 text-pin-success" />

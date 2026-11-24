@@ -10,24 +10,31 @@
     Wrench,
     XCircle,
   } from 'lucide-svelte';
-  import type {
-    ChipData,
-    OneHopFix,
-    PinAssignment,
-    SolverReport,
+  import {
+    formatMuxLabel,
+    getChipMuxModel,
+    type ChipData,
+    type OneHopFix,
+    type PinAssignment,
+    type PioPinAssignment,
+    type SolverReport,
   } from '../../core/types';
+  import PioPanel from './PioPanel.svelte';
+  import PinTagPills from './PinTagPills.svelte';
 
   interface Props {
     chip: ChipData;
     assignments: Record<string, PinAssignment>;
     labels: Record<string, string>;
     locked: Record<string, boolean>;
+    pioAssignments: Record<string, PioPinAssignment>;
     report: SolverReport;
     onFocusPin: (pos: string) => void;
     onSetLabel: (pos: string, label: string) => void;
     onToggleLock: (pos: string) => void;
     onClearPin: (pos: string) => void;
     onApplyFix: (fix: OneHopFix) => void;
+    onSetPioAssignment: (pos: string, binding: PioPinAssignment | null) => void;
   }
 
   let {
@@ -35,20 +42,24 @@
     assignments,
     labels,
     locked,
+    pioAssignments,
     report,
     onFocusPin,
     onSetLabel,
     onToggleLock,
     onClearPin,
     onApplyFix,
+    onSetPioAssignment,
   }: Props = $props();
 
-  let activeTab = $state<'pins' | 'diagnostics' | 'dma'>('pins');
+  let activeTab = $state<'pins' | 'diagnostics' | 'dma' | 'pio'>('pins');
   let tableFilter = $state('');
   let sortKey = $state<'pos' | 'pin' | 'signal'>('pos');
   let sortAsc = $state(true);
 
   const pinMap = $derived(new Map(chip.pins.map((p) => [p.pos, p])));
+  const muxModel = $derived(getChipMuxModel(chip));
+  const showPio = $derived(Boolean(chip.pio));
 
   const rows = $derived.by(() => {
     const q = tableFilter.trim().toUpperCase();
@@ -63,7 +74,9 @@
           pos,
           pinName: pin?.name ?? pos,
           signalFull,
-          af: asgn.af,
+          muxLabel: formatMuxLabel(asgn, muxModel),
+          bondedNames: pin?.bondedNames ?? [],
+          tags: pin?.tags ?? [],
           label: labels[pos] ?? '',
           isLocked: Boolean(locked[pos]),
           status: report.pinStatus[pos] ?? 'assigned',
@@ -75,6 +88,7 @@
           r.pos.toUpperCase().includes(q) ||
           r.pinName.toUpperCase().includes(q) ||
           r.signalFull.toUpperCase().includes(q) ||
+          r.muxLabel.toUpperCase().includes(q) ||
           r.label.toUpperCase().includes(q)
         );
       });
@@ -152,6 +166,20 @@
     >
       DMA <span class="font-mono-tabular text-[11px] opacity-75">({report.dmaAnalysis.length})</span>
     </button>
+
+    {#if showPio}
+      <button
+        type="button"
+        onclick={() => (activeTab = 'pio')}
+        class={`px-2.5 py-1.5 rounded-t-md font-medium whitespace-nowrap transition-colors ${
+          activeTab === 'pio'
+            ? 'bg-surface text-primary border-t border-x border-hairline -mb-px'
+            : 'text-muted hover:text-primary'
+        }`}
+      >
+        PIO
+      </button>
+    {/if}
   </div>
 
   <!-- Tab 1: Pin Table -->
@@ -207,7 +235,17 @@
                   {row.pos}
                 </td>
                 <td class="py-1.5 px-1 font-mono font-medium text-primary whitespace-nowrap">
-                  {row.pinName}
+                  <span class={row.bondedNames.length > 0 ? 'border-b border-dashed border-current' : ''}>
+                    {row.pinName}
+                  </span>
+                  {#if row.bondedNames.length > 0}
+                    <span class="block text-[10px] font-normal text-faint">
+                      {row.bondedNames.join(' / ')}
+                    </span>
+                  {/if}
+                  {#if row.tags.length > 0}
+                    <span class="block"><PinTagPills tags={row.tags} compact={true} /></span>
+                  {/if}
                 </td>
                 <td class="py-1.5 px-1 font-mono whitespace-nowrap">
                   <span
@@ -219,9 +257,7 @@
                   >
                     {row.signalFull}
                   </span>
-                  {#if row.af !== null}
-                    <span class="text-faint ml-1">AF{row.af}</span>
-                  {/if}
+                  <span class="text-faint ml-1">{row.muxLabel}</span>
                 </td>
                 <!-- svelte-ignore a11y_click_events_have_key_events -->
                 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
@@ -342,7 +378,7 @@
     </div>
 
   <!-- Tab 3: DMA -->
-  {:else}
+  {:else if activeTab === 'dma'}
     <div class="flex-1 overflow-y-auto p-2.5 space-y-2">
       {#if report.dmaAnalysis.length === 0}
         <div class="p-6 text-center text-xs text-muted space-y-1">
@@ -392,5 +428,14 @@
         {/each}
       {/if}
     </div>
+
+  <!-- Tab 4: RP PIO allocation -->
+  {:else if activeTab === 'pio'}
+    <PioPanel
+      {chip}
+      assignments={pioAssignments}
+      diagnostics={report.diagnostics}
+      onSetAssignment={onSetPioAssignment}
+    />
   {/if}
 </aside>

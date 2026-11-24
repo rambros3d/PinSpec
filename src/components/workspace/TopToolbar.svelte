@@ -81,7 +81,7 @@
         type="button"
         onclick={onOpenSwitcher}
         class="flex items-center gap-2 px-2.5 py-1 rounded-md border border-hairline bg-subtle hover:border-hint transition-colors min-w-0 whitespace-nowrap"
-        title="Switch STM32 MCU"
+        title="Switch MCU"
       >
         <span class="font-mono font-semibold text-xs text-primary">
           {chip.id}

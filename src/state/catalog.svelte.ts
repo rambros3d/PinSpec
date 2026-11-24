@@ -1,8 +1,9 @@
-import type { CatalogIndexEntry, CatalogMeta, ChipData } from '../core/types';
+import type { CatalogIndexEntry, CatalogMeta, ChipData, VendorId } from '../core/types';
 
 export interface CatalogFilter {
-  family?: string; // e.g. "F1", "F4", "G4", "H7", "U5", "C0"
-  packageKind?: string; // e.g. "LQFP", "QFN", "BGA"
+  vendor?: VendorId | 'all';
+  family?: string; // e.g. "G4", "CH32V003", "RP2350"
+  packageKind?: string; // e.g. "LQFP", "QFN", "SOP", "BGA"
 }
 
 export function searchCatalogEntries(
@@ -13,13 +14,22 @@ export function searchCatalogEntries(
 ): CatalogIndexEntry[] {
   const q = query.trim().toUpperCase();
   const tokens = q ? q.split(/\s+/).filter(Boolean) : [];
+  const vendorFilter = filter?.vendor && filter.vendor !== 'all' ? filter.vendor : '';
   const familyFilter = filter?.family?.toUpperCase() ?? '';
   const pkgFilter = filter?.packageKind?.toUpperCase() ?? '';
 
   const scored: Array<{ entry: CatalogIndexEntry; score: number }> = [];
 
   for (const entry of entries) {
-    if (familyFilter && !entry.family.toUpperCase().endsWith(familyFilter)) {
+    if (vendorFilter && (entry.vendor ?? 'stm32') !== vendorFilter) {
+      continue;
+    }
+    if (
+      familyFilter &&
+      entry.family.toUpperCase() !== familyFilter &&
+      !entry.family.toUpperCase().endsWith(familyFilter) &&
+      !entry.family.toUpperCase().includes(familyFilter)
+    ) {
       continue;
     }
     if (pkgFilter) {
@@ -38,7 +48,7 @@ export function searchCatalogEntries(
       continue;
     }
 
-    const haystack = `${entry.id} ${entry.family} ${entry.package} ${entry.core} ${entry.pinCount}PIN`.toUpperCase();
+    const haystack = `${entry.id} ${entry.family} ${entry.package} ${entry.core} ${entry.vendor ?? 'stm32'} ${entry.pinCount}PIN`.toUpperCase();
     let totalScore = 0;
     let matchedAll = true;
 

@@ -1,52 +1,58 @@
 <script lang="ts">
   import { ArrowUpRight, RotateCcw } from 'lucide-svelte';
+  import { buildHeroDemoState } from '../../core/hero-demo';
   import { cloneWorkspaceState } from '../../core/history';
   import {
     allocatePeripheralMode,
-    createEmptyWorkspace,
     evaluateWorkspace,
     pinSupportsSignal,
   } from '../../core/solver';
-  import type { ChipData, PinAssignment, PinInfo, WorkspaceState } from '../../core/types';
+  import {
+    formatMuxLabel,
+    getChipMuxModel,
+    type ChipData,
+    type PinAssignment,
+    type PinInfo,
+    type VendorId,
+    type WorkspaceState,
+  } from '../../core/types';
+  import { HERO_CHIPS } from '../../core/vendor-view';
   import PerimeterPackage from '../workspace/PerimeterPackage.svelte';
   import PinPopover from '../workspace/PinPopover.svelte';
 
   interface Props {
     chip: ChipData;
+    vendor: VendorId;
     demoState: WorkspaceState;
+    onVendorChange: (vendor: VendorId) => void;
     onOpenWorkspace: (state: WorkspaceState) => void;
   }
 
-  let { chip, demoState = $bindable(), onOpenWorkspace }: Props = $props();
+  let {
+    chip,
+    vendor,
+    demoState = $bindable(),
+    onVendorChange,
+    onOpenWorkspace,
+  }: Props = $props();
 
   let hoveredPin = $state<PinInfo | null>(null);
   let popover = $state<{ pin: PinInfo; x: number; y: number } | null>(null);
 
   const report = $derived(evaluateWorkspace(chip, demoState));
 
-  export function buildInitialHeroState(c: ChipData): WorkspaceState {
-    let s = createEmptyWorkspace(c.id);
-    s = allocatePeripheralMode(c, s, 'SYS', 'swd').state;
-    s = allocatePeripheralMode(c, s, 'SPI1', 'full_duplex').state;
-    s = allocatePeripheralMode(c, s, 'USART2', 'async').state;
-    s = allocatePeripheralMode(c, s, 'TIM1', 'pwm_3phase_comp').state;
+  const muxModel = $derived(getChipMuxModel(chip));
 
-    // Add realistic engineering net labels for the demo
-    for (const [pos, asgn] of Object.entries(s.assignments)) {
-      if (asgn.peripheral === 'SPI1' && asgn.signal === 'SCK') s.labels[pos] = 'IMU_CLK';
-      if (asgn.peripheral === 'SPI1' && asgn.signal === 'MISO') s.labels[pos] = 'IMU_MISO';
-      if (asgn.peripheral === 'SPI1' && asgn.signal === 'MOSI') s.labels[pos] = 'IMU_MOSI';
-      if (asgn.peripheral === 'USART2' && asgn.signal === 'TX') s.labels[pos] = 'DBG_TX';
-      if (asgn.peripheral === 'USART2' && asgn.signal === 'RX') s.labels[pos] = 'DBG_RX';
-      if (asgn.peripheral === 'TIM1' && asgn.signal === 'CH1') s.labels[pos] = 'MOTOR_UH';
-      if (asgn.peripheral === 'TIM1' && asgn.signal === 'CH1N') s.labels[pos] = 'MOTOR_UL';
-      if (asgn.peripheral === 'TIM1' && asgn.signal === 'CH2') s.labels[pos] = 'MOTOR_VH';
-      if (asgn.peripheral === 'TIM1' && asgn.signal === 'CH2N') s.labels[pos] = 'MOTOR_VL';
-      if (asgn.peripheral === 'TIM1' && asgn.signal === 'CH3') s.labels[pos] = 'MOTOR_WH';
-      if (asgn.peripheral === 'TIM1' && asgn.signal === 'CH3N') s.labels[pos] = 'MOTOR_WL';
-    }
-    return s;
+  /** Demo state is derived from the active chip's available peripherals. */
+  export function buildInitialHeroState(c: ChipData): WorkspaceState {
+    return buildHeroDemoState(c);
   }
+
+  const activeModes = $derived(
+    Object.entries(demoState.peripheralModes)
+      .filter(([, mode]) => mode && mode !== 'disabled')
+      .map(([peripheral, mode]) => ({ peripheral, mode })),
+  );
 
   function handleToggleDemoPeripheral(periph: string, modeId: string): void {
     const active = demoState.peripheralModes[periph] === modeId;
@@ -93,6 +99,25 @@
 </script>
 
 <div class="rounded-xl border border-hairline bg-surface overflow-hidden flex flex-col">
+  <!-- Vendor switcher: each chip is fetched from generated data on demand -->
+  <div class="flex flex-wrap items-center gap-1.5 px-4 py-2 border-b border-hairline bg-subtle text-xs">
+    <span class="text-muted mr-1">Preview:</span>
+    {#each HERO_CHIPS as hero (hero.vendor)}
+      <button
+        type="button"
+        onclick={() => onVendorChange(hero.vendor)}
+        title={hero.id}
+        class={`px-2.5 py-1 rounded-md font-mono transition-colors ${
+          vendor === hero.vendor
+            ? 'bg-action text-on-action font-medium'
+            : 'bg-elevated text-primary hover:bg-elevated border border-hairline'
+        }`}
+      >
+        {hero.label}
+      </button>
+    {/each}
+  </div>
+
   <!-- Top Interactive Control Bar -->
   <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 border-b border-hairline bg-subtle">
     <div class="flex items-center gap-2 text-xs font-mono-tabular">
@@ -129,23 +154,14 @@
   <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-2 border-b border-hairline text-xs">
     <div class="flex flex-wrap items-center gap-1.5">
       <span class="text-muted text-[11px] mr-0.5">Live modes:</span>
-      {#each [
-        { p: 'SYS', m: 'swd', label: 'SWD' },
-        { p: 'SPI1', m: 'full_duplex', label: 'SPI1' },
-        { p: 'USART2', m: 'async', label: 'USART2' },
-        { p: 'TIM1', m: 'pwm_3phase_comp', label: 'TIM1 3-Ph PWM' },
-      ] as item}
-        {@const active = demoState.peripheralModes[item.p] === item.m}
+      {#each activeModes as item (`${item.peripheral}:${item.mode}`)}
         <button
           type="button"
-          onclick={() => handleToggleDemoPeripheral(item.p, item.m)}
-          class={`px-2 py-0.5 rounded font-mono text-[11px] transition-colors border ${
-            active
-              ? 'bg-success-soft border-pin-success text-pin-success font-medium'
-              : 'bg-transparent border-hairline text-muted hover:text-primary'
-          }`}
+          onclick={() => handleToggleDemoPeripheral(item.peripheral, item.mode)}
+          title={`Disable ${item.peripheral} (${item.mode})`}
+          class="px-2 py-0.5 rounded font-mono text-[11px] transition-colors border bg-success-soft border-pin-success text-pin-success font-medium"
         >
-          {item.label}
+          {item.peripheral} · {item.mode}
         </button>
       {/each}
     </div>
@@ -163,6 +179,7 @@
           locked={demoState.locked}
           pinStatus={report.pinStatus}
           compact={true}
+          muxModel={muxModel}
           selectedPinPos={popover?.pin.pos ?? null}
           onPinClick={(pin, e) => {
             if (pin.type === 'io') {
@@ -186,7 +203,7 @@
         <span class="text-faint">·</span>
         {#if hAsgn}
           <span class="text-pin-success shrink-0">
-            {hAsgn.peripheral}_{hAsgn.signal}{hAsgn.af !== null ? ` AF${hAsgn.af}` : ''}
+            {hAsgn.peripheral}_{hAsgn.signal} [{formatMuxLabel(hAsgn, muxModel)}]
           </span>
           <span class="text-faint">·</span>
         {/if}
@@ -194,7 +211,7 @@
           {hoveredPin.signals.length > 0
             ? hoveredPin.signals
                 .slice(0, 4)
-                .map((s) => `${s.peripheral}_${s.signal}`)
+                .map((s) => `${s.peripheral}_${s.signal} (${formatMuxLabel(s, muxModel)})`)
                 .join(', ') + (hoveredPin.signals.length > 4 ? ` +${hoveredPin.signals.length - 4}` : '')
             : `Dedicated ${hoveredPin.type} pin`}
         </span>

@@ -1,12 +1,15 @@
 <script lang="ts">
   import { Maximize2, Minus, Plus, RotateCw, X } from 'lucide-svelte';
   import { onMount } from 'svelte';
-  import type {
-    ChipData,
-    PinAssignment,
-    PinInfo,
-    PinVisualStatus,
+  import {
+    formatMuxLabel,
+    getChipMuxModel,
+    type ChipData,
+    type PinAssignment,
+    type PinInfo,
+    type PinVisualStatus,
   } from '../../core/types';
+  import PinTagPills from './PinTagPills.svelte';
   import GridPackage from './GridPackage.svelte';
   import PerimeterPackage from './PerimeterPackage.svelte';
   import PinContextMenu from './PinContextMenu.svelte';
@@ -71,6 +74,7 @@
   let contextMenu = $state<{ pin: PinInfo; x: number; y: number } | null>(null);
 
   const highlightSet = $derived(new Set<string>(highlightedPins));
+  const muxModel = $derived(getChipMuxModel(chip));
 
   const remapSourceLabel = $derived.by(() => {
     if (!remapSourcePos) return '';
@@ -261,7 +265,7 @@
   onpointerup={handlePointerUp}
   onpointercancel={handlePointerUp}
   role="application"
-  aria-label="Interactive STM32 package canvas"
+  aria-label={`Interactive ${chip.vendor ?? 'stm32'} package canvas`}
 >
   <!-- Transformed SVG Stage -->
   <div
@@ -281,6 +285,7 @@
           {locked}
           {pinStatus}
           {zoom}
+          muxModel={muxModel}
           highlightedPins={highlightSet}
           {remapSourcePos}
           selectedPinPos={popover?.pin.pos ?? contextMenu?.pin.pos ?? null}
@@ -295,6 +300,8 @@
           {labels}
           {locked}
           {pinStatus}
+          {zoom}
+          muxModel={muxModel}
           highlightedPins={highlightSet}
           {remapSourcePos}
           selectedPinPos={popover?.pin.pos ?? contextMenu?.pin.pos ?? null}
@@ -419,11 +426,21 @@
         </span>
       </div>
 
+      {#if hPin.bondedNames?.length}
+        <div class="mt-1 font-mono text-[11px] text-hint">
+          Bonded pads: {hPin.bondedNames.join(' / ')}
+        </div>
+      {/if}
+
+      {#if hPin.tags?.length}
+        <div class="mt-1"><PinTagPills tags={hPin.tags} compact={true} /></div>
+      {/if}
+
       {#if hAsgn}
         <div class="mt-1.5 flex items-center justify-between text-[11px]">
           <span class="text-muted">Active</span>
           <span class="font-mono font-medium text-pin-success">
-            {hAsgn.peripheral}_{hAsgn.signal}{hAsgn.af !== null ? ` (AF${hAsgn.af})` : ''}
+            {hAsgn.peripheral}_{hAsgn.signal} ({formatMuxLabel(hAsgn, muxModel)})
           </span>
         </div>
       {/if}
@@ -438,7 +455,7 @@
       {#if hPin.signals.length > 0}
         <div class="mt-2 pt-1.5 border-t border-hairline">
           <div class="text-[10px] font-medium text-muted mb-1">
-            Alternate Functions ({hPin.signals.length})
+            Mux options ({hPin.signals.length})
           </div>
           <div class="grid grid-cols-1 gap-0.5 max-h-[140px] overflow-hidden">
             {#each hPin.signals.slice(0, 10) as sig}
@@ -447,7 +464,7 @@
                   {sig.peripheral}_{sig.signal}
                 </span>
                 <span class="text-faint ml-2 shrink-0">
-                  {sig.af !== null ? `AF${sig.af}` : 'AFIO'}
+                  {formatMuxLabel(sig, muxModel)}
                 </span>
               </div>
             {/each}
@@ -487,6 +504,7 @@
   <!-- Right-Click Pin Context Menu -->
   {#if contextMenu}
     <PinContextMenu
+      {chip}
       pin={contextMenu.pin}
       x={contextMenu.x}
       y={contextMenu.y}

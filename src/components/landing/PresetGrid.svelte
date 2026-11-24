@@ -12,47 +12,53 @@
 
   const STARTER_CHIPS = [
     {
-      id: 'STM32F411CEU6',
-      pkg: 'UFQFPN48',
-      renderer: 'Perimeter',
-      core: 'Cortex-M4',
-      memory: '512 KB Flash · 128 KB RAM',
-      note: 'Black Pill favorite with 100 MHz FPU and USB OTG FS.',
-    },
-    {
       id: 'STM32G431CBU6',
+      vendor: 'STM32',
       pkg: 'UFQFPN48',
       renderer: 'Perimeter',
       core: 'Cortex-M4',
       memory: '128 KB Flash · 32 KB RAM',
-      note: '170 MHz motor-control MCU with FDCAN, CORDIC, and advanced TIM1.',
+      note: 'Motor-control MCU with FDCAN, CORDIC, and advanced TIM1.',
     },
     {
-      id: 'STM32F103C8T6',
+      id: 'RP2040',
+      vendor: 'RP',
+      pkg: 'QFN-56',
+      renderer: 'Perimeter',
+      core: 'Cortex-M0+ dual',
+      memory: '264 KB SRAM · XIP flash',
+      note: 'Six FUNCSEL functions per GPIO, two PIO blocks and shared PWM slices.',
+    },
+    {
+      id: 'RP2350B',
+      vendor: 'RP',
+      pkg: 'QFN-80',
+      renderer: 'Perimeter',
+      core: 'Cortex-M33 dual',
+      memory: '520 KB SRAM · XIP flash',
+      note: '48 GPIOs with two selectable GPIOBASE windows and three PIO blocks.',
+    },
+    {
+      id: 'CH32V003J4M6',
+      vendor: 'CH32',
+      pkg: 'SOP8',
+      renderer: 'Two-sided',
+      core: 'RISC-V ECMISC',
+      memory: '16 KB Flash · 2 KB RAM',
+      note: 'Bonded multi-pad SOP8 package with coupled peripheral remap groups.',
+    },
+    {
+      id: 'CH32V203C8T6',
+      vendor: 'CH32',
       pkg: 'LQFP48',
       renderer: 'Perimeter',
-      core: 'Cortex-M3',
+      core: 'RISC-V',
       memory: '64 KB Flash · 20 KB RAM',
-      note: 'Classic Blue Pill with AFIO remap architecture.',
-    },
-    {
-      id: 'STM32H743VIT6',
-      pkg: 'LQFP100',
-      renderer: 'Perimeter',
-      core: 'Cortex-M7',
-      memory: '2048 KB Flash · 1024 KB RAM',
-      note: '480 MHz high-performance flight-controller & DSP workhorse.',
-    },
-    {
-      id: 'STM32U575RIT6',
-      pkg: 'LQFP64',
-      renderer: 'Perimeter',
-      core: 'Cortex-M33',
-      memory: '2048 KB Flash · 786 KB RAM',
-      note: 'Ultra-low-power TrustZone MCU with GPDMA1 and rich analog.',
+      note: 'General-purpose RISC-V part with SPI/USART remaps and USB.',
     },
     {
       id: 'STM32H743XIH6',
+      vendor: 'STM32',
       pkg: 'TFBGA240',
       renderer: 'BGA Grid',
       core: 'Cortex-M7',
@@ -136,10 +142,10 @@
     <div class="flex items-baseline justify-between gap-4">
       <div>
         <h2 class="text-lg font-semibold text-primary">
-          Popular Starter Chips
+          Cross-Vendor Starter Chips
         </h2>
         <p class="text-sm text-muted">
-          Jump straight into major STM32 families across perimeter QFN/LQFP and matrix BGA packages.
+          Jump straight into STM32, CH32 and RP parts across SOP, QFN, LQFP and matrix BGA packages.
         </p>
       </div>
     </div>
@@ -153,10 +159,15 @@
         >
           <div class="space-y-1.5">
             <div class="flex items-center justify-between gap-2">
-              <span class="font-mono font-semibold text-sm text-primary group-hover:text-hint transition-colors">
-                {item.id}
+              <span class="flex items-center gap-1.5 min-w-0">
+                <span class="font-mono font-semibold text-sm text-primary group-hover:text-hint transition-colors truncate">
+                  {item.id}
+                </span>
+                <span class="px-1 py-px rounded border border-hairline bg-subtle font-mono text-[9px] text-muted">
+                  {item.vendor}
+                </span>
               </span>
-              <span class="font-mono text-[11px] text-muted">
+              <span class="font-mono text-[11px] text-muted shrink-0">
                 {item.pkg} · {item.renderer}
               </span>
             </div>

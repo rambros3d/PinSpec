@@ -2,6 +2,12 @@
   import { ArrowRight, Cpu, Search, X } from 'lucide-svelte';
   import { onMount } from 'svelte';
   import { catalogStore, searchCatalogEntries } from '../../state/catalog.svelte';
+  import {
+    buildVendorTabs,
+    catalogFamilies,
+    catalogPackageKinds,
+  } from '../../core/vendor-view';
+  import type { VendorId } from '../../core/types';
 
   interface Props {
     onSelect: (mcuId: string) => void;
@@ -10,6 +16,7 @@
   let { onSelect }: Props = $props();
 
   let query = $state('');
+  let vendorFilter = $state<VendorId | 'all'>('all');
   let familyFilter = $state('');
   let pkgFilter = $state('');
   let focused = $state(false);
@@ -17,20 +24,25 @@
   let inputEl = $state<HTMLInputElement | null>(null);
   let wrapperEl = $state<HTMLDivElement | null>(null);
 
-  const familyFilters = ['F1', 'F4', 'G4', 'H7', 'U5', 'C0'];
-  const pkgFilters = ['LQFP', 'QFN', 'BGA'];
+  const vendorTabs = $derived(buildVendorTabs(catalogStore.meta, catalogStore.index));
+  const familyOptions = $derived(catalogFamilies(catalogStore.index));
+  const packageOptions = $derived(catalogPackageKinds(catalogStore.index));
 
   const results = $derived.by(() =>
     searchCatalogEntries(
       catalogStore.index,
       query,
-      { family: familyFilter, packageKind: pkgFilter },
+      { vendor: vendorFilter, family: familyFilter, packageKind: pkgFilter },
       18,
     ),
   );
 
   const showDropdown = $derived(
-    focused && (query.trim().length > 0 || familyFilter !== '' || pkgFilter !== ''),
+    focused &&
+      (query.trim().length > 0 ||
+        vendorFilter !== 'all' ||
+        familyFilter !== '' ||
+        pkgFilter !== ''),
   );
 
   $effect(() => {
@@ -95,7 +107,7 @@
       onfocus={() => (focused = true)}
       onkeydown={handleKeydown}
       type="text"
-      placeholder="Jump to STM32 MCU (e.g. STM32G431CBU6, H743 BGA, F411)..."
+      placeholder="Jump to any MCU (e.g. STM32G431CBU6, CH32V003J4M6, RP2350B)..."
       class="w-full pl-10 pr-20 py-3 rounded-lg border border-strong bg-surface text-sm font-mono text-primary placeholder:text-faint focus:outline-none focus:border-hint shadow-xs transition-colors"
     />
     <div class="absolute right-3 flex items-center gap-1.5">
@@ -119,48 +131,59 @@
     </div>
   </div>
 
-  <!-- Interactive Segmented Quick Filter Buttons -->
+  <!-- Vendor tabs plus vendor-neutral family/package filters -->
   <div class="flex flex-wrap items-center gap-1.5 text-xs">
-    <span class="text-muted mr-1">Filter:</span>
-    {#each familyFilters as fam}
+    <span class="text-muted mr-1">Vendor:</span>
+    {#each vendorTabs as tab (tab.id)}
       <button
         type="button"
         onclick={() => {
-          familyFilter = familyFilter === fam ? '' : fam;
+          vendorFilter = tab.id;
           focused = true;
           inputEl?.focus();
         }}
         class={`px-2.5 py-1 rounded-md font-mono whitespace-nowrap transition-colors ${
-          familyFilter === fam
+          vendorFilter === tab.id
             ? 'bg-action text-on-action font-medium'
             : 'bg-elevated text-primary hover:bg-elevated border border-hairline'
         }`}
       >
-        {fam}
+        {tab.label}
+        <span class="font-mono-tabular opacity-75">({tab.count})</span>
       </button>
     {/each}
+
     <span class="text-faint mx-0.5">|</span>
-    {#each pkgFilters as pkg}
-      <button
-        type="button"
-        onclick={() => {
-          pkgFilter = pkgFilter === pkg ? '' : pkg;
-          focused = true;
-          inputEl?.focus();
-        }}
-        class={`px-2.5 py-1 rounded-md font-mono whitespace-nowrap transition-colors ${
-          pkgFilter === pkg
-            ? 'bg-action text-on-action font-medium'
-            : 'bg-elevated text-primary hover:bg-elevated border border-hairline'
-        }`}
+
+    <label class="inline-flex items-center gap-1 text-muted">
+      Family
+      <select
+        bind:value={familyFilter}
+        class="px-1.5 py-1 rounded-md bg-elevated border border-hairline text-xs text-primary focus:outline-none focus:border-hint"
       >
-        {pkg}
-      </button>
-    {/each}
-    {#if familyFilter || pkgFilter}
+        <option value="">All</option>
+        {#each familyOptions as fam (fam)}
+          <option value={fam}>{fam}</option>
+        {/each}
+      </select>
+    </label>
+    <label class="inline-flex items-center gap-1 text-muted">
+      Package
+      <select
+        bind:value={pkgFilter}
+        class="px-1.5 py-1 rounded-md bg-elevated border border-hairline text-xs text-primary focus:outline-none focus:border-hint"
+      >
+        <option value="">All</option>
+        {#each packageOptions as pkg (pkg)}
+          <option value={pkg}>{pkg}</option>
+        {/each}
+      </select>
+    </label>
+    {#if familyFilter || pkgFilter || vendorFilter !== 'all'}
       <button
         type="button"
         onclick={() => {
+          vendorFilter = 'all';
           familyFilter = '';
           pkgFilter = '';
         }}
@@ -177,7 +200,7 @@
       <div class="flex items-center justify-between px-3.5 py-2 border-b border-hairline bg-subtle text-[11px] font-mono-tabular text-muted">
         <span>
           {#if catalogStore.loadingIndex}
-            Loading STM32 catalog...
+            Loading multi-vendor catalog...
           {:else}
             Showing {results.length} matching parts
           {/if}
@@ -205,11 +228,16 @@
               <div class="flex items-center gap-2.5 min-w-0">
                 <Cpu class="w-4 h-4 text-faint shrink-0" />
                 <div class="min-w-0">
-                  <div class="font-mono font-semibold text-xs text-primary">
-                    {entry.id}
+                  <div class="flex items-center gap-1.5">
+                    <span class="font-mono font-semibold text-xs text-primary">
+                      {entry.id}
+                    </span>
+                    <span class="px-1 py-px rounded border border-hairline bg-subtle font-mono text-[9px] uppercase text-muted">
+                      {entry.vendor ?? 'stm32'}
+                    </span>
                   </div>
                   <div class="font-mono-tabular text-[11px] text-muted truncate">
-                    {entry.core} · {entry.flashKb} KB Flash · {entry.ramKb} KB RAM
+                    {entry.family} · {entry.core} · {entry.flashKb} KB Flash · {entry.ramKb} KB RAM
                   </div>
                 </div>
               </div>

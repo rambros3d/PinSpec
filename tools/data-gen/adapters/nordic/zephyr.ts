@@ -41,10 +41,10 @@ export function parseDeviceTree(text: string, file: string): DeviceTree {
   return { file, gpioPorts, flashKb, ramKb, interrupts, peripherals };
 }
 
-/** Reads one Nordic Zephyr device-tree file from the gitignored cache. */
+/** Reads one Nordic Zephyr device-tree file from the shared Zephyr cache. */
 export function readDeviceTree(cacheDir: string, file: string): DeviceTree {
   return parseDeviceTree(
-    fs.readFileSync(path.join(cacheDir, 'zephyr-nordic', file), 'utf8'),
+    fs.readFileSync(path.join(cacheDir, 'zephyr', file), 'utf8'),
     file,
   );
 }

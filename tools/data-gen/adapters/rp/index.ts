@@ -18,7 +18,7 @@ import type {
   PinTag,
   PinType,
 } from '../../../../src/core/types';
-import { buildPackageInfo, classifyPeripheralKind } from '../../helpers';
+import { buildPackageInfo, classifyPeripheralKind, indexGeometryFromPackage } from '../../helpers';
 import {
   LICENSE_KICAD,
   LICENSE_PICOTOOL,
@@ -311,10 +311,6 @@ export function buildRpChip(
 
 /** Compact index entry for one emitted RP chip. */
 export function rpIndexEntry(chip: ChipData): CatalogIndexEntry {
-  const counts = { spi: 0, i2c: 0, usart: 0, can: 0, usb: 0, tim: 0, adc: 0 };
-  for (const info of Object.values(chip.peripherals)) {
-    if (info.kind in counts) counts[info.kind as keyof typeof counts]++;
-  }
   return {
     id: chip.id,
     vendor: 'rp',
@@ -324,7 +320,7 @@ export function rpIndexEntry(chip: ChipData): CatalogIndexEntry {
     pinCount: chip.package.pinCount,
     flashKb: chip.flashKb,
     ramKb: chip.ramKb,
-    peripherals: counts,
+    geometry: indexGeometryFromPackage(chip.package),
   };
 }
 

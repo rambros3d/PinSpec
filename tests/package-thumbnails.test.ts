@@ -1,12 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { mapWithConcurrency, MAX_CONCURRENT_SHARD_LOADS } from '../src/core/compatibility';
 import {
-  approximateThumbnailFromIndex,
-  approximateThumbnailGeometry,
-  MAX_THUMBNAIL_REFINEMENTS,
-  thumbnailGeometryFromChip,
+  thumbnailGeometryFromIndex,
+  thumbnailGeometryFromSaved,
   thumbnailPadMarks,
 } from '../src/core/package-thumbnail';
 import type { CatalogIndexEntry, ChipData } from '../src/core/types';
@@ -15,144 +12,121 @@ const ROOT = process.cwd();
 const read = (rel: string): string => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 const readChip = (id: string): ChipData =>
   JSON.parse(read(`public/data/chips/${id}.json`)) as ChipData;
+const readIndex = (): CatalogIndexEntry[] =>
+  JSON.parse(read('public/data/index.json')) as CatalogIndexEntry[];
 
-const indexEntry: CatalogIndexEntry = {
+const perimeterEntry: CatalogIndexEntry = {
   id: 'STM32G431CBU6',
+  vendor: 'stm32',
   family: 'STM32G4',
   core: 'Cortex-M4',
   package: 'UFQFPN48',
   pinCount: 48,
   flashKb: 128,
   ramKb: 32,
-  peripherals: { spi: 1, i2c: 1, usart: 1, can: 1, usb: 0, tim: 1, adc: 1 },
+  geometry: { kind: 'perimeter', sides: [12, 12, 12, 12] },
 };
 
 describe('pure package geometry', () => {
-  it('exports every thumbnail contract from the pure core module', () => {
+  it('exports only the exact index geometry surface from the pure core module', () => {
     const source = read('src/core/package-thumbnail.ts');
     for (const symbol of [
       'ThumbnailGeometry',
-      'approximateThumbnailGeometry',
-      'approximateThumbnailFromIndex',
-      'thumbnailGeometryFromChip',
-      'MAX_THUMBNAIL_REFINEMENTS',
+      'thumbnailGeometryFromIndex',
+      'thumbnailGeometryFromSaved',
+      'thumbnailPadMarks',
     ]) {
       expect(source, symbol).toContain(symbol);
     }
-    expect(source).not.toMatch(/from ['"]svelte|window\.|document\./);
-    expect(MAX_THUMBNAIL_REFINEMENTS).toBe(40);
-  });
-
-  it('derives four-sided, two-sided, grid and unknown silhouettes from index data', () => {
-    const qfp = approximateThumbnailFromIndex(indexEntry);
-    expect(qfp.kind).toBe('perimeter');
-    expect(qfp.sides.reduce((a, b) => a + b, 0)).toBe(48);
-    expect(qfp.fidelity).toBe('approximate');
-
-    const sop = approximateThumbnailGeometry('SOP8', 8);
-    expect(sop.sides).toEqual([4, 0, 4, 0]);
-    expect(approximateThumbnailGeometry('SO20', 20).sides).toEqual([10, 0, 10, 0]);
-
-    const bga = approximateThumbnailGeometry('TFBGA144', 144);
-    expect(bga.kind).toBe('grid');
-    expect(bga.rows * bga.cols).toBeGreaterThanOrEqual(144);
-    expect(bga.fidelity).toBe('approximate');
-
-    const unknown = approximateThumbnailGeometry('CUSTOM', 12);
-    expect(unknown.sides).toEqual([0, 0, 0, 0]);
-    expect(Number.isFinite(unknown.pinCount)).toBe(true);
-  });
-
-  it('never emits NaN or undefined for malformed index values', () => {
-    for (const value of [0, -1, Number.NaN, Number.POSITIVE_INFINITY]) {
-      const geometry = approximateThumbnailGeometry('QFN', value);
-      expect(geometry.sides.every(Number.isFinite)).toBe(true);
-      expect(Number.isFinite(geometry.pinCount)).toBe(true);
-      expect(geometry.rows).toBe(0);
-      expect(geometry.hasExposedPad).toBe(false);
-      expect(JSON.stringify(geometry)).not.toContain('null');
+    for (const stale of [
+      'approximate',
+      'fidelity',
+      'MAX_THUMBNAIL_REFINEMENTS',
+      'thumbnailGeometryFromChip',
+      'ChipData',
+    ]) {
+      expect(source, stale).not.toContain(stale);
     }
+    expect(source).not.toMatch(/from ['"]svelte|window\.|document\./);
   });
 
-  it('maps generated shard geometry without hardcoding part identifiers', () => {
-    const chip = readChip('CH32V003J4M6');
-    const geometry = thumbnailGeometryFromChip(chip);
-    expect(geometry.kind).toBe(chip.package.kind);
-    expect(geometry.sides).toEqual(chip.package.sides);
-    expect(geometry.pinCount).toBe(chip.package.pinCount);
-    expect(geometry.fidelity).toBe('exact');
+  it('renders exact perimeter geometry from index data', () => {
+    const geometry = thumbnailGeometryFromIndex(perimeterEntry);
+    expect(geometry.kind).toBe('perimeter');
+    expect(geometry.sides).toEqual([12, 12, 12, 12]);
+    expect(geometry.rows).toBe(0);
+    expect(geometry.cols).toBe(0);
+    expect(geometry.hasExposedPad).toBe(false);
+    expect(geometry.pinCount).toBe(48);
+  });
 
-    const grid = thumbnailGeometryFromChip(readChip('STM32H743XIH6'));
+  it('renders exact grid geometry and exposed-pad state from index data', () => {
+    const entry: CatalogIndexEntry = {
+      ...perimeterEntry,
+      id: 'STM32H743XIH6',
+      package: 'TFBGA176',
+      pinCount: 176,
+      geometry: { kind: 'grid', rows: ['A', 'B', 'C', 'D'], cols: [1, 2, 3, 4, 5], hasExposedPad: true },
+    };
+    const geometry = thumbnailGeometryFromIndex(entry);
+    expect(geometry.kind).toBe('grid');
+    expect(geometry.rows).toBe(4);
+    expect(geometry.cols).toBe(5);
+    expect(geometry.hasExposedPad).toBe(true);
+  });
+
+  it('degrades malformed or absent geometry to a plain finite outline', () => {
+    const bad = thumbnailGeometryFromIndex({
+      ...perimeterEntry,
+      geometry: undefined as unknown as CatalogIndexEntry['geometry'],
+    });
+    expect(bad.sides).toEqual([0, 0, 0, 0]);
+    expect(JSON.stringify(bad)).not.toContain('null');
+    const zero = thumbnailGeometryFromIndex({
+      ...perimeterEntry,
+      pinCount: Number.NaN,
+      geometry: { kind: 'perimeter', sides: [-1, 2, 3, 4] },
+    });
+    expect(zero.pinCount).toBe(0);
+    expect(zero.sides[0]).toBe(0);
+  });
+
+  it('derives saved-session outlines without fetching shards', () => {
+    expect(thumbnailGeometryFromSaved('SOP8', 8).sides).toEqual([4, 0, 4, 0]);
+    expect(thumbnailGeometryFromSaved('LQFP48', 48).sides).toEqual([12, 12, 12, 12]);
+    const grid = thumbnailGeometryFromSaved('TFBGA144', 144);
     expect(grid.kind).toBe('grid');
-    expect(grid.rows).toBe(readChip('STM32H743XIH6').package.rows?.length ?? 0);
-    expect(grid.cols).toBe(readChip('STM32H743XIH6').package.cols?.length ?? 0);
-
-    const exposed = thumbnailGeometryFromChip(readChip('RP2350B'));
-    expect(exposed.hasExposedPad).toBe(true);
-    expect(read('src/core/package-thumbnail.ts')).not.toMatch(/STM32G431|RP2350B|CH32V003/);
+    expect(grid.rows * grid.cols).toBeGreaterThanOrEqual(144);
+    expect(read('src/pages/ProjectsPage.svelte')).not.toContain('loadChip(');
   });
 
   it('emits one static mark per declared pad or ball', () => {
-    const perimeter = approximateThumbnailGeometry('LQFP48', 48);
-    expect(thumbnailPadMarks(perimeter)).toHaveLength(
-      perimeter.sides.reduce((a, b) => a + b, 0),
-    );
-    const grid = approximateThumbnailGeometry('BGA144', 144);
-    expect(thumbnailPadMarks(grid)).toHaveLength(grid.rows * grid.cols);
-    expect(thumbnailPadMarks(approximateThumbnailGeometry('UNKNOWN', 4))).toHaveLength(0);
-  });
-});
-
-describe('bounded visible-row refinement', () => {
-  it('keeps at most four shard loads in flight with concurrency helper', async () => {
-    const ids = Array.from({ length: 12 }, (_, i) => `PART${i}`);
-    let active = 0;
-    let maxActive = 0;
-    const result = await mapWithConcurrency(
-      ids,
-      MAX_CONCURRENT_SHARD_LOADS,
-      async (id) => {
-        active += 1;
-        maxActive = Math.max(maxActive, active);
-        await Promise.resolve();
-        active -= 1;
-        return id;
-      },
-    );
-    expect(result).toEqual(ids);
-    expect(maxActive).toBeLessThanOrEqual(MAX_CONCURRENT_SHARD_LOADS);
+    const geometry = thumbnailGeometryFromIndex(perimeterEntry);
+    expect(thumbnailPadMarks(geometry)).toHaveLength(48);
+    const grid = thumbnailGeometryFromIndex({
+      ...perimeterEntry,
+      geometry: { kind: 'grid', rows: ['A', 'B'], cols: [1, 2, 3] },
+    });
+    expect(thumbnailPadMarks(grid)).toHaveLength(6);
+    expect(thumbnailPadMarks(thumbnailGeometryFromIndex({
+      ...perimeterEntry,
+      geometry: { kind: 'perimeter' },
+    }))).toHaveLength(0);
   });
 
-  it('drops stale results after a generation change', async () => {
-    const resolvers: Array<(value: number) => void> = [];
-    let cancelled = false;
-    const pending = mapWithConcurrency(
-      [1, 2, 3, 4],
-      MAX_CONCURRENT_SHARD_LOADS,
-      () => new Promise<number>((resolve) => resolvers.push(resolve)),
-      () => cancelled,
-    );
-    await Promise.resolve();
-    expect(resolvers).toHaveLength(MAX_CONCURRENT_SHARD_LOADS);
-    cancelled = true;
-    for (const resolve of resolvers) resolve(1);
-    expect(await pending).toEqual([]);
-  });
-
-  it('caps one pass and keeps approximate geometry when a shard fails', async () => {
-    const visible = Array.from({ length: 60 }, (_, i) => `PART${i}`);
-    const pending = visible.slice(0, MAX_THUMBNAIL_REFINEMENTS);
-    expect(pending).toHaveLength(40);
-    const failures = new Set(['PART2']);
-    const outcomes = await mapWithConcurrency(pending, MAX_CONCURRENT_SHARD_LOADS, async (id) =>
-      failures.has(id) ? null : { id, kind: 'perimeter' as const },
-    );
-    expect(outcomes).toHaveLength(40);
-    expect(outcomes.filter((outcome) => outcome === null)).toHaveLength(1);
-    const exact: Record<string, string> = {};
-    for (const outcome of outcomes) if (outcome) exact[outcome.id] = outcome.kind;
-    expect(exact.PART2).toBeUndefined();
-    expect(exact.PART0).toBe('perimeter');
+  it('copies exact geometry from every emitted index entry', () => {
+    const chips = new Map(readIndex().map((entry) => [entry.id, readChip(entry.id)]));
+    for (const entry of readIndex()) {
+      const chip = chips.get(entry.id)!;
+      expect(entry.vendor).toBeTruthy();
+      expect(entry).not.toHaveProperty('peripherals');
+      expect(entry).not.toHaveProperty('series');
+      expect(entry.geometry.kind).toBe(chip.package.kind);
+      expect(entry.geometry.sides ?? null).toEqual(chip.package.sides ?? null);
+      expect(entry.geometry.rows ?? null).toEqual(chip.package.rows ?? null);
+      expect(entry.geometry.cols ?? null).toEqual(chip.package.cols ?? null);
+      expect(Boolean(entry.geometry.hasExposedPad)).toBe(chip.package.hasExposedPad === true);
+    }
   });
 });
 
@@ -161,10 +135,9 @@ describe('thumbnail surfaces', () => {
   const catalog = read('src/pages/CatalogPage.svelte');
   const projects = read('src/pages/ProjectsPage.svelte');
 
-  it('renders a decorative themed SVG without interaction or texture', () => {
+  it('renders a decorative themed SVG without interaction, fidelity, or texture', () => {
     for (const token of [
       'package-thumbnail',
-      'data-fidelity={geometry.fidelity}',
       'pointer-events-none',
       'aria-hidden="true"',
       'fill-base-100',
@@ -175,6 +148,7 @@ describe('thumbnail surfaces', () => {
       expect(component, token).toContain(token);
     }
     for (const token of [
+      'fidelity',
       'onclick=',
       'onpointer',
       'onkeydown=',
@@ -188,29 +162,30 @@ describe('thumbnail surfaces', () => {
     expect(component).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
   });
 
-  it('adds a leading catalog column and refines only observed rows', () => {
-    for (const token of [
-      '<PackageThumbnail',
-      'use:observeRow={entry.id}',
-      'new IntersectionObserver',
-      'generation += 1',
-      'onDestroy(',
-      'mapWithConcurrency(',
-      'MAX_CONCURRENT_SHARD_LOADS',
-      'MAX_THUMBNAIL_REFINEMENTS',
-      'catalogStore.loadChip(',
-      'thumbnailGeometryFromChip(',
-      'approximateThumbnailFromIndex(',
-    ]) {
-      expect(catalog, token).toContain(token);
-    }
-    expect(catalog.match(/loadChip\(/g)).toHaveLength(1);
+  it('keeps the leading catalog column without any shard refinement', () => {
     expect(catalog).toContain('w-12 px-2 py-2 font-medium">Outline');
+    expect(catalog).toContain('<PackageThumbnail');
+    expect(catalog).toContain('geometry={thumbnailGeometryFromIndex(entry)} size={44}');
+    expect(catalog).toContain('{entry.vendor}');
+    for (const stale of [
+      'IntersectionObserver',
+      'observeRow',
+      'visibleIds',
+      'exactGeometry',
+      'refineVisible',
+      'generation',
+      'MAX_THUMBNAIL_REFINEMENTS',
+      'mapWithConcurrency',
+      'loadChip(',
+      'thumbnailGeometryFromChip',
+      '?? \'stm32\'',
+    ]) {
+      expect(catalog, stale).not.toContain(stale);
+    }
   });
 
   it('derives project card outlines from stored fields with no shard fetch', () => {
-    expect(projects).toContain('approximateThumbnailGeometry(session.packageName, session.pinCount)');
-    expect(projects).not.toContain('loadChip(');
+    expect(projects).toContain('thumbnailGeometryFromSaved(session.packageName, session.pinCount)');
     for (const token of [
       'workspaceStore.recentSessions.slice(0, 10)',
       'grid grid-cols-1',

@@ -4,7 +4,7 @@
   "stm32DataCommit": "5de055b",
   "chipCount": 2699,
   "chipsAggregateSha256": "601a7f4a2fe8a5e7dd7275cd902263bd8fcf1a03303a4255605e5cc512e45726",
-  "indexSha256": "bd8e1372e4209b6bc1c350bbd1dd9f75ad1a212deca66bc4914edc0bdf8a0fdb",
+  "indexSha256": "d0591670e34ae70a9a996d62d1daa47bfa774a84b7c03dce632225a48e29c817",
   "referenceChips": {
     "STM32F411CEU6": "0664ff89c3e92ce497a878dfa0e11d762ffcc61015401e2d78bdb1755dd86fa2",
     "STM32G431CBU6": "b383ef988c3c0a883e4659e68dd87e0f4a9837e247146d32cf7e34b7b66aad93",

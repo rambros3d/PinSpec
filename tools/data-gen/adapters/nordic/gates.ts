@@ -100,7 +100,7 @@ export function createNordicProvenanceGate(): Gate {
     evaluate(ctx: GateContext): GateResult {
       const errors: string[] = [];
       const resolved = ctx.sources ?? [];
-      const ids = ['nrf-pacs', 'zephyr-nordic', 'kicad-mcu-nordic'];
+      const ids = ['nrf-pacs', 'zephyr', 'kicad-mcu-nordic'];
       for (const id of ids) {
         const source = resolved.find((item) => item.id === id);
         if (!source || !source.commit || !source.url || !source.license) {
@@ -109,8 +109,14 @@ export function createNordicProvenanceGate(): Gate {
       }
       const canonical = ctx.meta?.sources;
       if (ctx.meta) {
-        if (!canonical?.['nrf-pacs']?.sha || !canonical['nrf-pacs'].url || !canonical['nrf-pacs'].license) {
-          errors.push('nordic gate: meta.json has no complete nrf-pacs record.');
+        const records = canonical as
+          | Record<string, { sha?: string; url?: string; license?: string } | undefined>
+          | undefined;
+        for (const id of ids) {
+          const record = records?.[id];
+          if (!record?.sha || !record.url || !record.license) {
+            errors.push(`nordic gate: meta.json has no complete ${id} record.`);
+          }
         }
         const repositories = canonical?.nordic?.repositories ?? [];
         for (const id of ids) {

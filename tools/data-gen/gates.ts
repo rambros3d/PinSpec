@@ -10,9 +10,11 @@ import {
   CATALOG_SOURCE_IDS,
   getChipVendor,
   type CatalogSourceRecord,
+  type ChipData,
   type VendorId,
 } from '../../src/core/types';
 import type { WarningsDocument } from './artifacts';
+import { indexGeometryFromPackage } from './helpers';
 import type { Gate, GateContext, GateResult } from './types';
 
 /** Uncompressed JSON budget for `public/data/` (GitHub Pages safeguard). */
@@ -124,6 +126,45 @@ export function createArtifactBudgetGate(maxBytes: number = MAX_CATALOG_BYTES): 
   };
 }
 
+/**
+ * Compares one index geometry value with the geometry derived from its shard.
+ * Returns a list of human-readable differences; an empty list means the index
+ * carries the exact generated package geometry.
+ */
+export function findGeometryProblems(
+  entry: { geometry?: unknown; vendor?: unknown },
+  chip: Pick<ChipData, 'vendor' | 'package'>,
+): string[] {
+  const problems: string[] = [];
+  const record = entry as Record<string, unknown>;
+  if ('peripherals' in record) problems.push('index reintroduced peripherals counts');
+  if ('series' in record) problems.push('index reintroduced series');
+  if (!entry.vendor) {
+    problems.push('index has no vendor');
+  } else if (entry.vendor !== getChipVendor(chip)) {
+    problems.push(`index vendor ${String(entry.vendor)} disagrees with shard vendor ${getChipVendor(chip)}`);
+  }
+  const expected = indexGeometryFromPackage(chip.package);
+  const actual = entry.geometry;
+  if (!actual || typeof actual !== 'object') {
+    problems.push('index has no geometry');
+  } else {
+    const received = actual as Record<string, unknown>;
+    if (received.kind !== expected.kind) {
+      problems.push(`geometry kind ${String(received.kind)} disagrees with shard ${expected.kind}`);
+    }
+    for (const key of ['sides', 'rows', 'cols'] as const) {
+      if (JSON.stringify(received[key] ?? null) !== JSON.stringify(expected[key] ?? null)) {
+        problems.push(`geometry ${key} disagrees with shard`);
+      }
+    }
+    if (Boolean(received.hasExposedPad) !== Boolean(expected.hasExposedPad)) {
+      problems.push('geometry hasExposedPad disagrees with shard');
+    }
+  }
+  return problems;
+}
+
 /** Checks that every index entry resolves to a consistent, parseable shard. */
 export function createShardIntegrityGate(): Gate {
   return {
@@ -137,10 +178,7 @@ export function createShardIntegrityGate(): Gate {
           problems.push('missing chip payload');
         } else {
           if (chip.id !== entry.id) problems.push(`chip id ${chip.id} disagrees with index id`);
-          const vendor = getChipVendor(chip);
-          if (vendor !== (entry.vendor ?? 'stm32')) {
-            problems.push(`vendor ${vendor} disagrees with index vendor ${entry.vendor ?? 'stm32'}`);
-          }
+          problems.push(...findGeometryProblems(entry, chip));
           if (chip.pins.length !== entry.pinCount || chip.package.pinCount !== entry.pinCount) {
             problems.push(
               `pin count ${chip.pins.length}/${chip.package.pinCount} disagrees with index ${entry.pinCount}`,

@@ -119,6 +119,11 @@ describe('deploy workflow contract', () => {
 
   it('refreshes sources weekly, acquires all sources, and records SHAs', () => {
     expect(workflow).toContain("if: github.event_name == 'schedule'");
+    expect(workflow).toContain('uses: actions/cache@v4');
+    expect(workflow).toContain('path: .cache');
+    expect(workflow).toContain("if: github.event_name != 'schedule'");
+    expect(workflow).toContain("hashFiles('tools/data-gen/sources.ts', 'tools/data-gen/adapters/**/sources.ts', 'package-lock.json')");
+    expect(workflow.indexOf('uses: actions/cache@v4')).toBeLessThan(workflow.indexOf('npm ci'));
     expect(workflow).toContain('rm -rf .cache');
     expect(workflow).toContain('npm run acquire-sources');
     expect(workflow).toContain('meta.json');

@@ -28,6 +28,6 @@ export const NORDIC_SOURCE_ID = 'nrf-pacs';
 
 /** Absolute path of one Nordic raw file in the gitignored cache. */
 export function nordicCachePath(cacheDir: string, sourceId: string, relativePath: string): string {
-  const dir = sourceId === 'nrf-pacs' ? 'nrf-pacs' : sourceId === 'zephyr-nordic' ? 'zephyr-nordic' : 'kicad-nordic';
+  const dir = sourceId === 'nrf-pacs' ? 'nrf-pacs' : sourceId === 'zephyr' ? 'zephyr' : 'kicad-nordic';
   return path.join(cacheDir, dir, relativePath);
 }

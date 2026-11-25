@@ -285,31 +285,37 @@ export interface CatalogMeta {
   sources?: CatalogMetaSources;
 }
 
-export interface CatalogPeripheralCounts {
-  spi: number;
-  i2c: number;
-  usart: number;
-  can: number;
-  usb: number;
-  tim: number;
-  adc: number;
+/**
+ * Exact package geometry copied from a generated shard's `PackageInfo`.
+ * Optional fields are omitted when the generated package does not declare
+ * them, so a thumbnail can distinguish absent data from a zero count.
+ */
+export interface CatalogIndexGeometry {
+  kind: 'perimeter' | 'grid';
+  /** [left, bottom, right, top] pad counts for perimeter packages. */
+  sides?: [number, number, number, number];
+  /** Ordered ball row labels for grid packages. */
+  rows?: string[];
+  /** Ordered ball column numbers for grid packages. */
+  cols?: number[];
+  hasExposedPad?: boolean;
 }
 
 export interface CatalogIndexEntry {
   id: string;
-  vendor?: VendorId;
+  /** Explicit vendor identity emitted by the adapter; no display fallback. */
+  vendor: VendorId;
   /** Compact mirror of the shard's generated module record; no pin meaning. */
   module?: boolean;
   family: string;
-  /** Upstream series identifier carried alongside the vendor family. */
-  series?: string;
   core: string;
   package: string;
   pinCount: number;
   /** Mirrors the shard value; null only for bare dies without module flash. */
   flashKb: number | null;
   ramKb: number;
-  peripherals: CatalogPeripheralCounts;
+  /** Exact geometry from the generated shard; no approximate silhouette. */
+  geometry: CatalogIndexGeometry;
 }
 
 export interface PinAssignment {

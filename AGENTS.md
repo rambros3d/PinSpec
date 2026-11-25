@@ -258,6 +258,12 @@ PinCraft/
 | KiCad `MCU_Nordic` symbols | CC-BY-SA-4.0 (generated-file exception) | Nordic physical pin numbers, ball IDs, multi-function names |
 | `zephyrproject-rtos/zephyr` Nordic DTS and pinctrl | Apache-2.0 | Nordic GPIO counts, flash/SRAM, PSEL function names |
 
+GitHub Actions restores `.cache/` through `actions/cache` keyed on source
+declarations and `package-lock.json`; scheduled weekly runs delete it first so
+revisions advance. Nordic SVD evidence is fetched as three raw files from a
+pinned `nrf-pacs` ref instead of a full clone, and both RP and Nordic Zephyr
+files are declared under one `zephyr` source and cache directory.
+
 `npm run gen-data` (or `npm run acquire-sources` on its own) shallow-clones the
 git sources and fetches the raw reference files into the gitignored `.cache/`.
 The generator records a short SHA (or SHA-256 for raw files), license, and URL
@@ -296,7 +302,9 @@ so SHAs advance; to update locally, delete the relevant `.cache/` entry first.
   match/coverage ratios, and the thirteen canonical source records (`sha`, `url`,
   `license`) under `sources`.
 - `public/data/index.json` - compact search index with `vendor`, `id`, `family`,
-  `core`, `package`, `pinCount`, `flashKb`, `ramKb`, and peripheral counts.
+  `core`, `package`, `pinCount`, `flashKb`, `ramKb`, and exact `geometry`
+  (`kind`, `sides`, `rows`, `cols`, `hasExposedPad`) copied from each generated
+  package. Peripheral counts and upstream `series` are not emitted.
 - `public/data/chips/<MCU>.json` - full `ChipData` for one part.
 - `public/data/build-warnings.json` - always present; `{ id, vendor, source,
   reason }[]` plus aggregate counts for every deferred/unmapped part.
@@ -474,7 +482,7 @@ implemented alongside STM32. Zero STM32 regressions remains mandatory.
   and the thirteen canonical source records
 - `ChipData.variants`, `pinouts`, and `capabilityEvidence` retain ATDF ordercode
   and capability metadata without adding shards
-- Chips without an explicit vendor are treated as STM32 for display and filtering
+- Every index entry declares an explicit vendor; only shard-side core helpers normalize an absent chip vendor to STM32
 
 ### Data adapters
 

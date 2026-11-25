@@ -22,6 +22,7 @@ import {
   pselSignals,
 } from '../tools/data-gen/adapters/nordic/parts';
 import { coreLabel, parseSvd } from '../tools/data-gen/adapters/nordic/svd';
+import { indexGeometryFromPackage } from '../tools/data-gen/helpers';
 import { parseDeviceTree } from '../tools/data-gen/adapters/nordic/zephyr';
 import { canonicalSourceId } from '../tools/data-gen/artifacts';
 import { DEFAULT_ADAPTERS, generateCatalog } from '../tools/data-gen/index';
@@ -30,6 +31,7 @@ import {
   LICENSE_KICAD,
   LICENSE_NRF_PACS,
   LICENSE_ZEPHYR,
+  NRF_PACS_SVD_FILES,
   nordicSourceSpecs,
 } from '../tools/data-gen/sources';
 import type { AdapterContext, GateContext } from '../tools/data-gen/types';
@@ -91,14 +93,14 @@ function gateContext(chips: ChipData[]): GateContext {
     chips: new Map(chips.map((chip) => [chip.id, chip])),
     index: chips.map((chip) => ({
       id: chip.id,
-      vendor: chip.vendor,
+      vendor: chip.vendor ?? 'nordic',
       family: chip.family,
       core: chip.core,
       package: chip.package.name,
       pinCount: chip.package.pinCount,
       flashKb: chip.flashKb,
       ramKb: chip.ramKb,
-      peripherals: { spi: 0, i2c: 0, usart: 0, can: 0, usb: 0, tim: 0, adc: 0 },
+      geometry: indexGeometryFromPackage(chip.package),
     })),
     totalVariants: chips.length,
     matchedVariants: chips.length,
@@ -122,12 +124,15 @@ describe('Nordic schema and source declarations', () => {
     expect(formatMuxLabel({ peripheral: 'UART0', signal: 'TX', af: null }, 'psel')).toBe('TX');
   });
 
-  it('declares three sources with master-branch SVD and pinned raw files', () => {
+  it('declares three sources with raw SVD files and the shared Zephyr source', () => {
     const specs = nordicSourceSpecs(CACHE);
-    expect(specs.map((spec) => spec.id)).toEqual(['nrf-pacs', 'zephyr-nordic', 'kicad-mcu-nordic']);
+    expect(specs.map((spec) => spec.id)).toEqual(['nrf-pacs', 'zephyr', 'kicad-mcu-nordic']);
     expect(specs.map((spec) => spec.license)).toEqual([LICENSE_NRF_PACS, LICENSE_ZEPHYR, LICENSE_KICAD]);
-    expect(specs[0].branch).toBe('master');
+    expect(specs[0].branch).toBeUndefined();
     expect(specs[0].url).toContain('nrf-pacs');
+    expect(specs[0].rawFiles?.map((file) => file.path)).toEqual(
+      NRF_PACS_SVD_FILES.map((file) => `svds/${file}`),
+    );
     expect(specs[1].rawFiles?.length).toBeGreaterThanOrEqual(5);
     expect(specs[2].rawFiles?.map((file) => file.path)).toEqual(
       KICAD_NORDIC_FILES.map((file) => `MCU_Nordic.kicad_symdir/${file}`),

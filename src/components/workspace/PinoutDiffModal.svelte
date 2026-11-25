@@ -65,6 +65,7 @@
   let beforeGeneration = 0;
   let afterGeneration = 0;
   let diffGeneration = 0;
+  let diffController: AbortController | null = null;
 
   const beforeStatus = $derived.by<Record<string, PinVisualStatus>>(() =>
     beforeSlot.chip && beforeSlot.snapshot
@@ -96,7 +97,7 @@
     return names;
   }
 
-  async function recomputeDiff(token: number): Promise<void> {
+  async function recomputeDiff(token: number, signal: AbortSignal): Promise<void> {
     if (
       beforeSlot.status !== 'ready' ||
       afterSlot.status !== 'ready' ||
@@ -111,7 +112,7 @@
     let beforeChip: ChipData;
     let afterChip: ChipData;
     try {
-      beforeChip = await catalogStore.loadChip(beforeSnapshot.mcuId);
+      beforeChip = await catalogStore.loadChip(beforeSnapshot.mcuId, signal);
     } catch (err) {
       if (token === diffGeneration) {
         beforeSlot = {
@@ -124,7 +125,7 @@
       return;
     }
     try {
-      afterChip = await catalogStore.loadChip(afterSnapshot.mcuId);
+      afterChip = await catalogStore.loadChip(afterSnapshot.mcuId, signal);
     } catch (err) {
       if (token === diffGeneration) {
         afterSlot = {
@@ -147,6 +148,9 @@
 
   async function readFile(slot: 'before' | 'after', file: File): Promise<void> {
     const token = ++diffGeneration;
+    diffController?.abort();
+    const controller = new AbortController();
+    diffController = controller;
     const slotToken = slot === 'before' ? ++beforeGeneration : ++afterGeneration;
     const isBefore = slot === 'before';
     const loading: SlotState = {
@@ -191,7 +195,7 @@
       if (slotToken !== (isBefore ? beforeGeneration : afterGeneration)) return;
       if (isBefore) beforeSlot = ready;
       else afterSlot = ready;
-      await recomputeDiff(token);
+      await recomputeDiff(token, controller.signal);
     } catch (err) {
       const failed: SlotState = {
         ...loading,
@@ -249,6 +253,7 @@
 
   function handleClose(): void {
     diffGeneration += 1;
+    diffController?.abort();
     beforeGeneration += 1;
     afterGeneration += 1;
     onClose();
@@ -266,6 +271,7 @@
     openDialogWithFocus(dialogEl, undefined, opener);
     return () => {
       diffGeneration += 1;
+      diffController?.abort();
       beforeGeneration += 1;
       afterGeneration += 1;
     };

@@ -24,6 +24,7 @@ import {
   expandRefNameVariants,
   extractEmbassyStem,
   extractGpioNames,
+  indexGeometryFromPackage,
   normalizeCoreName,
   normalizePinType,
   normalizeSysSignals,
@@ -550,24 +551,17 @@ export function generateStm32(ctx: AdapterContext): AdapterResult {
 
       chips.set(partId, chipData);
 
-      // Count peripheral categories for compact index.json
-      const counts = { spi: 0, i2c: 0, usart: 0, can: 0, usb: 0, tim: 0, adc: 0 };
-      for (const pInfo of Object.values(chipPeripherals)) {
-        if (pInfo.kind in counts) {
-          counts[pInfo.kind as keyof typeof counts]++;
-        }
-      }
-
       familiesSet.add(family);
       index.set(partId, {
         id: partId,
+        vendor: 'stm32',
         family,
         core: coreName,
         package: packageInfo.name,
         pinCount: packageInfo.pinCount,
         flashKb,
         ramKb,
-        peripherals: counts,
+        geometry: indexGeometryFromPackage(packageInfo),
       });
     }
   }

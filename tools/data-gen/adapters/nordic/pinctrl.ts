@@ -43,11 +43,11 @@ export function buildPselFunctions(headerText: string, bindingText: string): Pse
 /** Reads the pinctrl header and binding from the gitignored Zephyr cache. */
 export function readPselFunctions(cacheDir: string): PselFunction[] {
   const header = fs.readFileSync(
-    path.join(cacheDir, 'zephyr-nordic', 'include/zephyr/dt-bindings/pinctrl/nrf-pinctrl.h'),
+    path.join(cacheDir, 'zephyr', 'include/zephyr/dt-bindings/pinctrl/nrf-pinctrl.h'),
     'utf8',
   );
   const binding = fs.readFileSync(
-    path.join(cacheDir, 'zephyr-nordic', 'dts/bindings/pinctrl/nordic,nrf-pinctrl.yaml'),
+    path.join(cacheDir, 'zephyr', 'dts/bindings/pinctrl/nordic,nrf-pinctrl.yaml'),
     'utf8',
   );
   return buildPselFunctions(header, binding);

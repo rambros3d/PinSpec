@@ -344,8 +344,8 @@ describe('catalog route', () => {
     expect(page).toContain('<PackageThumbnail');
     expect(page).toContain('size={44}');
     expect(page).toContain('Outline');
-    expect(page).toContain('MAX_THUMBNAIL_REFINEMENTS');
-    expect(page).toContain('use:observeRow={entry.id}');
+    expect(page).toContain('thumbnailGeometryFromIndex(entry)');
+    expect(page).not.toContain('IntersectionObserver');
     expect(page).toContain('searchCatalogEntries(');
     expect(page).toContain('500,');
   });
@@ -359,7 +359,7 @@ describe('projects route', () => {
     expect(page).toContain('workspaceStore.openMcu(mcuId)');
     expect(page).toContain('workspaceStore.deleteRecentSession(mcuId)');
     expect(page).toContain('exportSession(session.mcuId)');
-    expect(page).toContain('approximateThumbnailGeometry(session.packageName, session.pinCount)');
+    expect(page).toContain('thumbnailGeometryFromSaved(session.packageName, session.pinCount)');
     expect(page).toContain('No recent projects');
     expect(page).toContain('href="#/catalog"');
     expect(page).not.toContain('<table');

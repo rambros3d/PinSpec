@@ -6,6 +6,7 @@
 import fs from 'node:fs';
 import type { CatalogIndexEntry, ChipData } from '../../../../src/core/types';
 import type { AdapterContext, AdapterResult, VendorAdapter } from '../../types';
+import { indexGeometryFromPackage } from '../../helpers';
 import { ATDF_PATHS, parseAtdf } from './atdf';
 import { createSamGates } from './gates';
 import { buildMemoryEvidence } from './memory';
@@ -22,29 +23,18 @@ import {
   variantMetadata,
 } from './variants';
 
-/** Index peripheral counts mirror the declarative kinds used by the solver. */
+/** Compact index entry for one emitted Microchip SAM part. */
 function indexEntry(chip: ChipData): CatalogIndexEntry {
-  const counts = { spi: 0, i2c: 0, usart: 0, can: 0, usb: 0, tim: 0, adc: 0 };
-  for (const info of Object.values(chip.peripherals)) {
-    if (info.kind === 'spi') counts.spi++;
-    else if (info.kind === 'i2c') counts.i2c++;
-    else if (info.kind === 'usart') counts.usart++;
-    else if (info.kind === 'can') counts.can++;
-    else if (info.kind === 'usb') counts.usb++;
-    else if (info.kind === 'tim' || info.kind === 'pwm') counts.tim++;
-    else if (info.kind === 'adc') counts.adc++;
-  }
   return {
     id: chip.id,
     vendor: 'microchip',
     family: chip.family,
-    ...(chip.series ? { series: chip.series } : {}),
     core: chip.core,
     package: chip.package.name,
     pinCount: chip.package.pinCount,
     flashKb: chip.flashKb,
     ramKb: chip.ramKb,
-    peripherals: counts,
+    geometry: indexGeometryFromPackage(chip.package),
   };
 }
 

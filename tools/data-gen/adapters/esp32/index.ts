@@ -5,6 +5,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { CatalogIndexEntry, ChipData } from '../../../../src/core/types';
+import { indexGeometryFromPackage } from '../../helpers';
 import { esp32SourceSpecs, ESP_KICAD_FILES } from '../../sources';
 import type { AdapterContext, AdapterResult, VendorAdapter } from '../../types';
 import { readEspIdfSignalCounts } from './esp-idf';
@@ -16,18 +17,8 @@ import { readEspMetadata } from './metadata';
 import { buildEspModules, symbolForFamily } from './modules';
 import type { KicadFootprint, KicadSymbol } from './types';
 
-/** Index counts mirror the declarative peripheral kinds used by the solver. */
+/** Compact index entry for one emitted ESP32 chip or module. */
 function indexEntry(chip: ChipData): CatalogIndexEntry {
-  const counts = { spi: 0, i2c: 0, usart: 0, can: 0, usb: 0, tim: 0, adc: 0 };
-  for (const info of Object.values(chip.peripherals)) {
-    if (info.kind === 'spi') counts.spi++;
-    else if (info.kind === 'i2c') counts.i2c++;
-    else if (info.kind === 'usart') counts.usart++;
-    else if (info.kind === 'can') counts.can++;
-    else if (info.kind === 'usb') counts.usb++;
-    else if (info.kind === 'pwm' || info.kind === 'tim') counts.tim++;
-    else if (info.kind === 'adc') counts.adc++;
-  }
   return {
     id: chip.id,
     vendor: 'esp32',
@@ -39,7 +30,7 @@ function indexEntry(chip: ChipData): CatalogIndexEntry {
     pinCount: chip.package.pinCount,
     flashKb: chip.flashKb,
     ramKb: chip.ramKb,
-    peripherals: counts,
+    geometry: indexGeometryFromPackage(chip.package),
   };
 }
 

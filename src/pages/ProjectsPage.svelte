@@ -8,7 +8,7 @@
   import { tick } from 'svelte';
   import PackageThumbnail from '../components/catalog/PackageThumbnail.svelte';
   import { exportPinoutJson, parsePinoutJson } from '../core/exporters/json';
-  import { approximateThumbnailGeometry } from '../core/package-thumbnail';
+  import { thumbnailGeometryFromSaved } from '../core/package-thumbnail';
   import { router } from '../state/router.svelte';
   import { workspaceStore } from '../state/workspace.svelte';
 
@@ -133,7 +133,7 @@
           <article class="card card-border bg-base-100 p-4 flex flex-col gap-3">
             <div class="flex items-start gap-3">
               <PackageThumbnail
-                geometry={approximateThumbnailGeometry(session.packageName, session.pinCount)}
+                geometry={thumbnailGeometryFromSaved(session.packageName, session.pinCount)}
                 size={44}
               />
               <div class="min-w-0 flex-1">

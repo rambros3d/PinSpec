@@ -187,7 +187,7 @@ export function buildVendorTabs(meta: CatalogMeta | null, index: CatalogIndexEnt
       label: vendor.toUpperCase(),
       count:
         meta?.sources?.[vendor]?.chipCount ??
-        index.filter((entry) => (entry.vendor ?? 'stm32') === vendor).length,
+        index.filter((entry) => entry.vendor === vendor).length,
     })),
   ];
 }

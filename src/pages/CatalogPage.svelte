@@ -2,15 +2,9 @@
   import Cpu from '@solar-icons/svelte/bold-duotone/cpu';
   import Search from '@solar-icons/svelte/bold-duotone/magnifier';
   import X from '@solar-icons/svelte/bold-duotone/close';
-  import { onDestroy, onMount } from 'svelte';
+  import { onMount } from 'svelte';
   import PackageThumbnail from '../components/catalog/PackageThumbnail.svelte';
-  import { mapWithConcurrency, MAX_CONCURRENT_SHARD_LOADS } from '../core/compatibility';
-  import {
-    approximateThumbnailFromIndex,
-    MAX_THUMBNAIL_REFINEMENTS,
-    thumbnailGeometryFromChip,
-    type ThumbnailGeometry,
-  } from '../core/package-thumbnail';
+  import { thumbnailGeometryFromIndex } from '../core/package-thumbnail';
   import {
     buildVendorTabs,
     catalogFamilies,
@@ -19,7 +13,6 @@
   import { catalogStore, searchCatalogEntries } from '../state/catalog.svelte';
   import { discoveryPreferences } from '../state/discovery-preferences.svelte';
   import { router } from '../state/router.svelte';
-  import type { CatalogIndexEntry } from '../core/types';
 
   /* Discovery filters are localStorage-only preferences, never shareable. */
   const filters = discoveryPreferences.catalog;
@@ -42,90 +35,12 @@
       filters.package !== '',
   );
 
-  /* Component-local view state: no thumbnail field is persisted or shared. */
-  let visibleIds = $state<string[]>([]);
-  let exactGeometry = $state<Record<string, ThumbnailGeometry>>({});
-  let generation = 0;
-
   function resetFilters(): void {
     filters.reset();
   }
 
-  /** Observe only rendered rows; without IntersectionObserver outlines stay approximate. */
-  function observeRow(node: HTMLElement, id: string): { destroy(): void } {
-    const key = id.toUpperCase();
-    if (typeof IntersectionObserver === 'undefined') return { destroy: () => undefined };
-    const setVisible = (visible: boolean): void => {
-      visibleIds = visible
-        ? visibleIds.includes(key)
-          ? visibleIds
-          : [...visibleIds, key]
-        : visibleIds.filter((item) => item !== key);
-    };
-    const observer = new IntersectionObserver((entries) => {
-      for (const entry of entries) setVisible(entry.isIntersecting);
-    });
-    observer.observe(node);
-    return {
-      destroy() {
-        observer.disconnect();
-        visibleIds = visibleIds.filter((item) => item !== key);
-      },
-    };
-  }
-
-  function geometryFor(id: string, entry: CatalogIndexEntry): ThumbnailGeometry {
-    return exactGeometry[id.toUpperCase()] ?? approximateThumbnailFromIndex(entry);
-  }
-
-  async function refineVisible(ids: string[], token: number): Promise<void> {
-    const pending = ids.filter((id) => !exactGeometry[id]).slice(0, MAX_THUMBNAIL_REFINEMENTS);
-    if (pending.length === 0) return;
-    const outcomes = await mapWithConcurrency(
-      pending,
-      MAX_CONCURRENT_SHARD_LOADS,
-      async (id) => {
-        try {
-          const chip = await catalogStore.loadChip(id);
-          return { id, geometry: thumbnailGeometryFromChip(chip) };
-        } catch {
-          // A missing shard keeps the approximate silhouette without an error banner.
-          return null;
-        }
-      },
-      () => token !== generation,
-    );
-    if (token !== generation) return;
-    const next = { ...exactGeometry };
-    for (const outcome of outcomes) {
-      if (outcome) next[outcome.id] = outcome.geometry;
-    }
-    exactGeometry = next;
-  }
-
-  // A new result set invalidates in-flight refinements and clears visibility.
-  $effect(() => {
-    const signature = results.map((entry) => entry.id.toUpperCase()).join('|');
-    void signature;
-    generation += 1;
-    visibleIds = [];
-  });
-
-  // Only visible rows are eligible for refinement, under a bounded pass.
-  $effect(() => {
-    const ids = visibleIds.filter((id) =>
-      results.some((entry) => entry.id.toUpperCase() === id),
-    );
-    const token = generation;
-    void refineVisible(ids, token);
-  });
-
   onMount(() => {
     catalogStore.ensureLoaded();
-  });
-
-  onDestroy(() => {
-    generation += 1;
   });
 </script>
 
@@ -218,9 +133,9 @@
             </thead>
             <tbody>
               {#each results as entry (entry.id)}
-                <tr class="border-t border-base-300" use:observeRow={entry.id}>
+                <tr class="border-t border-base-300">
                   <td class="w-12 px-2 py-2">
-                    <PackageThumbnail geometry={geometryFor(entry.id, entry)} size={44} />
+                    <PackageThumbnail geometry={thumbnailGeometryFromIndex(entry)} size={44} />
                   </td>
                   <td class="px-4 py-2">
                     <span class="flex items-center gap-2 font-mono font-semibold text-foreground">
@@ -231,7 +146,7 @@
                       {/if}
                     </span>
                   </td>
-                  <td class="px-2 py-2 font-mono text-base-content/60">{entry.vendor ?? 'stm32'}</td>
+                  <td class="px-2 py-2 font-mono text-base-content/60">{entry.vendor}</td>
                   <td class="px-2 py-2 font-mono text-base-content/60">{entry.family}</td>
                   <td class="px-2 py-2 font-mono text-foreground">{entry.package}</td>
                   <td class="px-2 py-2 font-mono-tabular text-base-content/60">{entry.pinCount}</td>

@@ -16,6 +16,8 @@ import { createSamGates, samAdapter } from '../tools/data-gen/adapters/sam';
 import { createNordicGates, nordicAdapter } from '../tools/data-gen/adapters/nordic';
 import { generateNordicParts } from '../tools/data-gen/adapters/nordic/parts';
 import { buildMetaDocument, buildSourceRegistry } from '../tools/data-gen/artifacts';
+import { indexGeometryFromPackage } from '../tools/data-gen/helpers';
+import { findGeometryProblems } from '../tools/data-gen/gates';
 import {
   createArtifactBudgetGate,
   createGlobalGates,
@@ -67,14 +69,14 @@ function chip(id: string, overrides: Partial<ChipData> = {}): ChipData {
 function indexEntry(c: ChipData, overrides: Partial<CatalogIndexEntry> = {}): CatalogIndexEntry {
   return {
     id: c.id,
-    vendor: c.vendor,
+    vendor: c.vendor ?? 'stm32',
     family: c.family,
     core: c.core,
     package: c.package.name,
     pinCount: c.pins.length,
     flashKb: c.flashKb,
     ramKb: c.ramKb,
-    peripherals: { spi: 0, i2c: 0, usart: 0, can: 0, usb: 0, tim: 0, adc: 0 },
+    geometry: indexGeometryFromPackage(c.package),
     ...overrides,
   };
 }
@@ -160,6 +162,24 @@ describe('artifact budget and shard integrity gates', () => {
         ctx([numeric], { index: [indexEntry(numeric, { flashKb: 8192 })] }),
       ).errors[0],
     ).toContain('flashKb');
+  });
+
+  it('rejects missing, divergent, or legacy index geometry', () => {
+    const c = chip('GEOM');
+    expect(findGeometryProblems(indexEntry(c), c)).toEqual([]);
+    const noVendor = { ...indexEntry(c), vendor: undefined };
+    expect(findGeometryProblems(noVendor, c).some((p) => p.includes('vendor'))).toBe(true);
+    const noGeometry = { ...indexEntry(c), geometry: undefined };
+    expect(findGeometryProblems(noGeometry, c).some((p) => p.includes('no geometry'))).toBe(true);
+    const wrongSides = {
+      ...indexEntry(c),
+      geometry: { kind: 'perimeter' as const, sides: [1, 1, 1, 1] as [number, number, number, number] },
+    };
+    expect(findGeometryProblems(wrongSides, c).some((p) => p.includes('sides'))).toBe(true);
+    const legacy = { ...indexEntry(c), peripherals: { spi: 0 } };
+    expect(findGeometryProblems(legacy, c).some((p) => p.includes('peripherals'))).toBe(true);
+    const errors = createShardIntegrityGate().evaluate(ctx([c], { index: [wrongSides] })).errors;
+    expect(errors[0]).toContain('GEOM');
   });
 
   it('detects NaN, infinity, and undefined before serialization', () => {

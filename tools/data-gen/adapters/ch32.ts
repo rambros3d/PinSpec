@@ -22,7 +22,7 @@ import type {
   PinType,
 } from '../../../src/core/types';
 import { parseCsv, requireColumns } from '../csv';
-import { buildPackageInfo, classifyPeripheralKind } from '../helpers';
+import { buildPackageInfo, classifyPeripheralKind, indexGeometryFromPackage } from '../helpers';
 import { sha256Hex } from '../hashes';
 import { CH32_EVIDENCE_FILE, LICENSE_CH32_DEVICE_DATA, ch32SourceSpecs } from '../sources';
 import type {
@@ -423,10 +423,6 @@ export function buildCh32Chip(
 
 /** Index entry for one emitted CH32 part. */
 export function ch32IndexEntry(chip: ChipData): CatalogIndexEntry {
-  const counts = { spi: 0, i2c: 0, usart: 0, can: 0, usb: 0, tim: 0, adc: 0 };
-  for (const info of Object.values(chip.peripherals)) {
-    if (info.kind in counts) counts[info.kind as keyof typeof counts]++;
-  }
   return {
     id: chip.id,
     vendor: 'ch32',
@@ -436,7 +432,7 @@ export function ch32IndexEntry(chip: ChipData): CatalogIndexEntry {
     pinCount: chip.package.pinCount,
     flashKb: chip.flashKb,
     ramKb: chip.ramKb,
-    peripherals: counts,
+    geometry: indexGeometryFromPackage(chip.package),
   };
 }
 

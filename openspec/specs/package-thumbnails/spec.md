@@ -6,69 +6,6 @@ Defines package outline thumbnails in catalog results and recent-session cards: 
 
 ## Requirements
 
-### Requirement: An approximate package silhouette is available from index data
-
-A package thumbnail SHALL be available for every catalog result before any shard is fetched. Its silhouette SHALL be derived by a pure helper from existing index fields only: package string, pin count, vendor, and module marker. Rules SHALL be deterministic for four-sided, two-sided, grid, and unknown packages. A grid silhouette SHALL be approximate and SHALL NOT claim exact ball positions. No part table, generated field, or datasheet value SHALL be introduced.
-
-#### Scenario: Four-sided package silhouette
-
-- **WHEN** a catalog entry declares an LQFP or QFN package string and a pin count
-- **THEN** its thumbnail immediately shows a four-sided outline with pad marks distributed around the four sides before any shard request
-
-#### Scenario: Two-sided package silhouette
-
-- **WHEN** a catalog entry declares an SOP, SO, DIP, SSOP, or TSSOP package string
-- **THEN** its thumbnail shows two vertical pad rows rather than four equal sides
-
-#### Scenario: Grid package silhouette is approximate
-
-- **WHEN** a catalog entry declares a BGA, WLCSP, or CSP package string
-- **THEN** its thumbnail shows an approximate square ball outline sized from the pin count without claiming exact ball labels or row identifiers
-
-#### Scenario: Unknown package string falls back
-
-- **WHEN** a catalog entry has a package string that matches none of the known rules
-- **THEN** its thumbnail shows a plain rectangular outline and the catalog row remains usable
-
-#### Scenario: No per-chip facts are added
-
-- **WHEN** silhouettes are derived for the whole index
-- **THEN** no helper reads a hardcoded part table, invents a datasheet value, or requires a new generated data field
-
-### Requirement: Exact geometry refines only visible catalog rows
-
-Exact package geometry SHALL refine a thumbnail only for visible catalog rows. A refinement pass SHALL enqueue only visible, not-yet-refined parts, keep at most four shard loads in flight, cap each pass at a fixed limit, and fetch each shard only through the catalog store's chip loader. A generation token SHALL invalidate stale results on query, filter, result-set, or teardown changes. Failed shards SHALL keep the approximate silhouette. No pass SHALL fetch all results or all shards.
-
-#### Scenario: Only visible results are requested
-
-- **WHEN** the catalog displays up to 500 results and only a small subset is visible
-- **THEN** only those visible results are enqueued and no shard request is made for offscreen results
-
-#### Scenario: Bounded concurrency and pass cap
-
-- **WHEN** more visible results are pending than the concurrency or pass limit
-- **THEN** at most four shard loads are in flight and the pass stops at the fixed cap while remaining rows keep their approximate silhouettes
-
-#### Scenario: Exact geometry replaces approximation
-
-- **WHEN** a visible part's shard resolves while its generation is current
-- **THEN** the thumbnail uses that shard's package kind, side counts, grid rows and columns, and exposed-pad declaration instead of the approximate silhouette
-
-#### Scenario: Stale results are discarded
-
-- **WHEN** a query, vendor/family/package filter, or result-set change replaces the visible rows while shard loads are pending
-- **THEN** the generation changes and late results are not applied to the new row set
-
-#### Scenario: Failed shard keeps the outline
-
-- **WHEN** a visible part's shard request fails or the part has no shard
-- **THEN** its thumbnail keeps the approximate silhouette and the catalog table stays usable without an error banner
-
-#### Scenario: Teardown cancels refinement
-
-- **WHEN** the catalog route is left while shard loads are pending
-- **THEN** the generation changes and no late result updates a destroyed view
-
 ### Requirement: The catalog table has a leading thumbnail column
 
 The catalog route SHALL keep its dense result table and add a leading package thumbnail column sized between 40px and 48px. Existing columns, the 500-result cap, query/vendor/family/package filters, retry, loading, and empty states, and the Open workspace handoff SHALL remain. The thumbnail SHALL be decorative and non-interactive. Clicking a thumbnail SHALL NOT open a workspace; only the Open control SHALL navigate.
@@ -143,11 +80,11 @@ A thumbnail SHALL be a static inline SVG with no click, pointer, or keyboard han
 
 ### Requirement: Thumbnail state is not shareable or persisted
 
-Thumbnail geometry, refinement results, approximation fidelity, and visibility SHALL NOT enter share URLs, version-2 project JSON, workspace state, undo history, or recent-session storage. No new localStorage preference SHALL be introduced; display state SHALL be component-local and reset on route teardown. Data fetches SHALL continue to resolve through the existing base-URL-aware catalog path so thumbnails work under `/pincraft/`.
+Thumbnail geometry, refinement results, approximation fidelity, and visibility SHALL NOT enter share URLs, version-2 project JSON, workspace state, undo history, or recent-session storage. No new localStorage preference SHALL be introduced; display state SHALL be component-local and reset on route teardown. Data fetches SHALL continue to resolve through the existing base-URL-aware catalog path so workspaces work under `/pincraft/`.
 
 #### Scenario: Share and export stay unchanged
 
-- **WHEN** a workspace opened from a thumbnail-bearing catalog row or project card is shared or exported
+- **WHEN** a workspace opened from a catalog row or project card is shared or exported
 - **THEN** neither the share payload nor the project JSON contains a thumbnail, fidelity, or geometry field and all pin configuration is preserved
 
 #### Scenario: No new persisted preference or session field
@@ -157,5 +94,24 @@ Thumbnail geometry, refinement results, approximation fidelity, and visibility S
 
 #### Scenario: Subpath fetches remain catalog-owned
 
-- **WHEN** the built app is served under `/pincraft/` and a thumbnail is refined
-- **THEN** the shard fetch resolves relative to `import.meta.env.BASE_URL` and no root-absolute data or asset path is used
+- **WHEN** the catalog is served under `/pincraft/` with any number of rows
+- **THEN** no chip shard request is made for a thumbnail, and workspace shard fetches still resolve relative to `import.meta.env.BASE_URL` without a root-absolute data or asset path
+
+### Requirement: Package outlines come from generated index geometry
+
+A package thumbnail SHALL be derived from the exact geometry fields on its catalog index entry: perimeter side counts, grid rows and columns, and exposed-pad flag. A plain rectangular outline SHALL remain the fallback for unknown geometry. Session cards SHALL continue to derive outlines from saved package name and pin count without shard fetches. No part table, hardcoded identifier, or datasheet value SHALL be introduced.
+
+#### Scenario: Exact index geometry renders immediately
+
+- **WHEN** a catalog index entry declares perimeter sides or grid rows and columns
+- **THEN** its thumbnail shows those exact pads or balls and any declared exposed pad before any other request
+
+#### Scenario: Missing geometry falls back safely
+
+- **WHEN** an index entry has absent or non-finite geometry values
+- **THEN** its thumbnail uses a plain body outline, all emitted numbers stay finite, and the row remains usable
+
+#### Scenario: No hardcoded part facts
+
+- **WHEN** the thumbnail helper source is inspected
+- **THEN** it contains no part identifier, approximate-grid guess, or generated shard geometry conversion

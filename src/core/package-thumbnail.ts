@@ -1,18 +1,13 @@
 /**
- * Pure package-outline geometry for lightweight catalog and session thumbnails.
+ * Pure package-outline geometry for catalog and session thumbnails.
  *
- * Approximate geometry uses only existing index fields (package string, pin
- * count, vendor and module marker). Exact geometry comes from an already
- * generated per-chip shard. No Svelte or DOM API is used here, and no hardware
- * fact is invented: approximate ball grids are explicitly marked as such.
+ * Catalog rows use the exact geometry generated into each index entry. Session
+ * cards have only a saved package name and pin count, so they use a small
+ * deterministic fallback. No chip shard is fetched and no hardware fact is
+ * invented. No Svelte or DOM API is used here.
  */
 
-import type { CatalogIndexEntry, ChipData } from './types';
-
-/** Fixed cap on shard refinements started by one catalog visibility pass. */
-export const MAX_THUMBNAIL_REFINEMENTS = 40;
-
-export type ThumbnailFidelity = 'approximate' | 'exact';
+import type { CatalogIndexEntry } from './types';
 
 export interface ThumbnailGeometry {
   kind: 'perimeter' | 'grid';
@@ -24,18 +19,12 @@ export interface ThumbnailGeometry {
   cols: number;
   hasExposedPad: boolean;
   pinCount: number;
-  fidelity: ThumbnailFidelity;
 }
 
 export interface ThumbnailMark {
   x: number;
   y: number;
   kind: 'pad' | 'ball';
-}
-
-export interface ThumbnailOptions {
-  vendor?: string;
-  module?: boolean;
 }
 
 function finiteCount(value: unknown): number {
@@ -55,107 +44,88 @@ function distributeSides(pinCount: number): [number, number, number, number] {
   ];
 }
 
-function twoSided(pinCount: number): [number, number, number, number] {
-  const half = Math.ceil(finiteCount(pinCount) / 2);
-  return [half, 0, half, 0];
-}
-
-function squareGrid(pinCount: number): { rows: number; cols: number } {
-  const total = finiteCount(pinCount);
-  if (total === 0) return { rows: 0, cols: 0 };
-  const cols = Math.ceil(Math.sqrt(total));
-  return { rows: Math.ceil(total / cols), cols };
-}
-
 /**
- * Derive a coarse silhouette from a package string and pin count. Vendor and
- * module markers are accepted for index parity but never used to invent pads
- * or exposed thermal geometry.
+ * Exact thumbnail geometry from one generated index entry. Absent or malformed
+ * fields degrade to a plain outline; no package string is parsed here.
  */
-export function approximateThumbnailGeometry(
-  packageName: string,
-  pinCount: number,
-  _options: ThumbnailOptions = {},
-): ThumbnailGeometry {
-  const name = (packageName ?? '').toUpperCase();
-  const count = finiteCount(pinCount);
-
-  if (/BGA|WLCSP|CSP/.test(name)) {
+export function thumbnailGeometryFromIndex(entry: CatalogIndexEntry): ThumbnailGeometry {
+  const geometry = entry.geometry;
+  const pinCount = finiteCount(entry.pinCount);
+  if (!geometry || (geometry.kind !== 'perimeter' && geometry.kind !== 'grid')) {
+    return {
+      kind: 'perimeter',
+      sides: [0, 0, 0, 0],
+      rows: 0,
+      cols: 0,
+      hasExposedPad: false,
+      pinCount,
+    };
+  }
+  if (geometry.kind === 'grid') {
     return {
       kind: 'grid',
       sides: [0, 0, 0, 0],
-      ...squareGrid(count),
+      rows: Array.isArray(geometry.rows) ? geometry.rows.length : 0,
+      cols: Array.isArray(geometry.cols) ? geometry.cols.length : 0,
+      hasExposedPad: geometry.hasExposedPad === true,
+      pinCount,
+    };
+  }
+  const sides = geometry.sides;
+  return {
+    kind: 'perimeter',
+    sides:
+      Array.isArray(sides) && sides.length === 4
+        ? [
+            finiteCount(sides[0]),
+            finiteCount(sides[1]),
+            finiteCount(sides[2]),
+            finiteCount(sides[3]),
+          ]
+        : [0, 0, 0, 0],
+    rows: 0,
+    cols: 0,
+    hasExposedPad: geometry.hasExposedPad === true,
+    pinCount,
+  };
+}
+
+/**
+ * Fallback geometry for recent-session cards, which store only the package
+ * name and pin count. No generated shard is fetched for these thumbnails.
+ */
+export function thumbnailGeometryFromSaved(packageName: string, pinCount: number): ThumbnailGeometry {
+  const name = (packageName ?? '').toUpperCase();
+  const count = finiteCount(pinCount);
+  if (/BGA|WLCSP|CSP/.test(name)) {
+    const cols = Math.ceil(Math.sqrt(Math.max(1, count)));
+    return {
+      kind: 'grid',
+      sides: [0, 0, 0, 0],
+      rows: Math.ceil(count / cols),
+      cols,
       hasExposedPad: false,
       pinCount: count,
-      fidelity: 'approximate',
     };
   }
   if (/SOP|SOIC|SSOP|TSSOP|DIP|\bSO\d/.test(name)) {
+    const half = Math.ceil(count / 2);
     return {
       kind: 'perimeter',
-      sides: twoSided(count),
+      sides: [half, 0, half, 0],
       rows: 0,
       cols: 0,
       hasExposedPad: false,
       pinCount: count,
-      fidelity: 'approximate',
-    };
-  }
-  if (/QFP|QFN|DFN|LCC|LQFP|TQFP/.test(name)) {
-    return {
-      kind: 'perimeter',
-      sides: distributeSides(count),
-      rows: 0,
-      cols: 0,
-      hasExposedPad: false,
-      pinCount: count,
-      fidelity: 'approximate',
     };
   }
   return {
     kind: 'perimeter',
-    sides: [0, 0, 0, 0],
+    sides: distributeSides(count),
     rows: 0,
     cols: 0,
     hasExposedPad: false,
     pinCount: count,
-    fidelity: 'approximate',
-  };
-}
-
-/** Thin wrapper for an existing compact catalog index entry. */
-export function approximateThumbnailFromIndex(entry: CatalogIndexEntry): ThumbnailGeometry {
-  return approximateThumbnailGeometry(entry.package, entry.pinCount, {
-    vendor: entry.vendor,
-    module: entry.module,
-  });
-}
-
-/** Map generated shard geometry into the thumbnail view model. */
-export function thumbnailGeometryFromChip(chip: ChipData): ThumbnailGeometry {
-  const pkg = chip.package;
-  const pinCount = finiteCount(pkg.pinCount);
-  if (pkg.kind === 'grid') {
-    const rows = pkg.rows?.length ?? 0;
-    const cols = pkg.cols?.length ?? 0;
-    return {
-      kind: 'grid',
-      sides: [0, 0, 0, 0],
-      rows,
-      cols,
-      hasExposedPad: pkg.hasExposedPad === true,
-      pinCount,
-      fidelity: 'exact',
-    };
-  }
-  return {
-    kind: 'perimeter',
-    sides: pkg.sides ?? distributeSides(pinCount),
-    rows: 0,
-    cols: 0,
-    hasExposedPad: pkg.hasExposedPad === true,
-    pinCount,
-    fidelity: 'exact',
   };
 }
 

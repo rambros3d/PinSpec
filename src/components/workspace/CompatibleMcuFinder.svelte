@@ -37,6 +37,7 @@
 
   // Increasing this token invalidates every pending shard load.
   let generation = 0;
+  let generationController: AbortController | null = null;
 
   const signature = $derived(chip ? deriveCompatibilitySignature(chip, workspaceState) : null);
   const packageOptions = $derived(catalogPackageKinds(catalogStore.index));
@@ -53,7 +54,7 @@
     return catalogStore.index
       .filter((entry) => {
         if (chip && entry.id.toUpperCase() === chip.id.toUpperCase()) return false;
-        if (vendorFilter !== 'all' && (entry.vendor ?? 'stm32') !== vendorFilter) return false;
+        if (vendorFilter !== 'all' && entry.vendor !== vendorFilter) return false;
         if (packageFilter) {
           const name = entry.package.toUpperCase();
           const match = name.match(/^[A-Z]+/)?.[0] ?? '';
@@ -73,6 +74,9 @@
   async function runSearch(): Promise<void> {
     if (!signature) return;
     const token = ++generation;
+    generationController?.abort();
+    const controller = new AbortController();
+    generationController = controller;
     hasSearched = true;
     loading = true;
     scores = [];
@@ -83,7 +87,7 @@
       MAX_CONCURRENT_SHARD_LOADS,
       async (entry) => {
         try {
-          const candidateChip = await catalogStore.loadChip(entry.id);
+          const candidateChip = await catalogStore.loadChip(entry.id, controller.signal);
           if (!isCandidateScorable(candidateChip)) {
             if (token === generation) {
               warnings = [
@@ -124,6 +128,7 @@
 
   function handleClose(): void {
     generation += 1;
+    generationController?.abort();
     onClose();
   }
 
@@ -139,6 +144,7 @@
     void catalogStore.ensureLoaded().then(() => runSearch());
     return () => {
       generation += 1;
+      generationController?.abort();
     };
   });
 </script>

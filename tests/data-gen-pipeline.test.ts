@@ -19,6 +19,7 @@ import {
   buildWarningsDocument,
 } from '../tools/data-gen/artifacts';
 import { createMinCountGate, createReferencePartsGate } from '../tools/data-gen/gates';
+import { indexGeometryFromPackage } from '../tools/data-gen/helpers';
 import { aggregateChipHash, chipHash, indexHash } from '../tools/data-gen/hashes';
 import {
   buildVendorSourcesMeta,
@@ -330,7 +331,7 @@ describe('metadata and warnings', () => {
 describe('orchestrator with injected adapters', () => {
   function fakeAdapter(vendor: 'ch32' | 'stm32', strict: boolean): VendorAdapter {
     const tmpSource = fs.mkdtempSync(path.join(os.tmpdir(), 'pincraft-adapter-'));
-    const chip = fakeChip(vendor === 'ch32' ? 'TESTCHIP' : 'TESTSTM');
+    const chip = fakeChip(vendor === 'ch32' ? 'TESTCHIP' : 'TESTSTM', { vendor });
     return {
       vendor,
       sourceSpecs: [
@@ -342,13 +343,14 @@ describe('orchestrator with injected adapters', () => {
         index: [
           {
             id: chip.id,
+            vendor,
             family: 'TEST',
             core: 'Cortex-M0+',
             package: 'UFQFPN48',
             pinCount: chip.pins.length,
             flashKb: chip.flashKb,
             ramKb: 2,
-            peripherals: { spi: 0, i2c: 0, usart: 0, can: 0, usb: 0, tim: 0, adc: 0 },
+            geometry: indexGeometryFromPackage(chip.package),
           },
         ],
         families: ['TEST'],

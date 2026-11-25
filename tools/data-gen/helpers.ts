@@ -1,4 +1,9 @@
-import type { PackageInfo, PeripheralKind, PinType } from '../../src/core/types';
+import type {
+  CatalogIndexGeometry,
+  PackageInfo,
+  PeripheralKind,
+  PinType,
+} from '../../src/core/types';
 
 /**
  * Expands ST parenthesized RefName variants into concrete part numbers.
@@ -205,6 +210,23 @@ export function buildPackageInfo(
     pinCount,
     sides: [left, bottom, right, top],
   };
+}
+
+/**
+ * Copies exact generated package geometry into the compact index shape.
+ * The fields are derived from the adapter's `PackageInfo`; no package fact is
+ * hand-authored, and omitted fields stay omitted for the gate to compare.
+ */
+export function indexGeometryFromPackage(pkg: PackageInfo): CatalogIndexGeometry {
+  const geometry: CatalogIndexGeometry = { kind: pkg.kind };
+  if (pkg.kind === 'grid') {
+    geometry.rows = pkg.rows ? [...pkg.rows] : [];
+    geometry.cols = pkg.cols ? [...pkg.cols] : [];
+  } else if (pkg.sides) {
+    geometry.sides = [...pkg.sides];
+  }
+  if (pkg.hasExposedPad) geometry.hasExposedPad = true;
+  return geometry;
 }
 
 /**

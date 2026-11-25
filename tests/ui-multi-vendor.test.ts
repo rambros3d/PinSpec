@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { thumbnailGeometryFromChip } from '../src/core/package-thumbnail';
+import { thumbnailGeometryFromIndex } from '../src/core/package-thumbnail';
 import { formatMuxLabel } from '../src/core/types';
 import {
   buildVendorTabs,
@@ -111,19 +111,19 @@ describe('multi-vendor package rendering', () => {
     expect(readChip('RP2350B').package.hasExposedPad).toBe(true);
   });
 
-  it('refines thumbnails from generated two-sided, grid and exposed-pad geometry', () => {
+  it('renders thumbnails from generated two-sided, grid and exposed-pad index geometry', () => {
     const catalog = readSource('src/pages/CatalogPage.svelte');
-    expect(catalog).toContain('thumbnailGeometryFromChip(');
-    expect(catalog).toContain('catalogStore.loadChip(');
+    expect(catalog).toContain('thumbnailGeometryFromIndex(entry)');
+    expect(catalog).not.toContain('catalogStore.loadChip(');
     const thumbnail = readSource('src/components/catalog/PackageThumbnail.svelte');
-    expect(thumbnail).toContain('data-fidelity={geometry.fidelity}');
+    expect(thumbnail).not.toContain('data-fidelity');
     expect(thumbnail).not.toContain('onclick=');
 
     for (const id of ['CH32V003J4M6', 'STM32H743XIH6', 'RP2350B']) {
+      const entry = index.find((item) => item.id === id)!;
       const chip = readChip(id);
-      const geometry = thumbnailGeometryFromChip(chip);
+      const geometry = thumbnailGeometryFromIndex(entry);
       expect(geometry.kind).toBe(chip.package.kind);
-      expect(geometry.fidelity).toBe('exact');
       expect(geometry.hasExposedPad).toBe(chip.package.hasExposedPad === true);
     }
     expect(readSource('src/components/workspace/PerimeterPackage.svelte')).toContain('twoSidedPackage');

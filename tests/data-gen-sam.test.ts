@@ -17,6 +17,7 @@ import { afIndexForFunction, joinSignals, signalIdentity } from '../tools/data-g
 import { SAM_FAMILY_SCOPE, SAM_PART_COUNT, SAM_PART_STEMS } from '../tools/data-gen/adapters/sam/variants';
 import { canonicalSourceId } from '../tools/data-gen/artifacts';
 import { findInvalidValues } from '../tools/data-gen/gates';
+import { indexGeometryFromPackage } from '../tools/data-gen/helpers';
 import { DEFAULT_ADAPTERS, generateCatalog } from '../tools/data-gen/index';
 import { microchipAtdfSourceSpecs } from '../tools/data-gen/sources';
 import type { AdapterContext, GateContext } from '../tools/data-gen/types';
@@ -73,14 +74,14 @@ function gateContext(chips: ChipData[], sources = microchipAtdfSourceSpecs(CACHE
     chips: new Map(chips.map((chip) => [chip.id, chip])),
     index: chips.map((chip) => ({
       id: chip.id,
-      vendor: chip.vendor,
+      vendor: chip.vendor ?? 'microchip',
       family: chip.family,
       core: chip.core,
       package: chip.package.name,
       pinCount: chip.package.pinCount,
       flashKb: chip.flashKb,
       ramKb: chip.ramKb,
-      peripherals: { spi: 0, i2c: 0, usart: 0, can: 0, usb: 0, tim: 0, adc: 0 },
+      geometry: indexGeometryFromPackage(chip.package),
     })),
     totalVariants: chips.length,
     matchedVariants: chips.length,

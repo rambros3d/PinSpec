@@ -29,6 +29,14 @@ jobs:
           node-version: 22
           cache: npm
 
+      - name: Restore upstream source cache
+        if: github.event_name != 'schedule'
+        uses: actions/cache@v4
+        with:
+          path: .cache
+          key: ${{ runner.os }}-pincraft-sources-${{ hashFiles('tools/data-gen/sources.ts', 'tools/data-gen/adapters/**/sources.ts', 'package-lock.json') }}
+          restore-keys: ${{ runner.os }}-pincraft-sources-
+
       - name: Install dependencies
         run: npm ci
 

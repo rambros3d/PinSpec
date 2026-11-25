@@ -39,6 +39,8 @@ export const ESP_IDF_REF = 'v5.4.1';
 export const LICENSE_MICROCHIP_ATDF = 'Apache-2.0';
 /** License of the nrf-pacs CMSIS-SVD definitions. */
 export const LICENSE_NRF_PACS = '0BSD';
+/** Pinned nrf-pacs revision used for the three raw SVD fetches. */
+export const NRF_PACS_SVD_REF = '458885527e5b323496304d688b2caff73b042be1';
 /**
  * Pinned `Microchip-MPLAB-Harmony/dev_packs` revision used for raw ATDF fetches.
  * A full clone of this repository is disproportionate for the 39 consumed
@@ -281,6 +283,7 @@ export function rpSourceSpecs(cacheDir: string = defaultCacheDir()): SourceSpec[
           url: `${zephyrBase}/dts/vendor/raspberrypi/rpi_pico/rp2350b.dtsi`,
           path: 'dts/vendor/raspberrypi/rpi_pico/rp2350b.dtsi',
         },
+        ...ZEPHYR_NORDIC_FILES.map((file) => ({ url: `${zephyrBase}/${file}`, path: file })),
       ],
     },
     {
@@ -365,7 +368,7 @@ export function microchipAtdfSourceSpecs(cacheDir: string = defaultCacheDir()): 
   ];
 }
 
-/** SVD files consumed by the Nordic adapter from the nrf-pacs checkout. */
+/** SVD files consumed by the Nordic adapter, fetched from a pinned nrf-pacs ref. */
 export const NRF_PACS_SVD_FILES = [
   'nrf52840.svd',
   'nrf5340-app.svd',
@@ -391,26 +394,21 @@ export const KICAD_NORDIC_FILES = [
 
 /** Source declarations for the Nordic pilot selectors. */
 export function nordicSourceSpecs(cacheDir: string = defaultCacheDir()): SourceSpec[] {
-  const zephyrBase = 'https://raw.githubusercontent.com/zephyrproject-rtos/zephyr/main';
   const kicadBase = 'https://gitlab.com/kicad/libraries/kicad-symbols/-/raw/master';
+  const svdBase = `https://raw.githubusercontent.com/nrf-rs/nrf-pacs/${NRF_PACS_SVD_REF}/svds`;
   return [
     {
       id: 'nrf-pacs',
       url: 'https://github.com/nrf-rs/nrf-pacs',
       dir: path.join(cacheDir, 'nrf-pacs'),
       license: LICENSE_NRF_PACS,
-      branch: 'master',
-    },
-    {
-      id: 'zephyr-nordic',
-      url: 'https://github.com/zephyrproject-rtos/zephyr',
-      dir: path.join(cacheDir, 'zephyr-nordic'),
-      license: LICENSE_ZEPHYR,
-      rawFiles: ZEPHYR_NORDIC_FILES.map((file) => ({
-        url: `${zephyrBase}/${file}`,
-        path: file,
+      rawFiles: NRF_PACS_SVD_FILES.map((file) => ({
+        url: `${svdBase}/${file}`,
+        path: `svds/${file}`,
       })),
     },
+    // Zephyr evidence is declared once by the RP adapter and shared here.
+    ...rpSourceSpecs(cacheDir).filter((spec) => spec.id === 'zephyr'),
     {
       id: 'kicad-mcu-nordic',
       url: 'https://gitlab.com/kicad/libraries/kicad-symbols',

@@ -12,6 +12,7 @@ import type {
   PeripheralKind,
   PinInfo,
 } from '../../../../src/core/types';
+import { indexGeometryFromPackage } from '../../helpers';
 import type { AdapterContext } from '../../types';
 import { gpioIdentity, readKicadSymbol } from './kicad';
 import { readPselFunctions } from './pinctrl';
@@ -196,18 +197,8 @@ export function pselSignals(
   return { signals, peripherals, unmatched };
 }
 
-/** Index counts mirror the declarative peripheral kinds used by the solver. */
+/** Compact index entry for one emitted Nordic part. */
 function indexEntry(chip: ChipData): CatalogIndexEntry {
-  const counts = { spi: 0, i2c: 0, usart: 0, can: 0, usb: 0, tim: 0, adc: 0 };
-  for (const info of Object.values(chip.peripherals)) {
-    if (info.kind === 'spi') counts.spi++;
-    else if (info.kind === 'i2c') counts.i2c++;
-    else if (info.kind === 'usart') counts.usart++;
-    else if (info.kind === 'can') counts.can++;
-    else if (info.kind === 'usb') counts.usb++;
-    else if (info.kind === 'tim' || info.kind === 'pwm') counts.tim++;
-    else if (info.kind === 'adc') counts.adc++;
-  }
   return {
     id: chip.id,
     vendor: 'nordic',
@@ -217,7 +208,7 @@ function indexEntry(chip: ChipData): CatalogIndexEntry {
     pinCount: chip.package.pinCount,
     flashKb: chip.flashKb,
     ramKb: chip.ramKb,
-    peripherals: counts,
+    geometry: indexGeometryFromPackage(chip.package),
   };
 }
 
@@ -246,10 +237,10 @@ export function generateNordicParts(ctx: AdapterContext): {
       continue;
     }
     const dtFiles = pilot.dtss.filter((file) =>
-      fs.existsSync(path.join(ctx.paths.cacheDir, 'zephyr-nordic', file)),
+      fs.existsSync(path.join(ctx.paths.cacheDir, 'zephyr', file)),
     );
     if (dtFiles.length !== pilot.dtss.length) {
-      warn('One or more pilot device-tree files are unavailable; part deferred.', 'zephyr-nordic');
+      warn('One or more pilot device-tree files are unavailable; part deferred.', 'zephyr');
       continue;
     }
     const symbolFile = path.join(
@@ -273,9 +264,9 @@ export function generateNordicParts(ctx: AdapterContext): {
       warn('KiCad symbol declares no physical pins; part deferred.', 'kicad-mcu-nordic');
       continue;
     }
-    const ports = gpioPorts(trees, pins, (reason) => warn(reason, 'zephyr-nordic'));
+    const ports = gpioPorts(trees, pins, (reason) => warn(reason, 'zephyr'));
     if (ports.length === 0) {
-      warn('No device-tree GPIO port maps to a symbol GPIO name; part deferred.', 'zephyr-nordic');
+      warn('No device-tree GPIO port maps to a symbol GPIO name; part deferred.', 'zephyr');
       continue;
     }
     const inventory = new Set(
@@ -286,19 +277,19 @@ export function generateNordicParts(ctx: AdapterContext): {
     for (const tree of trees) for (const peripheral of tree.peripherals) inventory.add(peripheral);
     const joined = pselSignals(functions, inventory, pins, ports);
     if (joined.signals === 0) {
-      warn('No PSEL function could be joined to a device-tree GPIO; part deferred.', 'zephyr-nordic');
+      warn('No PSEL function could be joined to a device-tree GPIO; part deferred.', 'zephyr');
       continue;
     }
     if (joined.unmatched.length > 0) {
       warn(
         `${joined.unmatched.length} PSEL functions have no SVD or device-tree peripheral (${joined.unmatched.slice(0, 5).join(', ')}...); omitted.`,
-        'zephyr-nordic',
+        'zephyr',
       );
     }
     const flashKb = trees.find((tree) => tree.flashKb !== null)?.flashKb ?? null;
     const ramKb = trees.find((tree) => tree.ramKb !== null)?.ramKb ?? null;
     if (ramKb === null) {
-      warn('No device-tree SRAM size is declared; part deferred.', 'zephyr-nordic');
+      warn('No device-tree SRAM size is declared; part deferred.', 'zephyr');
       continue;
     }
     warn('No acquired source declares strapping state for this part; strapping tags omitted.', 'kicad-mcu-nordic');
@@ -327,7 +318,7 @@ export function generateNordicParts(ctx: AdapterContext): {
       },
     };
     if (chip.flashKb === null) {
-      warn('No device-tree flash size is declared; flashKb omitted.', 'zephyr-nordic');
+      warn('No device-tree flash size is declared; flashKb omitted.', 'zephyr');
       continue;
     }
     chips.set(chip.id, chip);

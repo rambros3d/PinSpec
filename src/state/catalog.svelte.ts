@@ -1,10 +1,28 @@
 import { dataUrl } from '../core/data-url';
 import type { CatalogIndexEntry, CatalogMeta, ChipData, VendorId } from '../core/types';
 
+/** Maximum number of chip shards retained in memory; older chips are evicted. */
+export const MAX_CACHED_CHIPS = 48;
+
 export interface CatalogFilter {
   vendor?: VendorId | 'all';
   family?: string; // e.g. "G4", "CH32V003", "RP2350"
   packageKind?: string; // e.g. "LQFP", "QFN", "SOP", "BGA"
+}
+
+/** One shared in-flight shard request and the callers still interested in it. */
+interface PendingChipLoad {
+  promise: Promise<ChipData>;
+  controller: AbortController;
+  abortableConsumers: number;
+  pinnedConsumers: number;
+}
+
+/** Stable rejection for cancelled loads, recognizable by `name`. */
+function abortedChipLoad(): Error {
+  const error = new Error('Chip load was aborted.');
+  error.name = 'AbortError';
+  return error;
 }
 
 export function searchCatalogEntries(
@@ -22,7 +40,7 @@ export function searchCatalogEntries(
   const scored: Array<{ entry: CatalogIndexEntry; score: number }> = [];
 
   for (const entry of entries) {
-    if (vendorFilter && (entry.vendor ?? 'stm32') !== vendorFilter) {
+    if (vendorFilter && entry.vendor !== vendorFilter) {
       continue;
     }
     if (
@@ -49,7 +67,7 @@ export function searchCatalogEntries(
       continue;
     }
 
-    const haystack = `${entry.id} ${entry.family} ${entry.package} ${entry.core} ${entry.vendor ?? 'stm32'} ${entry.pinCount}PIN`.toUpperCase();
+    const haystack = `${entry.id} ${entry.family} ${entry.package} ${entry.core} ${entry.vendor} ${entry.pinCount}PIN`.toUpperCase();
     let totalScore = 0;
     let matchedAll = true;
 
@@ -97,7 +115,9 @@ class CatalogStore {
   loadingIndex = $state(false);
   indexError = $state<string | null>(null);
 
+  /** Insertion order is least-recently-used order; hits move entries to the end. */
   private chipCache = new Map<string, ChipData>();
+  private chipLoads = new Map<string, PendingChipLoad>();
   private indexPromise: Promise<void> | null = null;
 
   private dataUrl(relPath: string): string {
@@ -150,19 +170,103 @@ class CatalogStore {
     return this.ensureLoaded();
   }
 
-  async loadChip(mcuId: string): Promise<ChipData> {
-    const key = mcuId.trim().toUpperCase();
-    const cached = this.chipCache.get(key);
-    if (cached) return cached;
-
-    const res = await fetch(this.dataUrl(`chips/${encodeURIComponent(key)}.json`));
-    if (!res.ok) {
-      throw new Error(`MCU "${key}" not found in catalog (HTTP ${res.status}).`);
-    }
-    const chip = (await res.json()) as ChipData;
+  /** Inserts a chip as the most recently used entry and evicts past the cap. */
+  private rememberChip(key: string, chip: ChipData): void {
+    this.chipCache.delete(key);
     this.chipCache.set(key, chip);
-    return chip;
+    while (this.chipCache.size > MAX_CACHED_CHIPS) {
+      const oldest = this.chipCache.keys().next().value;
+      if (oldest === undefined) break;
+      this.chipCache.delete(oldest);
+    }
+  }
+
+  /** Starts one fetch for a key and registers it before any caller can join. */
+  private startChipLoad(key: string): PendingChipLoad {
+    const pending: PendingChipLoad = {
+      promise: Promise.resolve(chipSentinel),
+      controller: new AbortController(),
+      abortableConsumers: 0,
+      pinnedConsumers: 0,
+    };
+    pending.promise = (async () => {
+      try {
+        const res = await fetch(this.dataUrl(`chips/${encodeURIComponent(key)}.json`), {
+          signal: pending.controller.signal,
+        });
+        if (!res.ok) {
+          throw new Error(`MCU "${key}" not found in catalog (HTTP ${res.status}).`);
+        }
+        const chip = (await res.json()) as ChipData;
+        if (this.chipLoads.get(key) === pending) this.rememberChip(key, chip);
+        return chip;
+      } finally {
+        if (this.chipLoads.get(key) === pending) this.chipLoads.delete(key);
+      }
+    })();
+    this.chipLoads.set(key, pending);
+    return pending;
+  }
+
+  /** Attaches one caller's signal to a shared load without cancelling other callers. */
+  private joinChipLoad(key: string, pending: PendingChipLoad, signal?: AbortSignal): Promise<ChipData> {
+    if (!signal) {
+      pending.pinnedConsumers += 1;
+      return pending.promise;
+    }
+    if (signal.aborted) return Promise.reject(abortedChipLoad());
+    pending.abortableConsumers += 1;
+    return new Promise<ChipData>((resolve, reject) => {
+      const onAbort = (): void => {
+        signal.removeEventListener('abort', onAbort);
+        pending.abortableConsumers -= 1;
+        if (pending.abortableConsumers <= 0 && pending.pinnedConsumers === 0) {
+          pending.controller.abort();
+        }
+        reject(abortedChipLoad());
+      };
+      signal.addEventListener('abort', onAbort, { once: true });
+      pending.promise.then(
+        (chip) => {
+          signal.removeEventListener('abort', onAbort);
+          resolve(chip);
+        },
+        (error: unknown) => {
+          signal.removeEventListener('abort', onAbort);
+          reject(error);
+        },
+      );
+    });
+  }
+
+  /**
+   * Loads one chip shard. Repeated calls share an in-flight request and a
+   * bounded LRU cache. An optional signal cancels only the calling consumer;
+   * the shared request continues while another caller still needs it.
+   */
+  async loadChip(mcuId: string, signal?: AbortSignal): Promise<ChipData> {
+    const key = mcuId.trim().toUpperCase();
+    if (signal?.aborted) return Promise.reject(abortedChipLoad());
+    const cached = this.chipCache.get(key);
+    if (cached) {
+      this.rememberChip(key, cached);
+      return cached;
+    }
+    const pending = this.chipLoads.get(key) ?? this.startChipLoad(key);
+    return this.joinChipLoad(key, pending, signal);
   }
 }
+
+/** Placeholder replaced by the real promise before any fetch starts. */
+const chipSentinel: ChipData = {
+  id: '',
+  family: '',
+  core: '',
+  flashKb: null,
+  ramKb: 0,
+  package: { name: '', kind: 'perimeter', pinCount: 0 },
+  pins: [],
+  peripherals: {},
+};
 
 export const catalogStore = new CatalogStore();

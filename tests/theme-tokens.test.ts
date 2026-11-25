@@ -210,13 +210,11 @@ describe('daisyUI token integration', () => {
     expect(lockfile).not.toContain('lucide-svelte');
   });
 
-  it('derives the duotone secondary layer from the base-content theme token', () => {
+  it('uses primary and accent tokens for the two Solar duotone layers', () => {
     const css = fs.readFileSync(path.join(ROOT, 'src/app.css'), 'utf8');
     const rule = css.match(/\.solar\s*\{[\s\S]*?\}/)?.[0] ?? '';
-    expect(rule).toContain(
-      '--solar-secondary-color: color-mix(in oklab, currentColor 60%, var(--color-base-content));',
-    );
-    expect(rule).not.toContain('--solar-color');
+    expect(rule).toContain('--solar-color: var(--color-primary);');
+    expect(rule).toContain('--solar-secondary-color: var(--color-accent);');
     expect(rule).not.toContain('--depth');
     expect(rule).not.toContain('--noise');
     expect(rule).not.toMatch(/#[0-9a-fA-F]{3,8}\b|\brgba?\(|\bhsla?\(|\boklch\(/);

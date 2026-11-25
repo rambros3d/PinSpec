@@ -30,12 +30,12 @@
  * replaced by component classes; the SVG bodies own their geometry and texture.
  */
 /*
- * Solar bold duotone icons inherit their primary layer from the surrounding
- * text color. The secondary layer mixes that color with the active base-content
- * token so both duotone layers follow the current theme.
+ * Solar bold duotone icons use two distinct theme tokens so the duotone layers
+ * stay readable: primary for the main layer, accent for the secondary layer.
  */
 .solar {
-  --solar-secondary-color: color-mix(in oklab, currentColor 60%, var(--color-base-content));
+  --solar-color: var(--color-primary);
+  --solar-secondary-color: var(--color-accent);
 }
 
 :root {

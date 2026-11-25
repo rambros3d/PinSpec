@@ -104,11 +104,11 @@
   >
     {#if !isWorkspace}
       <a href="#/" class="flex shrink-0 items-center gap-2 text-sm font-bold tracking-tight text-foreground">
-        <svg class="size-5 text-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-          <rect x="6" y="6" width="12" height="12" rx="2" />
-          <rect x="9.5" y="9.5" width="5" height="5" rx="0.5" />
-          <path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4" />
-        </svg>
+        <img
+          src={`${import.meta.env.BASE_URL}radiokit-logo.svg`}
+          alt="PinCraft"
+          class="size-5 shrink-0"
+        />
         <span class="hidden sm:inline font-bold">PinCraft</span>
       </a>
     {/if}

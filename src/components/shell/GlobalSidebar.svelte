@@ -78,6 +78,11 @@
     class={`flex h-12 shrink-0 items-center border-b border-base-300 ${expanded ? 'px-3' : 'justify-center'}`}
   >
     {#if expanded}
+      <img
+        src={`${import.meta.env.BASE_URL}radiokit-logo.svg`}
+        alt=""
+        class="size-5 shrink-0"
+      />
       <span class="truncate text-sm font-semibold text-foreground">PinCraft</span>
     {/if}
   </div>

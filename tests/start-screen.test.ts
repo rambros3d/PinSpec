@@ -23,7 +23,7 @@ describe('start screen layout', () => {
     expect(bar).toContain("label: 'Catalog'");
     expect(bar).toContain("label: 'Projects'");
     expect(page).toContain('href="#presets"');
-    expect(page).toContain('href="#/about"');
+    expect(page).not.toContain('href="#/about"');
     expect(page).not.toContain('href="#provenance"');
     expect(page).not.toContain('id="provenance"');
     expect(page).not.toContain('href="#export-preview"');
@@ -94,7 +94,7 @@ describe('catalog rail', () => {
     expect(page).toContain('vendorSource.ratios.match.toFixed(1)');
     expect(page).toContain('vendorSource.ratios.coverage.toFixed(1)');
     expect(page).toContain('formatSyncDate(');
-    expect(page).toContain('PROVENANCE_SOURCES.length');
+    expect(page).not.toContain('PROVENANCE_SOURCES.length');
     expect(page).toContain('Catalog statistics unavailable.');
     expect(fs.existsSync(path.join(ROOT, 'public', 'data', 'meta.json'))).toBe(true);
   });
@@ -106,7 +106,7 @@ describe('catalog rail', () => {
     }
     expect(reference).toContain('const SHORTCUTS');
     expect(page).toContain('SHORTCUTS');
-    expect(page).toContain('PROVENANCE_SOURCES.length');
+    expect(page).not.toContain('PROVENANCE_SOURCES.length');
     expect(read('src/pages/AboutPage.svelte')).toContain('<ProvenancePanel');
   });
 });

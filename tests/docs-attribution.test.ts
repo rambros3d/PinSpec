@@ -165,7 +165,8 @@ describe('multi-vendor documentation and attribution', () => {
     expect(about).not.toContain('SHORTCUTS');
     const landing = read('src/pages/LandingPage.svelte');
     expect(landing).not.toContain('id="provenance"');
-    expect(landing).toContain('href="#/about"');
+    expect(landing).not.toContain('Data provenance');
+    expect(landing).not.toContain('PROVENANCE_SOURCES');
   });
 
   it('advertises all six vendors in the document metadata', () => {

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { AlertCircle, PanelLeft, PanelRight, X } from 'lucide-svelte';
+  import { AlertCircle, PanelRight, X } from 'lucide-svelte';
   import { onMount } from 'svelte';
   import CombinedSidebar from '../components/workspace/CombinedSidebar.svelte';
   import CompatibleMcuFinder from '../components/workspace/CompatibleMcuFinder.svelte';
@@ -35,7 +35,6 @@
   /** Combined tree and detail column; 160 + 280 with a 260px detail minimum. */
   let leftWidth = $state(440);
   let rightWidth = $state(330);
-  let leftCollapsed = $state(false);
   let rightCollapsed = $state(false);
 
   let canvasRef = $state<{ fitView: () => void } | null>(null);
@@ -245,7 +244,6 @@
     </div>
   {:else}
       <!-- Left Pane: Combined peripheral tree and detail sidebar -->
-      {#if !leftCollapsed}
         <div class="workspace-peripherals h-full">
           <CombinedSidebar
             chip={workspaceStore.chip}
@@ -268,21 +266,10 @@
           aria-orientation="vertical"
           aria-label="Resize peripherals pane"
         ></div>
-      {/if}
 
       <!-- Center Pane: Interactive Package Canvas -->
       <div class="workspace-canvas h-full">
-        <!-- Drawer Collapse Toggles -->
-        <button
-          type="button"
-          onclick={() => (leftCollapsed = !leftCollapsed)}
-          title={leftCollapsed ? 'Show Peripherals' : 'Hide Peripherals'}
-          data-placement-furniture
-          class="btn btn-ghost btn-sm btn-square workspace-landscape-only hidden md:flex absolute top-3 left-3 z-20 shadow-xs"
-        >
-          <PanelLeft class="size-3.5" />
-        </button>
-
+        <!-- Drawer Collapse Toggle -->
         <button
           type="button"
           onclick={toggleRightDrawer}

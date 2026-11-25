@@ -1,5 +1,14 @@
 <script lang="ts">
-  import { FolderOpen, Home, Info, Keyboard, LayoutGrid, Trash2 } from 'lucide-svelte';
+  import {
+    FolderOpen,
+    Home,
+    Info,
+    Keyboard,
+    LayoutGrid,
+    PanelLeftClose,
+    PanelLeftOpen,
+    Trash2,
+  } from 'lucide-svelte';
   import { router } from '../../state/router.svelte';
   import { shellPreferences } from '../../state/shell-preferences.svelte';
   import { topBarUI } from '../../state/top-bar-ui.svelte';
@@ -171,4 +180,23 @@
       </a>
     {/each}
   </nav>
+
+  <div class="mt-auto shrink-0 border-t border-base-300 p-2">
+    <button
+      type="button"
+      onclick={() => (shellPreferences.sidebarExpanded = !expanded)}
+      class={`flex w-full items-center rounded-box py-2 text-base-content/70 transition-colors hover:bg-base-300 ${
+        expanded ? 'gap-3 px-3' : 'justify-center px-0'
+      }`}
+      aria-label={expanded ? 'Collapse navigation' : 'Expand navigation'}
+      title={expanded ? 'Collapse navigation' : 'Expand navigation'}
+    >
+      {#if expanded}
+        <PanelLeftClose class="size-4 shrink-0" />
+        <span class="truncate text-xs">Collapse navigation</span>
+      {:else}
+        <PanelLeftOpen class="size-4 shrink-0" />
+      {/if}
+    </button>
+  </div>
 </aside>

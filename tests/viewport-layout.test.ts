@@ -98,7 +98,8 @@ describe('document viewport lock', () => {
     expect(page).not.toContain('href="#export-preview"');
     expect(page).not.toContain('id="export-preview"');
     expect(page).not.toContain('id="provenance"');
-    expect(page).toContain('href="#/about"');
+    expect(page).not.toContain('href="#/about"');
+    expect(page).not.toContain('Data provenance');
     expect(readSource('src/pages/AboutPage.svelte')).toContain('<ProvenancePanel');
     expect(readSource('src/components/landing/PresetGrid.svelte')).toContain('id="presets"');
   });
@@ -371,10 +372,9 @@ describe('canvas gesture and rotation input', () => {
     }
   });
 
-  it('exposes clockwise rotate controls with orientation labels on the bar and canvas', () => {
+  it('exposes clockwise rotate controls only on the canvas', () => {
     const bar = readSource('src/components/shell/GlobalTopBar.svelte');
-    expect(bar).toContain('workspaceStore.toggleRotation()');
-    expect(bar).toContain('Rotate package clockwise, now ${workspaceStore.rotation} degrees');
+    expect(bar).not.toContain('Rotate package clockwise');
     expect(bar).not.toContain('counter-clockwise');
     const canvas = readSource('src/components/workspace/PackageCanvas.svelte');
     expect(canvas).toContain('onRotate');

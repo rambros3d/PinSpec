@@ -5,10 +5,7 @@
     Download,
     GitCompare,
     Keyboard,
-    PanelLeftClose,
-    PanelLeftOpen,
     Redo2,
-    RotateCw,
     Search,
     SearchCheck,
     Share2,
@@ -19,7 +16,6 @@
   import { onMount } from 'svelte';
   import { shouldShowScrollAffordance } from '../../core/scroll-affordance';
   import { router } from '../../state/router.svelte';
-  import { shellPreferences } from '../../state/shell-preferences.svelte';
   import { topBarUI } from '../../state/top-bar-ui.svelte';
   import { workspaceStore } from '../../state/workspace.svelte';
   import ThemePicker from '../ThemePicker.svelte';
@@ -36,7 +32,6 @@
     { id: 'projects', label: 'Projects', hash: '#/projects' },
   ];
 
-  const expanded = $derived(shellPreferences.sidebarExpanded);
   const isWorkspace = $derived(
     router.route.view === 'workspace' || router.route.view === 'shared',
   );
@@ -107,21 +102,6 @@
     onscroll={updateScrollHint}
     class="flex h-full w-full min-w-0 items-center gap-3 px-3 overflow-x-auto overscroll-x-contain"
   >
-    <!-- Leftmost control: the same fixed-overlay toggle on every route. -->
-    <button
-      type="button"
-      onclick={() => (shellPreferences.sidebarExpanded = !expanded)}
-      class="btn btn-ghost btn-sm btn-square shrink-0"
-      aria-label={expanded ? 'Collapse navigation' : 'Expand navigation'}
-      title={expanded ? 'Collapse navigation' : 'Expand navigation'}
-    >
-      {#if expanded}
-        <PanelLeftClose class="size-4" />
-      {:else}
-        <PanelLeftOpen class="size-4" />
-      {/if}
-    </button>
-
     {#if !isWorkspace}
       <a href="#/" class="flex shrink-0 items-center gap-2 text-sm font-bold tracking-tight text-foreground">
         <svg class="size-5 text-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -137,6 +117,7 @@
       {routeTitle}
     </span>
 
+    {#if !isWorkspace}
     <nav class="flex shrink-0 items-center gap-1" aria-label="Sections">
       {#each SECTION_LINKS as link (link.id)}
         <a
@@ -152,18 +133,7 @@
         </a>
       {/each}
     </nav>
-
-    <ThemePicker compact={true} />
-
-    <button
-      type="button"
-      onclick={() => (topBarUI.shortcutHelpOpen = true)}
-      class="btn btn-ghost btn-sm btn-square shrink-0"
-      title="Keyboard shortcuts"
-      aria-label="Keyboard shortcuts"
-    >
-      <Keyboard class="size-4" />
-    </button>
+    {/if}
 
     {#if isWorkspace}
       <div class="w-px h-5 shrink-0 bg-base-300"></div>
@@ -244,17 +214,6 @@
         >
           <Trash2 class="size-4" />
         </button>
-        <button
-          type="button"
-          onclick={() => workspaceStore.toggleRotation()}
-          title={`Rotate package clockwise, now ${workspaceStore.rotation} degrees`}
-          aria-label={`Rotate package clockwise, now ${workspaceStore.rotation} degrees`}
-          class="btn btn-ghost btn-sm gap-1.5"
-        >
-          <RotateCw class="size-4" />
-          <span class="hidden lg:inline font-mono-tabular">Rotate</span>
-        </button>
-
         <div class="mx-1 h-5 w-px bg-base-300"></div>
 
         <button
@@ -295,6 +254,21 @@
         </button>
       </div>
     {/if}
+
+    <div class="ml-auto flex shrink-0 items-center gap-1">
+      <ThemePicker compact={true} />
+      {#if !isWorkspace}
+        <button
+          type="button"
+          onclick={() => (topBarUI.shortcutHelpOpen = true)}
+          class="btn btn-ghost btn-sm btn-square shrink-0"
+          title="Keyboard shortcuts"
+          aria-label="Keyboard shortcuts"
+        >
+          <Keyboard class="size-4" />
+        </button>
+      {/if}
+    </div>
   </div>
 
   {#if confirmClear}

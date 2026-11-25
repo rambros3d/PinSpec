@@ -64,7 +64,6 @@ describe('global top bar', () => {
     expect(bar).toContain('{#if !isWorkspace}');
     expect(bar).toContain('PinCraft');
     for (const token of [
-      'shellPreferences.sidebarExpanded = !expanded',
       'router.navigateCatalog()',
       'router.navigateProjects()',
       '<ThemePicker compact={true} />',
@@ -74,7 +73,6 @@ describe('global top bar', () => {
       'workspaceStore.undo()',
       'workspaceStore.redo()',
       'workspaceStore.clearAll()',
-      'workspaceStore.toggleRotation()',
       'topBarUI.finderOpen = true',
       'topBarUI.diffOpen = true',
       'handleShare()',
@@ -119,9 +117,12 @@ describe('collapsible sidebar overlay', () => {
     expect(sidebar).toContain('class="shell-backdrop fixed inset-0 z-30');
     expect(sidebar).toContain('shell-panel fixed bottom-0 left-0 top-12 z-40');
     expect(sidebar).toContain('shellPreferences.sidebarExpanded = false');
-    expect(sidebar).not.toContain('PanelLeftClose');
-    expect(sidebar).not.toContain('PanelLeftOpen');
-    expect(sidebar).not.toContain('shellPreferences.sidebarExpanded = !expanded');
+    expect(sidebar).toContain('PanelLeftClose');
+    expect(sidebar).toContain('PanelLeftOpen');
+    expect(sidebar).toContain('shellPreferences.sidebarExpanded = !expanded');
+    expect(read('src/components/shell/GlobalTopBar.svelte')).not.toContain(
+      'shellPreferences.sidebarExpanded = !expanded',
+    );
     const css = read('src/app.css');
     expect(css).toContain('--shell-panel-z: 40');
     expect(css).toContain('--shell-backdrop-z: 30');

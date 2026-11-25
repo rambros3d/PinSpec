@@ -25,7 +25,6 @@
     type IocRawRecord,
   } from '../core/importers/ioc';
   import {
-    PROVENANCE_SOURCES,
     PROVENANCE_VENDORS,
     SHORTCUTS,
   } from '../data/provenance';
@@ -391,16 +390,6 @@
         {:else}
           <p class="text-xs text-base-content/60">Loading catalog statistics...</p>
         {/if}
-      </section>
-
-      <section class="card card-border bg-base-100 p-4 space-y-2">
-        <h2 class="text-sm font-semibold text-foreground">Data provenance</h2>
-        <p class="text-xs text-base-content/60">
-          {PROVENANCE_SOURCES.length} upstream sources are credited with their licenses and revisions.
-        </p>
-        <a href="#/about" class="link link-hover text-xs font-medium inline-flex items-center gap-1">
-          View source revisions in About <ArrowRight class="size-3" />
-        </a>
       </section>
 
       <section class="card card-border bg-base-100 p-4 space-y-2">

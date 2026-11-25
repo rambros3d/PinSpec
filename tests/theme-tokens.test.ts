@@ -168,7 +168,8 @@ describe('daisyUI token integration', () => {
     expect(sidebar).not.toMatch(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]/u);
     const css = fs.readFileSync(path.join(ROOT, 'src', 'app.css'), 'utf8');
     const solarRule = css.match(/\.solar\s*\{[\s\S]*?\}/)?.[0] ?? '';
-    expect(solarRule).toContain('var(--color-base-content)');
+    expect(solarRule).toContain('var(--color-primary)');
+    expect(solarRule).toContain('var(--color-accent)');
   });
 
   it('uses one verified bold duotone icon package across delivered UI', () => {

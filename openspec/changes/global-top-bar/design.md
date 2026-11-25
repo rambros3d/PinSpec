@@ -22,6 +22,9 @@ change. See proposal.md for motivation and the delta specs for behavior.
 - Reserve 3rem for the collapsed rail on every route while keeping the expanded
   panel a fixed overlay with a backdrop and no reflow.
 - Preserve each workspace action and shortcut after it moves into the bar.
+- Use one shared bar component for every route; the only intentional difference
+  is that the PinCraft wordmark is rendered on shell routes and omitted on
+  workspace/shared routes to conserve horizontal space.
 - Keep route resolution, data fetches, share URLs, project JSON, and the
   localStorage preference boundary unchanged.
 

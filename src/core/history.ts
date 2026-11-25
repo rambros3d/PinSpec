@@ -34,7 +34,6 @@ export function cloneWorkspaceState(state: WorkspaceState): WorkspaceState {
       cloned.placement[peripheral] = { ...preference };
     }
   }
-  if (state.placementOverlayVisible) cloned.placementOverlayVisible = true;
   const rotation = normalizePackageRotation(state.packageRotation);
   if (rotation !== 0) cloned.packageRotation = rotation;
   if (state.placementOverlayRotation !== undefined) {
@@ -138,7 +137,6 @@ export function statesEqual(a: WorkspaceState, b: WorkspaceState): boolean {
 
   const ap = normalizePlacement(a);
   const bp = normalizePlacement(b);
-  if (ap.overlayVisible !== bp.overlayVisible) return false;
   const aplKeys = Object.keys(ap.preferences);
   const bplKeys = Object.keys(bp.preferences);
   if (aplKeys.length !== bplKeys.length) return false;

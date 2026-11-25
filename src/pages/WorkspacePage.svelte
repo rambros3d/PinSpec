@@ -29,6 +29,7 @@
     diagnostics: 'Diagnostics',
     dma: 'DMA',
     pio: 'PIO',
+    placement: 'Placement',
     audit: 'Audit',
   };
 
@@ -49,24 +50,45 @@
 
   /** Select a portrait dock tab; non-tree tabs drive the shared summary pane. */
   function selectDockTab(tab: DockTab): void {
+    const previous = workspaceStore.dockTab;
     workspaceStore.setDockTab(tab);
     if (tab !== 'peripherals') summaryTab = tab;
+    if (tab === 'placement') workspaceStore.setPlacementOverlayVisible(true);
+    else if (previous === 'placement') workspaceStore.setPlacementOverlayVisible(false);
   }
 
   /**
-   * A tree row selects the peripheral for editing and activates the sidebar
-   * Detail section in both orientations. Selection and section are local UI
-   * state and stay out of share URLs and project files.
+   * A tree row selects the peripheral for editing. Selection is local UI state
+   * and stays out of share URLs and project files; the detail column no longer
+   * has a section switcher.
    */
   function selectPeripheral(name: string): void {
     viewPreferences.selectedPeripheral = name;
-    viewPreferences.sidebarSection = 'detail';
   }
 
-  // Keep the drawer's own tab clicks in localStorage view preferences.
+  /**
+   * Keep the drawer's own tab clicks in localStorage view preferences. Opening
+   * Placement activates the overlay; leaving it deactivates an overlay that
+   * was activated by the tab. A canvas toggle remains the explicit override.
+   */
+  let previousSummaryTab = $state<SummaryTab>(viewPreferences.summaryTab);
   $effect(() => {
-    if (viewPreferences.summaryTab !== summaryTab) viewPreferences.summaryTab = summaryTab;
+    const tab = summaryTab;
+    if (viewPreferences.summaryTab !== tab) viewPreferences.summaryTab = tab;
+    if (tab !== previousSummaryTab) {
+      if (tab === 'placement') workspaceStore.setPlacementOverlayVisible(true);
+      else if (previousSummaryTab === 'placement') workspaceStore.setPlacementOverlayVisible(false);
+      previousSummaryTab = tab;
+    }
   });
+
+  /** Collapsing the drawer hides an overlay opened by its Placement tab. */
+  function toggleRightDrawer(): void {
+    rightCollapsed = !rightCollapsed;
+    if (summaryTab === 'placement') {
+      workspaceStore.setPlacementOverlayVisible(!rightCollapsed);
+    }
+  }
 
   // Hydrate MCU or shared payload when props change
   let lastLoadedKey = '';
@@ -302,7 +324,7 @@
 
         <button
           type="button"
-          onclick={() => (rightCollapsed = !rightCollapsed)}
+          onclick={toggleRightDrawer}
           title={rightCollapsed ? 'Show Summary Drawer' : 'Hide Summary Drawer'}
           data-placement-furniture
           class="btn btn-ghost btn-sm btn-square workspace-landscape-only hidden lg:flex absolute top-14 right-3 z-20 shadow-xs"
@@ -347,6 +369,8 @@
           <SummaryDrawer
             chip={workspaceStore.chip}
             assignments={workspaceStore.state.assignments}
+            peripheralModes={workspaceStore.state.peripheralModes}
+            peripheralStatus={workspaceStore.report.peripheralStatus}
             labels={workspaceStore.state.labels}
             locked={workspaceStore.state.locked}
             pioAssignments={workspaceStore.state.pioAssignments ?? {}}

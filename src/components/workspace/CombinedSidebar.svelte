@@ -1,22 +1,18 @@
 <script lang="ts">
   /**
-   * Left-pane surface that keeps the narrow peripheral tree, the peripheral
-   * detail column and the Place section adjacent. The tree defaults to 160px
-   * and clamps to 120-240px; the detail column keeps a 260-320px minimum.
+   * Left-pane surface that keeps the narrow peripheral tree and the peripheral
+   * detail column adjacent. The tree defaults to 160px and clamps to
+   * 120-240px; the detail column keeps a 260-320px minimum. Placement controls
+   * live in the right summary drawer, not in this sidebar.
    */
   import {
     type ChipData,
     type PeripheralStatus,
     type PinAssignment,
   } from '../../core/types';
-  import {
-    SIDEBAR_SECTIONS,
-    viewPreferences,
-    type SidebarSection,
-  } from '../../state/workspace-preferences.svelte';
+  import { viewPreferences } from '../../state/workspace-preferences.svelte';
   import PeripheralDetail from './PeripheralDetail.svelte';
   import PeripheralTree from './PeripheralTree.svelte';
-  import PlacementPanel from './PlacementPanel.svelte';
 
   interface Props {
     chip: ChipData;
@@ -62,9 +58,6 @@
     window.addEventListener('pointerup', onUp);
   }
 
-  function selectSection(section: SidebarSection): void {
-    viewPreferences.sidebarSection = section;
-  }
 </script>
 
 <div
@@ -89,48 +82,17 @@
   ></div>
 
   <div class="combined-detail-column flex-1 min-w-[260px] h-full min-h-0 flex flex-col">
-    <div
-      role="tablist"
-      aria-label="Sidebar section"
-      class="combined-section-switcher shrink-0 flex items-center gap-1 border-b border-base-300 bg-base-200 px-2 py-1.5"
-    >
-      {#each SIDEBAR_SECTIONS as section (section)}
-        <button
-          type="button"
-          role="tab"
-          onclick={() => selectSection(section)}
-          aria-selected={viewPreferences.sidebarSection === section}
-          class={`tab text-xs font-medium whitespace-nowrap ${
-            viewPreferences.sidebarSection === section
-              ? 'tab-active bg-base-100 text-foreground'
-              : 'text-base-content/60 hover:text-foreground'
-          }`}
-        >
-          {section === 'detail' ? 'Detail' : 'Place'}
-        </button>
-      {/each}
-    </div>
-
-    {#if viewPreferences.sidebarSection === 'place'}
-      <PlacementPanel
-        {chip}
-        {peripheralStatus}
-        {peripheralModes}
-        {assignments}
-      />
-    {:else}
-      <PeripheralDetail
-        {chip}
-        peripheralName={viewPreferences.selectedPeripheral}
-        {assignments}
-        {peripheralModes}
-        {peripheralStatus}
-        {activeRemaps}
-        {onModeChange}
-        {onRemapChange}
-        {onToggleSignal}
-        {onFocusPin}
-      />
-    {/if}
+    <PeripheralDetail
+      {chip}
+      peripheralName={viewPreferences.selectedPeripheral}
+      {assignments}
+      {peripheralModes}
+      {peripheralStatus}
+      {activeRemaps}
+      {onModeChange}
+      {onRemapChange}
+      {onToggleSignal}
+      {onFocusPin}
+    />
   </div>
 </div>

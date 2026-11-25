@@ -6,7 +6,12 @@ import { clampOverlayPosition } from '../src/core/overlay-position';
 import { exportPinoutJson, parsePinoutJson } from '../src/core/exporters/json';
 import { cloneWorkspaceState, createWorkspaceHistory, statesEqual } from '../src/core/history';
 import { createEmptyWorkspace } from '../src/core/solver';
-import { normalizeDockTab, type ChipData, type WorkspaceState } from '../src/core/types';
+import {
+  normalizeDockTab,
+  normalizeSummaryTab,
+  type ChipData,
+  type WorkspaceState,
+} from '../src/core/types';
 import { decodeWorkspaceState, encodeWorkspaceState } from '../src/core/url-state';
 
 const ROOT = process.cwd();
@@ -163,7 +168,7 @@ describe('orientation-driven grid layout', () => {
       expect(page).toContain(`workspace-${component === 'CombinedSidebar' ? 'peripherals' : component === 'PackageCanvas' ? 'canvas' : 'summary'}`);
     }
     expect(page.match(/data-dock-tab=/g)?.length).toBe(1);
-    for (const tab of ['Peripherals', 'Pins', 'Diagnostics', 'DMA', 'PIO', 'Audit']) {
+    for (const tab of ['Peripherals', 'Pins', 'Diagnostics', 'DMA', 'PIO', 'Placement', 'Audit']) {
       expect(page, tab).toContain(tab);
     }
     expect(page).not.toContain('Configuration');
@@ -171,7 +176,7 @@ describe('orientation-driven grid layout', () => {
     expect(page).not.toContain("addEventListener('resize'");
     expect(page).not.toContain('addEventListener("resize"');
     const css = readSource('src/app.css');
-    for (const tab of ['peripherals', 'pins', 'diagnostics', 'dma', 'pio', 'audit']) {
+    for (const tab of ['peripherals', 'pins', 'diagnostics', 'dma', 'pio', 'placement', 'audit']) {
       expect(css, tab).toContain(`[data-dock-tab='${tab}']`);
     }
     expect(css).not.toContain("[data-dock-tab='configuration']");
@@ -421,7 +426,16 @@ describe('dock tab persistence', () => {
     expect(normalizeDockTab('invalid')).toBe('peripherals');
     expect(normalizeDockTab('configuration')).toBe('peripherals');
     expect(normalizeDockTab('pio')).toBe('pio');
+    expect(normalizeDockTab('placement')).toBe('placement');
     expect(Object.keys(createEmptyWorkspace(chip.id))).not.toContain('dockTab');
+  });
+
+  it('normalizes the drawer tab with Placement and documented defaults', () => {
+    expect(normalizeSummaryTab(undefined)).toBe('pins');
+    expect(normalizeSummaryTab('invalid')).toBe('pins');
+    expect(normalizeSummaryTab('configuration')).toBe('pins');
+    expect(normalizeSummaryTab('placement')).toBe('placement');
+    expect(normalizeSummaryTab('gpio')).toBe('gpio');
   });
 
   it('does not clone, compare or record a dock tab in workspace state or history', () => {

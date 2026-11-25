@@ -1,8 +1,8 @@
 <script lang="ts">
   /**
    * Canvas-only placement rings and draggable indicators. Per-peripheral
-   * properties are edited in the sidebar Place section; only interaction with
-   * the rings and indicators happens here.
+   * bubble enable/disable is edited in the right-drawer Placement tab; only
+   * interaction with the rings and indicators happens here.
    */
   import {
     PLACEMENT_RINGS,

@@ -12,5 +12,5 @@ export class PlacementSelectionStore {
   }
 }
 
-/** Single shared instance used by the canvas overlay and the sidebar Place section. */
+/** Single shared instance used by the canvas overlay and the right-drawer Placement tab. */
 export const placementSelection = new PlacementSelectionStore();

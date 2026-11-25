@@ -273,8 +273,12 @@ describe('placement overlay Escape and keyboard focus', () => {
     expect(source).not.toContain('onRing');
     expect(source).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
     const panel = readSource('src/components/workspace/PlacementPanel.svelte');
-    expect(panel).toContain('type="number"');
+    expect(panel).toContain('configuredPeripheralNames');
+    expect(panel).toContain('setPlacement');
+    expect(panel).toContain("ring: 'low', enabled: true");
+    expect(panel).not.toContain('type="number"');
     expect(panel).not.toContain('setPlacementOverlayVisible');
+    expect(panel).not.toContain('Claimed:');
   });
 });
 
@@ -286,7 +290,7 @@ describe('portrait dock and toolbar affordance', () => {
     expect(page).toContain('aria-selected={workspaceStore.dockTab === tab}');
     expect(page).toContain('min-h-11');
     expect(page.match(/data-dock-tab=/g)?.length).toBe(1);
-    for (const label of ['Peripherals', 'Pins', 'Diagnostics', 'DMA', 'PIO', 'Audit']) {
+    for (const label of ['Peripherals', 'Pins', 'Diagnostics', 'DMA', 'PIO', 'Placement', 'Audit']) {
       expect(page, label).toContain(label);
     }
     expect(page).not.toContain('Configuration');

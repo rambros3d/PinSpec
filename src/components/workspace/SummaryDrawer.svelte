@@ -20,6 +20,7 @@
     type ChipData,
     type GpioConfig,
     type OneHopFix,
+    type PeripheralStatus,
     type PinAssignment,
     type PioPinAssignment,
     type SolverReport,
@@ -30,12 +31,15 @@
   import HardwareAuditPanel from './HardwareAuditPanel.svelte';
   import PioPanel from './PioPanel.svelte';
   import PinTagPills from './PinTagPills.svelte';
+  import PlacementPanel from './PlacementPanel.svelte';
 
   export type SummaryDrawerTab = SummaryTab;
 
   interface Props {
     chip: ChipData;
     assignments: Record<string, PinAssignment>;
+    peripheralModes: Record<string, string>;
+    peripheralStatus: Record<string, PeripheralStatus>;
     labels: Record<string, string>;
     locked: Record<string, boolean>;
     pioAssignments: Record<string, PioPinAssignment>;
@@ -53,6 +57,8 @@
   let {
     chip,
     assignments,
+    peripheralModes,
+    peripheralStatus,
     labels,
     locked,
     pioAssignments,
@@ -233,6 +239,18 @@
       }`}
     >
       GPIO
+    </button>
+
+    <button
+      type="button"
+      onclick={() => (activeTab = 'placement')}
+      class={`tab text-xs font-medium whitespace-nowrap ${
+        activeTab === 'placement'
+          ? 'tab-active bg-base-100 text-foreground'
+          : 'text-base-content/60 hover:text-foreground'
+      }`}
+    >
+      Placement
     </button>
 
     <button
@@ -638,7 +656,16 @@
       {/if}
     </div>
 
-  <!-- Tab 6: data-derived hardware audit, read-only -->
+  <!-- Tab 6: configured-peripheral placement bubbles -->
+  {:else if activeTab === 'placement'}
+    <PlacementPanel
+      {chip}
+      {peripheralStatus}
+      {peripheralModes}
+      {assignments}
+    />
+
+  <!-- Tab 7: data-derived hardware audit, read-only -->
   {:else if activeTab === 'audit'}
     <HardwareAuditPanel {chip} state={workspaceStore.state} />
   {/if}

@@ -16,9 +16,8 @@ import {
 } from './types';
 import { partitionPeripherals } from './vendor-view';
 
-/** Normalized placement view used by every persistence surface. */
+/** Normalized shareable placement preferences used by every persistence surface. */
 export interface PlacementSettings {
-  overlayVisible: boolean;
   preferences: Record<string, PinPlacementPreference>;
 }
 
@@ -83,9 +82,10 @@ export function canonicalPinPlacementPreference(
 /**
  * Supply disabled defaults for missing placement data. All codecs and the UI
  * read this normalizer so version-2 payloads without placement remain valid.
+ * Overlay visibility is a local view preference and is deliberately omitted.
  */
 export function normalizePlacement(
-  state: Pick<WorkspaceState, 'placement' | 'placementOverlayVisible'>,
+  state: Pick<WorkspaceState, 'placement'>,
 ): PlacementSettings {
   const preferences: Record<string, PinPlacementPreference> = {};
   if (state.placement && typeof state.placement === 'object') {
@@ -94,7 +94,7 @@ export function normalizePlacement(
       if (parsed) preferences[peripheral] = parsed;
     }
   }
-  return { overlayVisible: Boolean(state.placementOverlayVisible), preferences };
+  return { preferences };
 }
 
 /** One pin's polar position relative to the package centre. */

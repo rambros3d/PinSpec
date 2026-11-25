@@ -30,7 +30,6 @@ export interface PinCraftProjectFile {
   pioAssignments?: Record<string, PioPinAssignment>;
   gpioConfig?: Record<string, GpioConfig>;
   placement?: Record<string, PinPlacementPreference>;
-  placementOverlayVisible?: boolean;
   /** Package rotation, emitted only for non-default clockwise values. */
   packageRotation?: PackageRotation;
   /** Display-only placement overlay rotation, omitted at zero. */
@@ -139,7 +138,6 @@ export function exportPinoutJson(state: WorkspaceState, vendor?: VendorId): stri
     }
     doc.gpioConfig = sortRecordKeys(cleanGpio);
   }
-  if (state.placementOverlayVisible) doc.placementOverlayVisible = true;
   if (state.placement && Object.keys(state.placement).length > 0) {
     const cleanPlacement: Record<string, PinPlacementPreference> = {};
     for (const [peripheral, pref] of Object.entries(state.placement)) {
@@ -272,9 +270,9 @@ export function parsePinoutJson(raw: string): JsonImportResult {
       }
     }
 
-    if (obj.placementOverlayVisible === true) state.placementOverlayVisible = true;
-    // Legacy `dockTab` values are ignored so older project files keep their
-    // pin configuration without importing a local view preference.
+    // Legacy `placementOverlayVisible` and `dockTab` values are ignored so
+    // older project files keep pin configuration without importing local view
+    // preferences.
     const rotation = normalizePackageRotation(obj.packageRotation);
     if (rotation !== 0) state.packageRotation = rotation;
     if (typeof obj.placementOverlayRotation === 'number') {

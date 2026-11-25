@@ -1,10 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import {
-  DEFAULT_CATEGORY_EXPANSION,
-  normalizeSidebarSection,
-} from '../src/state/workspace-preferences.svelte';
+import { DEFAULT_CATEGORY_EXPANSION } from '../src/state/workspace-preferences.svelte';
 
 const ROOT = process.cwd();
 const readSource = (rel: string): string => fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -14,7 +11,8 @@ describe('combined sidebar configuration surface', () => {
     const sidebar = readSource('src/components/workspace/CombinedSidebar.svelte');
     expect(sidebar).toContain('<PeripheralTree');
     expect(sidebar).toContain('<PeripheralDetail');
-    expect(sidebar).toContain('<PlacementPanel');
+    expect(sidebar).not.toContain('<PlacementPanel');
+    expect(sidebar).not.toContain('combined-section-switcher');
     expect(sidebar).toContain('combined-tree-column');
     expect(sidebar).toContain('combined-detail-column');
     expect(sidebar).toContain('160');
@@ -36,16 +34,17 @@ describe('combined sidebar configuration surface', () => {
     expect(drawer).not.toContain('<PeripheralDetail');
     expect(drawer).toContain('min-h-0');
     expect(drawer).toContain('overflow-y-auto');
-    for (const tab of ['pins', 'diagnostics', 'dma', 'pio', 'gpio', 'audit']) {
+    for (const tab of ['pins', 'diagnostics', 'dma', 'pio', 'gpio', 'placement', 'audit']) {
       expect(drawer, tab).toContain(`'${tab}'`);
     }
+    expect(drawer).toContain('<PlacementPanel');
   });
 
-  it('selects the peripheral and opens Detail in both orientations', () => {
+  it('selects the peripheral without a sidebar section switcher', () => {
     const page = readSource('src/pages/WorkspacePage.svelte');
     const handler = page.match(/function selectPeripheral\(name: string\): void \{[\s\S]*?\n  \}/)?.[0] ?? '';
     expect(handler).toContain('viewPreferences.selectedPeripheral = name');
-    expect(handler).toContain("viewPreferences.sidebarSection = 'detail'");
+    expect(handler).not.toContain('sidebarSection');
     expect(handler).not.toContain('configuration');
     expect(page).toContain('<CombinedSidebar');
     expect(page).toContain('onSelectPeripheral={selectPeripheral}');
@@ -60,17 +59,18 @@ describe('combined sidebar configuration surface', () => {
     expect(page.match(/data-dock-tab=/g)?.length).toBe(1);
   });
 
-  it('uses a documented localStorage-only sidebar section default', () => {
-    expect(normalizeSidebarSection(undefined)).toBe('detail');
-    expect(normalizeSidebarSection('place')).toBe('place');
-    expect(normalizeSidebarSection('configuration')).toBe('detail');
+  it('keeps sidebar section state out of view preferences and shareable state', () => {
     const store = readSource('src/state/workspace-preferences.svelte.ts');
-    expect(store).toContain('sidebarSection?: unknown');
-    expect(store).toContain('sidebarSection: this.sidebar');
+    expect(store).not.toContain('sidebarSection');
+    expect(store).not.toContain('SIDEBAR_SECTIONS');
     const json = readSource('src/core/exporters/json.ts');
     expect(json).not.toContain('sidebarSection');
     const url = readSource('src/core/url-state.ts');
     expect(url).not.toContain('sidebarSection');
+    const sidebar = readSource('src/components/workspace/CombinedSidebar.svelte');
+    expect(sidebar).not.toContain("'place'");
+    expect(sidebar).not.toContain('>Place<');
+    expect(sidebar).not.toContain('selectSection');
   });
 
   it('shows a short empty-state prompt when nothing is selected', () => {

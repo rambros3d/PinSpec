@@ -256,7 +256,6 @@ describe('default allocation stays byte-identical', () => {
     const withDisabledPlacement: WorkspaceState = {
       ...empty,
       placement: { SPI1: { angle: 90, ring: 'high', enabled: false } },
-      placementOverlayVisible: true,
     };
     const disabledScores = chip.pins
       .filter((pin) => pin.type === 'io')
@@ -400,7 +399,6 @@ describe('placement-driven reallocation', () => {
 describe('placement persistence', () => {
   const placementState: WorkspaceState = {
     ...empty,
-    placementOverlayVisible: true,
     placement: {
       SPI1: { angle: 123.5, ring: 'high', enabled: true },
       USART1: { angle: 300, ring: 'low', enabled: false },
@@ -421,11 +419,16 @@ describe('placement persistence', () => {
         },
       }),
     ).toBe(false);
-    expect(statesEqual(placementState, { ...placementState, placementOverlayVisible: false })).toBe(false);
+    expect(
+      statesEqual(placementState, {
+        ...placementState,
+        placement: { ...placementState.placement, USART1: { angle: 10, ring: 'low', enabled: true } },
+      }),
+    ).toBe(false);
   });
 
   it('normalizes absent fields to disabled defaults', () => {
-    expect(normalizePlacement(empty)).toEqual({ overlayVisible: false, preferences: {} });
+    expect(normalizePlacement(empty)).toEqual({ preferences: {} });
     const normalized = normalizePlacement({
       placement: { BAD: { angle: Number.NaN, ring: 'high', enabled: true } },
     });
@@ -442,19 +445,54 @@ describe('placement persistence', () => {
     expect(decoded.ok).toBe(true);
     if (decoded.ok) expect(decoded.state).toEqual(placementState);
     expect(decodeRawPayload(encodeWorkspaceState(placementState))).toHaveProperty('y');
-    expect(decodeRawPayload(encodeWorkspaceState(placementState))).toHaveProperty('w', 1);
+    expect(decodeRawPayload(encodeWorkspaceState(placementState))).not.toHaveProperty('w');
     expect(decodeRawPayload(encodeWorkspaceState(empty))).not.toHaveProperty('y');
     expect(decodeRawPayload(encodeWorkspaceState(empty))).not.toHaveProperty('w');
 
     const text = exportPinoutJson(placementState, 'stm32');
     const doc = JSON.parse(text) as Record<string, unknown>;
     expect(doc.version).toBe(2);
-    expect(doc.placementOverlayVisible).toBe(true);
+    expect(doc).not.toHaveProperty('placementOverlayVisible');
     expect(Object.keys(doc.placement as object)).toEqual(['SPI1', 'USART1']);
     const parsed = parsePinoutJson(text);
     expect(parsed.ok).toBe(true);
     if (parsed.ok) expect(parsed.state).toEqual(placementState);
     expect(parsePinoutJson(exportPinoutJson(empty))).toEqual({ ok: true, state: empty });
+  });
+
+  it('ignores the legacy overlay flag from earlier version-2 payloads', () => {
+    const raw = JSON.stringify({
+      v: 2,
+      m: chip.id,
+      w: 1,
+      y: { SPI1: [45, 'high', 1] },
+    });
+    const encoded = Buffer.from(deflateSync(strToU8(raw), { level: 9 })).toString('base64url');
+    const decoded = decodeWorkspaceState(encoded);
+    expect(decoded.ok).toBe(true);
+    if (decoded.ok) {
+      expect(decoded.state.placement?.SPI1).toEqual({ angle: 45, ring: 'high', enabled: true });
+      expect(decoded.state).not.toHaveProperty('placementOverlayVisible');
+    }
+
+    const parsed = parsePinoutJson(
+      JSON.stringify({
+        format: 'pincraft-pinout',
+        version: 2,
+        mcuId: chip.id,
+        peripheralModes: {},
+        assignments: {},
+        labels: {},
+        locked: [],
+        placementOverlayVisible: true,
+        placement: { SPI1: { angle: 45, ring: 'high', enabled: true } },
+      }),
+    );
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) {
+      expect(parsed.state.placement?.SPI1).toEqual({ angle: 45, ring: 'high', enabled: true });
+      expect(parsed.state).not.toHaveProperty('placementOverlayVisible');
+    }
   });
 
   it('ignores wrong-version payloads and invalid preferences', () => {
@@ -476,7 +514,7 @@ describe('placement persistence', () => {
     if (decoded.ok) expect(decoded.state.placement).toBeUndefined();
   });
 
-  it('persists placement and the overlay toggle in localStorage sessions', async () => {
+  it('persists placement bubbles but keeps the overlay toggle out of sessions', async () => {
     const storage = new Map<string, string>();
     vi.stubGlobal('window', {
       localStorage: {
@@ -487,16 +525,22 @@ describe('placement persistence', () => {
     vi.resetModules();
     const { workspaceStore } = await import('../src/state/workspace.svelte.ts');
     const { catalogStore } = await import('../src/state/catalog.svelte.ts');
+    const { viewPreferences } = await import('../src/state/workspace-preferences.svelte.ts');
     catalogStore.primeChip(chip);
     await workspaceStore.openMcu(chip.id);
     workspaceStore.setPlacement('SPI1', { angle: 123.5, ring: 'high', enabled: true });
     workspaceStore.setPlacementOverlayVisible(true);
 
+    expect(viewPreferences.placementOverlayVisible).toBe(true);
+    const preferences = JSON.parse(
+      storage.get('pincraft:workspace_view_preferences_v1') ?? '{}',
+    ) as Record<string, unknown>;
+    expect(preferences.placementOverlayVisible).toBe(true);
     const sessions = JSON.parse(storage.get('pincraft:recent_sessions_v1') ?? '[]') as Array<{
       state: WorkspaceState;
     }>;
     expect(sessions[0].state.placement).toEqual({ SPI1: { angle: 123.5, ring: 'high', enabled: true } });
-    expect(sessions[0].state.placementOverlayVisible).toBe(true);
+    expect(sessions[0].state).not.toHaveProperty('placementOverlayVisible');
     vi.unstubAllGlobals();
   });
 });
@@ -560,6 +604,43 @@ describe('placement overlay wiring', () => {
     expect(generated).not.toContain('placement');
     const rust = fs.readFileSync(path.join(ROOT, 'src/core/exporters/embassy-rust.ts'), 'utf8');
     expect(rust).not.toContain('placement');
+  });
+});
+
+describe('placement tab activation', () => {
+  const page = fs.readFileSync(path.join(ROOT, 'src/pages/WorkspacePage.svelte'), 'utf8');
+  const drawer = fs.readFileSync(
+    path.join(ROOT, 'src/components/workspace/SummaryDrawer.svelte'),
+    'utf8',
+  );
+  const store = fs.readFileSync(path.join(ROOT, 'src/state/workspace.svelte.ts'), 'utf8');
+
+  it('opens the overlay from the drawer or dock tab and deactivates on leaving', () => {
+    expect(page).toContain("tab === 'placement'");
+    expect(page).toContain("previousSummaryTab === 'placement'");
+    expect(page).toContain('workspaceStore.setPlacementOverlayVisible(true)');
+    expect(page).toContain('workspaceStore.setPlacementOverlayVisible(false)');
+    expect(page).toContain('function toggleRightDrawer(): void');
+    expect(page).toContain('workspaceStore.setPlacementOverlayVisible(!rightCollapsed)');
+    expect(drawer).toContain("<PlacementPanel");
+    expect(drawer).toContain("activeTab === 'placement'");
+  });
+
+  it('keeps the canvas toggle as the only overlay ON/OFF control', () => {
+    const canvas = fs.readFileSync(
+      path.join(ROOT, 'src/components/workspace/PackageCanvas.svelte'),
+      'utf8',
+    );
+    expect(canvas).toContain('setPlacementOverlayVisible(next)');
+    expect(canvas).toContain('viewPreferences.placementOverlayVisible');
+    expect(drawer).not.toContain('setPlacementOverlayVisible');
+    const panel = fs.readFileSync(
+      path.join(ROOT, 'src/components/workspace/PlacementPanel.svelte'),
+      'utf8',
+    );
+    expect(panel).not.toContain('setPlacementOverlayVisible');
+    expect(store).toContain('viewPreferences.placementOverlayVisible = visible');
+    expect(store).not.toContain('next.placementOverlayVisible');
   });
 });
 
@@ -731,7 +812,9 @@ describe('placement overlay interaction refresh', () => {
     );
     expect(panel).toContain('configuredPeripheralNames');
     expect(panel).toContain("ring: 'low', enabled: true");
-    expect(panel).toContain('type="number"');
+    expect(panel).toContain('setPlacement(');
+    expect(panel).not.toContain('type="number"');
+    expect(panel).not.toContain('Claimed:');
     expect(panel).not.toContain('setPlacementOverlayVisible');
   });
 });
@@ -784,7 +867,7 @@ describe('priority ring identifiers', () => {
         placement: {
           SPI1: { angle: 90, ring: 'outer', enabled: true },
         },
-      } as unknown as Pick<WorkspaceState, 'placement' | 'placementOverlayVisible'>).preferences
+      } as unknown as Pick<WorkspaceState, 'placement'>).preferences
         .SPI1,
     ).toEqual({ angle: 90, ring: 'low', enabled: true });
   });
@@ -829,7 +912,6 @@ describe('priority ring identifiers', () => {
   it('round-trips current ring names through both codecs', () => {
     const state: WorkspaceState = {
       ...empty,
-      placementOverlayVisible: true,
       placement: {
         SPI1: { angle: 30, ring: 'high', enabled: true },
         USART1: { angle: 200, ring: 'medium', enabled: true },

@@ -59,8 +59,8 @@ behavior and generated output must remain stable.
    `WorkspaceState` into `viewPreferences` in
    `workspace-preferences.svelte.ts`, persisted under the existing namespaced
    localStorage key. The canvas top-left toggle continues to call the same
-   visibility setter and remains the only explicit ON/OFF control; switching
-   away from the tab does not hide the overlay.
+   visibility setter. Leaving the Placement tab or closing the drawer hides the
+   overlay unless the user explicitly re-enables it with the canvas toggle.
    Alternative considered: keep visibility in shareable state and set it on tab
    selection. Rejected by the persistence rule in `AGENTS.md`: presentation
    state does not belong in share URLs or project JSON.

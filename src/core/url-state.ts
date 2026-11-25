@@ -45,8 +45,6 @@ interface CompactUrlPayload {
   g?: Record<string, CompactGpio>;
   /** Peripheral -> [angle, ring, enabled] (only when non-empty). */
   y?: Record<string, CompactPlacement>;
-  /** Placement overlay visibility (only when true). */
-  w?: 1;
   /** Package rotation, emitted only for non-default clockwise values. */
   z?: PackageRotation;
   /** Display-only overlay rotation in degrees, emitted only when non-zero. */
@@ -167,7 +165,6 @@ export function encodeWorkspaceState(state: WorkspaceState): string {
     }
   }
 
-  if (state.placementOverlayVisible) payload.w = 1;
   const rotation = normalizePackageRotation(state.packageRotation);
   if (rotation !== 0) payload.z = rotation;
   const overlayRotation = normalizeAngle(state.placementOverlayRotation ?? 0);
@@ -288,9 +285,8 @@ export function decodeWorkspaceState(encoded: string): DecodeResult {
       if (Object.keys(gpioConfig).length > 0) state.gpioConfig = gpioConfig;
     }
 
-    if (obj.w === 1 || obj.w === true) state.placementOverlayVisible = true;
-    // Legacy `d` values from earlier links are ignored: the dock tab is now a
-    // localStorage-only UI preference and must not enter shared state.
+    // Legacy `w` (overlay visibility) and `d` (dock tab) values are ignored:
+    // both are localStorage-only UI preferences and must not enter shared state.
     const rotation = normalizePackageRotation(obj.z);
     if (rotation !== 0) state.packageRotation = rotation;
     if (typeof obj.q === 'number') {

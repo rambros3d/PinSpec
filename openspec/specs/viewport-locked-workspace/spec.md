@@ -48,12 +48,11 @@ sidebar SHALL NOT create a document scrollbar or resize the workspace.
 ### Requirement: Orientation alone selects the layout
 
 The system SHALL choose the layout from viewport orientation only, without
-JavaScript orientation detection and without a width-only rule. Landscape
-SHALL show the combined peripheral sidebar with its slim tree and detail
-column, the pin canvas, and the summary drawer. Portrait SHALL show the pin
-canvas and a bottom dock whose Peripherals tab presents the combined sidebar
-side by side. A width change that does not change orientation SHALL NOT switch
-layouts.
+JavaScript orientation detection or a width-only rule. Landscape SHALL show the
+combined sidebar with its slim tree and detail column, the pin canvas, and the
+summary drawer. Portrait SHALL show the pin canvas and a bottom dock whose
+Peripherals tab presents the sidebar side by side and whose Placement tab hosts
+placement bubble controls. A width-only change SHALL NOT switch layouts.
 
 #### Scenario: Landscape shows three panes
 
@@ -63,7 +62,7 @@ layouts.
 #### Scenario: Portrait shows the bottom dock
 
 - **WHEN** the viewport orientation changes to portrait
-- **THEN** the pin canvas remains and the peripheral tree, detail column, pin table, placement properties, diagnostics, DMA, and PIO content are presented through the bottom dock, with the tree and detail column side by side in the Peripherals tab
+- **THEN** the pin canvas remains and the peripheral tree, detail column, pin table, placement controls in the Placement tab, diagnostics, DMA, and PIO content are presented through the bottom dock, with the tree and detail column side by side in the Peripherals tab
 
 #### Scenario: Width-only resize does not change layout
 
@@ -73,11 +72,11 @@ layouts.
 ### Requirement: Portrait dock shows one tab at a time
 
 Portrait SHALL present a single bottom dock whose tab set is Peripherals, Pins,
-Diagnostics, DMA, PIO, and Audit. Only the selected tab's body SHALL be visible
-at a time. The Peripherals tab SHALL show the combined sidebar with the
-peripheral tree and detail column side by side. The dock SHALL occupy about 40
-to 45 percent of the viewport height, and its body SHALL scroll internally when
-its content exceeds that height.
+Diagnostics, DMA, PIO, Placement, and Audit. Only the selected tab's body SHALL
+be visible at a time. The Peripherals tab SHALL show the tree and detail column
+side by side. The Placement tab SHALL show the configured-peripheral bubble
+list. The dock SHALL occupy about 40 to 45 percent of the viewport height and
+scroll internally when its content exceeds that height.
 
 #### Scenario: Selecting a tab changes the visible body
 
@@ -88,6 +87,11 @@ its content exceeds that height.
 
 - **WHEN** the user needs peripheral detail in portrait
 - **THEN** the Peripherals dock tab shows the detail surface beside the tree and no Configuration tab is rendered
+
+#### Scenario: Placement tab shows bubble controls
+
+- **WHEN** the user selects the Placement dock tab in portrait
+- **THEN** the dock body shows the configured-peripheral bubble list and selecting it activates the placement overlay
 
 #### Scenario: Dock body scrolls internally
 
@@ -166,11 +170,12 @@ diagnostics, placement preferences, or undo and redo history.
 
 ### Requirement: Active dock tab is persisted
 
-The active portrait dock tab SHALL be stored only in browser localStorage as a
-UI preference. It SHALL survive reload and localStorage session restoration,
-and SHALL NOT be serialized into share URLs or project JSON. When the value is
-absent or unknown it SHALL default to Peripherals. No layout preference SHALL
-be carried in shareable pin configuration.
+The active portrait dock tab, including Placement, and the active right-drawer
+tab SHALL be stored only in browser localStorage as UI preferences. Both SHALL
+survive reload, SHALL NOT be serialized into share URLs or project JSON, and
+SHALL default to Peripherals and Pins respectively when absent or unknown. No
+layout or sidebar section preference SHALL be carried in shareable pin
+configuration.
 
 #### Scenario: Dock tab survives every persistence surface
 
@@ -191,6 +196,11 @@ be carried in shareable pin configuration.
 
 - **WHEN** an older share link or project file that contains a dock tab value is opened
 - **THEN** it loads with the default Peripherals tab and its pin configuration is preserved
+
+#### Scenario: Drawer tab is not shared or exported
+
+- **WHEN** a workspace with a selected right-drawer tab is shared or exported to project JSON
+- **THEN** neither the share URL payload nor the project JSON contains a drawer tab field and the same drawer tab is restored from localStorage after reload
 
 ### Requirement: Theme presentation is preserved
 

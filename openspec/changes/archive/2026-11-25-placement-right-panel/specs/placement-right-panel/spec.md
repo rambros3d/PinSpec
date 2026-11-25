@@ -48,10 +48,10 @@ hide the overlay.
 - **WHEN** the user clicks the canvas top-left placement toggle
 - **THEN** the overlay hides or shows without changing the active tab or any bubble preference
 
-#### Scenario: Switching tabs leaves the overlay unchanged
+#### Scenario: Leaving the Placement tab hides the overlay
 
-- **WHEN** the user moves away from the Placement tab to another drawer or dock tab
-- **THEN** the overlay visibility stays as it was and no bubble preference is changed
+- **WHEN** the user moves away from the Placement tab to another drawer or dock tab, or closes the drawer while that tab is active
+- **THEN** the overlay is hidden unless the user explicitly re-enabled it with the canvas toggle, and no bubble preference is changed
 
 #### Scenario: Overlay visibility is a local preference
 

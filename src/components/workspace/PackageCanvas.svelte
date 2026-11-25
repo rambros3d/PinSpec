@@ -22,6 +22,7 @@
     type PlacementRing,
   } from '../../core/types';
   import { placementSelection } from '../../state/placement-selection.svelte';
+  import { viewPreferences } from '../../state/workspace-preferences.svelte';
   import { workspaceStore } from '../../state/workspace.svelte';
   import GridPackage from './GridPackage.svelte';
   import PerimeterPackage from './PerimeterPackage.svelte';
@@ -104,7 +105,14 @@
 
   const muxModel = $derived(getChipMuxModel(chip));
 
-  const placementSettings = $derived(normalizePlacement(workspaceStore.state));
+  /**
+   * Overlay visibility is a localStorage view preference; the bubble
+   * preferences themselves remain shareable workspace state.
+   */
+  const placementSettings = $derived({
+    overlayVisible: viewPreferences.placementOverlayVisible,
+    preferences: normalizePlacement(workspaceStore.state).preferences,
+  });
   const overlayRotation = $derived(
     normalizeAngle(workspaceStore.state.placementOverlayRotation ?? 0),
   );

@@ -364,6 +364,7 @@ export const DOCK_TABS = [
   'diagnostics',
   'dma',
   'pio',
+  'placement',
   'audit',
 ] as const;
 export type DockTab = (typeof DOCK_TABS)[number];
@@ -385,6 +386,7 @@ export const SUMMARY_TABS = [
   'dma',
   'pio',
   'gpio',
+  'placement',
   'audit',
 ] as const;
 export type SummaryTab = (typeof SUMMARY_TABS)[number];
@@ -456,9 +458,13 @@ export interface WorkspaceState {
   activeRemaps?: Record<string, number>; // peripheral -> selected remap ID
   pioAssignments?: Record<string, PioPinAssignment>; // physical pin pos -> PIO binding
   gpioConfig?: Record<string, GpioConfig>; // physical pin pos -> electrical settings
+  /** Shareable pin configuration: enabled placement bubbles and their geometry. */
   placement?: Record<string, PinPlacementPreference>; // peripheral -> placement preference
-  placementOverlayVisible?: boolean; // canvas overlay toggle, persisted with the state
-  /** Additive view rotation; absent means the default 0-degree orientation. */
+  /**
+   * Additive view rotation; absent means the default 0-degree orientation.
+   * The placement overlay toggle is presentation state and lives only in
+   * browser localStorage, never in this shareable state.
+   */
   packageRotation?: PackageRotation;
   /**
    * Display-only placement overlay rotation in degrees. Scoring geometry and

@@ -128,6 +128,16 @@ selected peripheral's claimed pins.
 - **WHEN** the user drags an indicator to a new angle and radius in the overlay
 - **THEN** the indicator follows the drag and the stored preference angle and ring are updated
 
+#### Scenario: Canvas toggle reveals the panel
+
+- **WHEN** the user activates the canvas Placement toggle while another tab is active
+- **THEN** the Placement tab becomes active in the right drawer or portrait dock and the rings are drawn
+
+#### Scenario: Shown rings are visible without enabled bubbles
+
+- **WHEN** the overlay is shown on a workspace with no enabled placement bubbles
+- **THEN** the three rings and their labels are visibly drawn rather than appearing empty
+
 ### Requirement: Dragging reallocates in real time and preserves locked pins
 
 While a peripheral indicator is dragged, the system SHALL recompute allocation
@@ -179,6 +189,11 @@ Placement tab SHALL activate the overlay without adding a second ON/OFF control.
 
 - **WHEN** the user activates the overlay through the Placement tab
 - **THEN** the canvas toggle remains the only explicit ON/OFF control and the tab exposes only configured-peripheral bubble toggles
+
+#### Scenario: Canvas activation does not add a toggle
+
+- **WHEN** the user activates the overlay through the canvas toggle
+- **THEN** the Placement panel opens without a second ON/OFF control appearing in the panel or the left sidebar
 
 ### Requirement: Placement indicators require explicit opt-in
 

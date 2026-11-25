@@ -46,7 +46,7 @@ hide the overlay.
 #### Scenario: Canvas toggle remains available
 
 - **WHEN** the user clicks the canvas top-left placement toggle
-- **THEN** the overlay hides or shows without changing the active tab or any bubble preference
+- **THEN** the overlay hides or shows without changing any bubble preference, and showing the overlay also selects the Placement tab in the right drawer or portrait dock
 
 #### Scenario: Leaving the Placement tab hides the overlay
 
@@ -57,6 +57,11 @@ hide the overlay.
 
 - **WHEN** the overlay is activated by the Placement tab and the workspace is reloaded in the same browser
 - **THEN** the overlay visibility is restored from localStorage and is absent from share URLs and project JSON
+
+#### Scenario: Canvas toggle activation is local only
+
+- **WHEN** the canvas toggle selects the Placement tab and the workspace is reloaded in the same browser
+- **THEN** the tab and overlay are restored from localStorage and no tab or overlay field appears in a share URL or project file
 
 ### Requirement: Placement tab lists configured peripherals with toggles
 

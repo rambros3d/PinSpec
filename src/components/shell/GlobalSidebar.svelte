@@ -64,6 +64,11 @@
     } ${activeSection === section.id ? 'bg-info/15 font-semibold text-info' : 'hover:bg-base-300'}`;
   }
 
+  /** Icons read the accent token; the active section icon keeps info emphasis. */
+  function sectionIconClass(section: Section): string {
+    return `size-4 shrink-0 ${activeSection === section.id ? 'text-info' : 'text-accent'}`;
+  }
+
   function openRecent(mcuId: string): void {
     void workspaceStore.openMcu(mcuId);
     router.navigateMcu(mcuId);
@@ -116,7 +121,7 @@
             title={section.label}
             class={sectionClass(section)}
           >
-            <Icon class="size-4 shrink-0" />
+            <Icon class={sectionIconClass(section)} />
             {#if expanded}
               <span class="truncate text-xs">{section.label}</span>
             {/if}
@@ -129,7 +134,7 @@
             aria-label={section.label}
             class={`${sectionClass(section)} cursor-not-allowed opacity-40`}
           >
-            <Icon class="size-4 shrink-0" />
+            <Icon class={sectionIconClass(section)} />
             {#if expanded}
               <span class="truncate text-xs">{section.label}</span>
             {/if}
@@ -146,7 +151,7 @@
           title={section.label}
           class={sectionClass(section)}
         >
-          <Icon class="size-4 shrink-0" />
+          <Icon class={sectionIconClass(section)} />
           {#if expanded}
             <span class="truncate text-xs">{section.label}</span>
           {/if}
@@ -212,7 +217,7 @@
           title="Hotkeys"
           aria-label="Hotkeys"
         >
-          <Keyboard class="size-4 shrink-0" />
+          <Keyboard class="size-4 shrink-0 text-accent" />
           {#if expanded}
             <span class="truncate text-xs">Hotkeys</span>
           {/if}
@@ -228,7 +233,7 @@
         title={section.label}
         class={sectionClass(section)}
       >
-        <Icon class="size-4 shrink-0" />
+        <Icon class={sectionIconClass(section)} />
         {#if expanded}
           <span class="truncate text-xs">{section.label}</span>
         {/if}
@@ -247,10 +252,10 @@
       title={expanded ? 'Collapse navigation' : 'Expand navigation'}
     >
       {#if expanded}
-        <PanelLeftClose class="size-4 shrink-0" />
+        <PanelLeftClose class="size-4 shrink-0 text-accent" />
         <span class="truncate text-xs">Collapse navigation</span>
       {:else}
-        <PanelLeftOpen class="size-4 shrink-0" />
+        <PanelLeftOpen class="size-4 shrink-0 text-accent" />
       {/if}
     </button>
   </div>

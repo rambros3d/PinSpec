@@ -34,6 +34,16 @@ Secondary, accent, and the `*-content` color tokens from `src/themes/daisyui.css
 - **WHEN** an assigned, partial, conflict, or remap pin is rendered before and after this change
 - **THEN** its pin color resolves to the same `--pin-*` token and semantic state as before
 
+#### Scenario: Sidebar icons consume the accent token
+
+- **WHEN** the sidebar renders a non-active section icon in either theme
+- **THEN** the icon resolves through the accent token alias and no literal accent color appears in the component
+
+#### Scenario: Icon accent does not recolor labels
+
+- **WHEN** the accent class is applied to a sidebar icon
+- **THEN** the sibling label still resolves through its original inherited foreground class
+
 ### Requirement: IC texture is always on and scoped to package bodies
 
 The depth gradient and noise filter SHALL be always active on the IC package body in `PerimeterPackage.svelte` and `GridPackage.svelte` regardless of `--depth` and `--noise` theme values. Those tokens SHALL NOT gate, disable, or alter the effect. No other component or stylesheet SHALL add a depth gradient or noise filter, and `PackageCanvas.svelte` SHALL keep its `bg-mcu-canvas` base-100 surface.

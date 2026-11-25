@@ -161,13 +161,14 @@
         cx={centerX}
         cy={centerY}
         r={Math.max(1, radius * RING_FACTORS[ring])}
-        class="fill-none stroke-current text-info opacity-40"
+        class="fill-none stroke-current text-info opacity-90"
+        stroke-width="2"
         stroke-dasharray={ring === 'low' ? '5 4' : undefined}
       />
       <text
         x={centerX + 5}
         y={centerY - Math.max(1, radius * RING_FACTORS[ring]) - 4}
-        class="fill-current text-info text-[10px]"
+        class="fill-current text-info text-[11px] font-medium"
       >
         {PLACEMENT_RING_LABELS[ring]}
       </text>

@@ -353,6 +353,9 @@ describe('placement overlay Escape and keyboard focus', () => {
     expect(source).toContain("event.key === 'Escape' && draggingName");
     expect(source).toContain('cancelActiveDrag()');
     expect(source).toContain('group-focus-visible:opacity-100');
+    expect(source).toContain('class="fill-none stroke-current text-info opacity-90"');
+    expect(source).toContain('stroke-width="2"');
+    expect(source).not.toContain('opacity-40');
     expect(source).toContain('role="button"');
     expect(source).toContain('tabindex="0"');
     expect(source).toContain("event.key === 'ArrowRight' ? 5 : event.key === 'ArrowLeft' ? -5 : 0");

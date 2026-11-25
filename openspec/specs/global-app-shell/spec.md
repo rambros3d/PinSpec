@@ -349,12 +349,27 @@ Shell surfaces SHALL use existing theme tokens and bold duotone vector icons, SH
 #### Scenario: Texture effects stay in the two package renderers
 
 - **WHEN** all Svelte sources are scanned for texture primitives
-- **THEN** only `PerimeterPackage.svelte` and `GridPackage.svelte` contain `feTurbulence` and no thumbnail component adds one
+- **THEN** matches exist only inside `PerimeterPackage.svelte` and `GridPackage.svelte` and no thumbnail component adds one
 
 #### Scenario: Shell icons use the single icon package
 
 - **WHEN** shell and route source files are scanned for icon imports
 - **THEN** every icon comes from the single bold duotone package and no retired icon library import remains
+
+#### Scenario: Sidebar icons use the accent token
+
+- **WHEN** the sidebar is rendered in rail or expanded state with a non-active section
+- **THEN** that section's icon resolves to the accent token and remains legible in both bundled themes
+
+#### Scenario: Section labels keep their foreground treatment
+
+- **WHEN** the sidebar renders an active or inactive section
+- **THEN** the label inherits the link foreground treatment and is not colored by the icon accent class
+
+#### Scenario: Active route icons keep info highlighting
+
+- **WHEN** a sidebar section matches the current route
+- **THEN** its icon resolves to the `info` token while its label keeps the existing active foreground treatment
 
 ### Requirement: Catalog result rows lead with a package thumbnail
 

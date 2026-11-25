@@ -211,6 +211,19 @@ describe('orientation-driven grid layout', () => {
     expect(css).toMatch(/\.workspace-summary \.summary-tab-strip \{\s*display: none/);
   });
 
+  it('reveals the Placement panel from the canvas toggle in both orientations', () => {
+    const page = readSource('src/pages/WorkspacePage.svelte');
+    const handler = page.match(/function handlePlacementToggle[\s\S]*?\n  }/)?.[0] ?? '';
+    expect(handler).toContain('if (!visible) return;');
+    expect(handler).toContain("summaryTab = 'placement'");
+    expect(handler).toContain("workspaceStore.setDockTab('placement')");
+    expect(handler).toContain('rightCollapsed = false;');
+    expect(handler).not.toContain('setPlacementOverlayVisible');
+    expect(page).toContain('onPlacementToggle={handlePlacementToggle}');
+    const canvas = readSource('src/components/workspace/PackageCanvas.svelte');
+    expect(canvas).toContain('onPlacementToggle?.(next)');
+  });
+
   it('keeps the combined sidebar side by side in both orientations', () => {
     const css = readSource('src/app.css');
     const rootBlock = css.match(/\.workspace-root\s*\{[\s\S]*?\}/)?.[0] ?? '';

@@ -76,6 +76,18 @@
     }
   });
 
+  /**
+   * Reveal the Placement panel when the canvas toggle turns the overlay on.
+   * Turning it off leaves the active tab and every bubble preference alone;
+   * the tab state and overlay flag stay in localStorage-only view preferences.
+   */
+  function handlePlacementToggle(visible: boolean): void {
+    if (!visible) return;
+    summaryTab = 'placement';
+    workspaceStore.setDockTab('placement');
+    rightCollapsed = false;
+  }
+
   /** Collapsing the drawer hides an overlay opened by its Placement tab. */
   function toggleRightDrawer(): void {
     rightCollapsed = !rightCollapsed;
@@ -305,6 +317,7 @@
           onCompleteRemap={(targetPos) => workspaceStore.completeRemap(targetPos)}
           onCancelRemap={() => workspaceStore.cancelRemapMode()}
           onRotate={() => workspaceStore.toggleRotation()}
+          onPlacementToggle={handlePlacementToggle}
         />
       </div>
 

@@ -157,6 +157,20 @@ describe('daisyUI token integration', () => {
     }
   });
 
+  it('resolves sidebar icon accents through theme tokens with no literal color', () => {
+    const sidebar = fs.readFileSync(
+      path.join(ROOT, 'src', 'components', 'shell', 'GlobalSidebar.svelte'),
+      'utf8',
+    );
+    expect(sidebar).toContain("'text-accent'");
+    expect(sidebar).toContain("'text-info'");
+    expect(sidebar).not.toMatch(/#[0-9a-fA-F]{3,8}\b|\brgba?\(|\bhsla?\(|\boklch\(/);
+    expect(sidebar).not.toMatch(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]/u);
+    const css = fs.readFileSync(path.join(ROOT, 'src', 'app.css'), 'utf8');
+    const solarRule = css.match(/\.solar\s*\{[\s\S]*?\}/)?.[0] ?? '';
+    expect(solarRule).toContain('var(--color-base-content)');
+  });
+
   it('uses one verified bold duotone icon package across delivered UI', () => {
     const srcFiles: string[] = [];
     for (const file of sourceFiles()) {

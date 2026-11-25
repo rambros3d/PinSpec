@@ -58,6 +58,8 @@
     onCompleteRemap: (targetPos: string) => boolean;
     onCancelRemap: () => void;
     onRotate: () => void;
+    /** Page-owned callback that reveals the Placement panel when the overlay is toggled. */
+    onPlacementToggle?: (visible: boolean) => void;
   }
 
   let {
@@ -79,6 +81,7 @@
     onCompleteRemap,
     onCancelRemap,
     onRotate,
+    onPlacementToggle,
   }: Props = $props();
 
   let stageEl = $state<HTMLDivElement | null>(null);
@@ -621,6 +624,7 @@
           const next = !placementSettings.overlayVisible;
           if (!next) placementSelection.select(null);
           workspaceStore.setPlacementOverlayVisible(next);
+          onPlacementToggle?.(next);
         }}
         title={placementSettings.overlayVisible ? 'Hide placement overlay' : 'Show placement overlay'}
         aria-pressed={placementSettings.overlayVisible}

@@ -580,6 +580,21 @@ describe('placement overlay wiring', () => {
     expect(canvas).toContain('Rotate placement Rings');
     expect(canvas).toContain('<Orbit class="size-3.5" />');
     expect(canvas).not.toContain('handlePlacementRing');
+    expect(canvas).toContain('onPlacementToggle?: (visible: boolean) => void;');
+    expect(canvas).toContain('onPlacementToggle?.(next);');
+  });
+
+  it('draws legible rings and labels while keeping pin input passthrough', () => {
+    const overlay = fs.readFileSync(
+      path.join(ROOT, 'src/components/workspace/PlacementOverlay.svelte'),
+      'utf8',
+    );
+    expect(overlay).toContain('class="fill-none stroke-current text-info opacity-90"');
+    expect(overlay).toContain('stroke-width="2"');
+    expect(overlay).toContain('class="fill-current text-info text-[11px] font-medium"');
+    expect(overlay).not.toContain('opacity-40');
+    expect(overlay).toContain('class="absolute inset-0 z-10 pointer-events-none"');
+    expect(overlay).toContain('class="absolute inset-0 w-full h-full pointer-events-none"');
   });
 
   it('forwards the persisted rotation alongside the overlay', () => {
@@ -624,6 +639,18 @@ describe('placement tab activation', () => {
     expect(page).toContain('workspaceStore.setPlacementOverlayVisible(!rightCollapsed)');
     expect(drawer).toContain("<PlacementPanel");
     expect(drawer).toContain("activeTab === 'placement'");
+  });
+
+  it('reveals the Placement panel when the canvas toggle turns on', () => {
+    expect(page).toContain('function handlePlacementToggle(visible: boolean): void');
+    const handler = page.match(/function handlePlacementToggle[\s\S]*?\n  }/)?.[0] ?? '';
+    expect(handler).toContain('if (!visible) return;');
+    expect(handler).toContain("summaryTab = 'placement'");
+    expect(handler).toContain("workspaceStore.setDockTab('placement')");
+    expect(handler).toContain('rightCollapsed = false;');
+    expect(handler).not.toContain('setPlacementOverlayVisible');
+    expect(handler).not.toContain('setPlacement(');
+    expect(page).toContain('onPlacementToggle={handlePlacementToggle}');
   });
 
   it('keeps the canvas toggle as the only overlay ON/OFF control', () => {

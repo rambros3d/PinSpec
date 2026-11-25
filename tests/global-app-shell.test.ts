@@ -211,6 +211,23 @@ describe('collapsible sidebar overlay', () => {
     expect(contentBlock).toContain('padding-left: 3rem');
   });
 
+  it('colors section icons with accent while labels keep their foreground', () => {
+    expect(sidebar).toContain('function sectionIconClass(section: Section): string');
+    expect(sidebar).toContain("activeSection === section.id ? 'text-info' : 'text-accent'");
+    expect(sidebar).toContain('<Icon class={sectionIconClass(section)} />');
+    expect(sidebar).toContain('<Keyboard class="size-4 shrink-0 text-accent" />');
+    expect(sidebar).toContain('<PanelLeftClose class="size-4 shrink-0 text-accent" />');
+    expect(sidebar).toContain('<PanelLeftOpen class="size-4 shrink-0 text-accent" />');
+    expect(sidebar.match(/<Icon class=\{sectionIconClass\(section\)\} \/>/g)?.length).toBe(4);
+    const sectionClassFn =
+      sidebar.match(/function sectionClass\(section: Section\): string \{[\s\S]*?\n  \}/)?.[0] ?? '';
+    expect(sectionClassFn).toContain('text-base-content/70');
+    expect(sectionClassFn).not.toContain('text-accent');
+    expect(sidebar).toContain('class="truncate text-xs">{section.label}</span>');
+    expect(sidebar).not.toMatch(/<a[^>]*text-accent[^>]*>/);
+    expect(sidebar).not.toMatch(/<button[^>]*text-accent[^>]*>/);
+  });
+
   it('offers the five section entries with active-route indication', () => {
     for (const entry of [
       "hash: '#/'",

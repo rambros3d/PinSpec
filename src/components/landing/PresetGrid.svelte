@@ -4,11 +4,13 @@
 
   interface Props {
     recentSessions: RecentSession[];
+    /** Uppercase part ids marked as modules by the generated catalog index. */
+    moduleIds?: Set<string>;
     onOpenMcu: (mcuId: string) => void;
     onDeleteRecent: (mcuId: string) => void;
   }
 
-  let { recentSessions, onOpenMcu, onDeleteRecent }: Props = $props();
+  let { recentSessions, moduleIds = new Set<string>(), onOpenMcu, onDeleteRecent }: Props = $props();
 
   const STARTER_CHIPS = [
     {
@@ -188,6 +190,11 @@
                 <span class="badge badge-xs badge-ghost font-mono text-[9px]">
                   {item.vendor}
                 </span>
+                {#if moduleIds.has(item.id.toUpperCase())}
+                  <span class="badge badge-xs badge-outline font-mono text-[9px] uppercase">
+                    MODULE
+                  </span>
+                {/if}
               </span>
               <span class="font-mono text-[11px] text-base-content/60 shrink-0">
                 {item.pkg} · {item.renderer}

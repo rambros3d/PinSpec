@@ -586,8 +586,8 @@
     />
   {/if}
 
-  <!-- Bottom-centre placement toggle and canvas-only display rotation -->
-  <div class="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+  <!-- Top-left placement toggle and canvas-only display rotation -->
+  <div class="absolute top-14 left-3 z-20 pointer-events-none">
     <div
       class="card card-border pointer-events-auto flex flex-row items-center gap-1.5 px-2.5 py-1 bg-base-100/95 text-xs shadow-sm"
       data-placement-furniture

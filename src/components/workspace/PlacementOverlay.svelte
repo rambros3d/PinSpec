@@ -202,7 +202,7 @@
             y={point.y + 4}
             class="fill-current text-foreground font-mono text-[11px]"
           >
-            {indicator.name} {Math.round(indicator.preference.angle)} deg
+            {indicator.name}
           </text>
         </g>
       {/if}

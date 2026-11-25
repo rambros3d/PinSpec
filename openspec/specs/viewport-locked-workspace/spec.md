@@ -9,12 +9,11 @@ Defines a workspace layout that keeps pin planning inside the visible viewport i
 ### Requirement: The document never scrolls
 
 The workspace SHALL fit entirely within the visible viewport in both
-orientations. The root document SHALL NOT scroll or overscroll regardless of
-viewport size, dynamic mobile browser toolbar height, or content height.
-Individual panes and modal bodies SHALL scroll internally instead. The landing
-page is exempt from the document lock through its own scroll container:
-vertical landing content SHALL scroll inside that container while the root
-document and the workspace stay viewport-locked.
+orientations, and the root document SHALL NOT scroll or overscroll at any
+viewport size. Panes and modal bodies SHALL scroll internally. The home,
+catalog, projects, and about routes SHALL scroll inside their own containers
+while the root document and workspace stay viewport-locked. An expanded global
+sidebar SHALL NOT create a document scrollbar or resize the workspace.
 
 #### Scenario: Small viewport does not scroll the document
 
@@ -35,6 +34,16 @@ document and the workspace stay viewport-locked.
 
 - **WHEN** the user navigates from a scrolled landing page to a workspace route
 - **THEN** the workspace root remains sized to the visible viewport and the document stays fixed
+
+#### Scenario: Shell route scroll does not affect the workspace
+
+- **WHEN** the user scrolls a catalog, projects, or about route and then opens a workspace route
+- **THEN** the workspace root remains sized to the visible viewport and the document stays fixed
+
+#### Scenario: Expanded sidebar does not introduce document scrolling
+
+- **WHEN** the global sidebar is expanded over a workspace or a shell route
+- **THEN** the root document neither scrolls nor widens and the underlying workspace keeps its viewport bounds
 
 ### Requirement: Orientation alone selects the layout
 

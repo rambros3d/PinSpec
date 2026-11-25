@@ -208,6 +208,18 @@ export function buildEspChip(
     id: chipId,
     vendor: 'esp32',
     muxModel: 'gpio-matrix',
+    // Emit identity only when buildEspModules() supplied acquired evidence;
+    // bare dies and MPN-only parts receive no module field at all.
+    ...(module
+      ? {
+          module: {
+            kind: 'module' as const,
+            name: module.id,
+            baseFamily: module.baseFamily,
+            symbol: module.symbol,
+          },
+        }
+      : {}),
     family: display,
     core: device.arch || (device.cores === 1 ? 'Synthetic' : 'Espressif'),
     flashKb: module?.flashKb ?? soc?.flashKb ?? null,

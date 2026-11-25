@@ -203,6 +203,9 @@
   // Centre markings and the exposed-pad marking have no pin edge; treat them as
   // left-edge text so they stay readable at every orientation.
   const centreLabelAngle = $derived(localLabelAngle('left', rotation));
+  // Module identity is generated catalog data; bare dies keep the IC body.
+  const isModule = $derived(chip.module?.kind === 'module');
+  const moduleName = $derived(chip.module?.name ?? '');
 
   function getColors(pos: string): { fill: string; stroke: string; text: string; tagBg: string } {
     const isHighlighted = highlightedPins.has(pos);
@@ -377,6 +380,43 @@
       stroke-width="1"
     />
 
+    {#if isModule}
+      <!-- Module PCB body derived from chip.module identity: decorative only. -->
+      <rect
+        x={layout.originX + 3}
+        y={layout.originY + 3}
+        width={layout.bodyWidth - 6}
+        height={layout.bodyHeight - 6}
+        rx="4"
+        class="fill-base-100 stroke-base-300 pointer-events-none"
+        stroke-width="1.5"
+      />
+      <!-- Dashed inner die outline on the module substrate. -->
+      <rect
+        x={layout.originX + 12}
+        y={layout.originY + 12}
+        width={layout.bodyWidth - 24}
+        height={layout.bodyHeight - 24}
+        rx="3"
+        fill="none"
+        class="stroke-base-content/30 pointer-events-none"
+        stroke-width="1"
+        stroke-dasharray="4 3"
+      />
+      <!-- Castellated half-hole edge marks aligned with the placed pads. -->
+      {#each layout.placed as item (item.pin.pos)}
+        {@const edgeX = item.side === 'left' ? layout.originX + 3 : item.side === 'right' ? layout.originX + layout.bodyWidth - 3 : item.x + item.width / 2}
+        {@const edgeY = item.side === 'top' ? layout.originY + 3 : item.side === 'bottom' ? layout.originY + layout.bodyHeight - 3 : item.y + item.height / 2}
+        <circle
+          cx={edgeX}
+          cy={edgeY}
+          r="2.6"
+          class="fill-base-100 stroke-base-300 pointer-events-none"
+          stroke-width="1"
+        />
+      {/each}
+    {/if}
+
     {#if chip.package.hasExposedPad}
       <!-- Exposed thermal/ground pad declared by the generated package -->
       <g>
@@ -447,6 +487,19 @@
     >
       {chip.flashKb ?? '—'} KB Flash · {chip.ramKb} KB RAM
     </text>
+    {#if isModule}
+      <!-- upright through the same centre-label angle as the other markings -->
+      <text
+        x={layout.originX + layout.bodyWidth / 2}
+        y={layout.originY + layout.bodyHeight / 2 - 27}
+        transform={`rotate(${centreLabelAngle} ${layout.originX + layout.bodyWidth / 2} ${layout.originY + layout.bodyHeight / 2 - 27})`}
+        text-anchor="middle"
+        class="font-mono fill-base-content/70 pointer-events-none"
+        font-size={compact ? 10 : 12}
+      >
+        {moduleName}
+      </text>
+    {/if}
   </g>
 
   <!-- Perimeter Pins -->

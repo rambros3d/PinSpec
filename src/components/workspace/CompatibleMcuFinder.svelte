@@ -39,6 +39,14 @@
 
   const signature = $derived(chip ? deriveCompatibilitySignature(chip, workspaceState) : null);
   const packageOptions = $derived(catalogPackageKinds(catalogStore.index));
+  // Module tags follow the generated index marker, never a part-name guess.
+  const moduleIds = $derived(
+    new Set(
+      catalogStore.index
+        .filter((entry) => entry.module)
+        .map((entry) => entry.id.toUpperCase()),
+    ),
+  );
   const candidates = $derived.by(() => {
     const q = query.trim().toUpperCase();
     return catalogStore.index
@@ -254,7 +262,14 @@
           <tbody>
             {#each scores as score (score.mcuId)}
               <tr class="border-t border-base-300">
-                <td class="px-4 py-2 font-mono font-semibold text-foreground">{score.mcuId}</td>
+                <td class="px-4 py-2 font-mono font-semibold text-foreground">
+                  {score.mcuId}
+                  {#if moduleIds.has(score.mcuId.toUpperCase())}
+                    <span class="badge badge-xs badge-outline font-mono text-[9px] uppercase ml-1">
+                      MODULE
+                    </span>
+                  {/if}
+                </td>
                 <td class="px-2 py-2 font-mono text-base-content/60">{score.vendor}</td>
                 <td class="px-2 py-2 text-foreground">{score.classification}</td>
                 <td class="px-2 py-2 font-mono text-base-content/60">{score.muxModel}</td>

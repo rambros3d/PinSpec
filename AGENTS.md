@@ -172,9 +172,17 @@ supposed to be desirable.
 Hash routing only, so deep links never trigger Pages 404s under a subpath:
 
 - `#/` - Landing page
+- `#/catalog` - Full-screen catalog browser with query, vendor, family, and package filters
+- `#/projects` - Recent sessions with open, delete, import, and project export actions
+- `#/about` - Catalog statistics, upstream provenance, licenses, and shortcuts
 - `#/mcu/<PART_NUMBER>` - Workspace, lazy-fetches `data/chips/<PART_NUMBER>.json`
 - `#/s/<COMPRESSED_PAYLOAD>` - Shared pinout; decompresses state, loads chip,
   hydrates workspace
+
+One global shell wraps every route. Its collapsed sidebar is a narrow icon rail;
+expansion is a fixed overlay that never reflows the workspace canvas. Sidebar
+expansion and the About tab are UI preferences in `localStorage` under
+`pincraft:shell_preferences_v1`; they never enter share URLs or project files.
 
 `vite.config.ts` sets `base: process.env.BASE_PATH ?? '/'`. All runtime data
 fetches resolve relative to `import.meta.env.BASE_URL`, e.g.

@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { exportPinoutJson, parsePinoutJson } from '../src/core/exporters/json';
 import { cloneWorkspaceState, createWorkspaceHistory, statesEqual } from '../src/core/history';
@@ -216,6 +218,33 @@ describe('package rotation in pure persistence paths', () => {
     const parsed = parsePinoutJson(raw);
     expect(parsed.ok).toBe(true);
     if (parsed.ok) expect(parsed.state.packageRotation).toBeUndefined();
+  });
+});
+
+describe('module markings follow package rotation', () => {
+  const source = fs.readFileSync(
+    path.join(process.cwd(), 'src', 'components', 'workspace', 'PerimeterPackage.svelte'),
+    'utf8',
+  );
+
+  it('keeps module marks inside the rotated geometry group', () => {
+    const rotated = source.indexOf('<g transform={geometryTransform}>');
+    const bodyEnd = source.indexOf('<!-- Perimeter Pins -->');
+    const moduleBranch = source.indexOf('{#if isModule}');
+    expect(rotated).toBeGreaterThan(-1);
+    expect(moduleBranch).toBeGreaterThan(rotated);
+    expect(moduleBranch).toBeLessThan(bodyEnd);
+    expect(source).toContain('rotate(${centreLabelAngle}');
+  });
+
+  it('keeps the module name upright and leaves pin targets unchanged', () => {
+    const nameMark = source.indexOf('{moduleName}');
+    expect(nameMark).toBeGreaterThan(-1);
+    const nameBlock = source.slice(nameMark - 700, nameMark);
+    expect(nameBlock).toContain('centreLabelAngle');
+    expect(nameBlock).toContain('pointer-events-none');
+    expect(source).toContain('data-pin-pos={item.pin.pos}');
+    expect(source).toContain('onPinHover?.(item.pin, e)');
   });
 });
 

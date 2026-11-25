@@ -1,13 +1,20 @@
 export type Route =
   | { view: 'landing' }
+  | { view: 'catalog' }
+  | { view: 'projects' }
+  | { view: 'about' }
   | { view: 'workspace'; mcuId: string }
   | { view: 'shared'; payload: string };
 
-function parseHash(rawHash: string): Route {
+/** Pure hash parser shared by the shell and its route contract tests. */
+export function parseHash(rawHash: string): Route {
   const hash = rawHash.replace(/^#/, '');
   if (!hash || hash === '/' || hash === '') {
     return { view: 'landing' };
   }
+  if (hash === '/catalog') return { view: 'catalog' };
+  if (hash === '/projects') return { view: 'projects' };
+  if (hash === '/about') return { view: 'about' };
   const mcuMatch = hash.match(/^\/mcu\/([^/?#]+)/);
   if (mcuMatch) {
     return { view: 'workspace', mcuId: decodeURIComponent(mcuMatch[1]).toUpperCase() };
@@ -37,6 +44,25 @@ class RouterStore {
       window.location.hash = '#/';
     }
     this.route = { view: 'landing' };
+  }
+
+  navigateCatalog(): void {
+    this.setHash('#/catalog', { view: 'catalog' });
+  }
+
+  navigateProjects(): void {
+    this.setHash('#/projects', { view: 'projects' });
+  }
+
+  navigateAbout(): void {
+    this.setHash('#/about', { view: 'about' });
+  }
+
+  private setHash(hash: string, route: Route): void {
+    if (typeof window !== 'undefined') {
+      window.location.hash = hash;
+    }
+    this.route = route;
   }
 
   navigateMcu(mcuId: string): void {

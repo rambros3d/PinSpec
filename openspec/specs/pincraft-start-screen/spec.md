@@ -36,29 +36,35 @@ scroll its own content.
 ### Requirement: The sticky header keeps navigation and theme
 
 The header SHALL remain sticky and SHALL keep the brand link, the `#presets`
-and `#provenance` anchors, and the theme control. An export-preview anchor SHALL
-NOT be present.
+anchor, a link to the About destination that replaces the former provenance
+anchor, and the theme control. An export-preview anchor SHALL NOT be present.
 
 #### Scenario: Header remains available
 
 - **WHEN** the start screen is scrolled or opened at any supported viewport width
-- **THEN** the header keeps the brand link, the Starter Chips and Data Sources anchors, and the theme control
+- **THEN** the header keeps the brand link, the Starter Chips anchor, the About link, and the theme control
 
 #### Scenario: Export anchor is gone
 
 - **WHEN** the header is inspected
 - **THEN** it contains no `#export-preview` anchor
 
+#### Scenario: Data Sources opens About
+
+- **WHEN** the user activates the Data Sources or About navigation link
+- **THEN** the About destination opens with the provenance information previously shown in the start-screen footer
+
 ### Requirement: The left action column provides five entry points
 
 The action column SHALL expose New pinout MCU/Board, Open project, Import
-`.ioc`, Import pinout.json, and Compare. Each action SHALL reuse the existing
-navigation, dialog, and handoff paths without adding a new persisted field.
+`.ioc`, Import pinout.json, and Compare. New pinout MCU/Board SHALL navigate to
+`#/catalog`; the other actions SHALL reuse their existing navigation, dialog,
+and handoff paths without adding a new persisted field.
 
 #### Scenario: New pinout MCU or board
 
 - **WHEN** the user activates New pinout MCU/Board
-- **THEN** the central MCU quick search is ready for input and the existing board preset selector is reachable
+- **THEN** the catalog route opens and the start screen keeps its inline quick search and board preset selector for direct use
 
 #### Scenario: Board preset seeds a workspace
 
@@ -134,23 +140,6 @@ configuration.
 
 - **WHEN** the rail is rendered
 - **THEN** it lists `Ctrl+K`, `Ctrl+F`, `Ctrl+Click`, `Ctrl+Z`, `Ctrl+Y`, `0`, and `Escape` as text
-
-### Requirement: The provenance footer is retained
-
-The start screen SHALL keep the technical footer with `id="provenance"` that
-lists the seven upstream sources, their licenses, and the source revisions from
-`meta.json`. The Data Sources navigation anchor SHALL continue to target that
-footer.
-
-#### Scenario: Footer reports source provenance
-
-- **WHEN** generated metadata is available on the start screen
-- **THEN** the footer lists per-vendor chip counts, source revisions, and all seven source licenses
-
-#### Scenario: Footer anchor resolves
-
-- **WHEN** the user activates the Data Sources navigation link
-- **THEN** the `provenance` footer is the scroll target inside `.landing-shell`
 
 ### Requirement: The hero preview and landing export preview are removed
 

@@ -123,6 +123,22 @@ describe('toast placement and dismissal', () => {
     expect(css).toContain('bottom: calc(43dvh + 0.75rem)');
     expect(readSource('src/state/workspace.svelte.ts')).toContain('}, 3200);');
   });
+
+  it('keeps the toast above the expanded sidebar overlay', () => {
+    const page = readSource('src/pages/WorkspacePage.svelte');
+    expect(page).toContain('workspace-toast');
+    expect(page).toContain('z-[60]');
+    expect(page).toContain('workspaceStore.dismissToast()');
+    const css = readSource('src/app.css');
+    const token = (name: string): number => {
+      const match = new RegExp(`${name}:\\s*(\\d+)`).exec(css);
+      expect(match, name).not.toBeNull();
+      return Number(match![1]);
+    };
+    expect(token('--toast-z')).toBeGreaterThan(token('--shell-panel-z'));
+    expect(css).toContain('z-index: var(--toast-z)');
+    expect(readSource('src/components/shell/GlobalSidebar.svelte')).toContain('shell-panel fixed inset-y-0 left-0 z-40');
+  });
 });
 
 describe('export failure feedback', () => {

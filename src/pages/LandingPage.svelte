@@ -25,7 +25,11 @@
     prepareIocImport,
     type IocRawRecord,
   } from '../core/importers/ioc';
-  import type { CatalogSourceId, VendorId } from '../core/types';
+  import {
+    PROVENANCE_SOURCES,
+    PROVENANCE_VENDORS,
+    SHORTCUTS,
+  } from '../data/provenance';
   import {
     BOARD_PRESETS,
     buildBoardPresetState,
@@ -37,112 +41,14 @@
   import { router } from '../state/router.svelte';
   import { workspaceStore } from '../state/workspace.svelte';
 
-  /** Thirteen canonical upstream sources credited in the technical footer. */
-  const PROVENANCE_SOURCES: ReadonlyArray<{
-    id: CatalogSourceId;
-    label: string;
-    url: string;
-    license: string;
-  }> = [
-    {
-      id: 'st-open-pin-data',
-      label: 'STMicroelectronics/STM32_open_pin_data',
-      url: 'https://github.com/STMicroelectronics/STM32_open_pin_data',
-      license: 'BSD-3-Clause',
-    },
-    {
-      id: 'stm32-data-generated',
-      label: 'embassy-rs/stm32-data-generated',
-      url: 'https://github.com/embassy-rs/stm32-data-generated',
-      license: 'MIT / Apache-2.0',
-    },
-    {
-      id: 'ch32-device-data',
-      label: 'ch32-riscv-ug/ch32-device-data',
-      url: 'https://github.com/ch32-riscv-ug/ch32-device-data',
-      license: 'MIT',
-    },
-    {
-      id: 'kicad',
-      label: 'KiCad symbols and footprints',
-      url: 'https://gitlab.com/kicad/libraries/kicad-symbols',
-      license: 'CC-BY-SA-4.0 (generated-file exception)',
-    },
-    {
-      id: 'pico-sdk',
-      label: 'pico-sdk and picotool',
-      url: 'https://github.com/raspberrypi/pico-sdk',
-      license: 'BSD-3-Clause',
-    },
-    {
-      id: 'zephyr',
-      label: 'Zephyr',
-      url: 'https://github.com/zephyrproject-rtos/zephyr',
-      license: 'Apache-2.0',
-    },
-    {
-      id: 'raspberry-pi-docs',
-      label: 'raspberrypi/documentation',
-      url: 'https://github.com/raspberrypi/documentation',
-      license: 'CC-BY-SA-4.0',
-    },
-    {
-      id: 'esp-gpio-tool',
-      label: 'espressif/esp-gpio-tool',
-      url: 'https://github.com/espressif/esp-gpio-tool',
-      license: 'Apache-2.0',
-    },
-    {
-      id: 'esp-hal-metadata',
-      label: 'esp-rs/esp-hal esp-metadata',
-      url: 'https://github.com/esp-rs/esp-hal',
-      license: 'MIT / Apache-2.0',
-    },
-    {
-      id: 'espressif-kicad',
-      label: 'espressif/kicad-libraries',
-      url: 'https://github.com/espressif/kicad-libraries',
-      license: 'CC-BY-SA-4.0 (generated-file exception)',
-    },
-    {
-      id: 'esp-idf',
-      label: 'espressif/esp-idf',
-      url: 'https://github.com/espressif/esp-idf',
-      license: 'Apache-2.0',
-    },
-    {
-      id: 'microchip-atdf',
-      label: 'Microchip-MPLAB-Harmony/dev_packs (ATDF)',
-      url: 'https://github.com/Microchip-MPLAB-Harmony/dev_packs',
-      license: 'Apache-2.0',
-    },
-    {
-      id: 'nrf-pacs',
-      label: 'nrf-rs/nrf-pacs',
-      url: 'https://github.com/nrf-rs/nrf-pacs',
-      license: '0BSD',
-    },
-  ];
-
-  const PROVENANCE_VENDORS: ReadonlyArray<{ id: VendorId; label: string }> = [
-    { id: 'stm32', label: 'STM32' },
-    { id: 'ch32', label: 'CH32' },
-    { id: 'rp', label: 'RP' },
-    { id: 'esp32', label: 'ESP32' },
-    { id: 'microchip', label: 'SAM' },
-    { id: 'nordic', label: 'Nordic' },
-  ];
-
-  /** Text-only keyboard reference shown in the right rail. */
-  const SHORTCUTS: ReadonlyArray<{ keys: string; action: string }> = [
-    { keys: 'Ctrl+K', action: 'Search parts' },
-    { keys: 'Ctrl+F', action: 'Search pins in a workspace' },
-    { keys: 'Ctrl+Click', action: 'Open pin remap mode' },
-    { keys: 'Ctrl+Z', action: 'Undo' },
-    { keys: 'Ctrl+Y', action: 'Redo' },
-    { keys: '0', action: 'Fit package in view' },
-    { keys: 'Escape', action: 'Cancel the current action' },
-  ];
+  // Starter-chip tags come from generated catalog data, not a curated list.
+  const moduleIds = $derived(
+    new Set(
+      catalogStore.index
+        .filter((entry) => entry.module)
+        .map((entry) => entry.id.toUpperCase()),
+    ),
+  );
 
   let searchRef = $state<{ focusInput: () => void } | undefined>(undefined);
   let presetsRef = $state<HTMLElement | null>(null);
@@ -329,10 +235,11 @@
           Starter Chips
         </a>
         <a
-          href="#provenance"
+          href="#/about"
+          title="Data sources and licenses"
           class="link link-hover transition-colors whitespace-nowrap shrink-0"
         >
-          Data Sources
+          About
         </a>
       </nav>
 
@@ -355,13 +262,13 @@
 
       <button
         type="button"
-        onclick={focusQuickSearch}
+        onclick={() => router.navigateCatalog()}
         class="card card-border w-full bg-base-100 p-3.5 flex items-center gap-3 text-left hover:border-info transition-colors"
       >
         <Plus class="size-4 text-info shrink-0" />
         <span class="min-w-0 flex-1">
           <span class="block text-sm font-semibold text-foreground">New pinout MCU/Board</span>
-          <span class="block text-xs text-base-content/60 mt-0.5">Search the catalog by part, family or package.</span>
+          <span class="block text-xs text-base-content/60 mt-0.5">Open the catalog to choose a part, family or package.</span>
         </span>
         <ArrowRight class="size-3.5 text-base-content/60 shrink-0" />
       </button>
@@ -477,6 +384,7 @@
       <div bind:this={presetsRef} class="scroll-mt-20">
         <PresetGrid
           recentSessions={workspaceStore.recentSessions}
+          moduleIds={moduleIds}
           onOpenMcu={(id) => router.navigateMcu(id)}
           onDeleteRecent={(id) => workspaceStore.deleteRecentSession(id)}
         />
@@ -524,8 +432,8 @@
         <p class="text-xs text-base-content/60">
           {PROVENANCE_SOURCES.length} upstream sources are credited with their licenses and revisions.
         </p>
-        <a href="#provenance" class="link link-hover text-xs font-medium inline-flex items-center gap-1">
-          View source revisions <ArrowRight class="size-3" />
+        <a href="#/about" class="link link-hover text-xs font-medium inline-flex items-center gap-1">
+          View source revisions in About <ArrowRight class="size-3" />
         </a>
       </section>
 
@@ -545,55 +453,6 @@
       </section>
     </aside>
   </main>
-
-  <!-- Technical attribution footer -->
-  <footer id="provenance" class="footer footer-horizontal border-t border-base-300 bg-base-100">
-    <div class="max-w-7xl mx-auto px-6 py-6 flex flex-col lg:flex-row items-start justify-between gap-6 text-xs text-base-content/60">
-      <div class="font-mono-tabular space-y-1">
-        <div class="font-semibold text-foreground">Per-vendor chip counts and source revisions</div>
-        <div>
-          PinCraft ·
-          {#if catalogStore.meta}
-            {catalogStore.meta.chipCount.toLocaleString()} MCUs indexed · Synced {formatSyncDate(catalogStore.meta.generatedAt)}
-          {:else}
-            Catalog metadata loading...
-          {/if}
-        </div>
-        {#each PROVENANCE_VENDORS as vendor (vendor.id)}
-          {@const vendorSource = catalogStore.meta?.sources?.[vendor.id]}
-          {#if vendorSource}
-            {@const repoCount = vendorSource.repositories?.length ?? 0}
-            <div class="text-[11px] text-base-content/60 space-y-0.5">
-              <div>
-                {vendor.label}: {vendorSource.chipCount.toLocaleString()} chips · primary revision {vendorSource.commit ?? 'unknown'}
-                {#if vendorSource.ratios}
-                  · match {vendorSource.ratios.match.toFixed(1)}% · coverage {vendorSource.ratios.coverage.toFixed(1)}%
-                {/if}
-              </div>
-              {#if repoCount > 0}
-                {#each vendorSource.repositories ?? [] as repo (repo.id)}
-                  <div>{repo.id} {repo.commit} ({repo.license})</div>
-                {/each}
-              {:else}
-                <div>open-pin-data {vendorSource.openPinDataCommit ?? catalogStore.meta?.openPinDataCommit ?? 'unknown'}</div>
-              {/if}
-            </div>
-          {/if}
-        {/each}
-      </div>
-
-      <div class="text-[11px] space-y-1 lg:text-right">
-        <div class="font-semibold text-foreground">Upstream data sources and licenses</div>
-        {#each PROVENANCE_SOURCES as source (source.id)}
-          {@const record = catalogStore.meta?.sources?.[source.id]}
-          <div>
-            <a class="underline hover:text-foreground" href={source.url} target="_blank" rel="noreferrer">{source.label}</a>
-            ({source.license}) · {record?.sha ?? 'loading'}
-          </div>
-        {/each}
-      </div>
-    </div>
-  </footer>
 
   {#if iocDropActive}
     <div class="pointer-events-none fixed inset-0 z-40 flex items-center justify-center bg-neutral/50">

@@ -150,6 +150,42 @@ export function createEsp32ProvenanceGate(): Gate {
   };
 }
 
+/**
+ * Require generated module identity on module shards, its absence on dies and
+ * MPNs, and agreement between every index marker and its shard.
+ */
+export function createEsp32ModuleGate(): Gate {
+  return {
+    name: 'esp32-module-metadata',
+    evaluate(ctx: GateContext): GateResult {
+      const errors: string[] = [];
+      const wroom = ctx.chips.get('ESP32-WROOM-E');
+      if (
+        !wroom?.module ||
+        wroom.module.kind !== 'module' ||
+        !wroom.module.name ||
+        !wroom.module.baseFamily ||
+        !wroom.module.symbol
+      ) {
+        errors.push('esp32 gate: ESP32-WROOM-E has no generated module record.');
+      }
+      for (const dieId of ['ESP32-C3', 'ESP32-C3FH4']) {
+        if (ctx.chips.get(dieId)?.module) {
+          errors.push(`esp32 gate: ${dieId} declares module metadata without module evidence.`);
+        }
+      }
+      for (const entry of ctx.index) {
+        const hasRecord = Boolean(ctx.chips.get(entry.id)?.module);
+        const hasMarker = entry.module === true;
+        if (hasRecord !== hasMarker) {
+          errors.push(`esp32 gate: ${entry.id} index module marker disagrees with its shard.`);
+        }
+      }
+      return result('esp32-module-metadata', errors);
+    },
+  };
+}
+
 /** All ESP32 gates in declaration order. */
 export function createEsp32Gates(): Gate[] {
   return [
@@ -157,5 +193,6 @@ export function createEsp32Gates(): Gate[] {
     createEsp32MatrixGate(),
     createEsp32ShardValuesGate(),
     createEsp32ProvenanceGate(),
+    createEsp32ModuleGate(),
   ];
 }

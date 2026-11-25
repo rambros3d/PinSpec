@@ -110,6 +110,7 @@ describe('ESP32 source declarations and provenance ids', () => {
       'esp32-matrix-counts',
       'esp32-shard-values',
       'esp32-provenance',
+      'esp32-module-metadata',
     ]);
   });
 });
@@ -229,6 +230,27 @@ describe('ESP32 join and module emission', () => {
     expect(result.chips.has('ESP32-WROOM-E')).toBe(true);
     expect(result.index.every((entry) => !Number.isNaN(entry.flashKb as number))).toBe(true);
   });
+
+  it('emits provenance-backed module identity only on module shards', () => {
+    const result = generateEsp32(adapterContext());
+    const wroom = result.chips.get('ESP32-WROOM-E')!;
+    expect(wroom.module).toEqual({
+      kind: 'module',
+      name: 'ESP32-WROOM-E',
+      baseFamily: 'esp32',
+      symbol: 'ESP32-WROOM-E',
+    });
+    expect(result.index.find((entry) => entry.id === 'ESP32-WROOM-E')?.module).toBe(true);
+    for (const dieId of ['ESP32-C3', 'ESP32-C3FH4']) {
+      expect(result.chips.get(dieId)).not.toHaveProperty('module');
+      expect(result.index.find((entry) => entry.id === dieId)).not.toHaveProperty('module');
+    }
+    // Every index marker agrees with its shard, and no marker is ever false.
+    for (const entry of result.index) {
+      expect(Boolean(result.chips.get(entry.id)?.module)).toBe(entry.module === true);
+    }
+    expect(result.index.every((entry) => Number.isFinite(entry.pinCount))).toBe(true);
+  });
 });
 
 describe('ESP32 strict gate behavior', () => {
@@ -264,6 +286,38 @@ describe('ESP32 strict gate behavior', () => {
     const missing = { ...ctx, sources: ctx.sources?.filter((source) => source.id !== 'esp-idf') };
     const errors = createEsp32Gates()[3].evaluate(missing).errors;
     expect(errors.some((error) => error.includes('esp-idf'))).toBe(true);
+  });
+
+  it('names missing, invented and mismatched module metadata', () => {
+    const moduleGate = () => createEsp32Gates().find((gate) => gate.name === 'esp32-module-metadata')!;
+
+    const missing = new Map(result.chips);
+    const { module: _removed, ...withoutModule } = missing.get('ESP32-WROOM-E')!;
+    missing.set('ESP32-WROOM-E', withoutModule);
+    const missingErrors = moduleGate().evaluate(gateContext(missing, result.index)).errors;
+    expect(missingErrors.some((error) => error.includes('ESP32-WROOM-E'))).toBe(true);
+
+    const invented = new Map(result.chips);
+    invented.set('ESP32-C3', {
+      ...invented.get('ESP32-C3')!,
+      module: { kind: 'module', name: 'ESP32-C3', baseFamily: 'esp32c3', symbol: 'ESP32-C3' },
+    });
+    const inventedErrors = moduleGate().evaluate(gateContext(invented, result.index)).errors;
+    expect(
+      inventedErrors.some(
+        (error) => error.includes('ESP32-C3') && error.includes('without module evidence'),
+      ),
+    ).toBe(true);
+
+    const mismatchIndex = result.index.map((entry) =>
+      entry.id === 'ESP32-WROOM-E' ? { ...entry, module: undefined } : entry,
+    );
+    const mismatchErrors = moduleGate().evaluate(gateContext(result.chips, mismatchIndex)).errors;
+    expect(
+      mismatchErrors.some(
+        (error) => error.includes('ESP32-WROOM-E') && error.includes('disagrees'),
+      ),
+    ).toBe(true);
   });
 
   it('publishes no partial catalog when a strict ESP32 gate fails', () => {

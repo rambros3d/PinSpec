@@ -527,6 +527,8 @@ describe('placement overlay wiring', () => {
     ]) {
       expect(overlay, token).toContain(token);
     }
+    expect(overlay).toContain('{indicator.name}');
+    expect(overlay).not.toContain('} deg');
     expect(overlay).not.toContain('onRing');
     expect(overlay).not.toContain('type="number"');
     expect(overlay).not.toContain('pointer-events-auto absolute top-16');
@@ -595,9 +597,9 @@ describe('placement overlay interaction refresh', () => {
     expect(overlay).toContain('ringFromEvent(event)');
   });
 
-  it('keeps the bottom-centre toggle separate from the horizontal top-right view HUD', () => {
+  it('keeps the top-left toggle clear of the top-left import buttons and top-right HUD', () => {
     const canvas = readCanvas();
-    expect(canvas).toContain('absolute bottom-3 left-1/2 -translate-x-1/2 z-20 pointer-events-none');
+    expect(canvas).toContain('absolute top-14 left-3 z-20 pointer-events-none');
     expect(canvas).toContain('card card-border pointer-events-auto flex flex-row items-center gap-1.5');
     expect(canvas).toContain('aria-pressed={placementSettings.overlayVisible}');
     expect(canvas).toContain('setPlacementOverlayVisible(next)');

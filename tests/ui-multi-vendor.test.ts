@@ -230,6 +230,64 @@ describe('vendor-aware discovery and presets', () => {
 
 });
 
+describe('generated module identity and discovery tags', () => {
+  it('marks module shards and compact index entries from generated data', () => {
+    const wroom = readChip('ESP32-WROOM-E');
+    expect(wroom.module).toEqual({
+      kind: 'module',
+      name: 'ESP32-WROOM-E',
+      baseFamily: 'esp32',
+      symbol: 'ESP32-WROOM-E',
+    });
+    expect(index.find((entry) => entry.id === 'ESP32-WROOM-E')?.module).toBe(true);
+    for (const dieId of ['ESP32-C3', 'ESP32-C3FH4']) {
+      expect(readChip(dieId)).not.toHaveProperty('module');
+      expect(index.find((entry) => entry.id === dieId)).not.toHaveProperty('module');
+    }
+  });
+
+  it('decorates module packages without changing pad geometry or handlers', () => {
+    const source = readSource('src/components/workspace/PerimeterPackage.svelte');
+    expect(source).toContain("chip.module?.kind === 'module'");
+    expect(source).toContain('chip.module?.name ??');
+    expect(source).toContain('stroke-dasharray="4 3"');
+    expect(source).toContain('pointer-events="none"');
+    expect(source).toContain('data-pin-pos={item.pin.pos}');
+    expect(source).toContain('onclick={(e) =>');
+    expect(source).toContain('oncontextmenu={(e) =>');
+    expect(source).toContain('onmouseenter={(e) => onPinHover?.(item.pin, e)}');
+  });
+
+  it('shows a compact MODULE tag from the catalog marker in every discovery surface', () => {
+    for (const site of [
+      'src/components/landing/QuickSearchBar.svelte',
+      'src/components/workspace/McuSwitcherModal.svelte',
+      'src/components/workspace/CompatibleMcuFinder.svelte',
+      'src/components/landing/PresetGrid.svelte',
+    ]) {
+      const source = readSource(site);
+      expect(source, site).toContain('MODULE');
+      expect(source, site).toContain('badge-outline');
+    }
+    expect(readSource('src/components/landing/QuickSearchBar.svelte')).toContain('{#if entry.module}');
+    expect(readSource('src/components/workspace/McuSwitcherModal.svelte')).toContain(
+      '{#if entry.module}',
+    );
+    expect(readSource('src/components/workspace/CompatibleMcuFinder.svelte')).toContain(
+      'moduleIds.has(score.mcuId.toUpperCase())',
+    );
+    const preset = readSource('src/components/landing/PresetGrid.svelte');
+    expect(preset).toContain('moduleIds.has(item.id.toUpperCase())');
+    expect(preset).not.toContain('module: true');
+    const landing = readSource('src/pages/LandingPage.svelte');
+    expect(landing).toContain('moduleIds={moduleIds}');
+    expect(landing).toContain('entry.module');
+    // Vendor tabs, family/package filters and navigation remain unchanged.
+    expect(readSource('src/components/landing/QuickSearchBar.svelte')).toContain('buildVendorTabs');
+    expect(readSource('src/components/workspace/McuSwitcherModal.svelte')).toContain('vendorFilter');
+  });
+});
+
 describe('workspace exports and provenance copy', () => {
   it('dispatches vendor-aware Rust labels in the workspace export modal', () => {
     const modal = readSource('src/components/workspace/ExportModal.svelte');
@@ -266,21 +324,24 @@ describe('workspace exports and provenance copy', () => {
       }
     }
 
-    const footer = readSource('src/pages/LandingPage.svelte');
-    expect(footer).toContain('STMicroelectronics/STM32_open_pin_data');
-    expect(footer).toContain('embassy-rs/stm32-data-generated');
-    expect(footer).toContain('ch32-riscv-ug/ch32-device-data');
-    expect(footer).toContain('raspberrypi/pico-sdk');
+    const provenance = readSource('src/data/provenance.ts');
     for (const source of [
+      'STMicroelectronics/STM32_open_pin_data',
+      'embassy-rs/stm32-data-generated',
+      'ch32-riscv-ug/ch32-device-data',
+      'raspberrypi/pico-sdk',
       'espressif/esp-gpio-tool',
       'esp-rs/esp-hal',
       'espressif/kicad-libraries',
       'espressif/esp-idf',
       'Microchip-MPLAB-Harmony/dev_packs',
     ]) {
-      expect(footer, source).toContain(source);
+      expect(provenance, source).toContain(source);
     }
-    expect(footer).toContain('Per-vendor chip counts and source revisions');
+    expect(readSource('src/components/about/ProvenancePanel.svelte')).toContain(
+      'Per-vendor chip counts and source revisions',
+    );
+    expect(readSource('src/pages/LandingPage.svelte')).not.toContain('id="provenance"');
     expect(meta.sources?.stm32).toBeDefined();
     expect(meta.sources?.ch32).toBeDefined();
     expect(meta.sources?.rp).toBeDefined();

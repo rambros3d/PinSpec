@@ -19,8 +19,9 @@ describe('start screen layout', () => {
     expect(page).not.toContain('min-h-screen');
     expect(page).toContain('<ThemePicker />');
     expect(page).toContain('href="#presets"');
-    expect(page).toContain('href="#provenance"');
-    expect(page).toContain('id="provenance"');
+    expect(page).toContain('href="#/about"');
+    expect(page).not.toContain('href="#provenance"');
+    expect(page).not.toContain('id="provenance"');
     expect(page).not.toContain('href="#export-preview"');
   });
 
@@ -50,6 +51,7 @@ describe('start screen actions', () => {
     ]) {
       expect(page, label).toContain(label);
     }
+    expect(page).toContain('router.navigateCatalog()');
     expect(page).toContain('revealRecentSessions');
     expect(page).toContain('presetsRef?.scrollIntoView');
     expect(page).toContain('parsePinoutJson(');
@@ -93,11 +95,27 @@ describe('catalog rail', () => {
     expect(fs.existsSync(path.join(ROOT, 'public', 'data', 'meta.json'))).toBe(true);
   });
 
-  it('lists every documented shortcut as text', () => {
+  it('lists every documented shortcut as text from the shared reference', () => {
+    const reference = read('src/data/provenance.ts');
     for (const token of ['Ctrl+K', 'Ctrl+F', 'Ctrl+Click', 'Ctrl+Z', 'Ctrl+Y', '0', 'Escape']) {
-      expect(page, token).toContain(token);
+      expect(reference, token).toContain(token);
     }
-    expect(page).toContain('const SHORTCUTS');
+    expect(reference).toContain('const SHORTCUTS');
+    expect(page).toContain('SHORTCUTS');
+    expect(page).toContain('PROVENANCE_SOURCES.length');
+    expect(read('src/pages/AboutPage.svelte')).toContain('<ProvenancePanel');
+  });
+});
+
+describe('starter-chip module tags from generated catalog', () => {
+  it('derives module tags from the index and keeps starter-chip facts curated only', () => {
+    const preset = read('src/components/landing/PresetGrid.svelte');
+    expect(preset).toContain('moduleIds?: Set<string>');
+    expect(preset).toContain('moduleIds.has(item.id.toUpperCase())');
+    expect(preset).not.toContain('module: true');
+    expect(preset).toContain('ESP32-WROOM-E');
+    expect(page).toContain('moduleIds={moduleIds}');
+    expect(page).toContain('entry.module');
   });
 });
 

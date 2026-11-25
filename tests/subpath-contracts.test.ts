@@ -3,6 +3,7 @@ import http from 'node:http';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { dataUrl } from '../src/core/data-url';
+import { parseHash } from '../src/state/router.svelte';
 
 const ROOT = process.cwd();
 
@@ -32,6 +33,35 @@ describe('GitHub Pages-safe data URLs', () => {
       return /["'`]\/(data|assets)\//.test(text);
     });
     expect(offenders).toEqual([]);
+  });
+});
+
+describe('shell hash routes under a subpath', () => {
+  it('resolves shell routes from the hash and falls back to home', () => {
+    expect(parseHash('#/')).toEqual({ view: 'landing' });
+    expect(parseHash('#/catalog')).toEqual({ view: 'catalog' });
+    expect(parseHash('#/projects')).toEqual({ view: 'projects' });
+    expect(parseHash('#/about')).toEqual({ view: 'about' });
+    expect(parseHash('#/mcu/STM32G431CBU6')).toEqual({
+      view: 'workspace',
+      mcuId: 'STM32G431CBU6',
+    });
+    expect(parseHash('#/s/abcDEF')).toEqual({ view: 'shared', payload: 'abcDEF' });
+    expect(parseHash('#/unknown')).toEqual({ view: 'landing' });
+  });
+
+  it('keeps generated data fetches behind dataUrl across every shell page', () => {
+    for (const file of [
+      'src/pages/CatalogPage.svelte',
+      'src/pages/ProjectsPage.svelte',
+      'src/pages/AboutPage.svelte',
+    ]) {
+      const source = fs.readFileSync(path.join(ROOT, file), 'utf8');
+      expect(source, file).not.toMatch(/["'`]\/(data|assets)\//);
+    }
+    const catalog = fs.readFileSync(path.join(ROOT, 'src/state/catalog.svelte.ts'), 'utf8');
+    expect(catalog).toContain('dataUrl(');
+    expect(catalog).toContain('import.meta.env.BASE_URL');
   });
 });
 

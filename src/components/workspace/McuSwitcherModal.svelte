@@ -193,6 +193,11 @@
                   <span class="badge badge-xs badge-ghost font-mono text-[9px] uppercase">
                     {entry.vendor ?? 'stm32'}
                   </span>
+                  {#if entry.module}
+                    <span class="badge badge-xs badge-outline font-mono text-[9px] uppercase">
+                      MODULE
+                    </span>
+                  {/if}
                   {#if isCurrent}
                     <span class="badge badge-xs badge-success text-[9px]">
                       Active

@@ -31,6 +31,8 @@ function indexEntry(chip: ChipData): CatalogIndexEntry {
   return {
     id: chip.id,
     vendor: 'esp32',
+    // Conditional spread omits the marker entirely for bare dies and MPNs.
+    ...(chip.module ? { module: true } : {}),
     family: chip.family,
     core: chip.core,
     package: chip.package.name,

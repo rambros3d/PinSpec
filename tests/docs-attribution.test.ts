@@ -17,7 +17,15 @@ const TOUCHED_FILES = [
   'src/core/exporters/c-header.ts',
   'src/core/data-url.ts',
   'src/state/catalog.svelte.ts',
+  'src/state/shell-preferences.svelte.ts',
+  'src/data/provenance.ts',
+  'src/components/shell/AppShell.svelte',
+  'src/components/shell/GlobalSidebar.svelte',
+  'src/components/about/ProvenancePanel.svelte',
   'src/pages/LandingPage.svelte',
+  'src/pages/AboutPage.svelte',
+  'src/pages/CatalogPage.svelte',
+  'src/pages/ProjectsPage.svelte',
   'tools/data-gen/artifacts.ts',
   'tools/data-gen/gates.ts',
   'tools/data-gen/index.ts',
@@ -110,6 +118,10 @@ describe('multi-vendor documentation and attribution', () => {
     expect(readme).toContain('gate');
     expect(readme).toMatch(/daisyUI[^\n]*MIT/);
     expect(readme).toContain('text-foreground');
+    for (const route of ['#/', '#/catalog', '#/projects', '#/about', '#/mcu/', '#/s/']) {
+      expect(readme, route).toContain(route);
+    }
+    expect(readme).toContain('pincraft:shell_preferences_v1');
   });
 
   it('describes shipped multi-vendor behavior in AGENTS.md', () => {
@@ -121,19 +133,32 @@ describe('multi-vendor documentation and attribution', () => {
     expect(agents).toContain('provenance');
     expect(agents).toContain('build-warnings.json');
     expect(agents).toContain('weekly');
+    for (const route of ['#/catalog', '#/projects', '#/about']) {
+      expect(agents, route).toContain(route);
+    }
+    expect(agents).toContain('pincraft:shell_preferences_v1');
     expect(agents).not.toContain('## Multi-vendor expansion (roadmap)');
   });
 
-  it('renders all thirteen sources, licenses, and live metadata in the landing footer', () => {
-    const footer = read('src/pages/LandingPage.svelte');
+  it('renders all thirteen sources, licenses, and live metadata in About', () => {
+    const constants = read('src/data/provenance.ts');
     for (const token of [...SOURCE_TOKENS, ...LICENSE_TOKENS]) {
-      expect(footer, token).toContain(token);
+      expect(constants, token).toContain(token);
     }
-    expect(footer).toContain('Upstream data sources and licenses');
-    expect(footer).toContain('catalogStore.meta');
-    expect(footer).toContain('sources');
-    expect(footer).toContain('microchip-atdf');
-    expect(footer).toContain('nrf-pacs');
+    expect(constants).toContain('microchip-atdf');
+    expect(constants).toContain('nrf-pacs');
+    const panel = read('src/components/about/ProvenancePanel.svelte');
+    expect(panel).toContain('Upstream data sources and licenses');
+    expect(panel).toContain('Per-vendor chip counts and source revisions');
+    expect(panel).toContain('catalogStore.meta');
+    expect(panel).toContain('sources');
+    expect(panel).toContain('Retry catalog load');
+    const about = read('src/pages/AboutPage.svelte');
+    expect(about).toContain('<ProvenancePanel');
+    expect(about).toContain('catalogStore.meta.chipCount');
+    const landing = read('src/pages/LandingPage.svelte');
+    expect(landing).not.toContain('id="provenance"');
+    expect(landing).toContain('href="#/about"');
   });
 
   it('advertises all six vendors in the document metadata', () => {

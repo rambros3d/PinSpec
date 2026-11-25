@@ -254,6 +254,11 @@
                     <span class="badge badge-xs badge-ghost font-mono text-[9px] uppercase">
                       {entry.vendor ?? 'stm32'}
                     </span>
+                    {#if entry.module}
+                      <span class="badge badge-xs badge-outline font-mono text-[9px] uppercase">
+                        MODULE
+                      </span>
+                    {/if}
                   </div>
                   <div class="font-mono-tabular text-[11px] text-base-content/60 truncate">
                     {entry.family} · {entry.core} · {entry.flashKb ?? '—'} KB Flash · {entry.ramKb} KB RAM

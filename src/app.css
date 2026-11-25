@@ -59,6 +59,11 @@
 
   --scrollbar-thumb: color-mix(in oklab, var(--color-base-content) 28%, transparent);
   --scrollbar-thumb-hover: color-mix(in oklab, var(--color-base-content) 48%, transparent);
+
+  /* Shell stacking: page content, overlay, backdrop, toast, native dialogs. */
+  --shell-panel-z: 40;
+  --shell-backdrop-z: 30;
+  --toast-z: 60;
 }
 
 html,
@@ -91,6 +96,47 @@ body {
   overflow-y: auto;
   overscroll-behavior: contain;
   scroll-padding-top: 3.5rem;
+}
+
+/*
+ * One shell is mounted outside the route switch. Its wrappers never add
+ * padding, margins or width rules: the expanded sidebar is a fixed overlay,
+ * so the canvas keeps the same bounding rectangle before and after expansion.
+ */
+.app-shell,
+.app-shell-content {
+  height: 100%;
+  width: 100%;
+  min-height: 0;
+  min-width: 0;
+}
+
+.shell-rail {
+  width: 3rem;
+}
+
+.shell-route {
+  height: 100dvh;
+  width: 100%;
+  min-height: 0;
+  min-width: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-padding-top: 3.5rem;
+}
+
+.shell-panel {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: var(--shell-panel-z);
+}
+
+.shell-backdrop {
+  z-index: var(--shell-backdrop-z);
+}
+
+.workspace-toast {
+  z-index: var(--toast-z);
 }
 
 /*

@@ -72,6 +72,21 @@ fail generation. The GitHub Pages workflow acquires all sources, force-refreshes
 generation, test, type-check, subpath build, and subpath fetch smoke checks in
 order before uploading an artifact.
 
+## Application Shell and Routes
+
+The application mounts one global shell on every route. Its collapsed sidebar is a narrow icon rail; expanding it overlays the page without resizing the pin canvas, toolbars, or panes. The sidebar provides Home, Catalog, Projects, and About entries, plus up to ten recent local sessions with open and delete controls. Navigation stays hash-only under the GitHub Pages subpath.
+
+| Route | View |
+| :--- | :--- |
+| `#/` | Start screen with quick search, board presets, imports, comparison, and starter chips |
+| `#/catalog` | Full-screen catalog browser with query, vendor, family, and package filters |
+| `#/projects` | Recent sessions with open, delete, import, and version-2 export actions |
+| `#/about` | Catalog statistics, upstream source revisions and licenses, and keyboard shortcuts |
+| `#/mcu/<PART_NUMBER>` | Three-pane pinout workspace |
+| `#/s/<COMPRESSED_PAYLOAD>` | Shared pinout hydrated in the workspace |
+
+The start screen's New pinout MCU/Board action opens `#/catalog`; its inline search and other quick actions remain available. About owns the full provenance reference that was previously in the start-screen footer. Sidebar expansion and the selected About tab are UI preferences stored only in `localStorage` under `pincraft:shell_preferences_v1`. They are never written to share URLs, project JSON, recent sessions, or undo history. Pin configuration remains shareable through version-2 URLs and project files.
+
 ## Architecture Overview
 
 - `tools/data-gen/`: Build-time CLI joining ST open pin XML geometry with Embassy peripheral AF and DMA metadata, manifest-verified WCH CH32 CSV tables, CI-fetched KiCad/pico-sdk/Zephyr RP references, Espressif gpio-tool/esp-metadata/KiCad/ESP-IDF evidence, Microchip ATDF variants, pinouts, signals, and memories, and Nordic SVD/device-tree/pinctrl/KiCad evidence into compact sharded JSONs (`meta.json`, `index.json`, `chips/<MCU>.json`). CH32 entries carry `vendor: 'ch32'` and `muxModel: 'remap-group'`; RP entries carry `vendor: 'rp'` and `muxModel: 'funcsel-pio'`; ESP32 entries carry `vendor: 'esp32'`, `muxModel: 'gpio-matrix'`, and `flashKb: null` for bare dies; SAM entries carry `vendor: 'microchip'` and `muxModel: 'af'`; Nordic entries carry `vendor: 'nordic'` and `muxModel: 'psel'`.

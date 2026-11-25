@@ -136,10 +136,27 @@ export interface ChipCapabilityEvidence {
   params: string[];
 }
 
+/**
+ * Generated catalog identity for a first-party module, derived only from an
+ * acquired KiCad symbol name and its resolved first-party family. This is
+ * catalog data: it has no workspace-state, share-payload, or preference meaning.
+ */
+export interface ChipModuleMetadata {
+  kind: 'module';
+  /** Module name taken from the acquired KiCad symbol id. */
+  name: string;
+  /** First-party family resolved from the same acquired evidence. */
+  baseFamily: string;
+  /** Acquired KiCad symbol name that supplied the identity. */
+  symbol: string;
+}
+
 export interface ChipData {
   id: string;
   vendor?: VendorId;
   muxModel?: MuxModel;
+  /** Present only when acquired upstream evidence identifies a module. */
+  module?: ChipModuleMetadata;
   family: string;
   /** Upstream series identifier (for example SAMD21) when the source declares one. */
   series?: string;
@@ -267,6 +284,8 @@ export interface CatalogPeripheralCounts {
 export interface CatalogIndexEntry {
   id: string;
   vendor?: VendorId;
+  /** Compact mirror of the shard's generated module record; no pin meaning. */
+  module?: boolean;
   family: string;
   /** Upstream series identifier carried alongside the vendor family. */
   series?: string;

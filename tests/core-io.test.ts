@@ -124,6 +124,35 @@ describe('exporters', () => {
     expect(parsePinoutJson('{ bad json').ok).toBe(false);
   });
 
+  it('keeps generated module metadata out of version-2 share and project files', () => {
+    const moduleChip: ChipData = {
+      ...sampleChip,
+      id: 'ESP32-WROOM-E',
+      vendor: 'esp32',
+      module: {
+        kind: 'module',
+        name: 'ESP32-WROOM-E',
+        baseFamily: 'esp32',
+        symbol: 'ESP32-WROOM-E',
+      },
+    };
+    const decoded = decodeWorkspaceState(encodeWorkspaceState(sampleState));
+    expect(decoded.ok).toBe(true);
+    if (decoded.ok) expect(decoded.state).toEqual(sampleState);
+    const project = exportPinoutJson(sampleState);
+    expect(project).not.toContain('"module"');
+    expect(parsePinoutJson(project).ok).toBe(true);
+    for (const output of [
+      exportCsv(moduleChip, sampleState),
+      exportEmbassyRust(moduleChip, sampleState),
+      exportCHeader(moduleChip, sampleState),
+      project,
+    ]) {
+      expect(output).not.toContain('module');
+    }
+    expect(exportEmbassyRust(moduleChip, sampleState)).toContain('use esp_hal::peripherals;');
+  });
+
   it('round-trips extended mux fields through URL, JSON and history', () => {
     const extended: WorkspaceState = {
       ...sampleState,

@@ -91,8 +91,44 @@ describe('document viewport lock', () => {
     expect(page).toContain('href="#presets"');
     expect(page).not.toContain('href="#export-preview"');
     expect(page).not.toContain('id="export-preview"');
-    expect(page).toContain('id="provenance"');
+    expect(page).not.toContain('id="provenance"');
+    expect(page).toContain('href="#/about"');
+    expect(readSource('src/pages/AboutPage.svelte')).toContain('<ProvenancePanel');
     expect(readSource('src/components/landing/PresetGrid.svelte')).toContain('id="presets"');
+  });
+
+  it('keeps shell routes scrollable inside the document lock', () => {
+    const css = readSource('src/app.css');
+    const block = css.match(/\.shell-route\s*\{[\s\S]*?\}/)?.[0] ?? '';
+    for (const declaration of [
+      'height: 100dvh',
+      'width: 100%',
+      'min-height: 0',
+      'min-width: 0',
+      'overflow-y: auto',
+      'overscroll-behavior: contain',
+    ]) {
+      expect(block, declaration).toContain(declaration);
+    }
+    const shellBlock = css.match(/\.app-shell,\s*\.app-shell-content\s*\{[\s\S]*?\}/)?.[0] ?? '';
+    expect(shellBlock).toContain('height: 100%');
+    expect(shellBlock).not.toContain('padding');
+    expect(shellBlock).not.toContain('margin');
+  });
+
+  it('overlays the expanded sidebar without reflowing the workspace', () => {
+    const sidebar = readSource('src/components/shell/GlobalSidebar.svelte');
+    expect(sidebar).toContain('class="shell-backdrop fixed inset-0 z-30');
+    expect(sidebar).toContain('shell-panel fixed inset-y-0 left-0 z-40');
+    expect(sidebar).toContain('shell-rail w-12');
+    expect(sidebar).toContain('w-72');
+    const css = readSource('src/app.css');
+    expect(css).toContain('z-index: var(--shell-panel-z)');
+    expect(css).toContain('z-index: var(--shell-backdrop-z)');
+    const root = css.match(/\.workspace-root\s*\{[\s\S]*?\}/)?.[0] ?? '';
+    expect(root).not.toContain('padding');
+    expect(root).not.toContain('margin');
+    expect(root).toContain('grid-template-columns:');
   });
 
   it('sizes the workspace root to dvh without viewport-unit legacy classes', () => {

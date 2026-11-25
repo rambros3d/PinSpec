@@ -1,0 +1,147 @@
+<script lang="ts">
+  import {
+    FolderOpen,
+    Home,
+    Info,
+    LayoutGrid,
+    PanelLeftClose,
+    PanelLeftOpen,
+    Trash2,
+  } from 'lucide-svelte';
+  import { router } from '../../state/router.svelte';
+  import { shellPreferences } from '../../state/shell-preferences.svelte';
+  import { workspaceStore } from '../../state/workspace.svelte';
+
+  interface Section {
+    id: 'home' | 'catalog' | 'projects' | 'about';
+    label: string;
+    hash: string;
+    icon: typeof Home;
+  }
+
+  const SECTIONS: readonly Section[] = [
+    { id: 'home', label: 'Home screen', hash: '#/', icon: Home },
+    { id: 'catalog', label: 'Catalog screen', hash: '#/catalog', icon: LayoutGrid },
+    { id: 'projects', label: 'Projects screen', hash: '#/projects', icon: FolderOpen },
+    { id: 'about', label: 'About', hash: '#/about', icon: Info },
+  ];
+
+  const expanded = $derived(shellPreferences.sidebarExpanded);
+  const activeSection = $derived(
+    router.route.view === 'workspace' || router.route.view === 'shared' ? null : router.route.view,
+  );
+  const recent = $derived(workspaceStore.recentSessions.slice(0, 10));
+
+  function navigate(section: Section): void {
+    if (section.id === 'home') router.navigateHome();
+    else if (section.id === 'catalog') router.navigateCatalog();
+    else if (section.id === 'projects') router.navigateProjects();
+    else router.navigateAbout();
+  }
+
+  function openRecent(mcuId: string): void {
+    void workspaceStore.openMcu(mcuId);
+    router.navigateMcu(mcuId);
+  }
+
+  function deleteRecent(mcuId: string): void {
+    workspaceStore.deleteRecentSession(mcuId);
+  }
+</script>
+
+{#if expanded}
+  <!-- Activation closes the overlay without changing any route or pin state. -->
+  <button
+    type="button"
+    class="shell-backdrop fixed inset-0 z-30 cursor-default bg-neutral/50"
+    aria-label="Close navigation"
+    onclick={() => (shellPreferences.sidebarExpanded = false)}
+  ></button>
+{/if}
+
+<aside
+  class={`shell-panel fixed inset-y-0 left-0 z-40 flex flex-col border-r border-base-300 bg-base-100 ${expanded ? 'w-72' : 'shell-rail w-12'}`}
+  aria-label="Application navigation"
+>
+  <div
+    class={`flex h-14 shrink-0 items-center border-b border-base-300 ${expanded ? 'justify-between gap-2 px-3' : 'justify-center'}`}
+  >
+    {#if expanded}
+      <span class="truncate text-sm font-semibold text-foreground">PinCraft</span>
+    {/if}
+    <button
+      type="button"
+      onclick={() => (shellPreferences.sidebarExpanded = !expanded)}
+      class="btn btn-ghost btn-sm btn-square shrink-0"
+      aria-label={expanded ? 'Collapse navigation' : 'Expand navigation'}
+      title={expanded ? 'Collapse navigation' : 'Expand navigation'}
+    >
+      {#if expanded}
+        <PanelLeftClose class="size-4" />
+      {:else}
+        <PanelLeftOpen class="size-4" />
+      {/if}
+    </button>
+  </div>
+
+  <nav class="shrink-0 space-y-1 py-2" aria-label="Sections">
+    {#each SECTIONS as section (section.id)}
+      {@const Icon = section.icon}
+      <a
+        href={section.hash}
+        onclick={(e) => {
+          e.preventDefault();
+          navigate(section);
+        }}
+        aria-current={activeSection === section.id ? 'page' : undefined}
+        title={section.label}
+        class={`flex items-center rounded-box py-2 text-base-content/70 transition-colors ${
+          expanded ? 'gap-3 px-3' : 'justify-center px-0'
+        } ${activeSection === section.id ? 'bg-info/15 font-semibold text-info' : 'hover:bg-base-300'}`}
+      >
+        <Icon class="size-4 shrink-0" />
+        {#if expanded}
+          <span class="truncate text-xs">{section.label}</span>
+        {/if}
+      </a>
+    {/each}
+  </nav>
+
+  {#if expanded}
+    <div class="shrink-0 px-3 pb-1 pt-3 text-[10px] uppercase tracking-wide text-base-content/50">
+      Recent projects
+    </div>
+    <div class="min-h-0 flex-1 space-y-1 overflow-y-auto px-2 pb-3">
+      {#if recent.length === 0}
+        <p class="px-1 py-2 text-[11px] text-base-content/60">
+          No recent projects. Opening a part creates a recent session in this browser.
+        </p>
+      {:else}
+        {#each recent as session (session.mcuId)}
+          <div class="flex items-center gap-1 rounded-box hover:bg-base-200">
+            <button
+              type="button"
+              onclick={() => openRecent(session.mcuId)}
+              class="min-w-0 flex-1 px-2 py-1.5 text-left"
+              title={`Open ${session.mcuId}`}
+            >
+              <span class="block truncate font-mono text-[11px] text-foreground">{session.mcuId}</span>
+              <span class="block font-mono-tabular text-[10px] text-base-content/60">
+                {session.assignedCount}/{session.pinCount} pins
+              </span>
+            </button>
+            <button
+              type="button"
+              onclick={() => deleteRecent(session.mcuId)}
+              class="btn btn-ghost btn-xs btn-square text-base-content/40 hover:text-error"
+              aria-label={`Delete ${session.mcuId}`}
+              title="Delete session"
+            >
+              <Trash2 class="size-3" />
+            </button>
+          </div>
+        {/each}
+      {/if}
+    </div>
+  {/if}
+</aside>

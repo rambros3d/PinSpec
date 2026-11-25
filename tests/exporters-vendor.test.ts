@@ -156,6 +156,39 @@ const esp32State: WorkspaceState = {
   assignments: { '4': { peripheral: 'UART0', signal: 'TX', af: null, funcLabel: 'U0TXD' } },
 };
 
+describe('generated module metadata is not export state', () => {
+  const moduleEsp32: ChipData = {
+    ...esp32,
+    id: 'ESP32-WROOM-E',
+    module: {
+      kind: 'module',
+      name: 'ESP32-WROOM-E',
+      baseFamily: 'esp32',
+      symbol: 'ESP32-WROOM-E',
+    },
+  };
+  const moduleState: WorkspaceState = {
+    ...createEmptyWorkspace(moduleEsp32.id),
+    assignments: { '4': { peripheral: 'UART0', signal: 'TX', af: null, funcLabel: 'U0TXD' } },
+  };
+
+  it('keeps every exporter and codec output independent of the module record', () => {
+    const rs = exportEmbassyRust(moduleEsp32, moduleState);
+    expect(rs).toContain('use esp_hal::peripherals;');
+    expect(rs).toContain('peripherals::GPIO2');
+    const h = exportCHeader(moduleEsp32, moduleState);
+    expect(h).toContain('#define UART0_TX_GPIO 2U');
+    const csv = exportCsv(moduleEsp32, moduleState);
+    expect(csv).toContain('esp32,4,GPIO2,io,UART0,TX,U0TXD,,,false');
+    const project = exportPinoutJson(moduleState, 'esp32');
+    expect(JSON.parse(project)).not.toHaveProperty('module');
+    expect(parsePinoutJson(project).ok).toBe(true);
+    for (const output of [rs, h, csv, project, encodeWorkspaceState(moduleState)]) {
+      expect(output).not.toContain('"module"');
+    }
+  });
+});
+
 describe('shared mux label', () => {
   it('produces AF, F, RM and GPIO-mode labels', () => {
     expect(formatMuxLabel({ peripheral: 'SPI1', signal: 'SCK', af: 7 }, 'af')).toBe('AF7');

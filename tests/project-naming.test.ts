@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createWorkspaceHistory, cloneWorkspaceState, statesEqual } from '../src/core/history';
 import { exportPinoutJson, parsePinoutJson } from '../src/core/exporters/json';
@@ -54,6 +56,34 @@ async function freshWorkspace() {
   const { catalogStore } = await import('../src/state/catalog.svelte.ts');
   return { workspaceStore, catalogStore };
 }
+
+describe('project title placement', () => {
+  it('edits the shared name in the global bar title without persisting edit state', () => {
+    const bar = fs.readFileSync(
+      path.join(process.cwd(), 'src/components/shell/GlobalTopBar.svelte'),
+      'utf8',
+    );
+    expect(bar).toContain("workspaceStore.state.projectName ?? 'Unnamed project'");
+    expect(bar).toContain('aria-label="Rename project"');
+    expect(bar).toContain('aria-label="Project name"');
+    expect(bar).toContain('workspaceStore.renameProject(nameDraft)');
+    expect(bar).toContain('onblur={commitName}');
+    expect(bar).toContain('e.stopPropagation()');
+    const store = fs.readFileSync(
+      path.join(process.cwd(), 'src/state/workspace.svelte.ts'),
+      'utf8',
+    );
+    expect(store).not.toContain('editingName');
+    expect(store).not.toContain('nameDraft');
+    const named: WorkspaceState = {
+      ...createEmptyWorkspace('STM32G431CBU6'),
+      projectName: 'amber-quartz-stm32h5',
+    };
+    const decoded = decodeWorkspaceState(encodeWorkspaceState(named));
+    expect(decoded.ok).toBe(true);
+    if (decoded.ok) expect(decoded.state.projectName).toBe('amber-quartz-stm32h5');
+  });
+});
 
 describe('pure project-name generation', () => {
   it('composes two curated words and a lowercase family suffix', () => {

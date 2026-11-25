@@ -182,6 +182,7 @@ color literals exist only in the vendored theme CSS file.
 - Nordic SVD descriptions: [nrf-rs/nrf-pacs](https://github.com/nrf-rs/nrf-pacs) from the `master` branch (0BSD).
 - Nordic device-tree and PSEL functions: [Zephyr](https://github.com/zephyrproject-rtos/zephyr) Nordic DTS and pinctrl binding/header (Apache-2.0).
 - Nordic physical pins: [KiCad Nordic symbols](https://gitlab.com/kicad/libraries/kicad-symbols) (CC-BY-SA-4.0, generated-file exception).
+- UI icons: [Solar Icons](https://github.com/saoudi-h/solar-icons) code is MIT licensed; the original icons are CC BY 4.0 by 480 Design.
 
 ## Generated Data Provenance
 

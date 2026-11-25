@@ -1,5 +1,7 @@
 <script lang="ts">
-  import { CircuitBoard, Search, X } from 'lucide-svelte';
+  import CircuitBoard from '@solar-icons/svelte/bold-duotone/cpu';
+  import Search from '@solar-icons/svelte/bold-duotone/magnifier';
+  import X from '@solar-icons/svelte/bold-duotone/close';
   import { onMount } from 'svelte';
   import type { BoardPreset } from '../../data/boards';
   import { openDialogWithFocus } from '../../state/dialog-focus';

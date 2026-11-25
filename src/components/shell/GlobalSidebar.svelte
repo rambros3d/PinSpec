@@ -1,15 +1,13 @@
 <script lang="ts">
-  import {
-    CircuitBoard,
-    FolderOpen,
-    Home,
-    Info,
-    Keyboard,
-    LayoutGrid,
-    PanelLeftClose,
-    PanelLeftOpen,
-    Trash2,
-  } from 'lucide-svelte';
+  import CircuitBoard from '@solar-icons/svelte/bold-duotone/cpu';
+  import FolderOpen from '@solar-icons/svelte/bold-duotone/folder-open';
+  import Home from '@solar-icons/svelte/bold-duotone/home';
+  import Info from '@solar-icons/svelte/bold-duotone/info-circle';
+  import Keyboard from '@solar-icons/svelte/bold-duotone/keyboard';
+  import LayoutGrid from '@solar-icons/svelte/bold-duotone/grid-2x2';
+  import PanelLeftClose from '@solar-icons/svelte/bold-duotone/panel-left-close';
+  import PanelLeftOpen from '@solar-icons/svelte/bold-duotone/panel-left-open';
+  import Trash2 from '@solar-icons/svelte/bold-duotone/trash-bin-trash';
   import { router } from '../../state/router.svelte';
   import { shellPreferences } from '../../state/shell-preferences.svelte';
   import { topBarUI } from '../../state/top-bar-ui.svelte';

@@ -103,6 +103,16 @@ filter behavior.
 - **WHEN** a workspace or shared route is opened and the user activates the MCU switcher in the global bar
 - **THEN** the same vendor-filtered MCU list opens as from the previous workspace toolbar
 
+#### Scenario: Chip pill retained in the workspace action cluster
+
+- **WHEN** the left-edge title shows the project name on a workspace or shared route
+- **THEN** the chip-id switcher button is still present in the workspace action cluster and still opens the vendor-filtered MCU list
+
+#### Scenario: Chip id is not duplicated at the left edge
+
+- **WHEN** a workspace route is opened with a loaded chip and a named project
+- **THEN** the chip id appears in the switcher pill and not in a separate left-edge route title
+
 ### Requirement: Export previews and provenance reflect all vendors
 The export modal SHALL present tabs that invoke the vendor-aware exporters and show copy/download controls for each format, and the landing footer and workspace copy SHALL describe multi-vendor coverage and credit the STM32, CH32, RP, and ESP32 upstream data sources without STM32-only claims. The Rust tab label SHALL name the crate used by the chip vendor.
 
@@ -123,11 +133,23 @@ The export modal SHALL present tabs that invoke the vendor-aware exporters and s
 - **THEN** it credits the four ESP32 sources alongside the existing seven sources and lists an ESP32 vendor count
 
 ### Requirement: Multi-vendor layouts remain legible across themes and zooms
-The package renderers SHALL produce clean, non-overlapping pins and readable labels for SOP8, TSSOP20, LQFP48, QFN-56, and QFN-80 in both light and dark themes at the supported zoom range.
+
+The package renderers SHALL produce clean, non-overlapping pins and readable labels for SOP8, TSSOP20, LQFP48, QFN-56, and QFN-80 in both light and dark themes at the supported zoom range. Replacement bold duotone icons on workspace surfaces SHALL remain legible in both themes at the supported zoom range, and the icon replacement SHALL NOT change renderer geometry, labels, or textures.
 
 #### Scenario: Zoomed inspection in both themes
+
 - **WHEN** each listed package is rendered at minimum and maximum zoom in light and dark themes
 - **THEN** pin pads, mux labels, and bonded/exposed-pad annotations remain readable and do not overlap
+
+#### Scenario: Icon legibility in both themes
+
+- **WHEN** workspace toolbar, tree, canvas, and dialog icons are rendered in light and dark themes
+- **THEN** both duotone layers remain distinguishable against the active background and no control label is obscured
+
+#### Scenario: Package renderer behavior is unchanged
+
+- **WHEN** the two package renderer files are inspected after the icon replacement
+- **THEN** their geometry, label code, and texture filters match the pre-replacement implementation
 
 ### Requirement: Presets are cross-vendor
 

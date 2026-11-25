@@ -1,6 +1,8 @@
 <script lang="ts">
   /** Narrow navigation column of the combined sidebar. Editing happens beside it. */
-  import { ChevronDown, ChevronRight, Search } from 'lucide-svelte';
+  import ChevronDown from '@solar-icons/svelte/bold-duotone/alt-arrow-down';
+  import ChevronRight from '@solar-icons/svelte/bold-duotone/alt-arrow-right';
+  import Search from '@solar-icons/svelte/bold-duotone/magnifier';
   import type { ChipData, PeripheralStatus } from '../../core/types';
   import {
     orderPeripheralNames,

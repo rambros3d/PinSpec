@@ -69,7 +69,6 @@ describe('global top bar', () => {
       '<ThemePicker compact={true} />',
       'topBarUI.shortcutHelpOpen = true',
       'topBarUI.switcherOpen = true',
-      'workspaceStore.globalSearch',
       'workspaceStore.undo()',
       'workspaceStore.redo()',
       'workspaceStore.clearAll()',
@@ -80,8 +79,7 @@ describe('global top bar', () => {
     ]) {
       expect(bar, token).toContain(token);
     }
-    expect(bar).toContain('topBarUI.focusSearch = () =>');
-    expect(bar).toContain('searchInputRef?.select()');
+    expect(bar.match(/<ThemePicker compact=\{true\} \/>/g)?.length).toBe(2);
     for (const token of ['overflow-x-auto', 'min-w-0', 'shouldShowScrollAffordance']) {
       expect(bar, token).toContain(token);
     }
@@ -100,20 +98,63 @@ describe('global top bar', () => {
     expect(state).toContain('Nothing here is persisted');
   });
 
-  it('shows an inline-editable project-name pill beside the MCU pill', () => {
+  it('shows an inline-editable project name at the left edge before the MCU pill', () => {
     expect(bar).toContain('workspaceStore.state.projectName ?? \'Unnamed project\'');
-    expect(bar).toContain('aria-label="Rename project"');
-    expect(bar).toContain('aria-label="Project name"');
-    expect(bar).toContain('beginNameEdit()');
-    expect(bar).toContain('workspaceStore.renameProject(nameDraft)');
-    expect(bar).toContain('cancelNameEdit()');
-    expect(bar).toContain('onblur={commitName}');
-    expect(bar).toContain('e.key === \'Enter\'');
-    expect(bar).toContain('e.key === \'Escape\'');
+    for (const hook of [
+      'aria-label="Rename project"',
+      'aria-label="Project name"',
+      'beginNameEdit()',
+      'workspaceStore.renameProject(nameDraft)',
+      'cancelNameEdit()',
+      'onblur={commitName}',
+      'e.stopPropagation()',
+      'e.key === \'Enter\'',
+      'e.key === \'Escape\'',
+    ]) {
+      expect(bar, hook).toContain(hook);
+    }
+    const routeTitle = bar.match(/const routeTitle = \$derived\([\s\S]*?\n  \);/)?.[0] ?? '';
+    expect(routeTitle).not.toContain('workspaceStore.chip?.id');
+    const title = bar.indexOf('workspaceStore.state.projectName ?? \'Unnamed project\'');
     const mcu = bar.indexOf('title="Switch MCU"');
-    const pill = bar.indexOf('aria-label="Rename project"');
-    expect(mcu).toBeGreaterThan(-1);
-    expect(pill).toBeGreaterThan(mcu);
+    const undo = bar.indexOf('aria-label="Undo"');
+    expect(title).toBeGreaterThan(-1);
+    expect(title).toBeLessThan(mcu);
+    expect(mcu).toBeLessThan(undo);
+  });
+
+  it('renders find in the canvas HUD and right-aligns workspace actions through Theme', () => {
+    for (const token of ['workspaceStore.globalSearch', 'searchInputRef', 'topBarUI.focusSearch']) {
+      expect(bar, token).not.toContain(token);
+    }
+    const canvas = read('src/components/workspace/PackageCanvas.svelte');
+    for (const token of [
+      'workspaceStore.globalSearch',
+      'workspaceStore.searchMatchingPins.length',
+      'topBarUI.focusSearch = () =>',
+      'searchInputRef?.select()',
+      'aria-label="Find pin or signal"',
+      'data-placement-furniture',
+    ]) {
+      expect(canvas, token).toContain(token);
+    }
+    const firstGroup = bar.indexOf('class="ml-auto flex shrink-0 items-center gap-1"');
+    const secondGroup = bar.indexOf('class="ml-auto flex shrink-0 items-center gap-1"', firstGroup + 1);
+    expect(firstGroup).toBeGreaterThan(-1);
+    expect(secondGroup).toBeGreaterThan(firstGroup);
+    const workspaceActions = bar.slice(firstGroup, secondGroup);
+    const shellActions = bar.slice(secondGroup);
+    expect(workspaceActions).toContain('aria-label="Undo"');
+    expect(workspaceActions).toContain('<ThemePicker compact={true} />');
+    expect(workspaceActions.indexOf('<ThemePicker compact={true} />')).toBeGreaterThan(
+      workspaceActions.indexOf('topBarUI.exportOpen = true'),
+    );
+    expect(workspaceActions.indexOf('class="ml-auto')).toBeLessThan(
+      workspaceActions.indexOf('aria-label="Undo"'),
+    );
+    expect(workspaceActions).not.toContain('Rotate package clockwise');
+    expect(shellActions).toContain('aria-label="Keyboard shortcuts"');
+    expect(shellActions).not.toContain('aria-label="Undo"');
   });
 
   it('opens the same help dialog on every route through the shared flag', () => {
@@ -121,6 +162,28 @@ describe('global top bar', () => {
     expect(shell).toContain('topBarUI.shortcutHelpOpen');
     expect(shell).toContain('ShortcutHelpDialog');
     expect(bar).not.toContain("'#/about'");
+  });
+});
+
+describe('shell icon provenance', () => {
+  it('uses Solar bold duotone icons on shell surfaces', () => {
+    for (const rel of [
+      'src/components/shell/GlobalSidebar.svelte',
+      'src/components/shell/GlobalTopBar.svelte',
+      'src/components/ThemePicker.svelte',
+    ]) {
+      const source = read(rel);
+      expect(source, rel).not.toContain('lucide-svelte');
+      expect(source, rel).toMatch(/from '@solar-icons\/svelte\/bold-duotone\/[a-z0-9-]+'/);
+    }
+    const sidebar = read('src/components/shell/GlobalSidebar.svelte');
+    expect(sidebar).toContain("import Home from '@solar-icons/svelte/bold-duotone/home'");
+    expect(sidebar).toContain('PanelLeftClose');
+    expect(sidebar).toContain('PanelLeftOpen');
+    const picker = read('src/components/ThemePicker.svelte');
+    for (const slug of ['monitor', 'sun', 'moon']) {
+      expect(picker, slug).toContain(`@solar-icons/svelte/bold-duotone/${slug}`);
+    }
   });
 });
 

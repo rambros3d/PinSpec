@@ -1,5 +1,9 @@
 <script lang="ts">
-  import { Check, Copy, Download, Upload, X } from 'lucide-svelte';
+  import Check from '@solar-icons/svelte/bold-duotone/check';
+  import Copy from '@solar-icons/svelte/bold-duotone/copy';
+  import Download from '@solar-icons/svelte/bold-duotone/download';
+  import Upload from '@solar-icons/svelte/bold-duotone/upload';
+  import X from '@solar-icons/svelte/bold-duotone/close';
   import { onMount } from 'svelte';
   import { exportCHeader } from '../../core/exporters/c-header';
   import { exportCsv } from '../../core/exporters/csv';

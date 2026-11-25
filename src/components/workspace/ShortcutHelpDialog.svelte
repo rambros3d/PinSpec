@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { X } from 'lucide-svelte';
+  import X from '@solar-icons/svelte/bold-duotone/close';
   import { onMount } from 'svelte';
   import { SHORTCUTS } from '../../data/provenance';
   import { openDialogWithFocus } from '../../state/dialog-focus';

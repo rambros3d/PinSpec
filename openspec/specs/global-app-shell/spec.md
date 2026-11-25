@@ -329,12 +329,7 @@ and `.landing-shell`.
 
 ### Requirement: Shell surfaces meet source and verification constraints
 
-Shell surfaces SHALL use existing theme tokens and monochrome vector icons,
-SHALL add no npm dependency, SHALL contain no emoji, and SHALL keep raw color
-literals in the vendored theme file. Catalog and projects thumbnails SHALL be
-static inline SVG with no interaction handler, no raw color literal, and no
-texture primitive. `npm test`, `npm run check`, and
-`BASE_PATH="/pincraft/" npm run build` SHALL exit zero with no build warnings.
+Shell surfaces SHALL use existing theme tokens and bold duotone vector icons, SHALL add no npm dependency other than the single icon package, SHALL contain no emoji, and SHALL keep raw color literals in the vendored theme file. Catalog and projects thumbnails SHALL be static inline SVG with no interaction handler, no raw color literal, and no texture primitive. `npm test`, `npm run check`, and `BASE_PATH="/pincraft/" npm run build` SHALL exit zero with no build warnings.
 
 #### Scenario: Theme tokens cover the shell
 
@@ -355,6 +350,11 @@ texture primitive. `npm test`, `npm run check`, and
 
 - **WHEN** all Svelte sources are scanned for texture primitives
 - **THEN** only `PerimeterPackage.svelte` and `GridPackage.svelte` contain `feTurbulence` and no thumbnail component adds one
+
+#### Scenario: Shell icons use the single icon package
+
+- **WHEN** shell and route source files are scanned for icon imports
+- **THEN** every icon comes from the single bold duotone package and no retired icon library import remains
 
 ### Requirement: Catalog result rows lead with a package thumbnail
 

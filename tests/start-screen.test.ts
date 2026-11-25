@@ -69,6 +69,27 @@ describe('start screen layout', () => {
   });
 });
 
+describe('start screen icon provenance', () => {
+  it('uses Solar bold duotone icons on the landing and discovery surfaces', () => {
+    for (const rel of [
+      'src/pages/LandingPage.svelte',
+      'src/components/landing/QuickSearchBar.svelte',
+      'src/components/landing/PresetGrid.svelte',
+    ]) {
+      const source = read(rel);
+      expect(source, rel).not.toContain('lucide-svelte');
+      expect(source, rel).toContain('@solar-icons/svelte/bold-duotone/');
+    }
+    expect(page).not.toContain('RefreshCw');
+    expect(read('src/components/landing/QuickSearchBar.svelte')).toContain(
+      '@solar-icons/svelte/bold-duotone/magnifier',
+    );
+    expect(read('src/components/landing/PresetGrid.svelte')).toContain(
+      '@solar-icons/svelte/bold-duotone/clock-circle',
+    );
+  });
+});
+
 describe('start screen actions', () => {
   it('exposes the five entry points with their existing flows', () => {
     for (const label of [

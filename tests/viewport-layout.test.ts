@@ -256,6 +256,19 @@ describe('global bar and modal viewport fit', () => {
     expect(source).toContain('min-w-0');
     expect(source).toContain('truncate max-w-[11rem]');
     expect(source).toContain('hidden sm:inline font-bold');
+    expect(source).toContain('@solar-icons/svelte/bold-duotone/pen');
+    expect(source).not.toContain('lucide-svelte');
+    expect(source).toContain("workspaceStore.state.projectName ?? 'Unnamed project'");
+    expect(source).toContain('class="ml-auto flex shrink-0 items-center gap-1"');
+    expect(source.indexOf('class="ml-auto flex shrink-0 items-center gap-1"')).toBeLessThan(
+      source.indexOf('aria-label="Undo"'),
+    );
+    expect(source).not.toContain('workspaceStore.globalSearch');
+    expect(source).not.toContain('searchInputRef');
+    const canvas = readSource('src/components/workspace/PackageCanvas.svelte');
+    expect(canvas).toContain('topBarUI.focusSearch = () =>');
+    expect(canvas).toContain('aria-label="Find pin or signal"');
+    expect(canvas).toContain('data-placement-furniture');
   });
 
   it('caps every workspace dialog with dvh and internal scrolling', () => {

@@ -265,7 +265,13 @@ describe('shortcut help', () => {
     expect(handler).toContain("e.key === '?' && !inInput");
     expect(bar).toContain('aria-label="Project name"');
     expect(bar).toContain('e.stopPropagation()');
-    expect(bar).toContain('searchInputRef?.select()');
+    expect(bar).not.toContain('topBarUI.focusSearch = () =>');
+    const canvas = readSource('src/components/workspace/PackageCanvas.svelte');
+    expect(canvas).toContain('topBarUI.focusSearch = () =>');
+    expect(canvas).toContain('searchInputRef?.select()');
+    expect(canvas).toContain('aria-label="Find pin or signal"');
+    expect(canvas).toContain('workspaceStore.globalSearch');
+    expect(canvas).toContain('data-placement-furniture');
   });
 });
 
@@ -310,6 +316,34 @@ describe('focus visibility, motion, and contrast', () => {
     expect(tree).not.toContain('font-mono-tabular text-[11px] text-base-content/40');
     expect(tree).not.toContain('type="checkbox"');
     expect(tree).not.toContain('<select');
+  });
+});
+
+describe('workspace icon provenance', () => {
+  it('uses Solar bold duotone icons across workspace surfaces', () => {
+    for (const rel of [
+      'src/components/workspace/ExportModal.svelte',
+      'src/components/workspace/McuSwitcherModal.svelte',
+      'src/components/workspace/BoardSelectorModal.svelte',
+      'src/components/workspace/CompatibleMcuFinder.svelte',
+      'src/components/workspace/PinoutDiffModal.svelte',
+      'src/components/workspace/ShortcutHelpDialog.svelte',
+      'src/components/workspace/PinPopover.svelte',
+      'src/components/workspace/PinContextMenu.svelte',
+      'src/components/workspace/PioPanel.svelte',
+      'src/components/workspace/PeripheralTree.svelte',
+      'src/components/workspace/PackageCanvas.svelte',
+      'src/components/workspace/SummaryDrawer.svelte',
+    ]) {
+      const source = readSource(rel);
+      expect(source, rel).not.toContain('lucide-svelte');
+      expect(source, rel).toContain('@solar-icons/svelte/bold-duotone/');
+    }
+    expect(readSource('src/components/workspace/PackageCanvas.svelte')).toContain(
+      '@solar-icons/svelte/bold-duotone/target',
+    );
+    expect(readSource('src/components/workspace/SummaryDrawer.svelte')).toContain('text-info');
+    expect(readSource('src/pages/WorkspacePage.svelte')).not.toContain('lucide-svelte');
   });
 });
 

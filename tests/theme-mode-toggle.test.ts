@@ -250,6 +250,10 @@ describe('theme control and persistence boundaries', () => {
     for (const icon of ['Monitor', 'Sun', 'Moon']) {
       expect(picker).toContain(icon);
     }
+    for (const slug of ['monitor', 'sun', 'moon']) {
+      expect(picker, slug).toContain(`@solar-icons/svelte/bold-duotone/${slug}`);
+    }
+    expect(picker).not.toContain('lucide-svelte');
     const state = source('src/state/theme.svelte.ts');
     for (const label of ['System', 'Light', 'Dark']) {
       expect(state).toContain(`'${label}'`);

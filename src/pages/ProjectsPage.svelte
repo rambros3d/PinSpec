@@ -1,5 +1,10 @@
 <script lang="ts">
-  import { AlertCircle, Clock, FileUp, FolderOpen, Pencil, Trash2 } from 'lucide-svelte';
+  import AlertCircle from '@solar-icons/svelte/bold-duotone/danger-circle';
+  import Clock from '@solar-icons/svelte/bold-duotone/clock-circle';
+  import FileUp from '@solar-icons/svelte/bold-duotone/import';
+  import FolderOpen from '@solar-icons/svelte/bold-duotone/folder-open';
+  import Pencil from '@solar-icons/svelte/bold-duotone/pen';
+  import Trash2 from '@solar-icons/svelte/bold-duotone/trash-bin-trash';
   import { tick } from 'svelte';
   import PackageThumbnail from '../components/catalog/PackageThumbnail.svelte';
   import { exportPinoutJson, parsePinoutJson } from '../core/exporters/json';

@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { ArrowRight, Cpu, Search, X } from 'lucide-svelte';
+  import ArrowRight from '@solar-icons/svelte/bold-duotone/arrow-right';
+  import Cpu from '@solar-icons/svelte/bold-duotone/cpu';
+  import Search from '@solar-icons/svelte/bold-duotone/magnifier';
+  import X from '@solar-icons/svelte/bold-duotone/close';
   import { onMount } from 'svelte';
   import { catalogStore, searchCatalogEntries } from '../../state/catalog.svelte';
   import { discoveryPreferences } from '../../state/discovery-preferences.svelte';

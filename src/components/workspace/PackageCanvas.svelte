@@ -1,5 +1,12 @@
 <script lang="ts">
-  import { Crosshair, Maximize2, Minus, Orbit, Plus, RotateCw, X } from 'lucide-svelte';
+  import Crosshair from '@solar-icons/svelte/bold-duotone/target';
+  import Maximize2 from '@solar-icons/svelte/bold-duotone/maximize-square';
+  import Minus from '@solar-icons/svelte/bold-duotone/minus';
+  import Orbit from '@solar-icons/svelte/bold-duotone/planet';
+  import Plus from '@solar-icons/svelte/bold-duotone/add';
+  import RotateCw from '@solar-icons/svelte/bold-duotone/rotate-clockwise';
+  import Search from '@solar-icons/svelte/bold-duotone/magnifier';
+  import X from '@solar-icons/svelte/bold-duotone/close';
   import { onMount } from 'svelte';
   import {
     configuredPeripheralNames,
@@ -22,6 +29,7 @@
     type PlacementRing,
   } from '../../core/types';
   import { placementSelection } from '../../state/placement-selection.svelte';
+  import { topBarUI } from '../../state/top-bar-ui.svelte';
   import { viewPreferences } from '../../state/workspace-preferences.svelte';
   import { workspaceStore } from '../../state/workspace.svelte';
   import GridPackage from './GridPackage.svelte';
@@ -75,6 +83,7 @@
 
   let stageEl = $state<HTMLDivElement | null>(null);
   let contentEl = $state<HTMLDivElement | null>(null);
+  let searchInputRef = $state<HTMLInputElement | null>(null);
   let stageWidth = $state(0);
   let stageHeight = $state(0);
 
@@ -438,6 +447,11 @@
   });
 
   onMount(() => {
+    /** Ctrl+F in a workspace focuses the canvas input and selects its query. */
+    topBarUI.focusSearch = () => {
+      searchInputRef?.focus();
+      searchInputRef?.select();
+    };
     fitView();
     measureSafeRadiusFromDom();
     const stage = stageEl;
@@ -468,6 +482,7 @@
     };
     window.addEventListener('keydown', onKey);
     return () => {
+      topBarUI.focusSearch = null;
       observer?.disconnect();
       window.removeEventListener('resize', measureSafeRadiusFromDom);
       if (stage) {
@@ -686,6 +701,38 @@
       <RotateCw class="size-3.5" />
       <span class="hidden xl:inline">Rotate</span>
     </button>
+  </div>
+
+  <!-- Pin and signal find; owned by the canvas so Ctrl+F selects its query. -->
+  <div data-placement-furniture class="card card-border absolute top-14 right-3 z-20 flex flex-row items-center gap-1 p-1 bg-base-100/95 shadow-sm text-xs">
+    <div class="min-w-[9rem] max-w-xs relative flex flex-row items-center">
+      <Search class="size-3.5 text-base-content/40 absolute left-2.5 pointer-events-none" />
+      <input
+        bind:this={searchInputRef}
+        value={workspaceStore.globalSearch}
+        oninput={(e) => (workspaceStore.globalSearch = (e.currentTarget as HTMLInputElement).value)}
+        type="text"
+        placeholder="Find pin or signal..."
+        aria-label="Find pin or signal"
+        class="input input-xs w-full pl-8 pr-14 font-mono"
+      />
+      {#if workspaceStore.globalSearch}
+        <div class="absolute right-2 flex items-center gap-1">
+          <span class="font-mono-tabular text-[10px] text-info">
+            {workspaceStore.searchMatchingPins.length}
+          </span>
+          <button
+            type="button"
+            onclick={() => (workspaceStore.globalSearch = '')}
+            class="btn btn-ghost btn-xs btn-square"
+            title="Clear search"
+            aria-label="Clear search"
+          >
+            <X class="size-3" />
+          </button>
+        </div>
+      {/if}
+    </div>
   </div>
 
   <!-- Bottom-Left Semantic Legend -->

@@ -29,6 +29,15 @@
  * Pin colors keep their existing semantic mapping and are intentionally not
  * replaced by component classes; the SVG bodies own their geometry and texture.
  */
+/*
+ * Solar bold duotone icons inherit their primary layer from the surrounding
+ * text color. The secondary layer mixes that color with the active base-content
+ * token so both duotone layers follow the current theme.
+ */
+.solar {
+  --solar-secondary-color: color-mix(in oklab, currentColor 60%, var(--color-base-content));
+}
+
 :root {
   --dot-grid: color-mix(in oklab, var(--color-base-content) 8%, transparent);
 

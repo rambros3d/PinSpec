@@ -1,5 +1,10 @@
 <script lang="ts">
-  import { Check, Lock, Search, Trash2, Unlock, X } from 'lucide-svelte';
+  import Check from '@solar-icons/svelte/bold-duotone/check';
+  import Lock from '@solar-icons/svelte/bold-duotone/lock';
+  import Search from '@solar-icons/svelte/bold-duotone/magnifier';
+  import Trash2 from '@solar-icons/svelte/bold-duotone/trash-bin-trash';
+  import Unlock from '@solar-icons/svelte/bold-duotone/lock-unlocked';
+  import X from '@solar-icons/svelte/bold-duotone/close';
   import { onMount } from 'svelte';
   import {
     formatMuxLabel,

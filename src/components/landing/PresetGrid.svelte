@@ -1,5 +1,7 @@
 <script lang="ts">
-  import { ArrowRight, Clock, Trash2 } from 'lucide-svelte';
+  import ArrowRight from '@solar-icons/svelte/bold-duotone/arrow-right';
+  import Clock from '@solar-icons/svelte/bold-duotone/clock-circle';
+  import Trash2 from '@solar-icons/svelte/bold-duotone/trash-bin-trash';
   import type { RecentSession } from '../../state/workspace.svelte';
 
   interface Props {

@@ -1,15 +1,13 @@
 <script lang="ts">
-  import {
-    AlertTriangle,
-    ArrowUpDown,
-    CheckCircle2,
-    Lock,
-    Search,
-    Trash2,
-    Unlock,
-    Wrench,
-    XCircle,
-  } from 'lucide-svelte';
+  import AlertTriangle from '@solar-icons/svelte/bold-duotone/danger-triangle';
+  import ArrowUpDown from '@solar-icons/svelte/bold-duotone/sort-vertical';
+  import CheckCircle2 from '@solar-icons/svelte/bold-duotone/check-circle';
+  import Lock from '@solar-icons/svelte/bold-duotone/lock';
+  import Search from '@solar-icons/svelte/bold-duotone/magnifier';
+  import Trash2 from '@solar-icons/svelte/bold-duotone/trash-bin-trash';
+  import Unlock from '@solar-icons/svelte/bold-duotone/lock-unlocked';
+  import Wrench from '@solar-icons/svelte/bold-duotone/wrench';
+  import XCircle from '@solar-icons/svelte/bold-duotone/close-circle';
   import {
     formatMuxLabel,
     getChipMuxModel,

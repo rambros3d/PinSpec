@@ -143,21 +143,30 @@ outside `.modal-box`.
 
 ### Requirement: Workspace search shortcut selects existing text
 
-The workspace global pin and signal search shortcut SHALL focus the search
-input and select its current text, matching the landing quick-search shortcut.
-Repeated activation SHALL keep the whole query selected.
+The workspace pin and signal search shortcut SHALL focus the package canvas HUD
+search input and select its current text, matching the landing quick-search
+shortcut. Repeated activation SHALL keep the whole query selected. The shortcut
+SHALL reach the moved input without changing its focus guard while the user is
+typing or a dialog is open.
 
 #### Scenario: Repeated shortcut keeps the query selected
 
 - **WHEN** the user presses the workspace search shortcut while the search input already contains a query
-- **THEN** the input is focused and the full query is selected so typing replaces it
+- **THEN** the package canvas HUD input is focused and the full query is selected so typing replaces it
+
+#### Scenario: Find input is reachable in the canvas HUD
+
+- **WHEN** the user presses Ctrl+F while no dialog is open and focus is outside a text field
+- **THEN** the canvas HUD find input receives focus and no bar input is activated
+
+#### Scenario: Shortcut does not interrupt typing
+
+- **WHEN** the user presses the search shortcut while a text field has focus
+- **THEN** the shortcut is not handled by the workspace key handler and focus stays in that text field
 
 ### Requirement: Keyboard focus is visible and motion respects user preference
 
-Interactive controls SHALL show a visible focus indicator driven by existing
-theme tokens. Reduced-motion preference SHALL suppress decorative animations
-across the landing and workspace surfaces, not only the pin pulse. Small body
-copy SHALL use sufficient contrast without changing decorative icon tint.
+Interactive controls SHALL show a visible focus indicator driven by existing theme tokens. Reduced-motion preference SHALL suppress decorative animations across the landing and workspace surfaces, not only the pin pulse. Small body copy SHALL use sufficient contrast without changing decorative icon tint. Icon replacements SHALL preserve focus indicators and accessible names, and any duotone icon tint SHALL resolve from theme tokens.
 
 #### Scenario: Keyboard focus ring appears
 
@@ -173,6 +182,11 @@ copy SHALL use sufficient contrast without changing decorative icon tint.
 
 - **WHEN** small supporting body copy is rendered on a landing or workspace surface
 - **THEN** its text contrast is at least that of the standard muted text token and decorative icon tint is unchanged
+
+#### Scenario: Replaced icons keep accessible controls intact
+
+- **WHEN** an icon-only control in a dialog, the canvas toolbar, or a modal is focused after the icon replacement
+- **THEN** its focus ring and accessible name match the pre-replacement control and only the glyph drawing differs
 
 ### Requirement: Placement overlay supports Escape and keyboard focus
 

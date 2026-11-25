@@ -109,6 +109,16 @@ focus or dismissal behavior.
 - **WHEN** the bar controls do not fit the viewport
 - **THEN** the row scrolls horizontally inside the bar without widening the document
 
+#### Scenario: Workspace title is the project name
+
+- **WHEN** a workspace or shared route is opened with a named project
+- **THEN** the left-edge title shows the project name and no chip-id `routeTitle` is rendered there
+
+#### Scenario: Shell route titles are unchanged
+
+- **WHEN** the home, catalog, projects, or about route is opened
+- **THEN** its original title, wordmark, and section links remain unchanged
+
 ### Requirement: Workspace actions are merged into the global bar
 
 On workspace and shared routes the global bar SHALL host the MCU switcher, pin and
@@ -121,12 +131,12 @@ loading.
 #### Scenario: All actions available once
 
 - **WHEN** a workspace or shared route is opened
-- **THEN** every former toolbar action is present in the global bar and no second action bar is rendered
+- **THEN** every former toolbar action except the pin and signal find input, which is rendered in the package canvas HUD, is present in the global bar and no second action bar is rendered
 
 #### Scenario: Search shortcut selects text
 
 - **WHEN** the workspace search shortcut is pressed
-- **THEN** the global bar search input is focused with its current query selected
+- **THEN** the package canvas HUD search input is focused with its current query selected
 
 #### Scenario: Actions keep their behavior
 
@@ -138,13 +148,30 @@ loading.
 - **WHEN** the MCU switcher is opened while the catalog index is still loading
 - **THEN** the existing loading text is shown with a `loading loading-spinner loading-xs` indicator and the switcher keeps its search and selection behavior
 
+#### Scenario: Find input is absent from the bar
+
+- **WHEN** a workspace or shared route is opened
+- **THEN** the global bar contains no pin and signal find input and the package canvas HUD contains it
+
+#### Scenario: Workspace actions are right aligned
+
+- **WHEN** the workspace action cluster is inspected
+- **THEN** an auto margin precedes Undo and the rendered actions end at the right edge with Theme as the last control
+
+#### Scenario: Chip pill remains after title replacement
+
+- **WHEN** the project title replaces the chip-id `routeTitle` on a workspace or shared route
+- **THEN** the chip-id MCU switcher button is still present in the workspace action cluster
+
 ### Requirement: The global bar does not change routes, persistence, or pin configuration
 
 Adding the bar and reserving rail space SHALL NOT change hash routing, data
 fetches through `dataUrl()`, or the localStorage-only presentation preferences.
 The version-2 share and project schemas gain only an optional shareable
 project-name field and keep their version. Pin configuration, including that
-field, remains shareable.
+field, remains shareable. Moving the editable project-name control to the
+left-edge title SHALL NOT introduce an editing flag into persisted state; edit
+mode remains transient view state.
 
 #### Scenario: Routes and subpaths are unchanged
 
@@ -170,3 +197,8 @@ field, remains shareable.
 
 - **WHEN** the bar edits a project name and shell preferences are written
 - **THEN** the name enters workspace history, recent sessions, share links, and project files while the shell preference record stays free of it
+
+#### Scenario: Name edit mode stays transient
+
+- **WHEN** the left-edge title enters or leaves edit mode
+- **THEN** no editing flag is written to localStorage, a share URL, a project file, or recent sessions

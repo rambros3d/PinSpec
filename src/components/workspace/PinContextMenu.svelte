@@ -1,5 +1,10 @@
 <script lang="ts">
-  import { ArrowLeftRight, Crosshair, Lock, Tag, Trash2, Unlock } from 'lucide-svelte';
+  import ArrowLeftRight from '@solar-icons/svelte/bold-duotone/transfer-horizontal';
+  import Crosshair from '@solar-icons/svelte/bold-duotone/target';
+  import Lock from '@solar-icons/svelte/bold-duotone/lock';
+  import Tag from '@solar-icons/svelte/bold-duotone/tag';
+  import Trash2 from '@solar-icons/svelte/bold-duotone/trash-bin-trash';
+  import Unlock from '@solar-icons/svelte/bold-duotone/lock-unlocked';
   import { onMount } from 'svelte';
   import { formatMuxLabel, getChipMuxModel, type ChipData, type PinAssignment, type PinInfo } from '../../core/types';
   import { deriveExtiLineId } from '../../core/solver';

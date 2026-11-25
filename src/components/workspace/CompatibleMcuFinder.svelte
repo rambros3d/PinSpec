@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { Search, X } from 'lucide-svelte';
+  import Search from '@solar-icons/svelte/bold-duotone/magnifier';
+  import X from '@solar-icons/svelte/bold-duotone/close';
   import { onMount } from 'svelte';
   import {
     compareCandidateScores,

@@ -1,5 +1,7 @@
 <script lang="ts">
-  import { Cpu, Search, X } from 'lucide-svelte';
+  import Cpu from '@solar-icons/svelte/bold-duotone/cpu';
+  import Search from '@solar-icons/svelte/bold-duotone/magnifier';
+  import X from '@solar-icons/svelte/bold-duotone/close';
   import { onDestroy, onMount } from 'svelte';
   import PackageThumbnail from '../components/catalog/PackageThumbnail.svelte';
   import { mapWithConcurrency, MAX_CONCURRENT_SHARD_LOADS } from '../core/compatibility';

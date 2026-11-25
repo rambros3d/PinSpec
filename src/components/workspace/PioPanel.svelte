@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { Plus, Trash2 } from 'lucide-svelte';
+  import Plus from '@solar-icons/svelte/bold-duotone/add';
+  import Trash2 from '@solar-icons/svelte/bold-duotone/trash-bin-trash';
   import type { ChipData, DiagnosticItem, PioPinAssignment } from '../../core/types';
   import {
     formatGpioWindow,

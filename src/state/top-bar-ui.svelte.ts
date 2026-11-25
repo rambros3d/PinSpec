@@ -19,7 +19,7 @@ class TopBarUIState {
   /** Shared by the bar, the sidebar Hotkeys entry, and the `?` shortcut. */
   shortcutHelpOpen = $state(false);
 
-  /** Registered by the bar so the workspace Ctrl+F handler can select its query. */
+  /** Registered by the package canvas so the workspace Ctrl+F handler can select its query. */
   focusSearch: (() => void) | null = null;
 
   /** Leave no stale dialog or mode behind when the workspace is unmounted. */

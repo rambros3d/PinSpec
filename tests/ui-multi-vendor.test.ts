@@ -326,10 +326,36 @@ describe('generated module identity and discovery tags', () => {
     expect(readSource('src/components/workspace/McuSwitcherModal.svelte')).toContain('vendorFilter');
   });
 
+  it('uses Solar bold duotone imports in vendor UI surfaces', () => {
+    for (const rel of [
+      'src/pages/CatalogPage.svelte',
+      'src/pages/ProjectsPage.svelte',
+      'src/pages/WorkspacePage.svelte',
+      'src/components/workspace/McuSwitcherModal.svelte',
+      'src/components/landing/PresetGrid.svelte',
+      'src/components/landing/QuickSearchBar.svelte',
+    ]) {
+      const source = readSource(rel);
+      expect(source, rel).not.toContain('lucide-svelte');
+      expect(source, rel).toContain('@solar-icons/svelte/bold-duotone/');
+    }
+    expect(readSource('src/pages/CatalogPage.svelte')).toContain(
+      '@solar-icons/svelte/bold-duotone/cpu',
+    );
+  });
+
   it('keeps the vendor-filtered MCU switcher reachable from the global bar', () => {
     const bar = readSource('src/components/shell/GlobalTopBar.svelte');
     expect(bar).toContain('topBarUI.switcherOpen = true');
     expect(bar).toContain('workspaceStore.chip.id');
+    const routeTitle = bar.match(/const routeTitle = \$derived\([\s\S]*?\n  \);/)?.[0] ?? '';
+    expect(routeTitle).not.toContain('workspaceStore.chip?.id');
+    const title = bar.indexOf("workspaceStore.state.projectName ?? 'Unnamed project'");
+    const switcher = bar.indexOf('title="Switch MCU"');
+    const undo = bar.indexOf('aria-label="Undo"');
+    expect(title).toBeGreaterThan(-1);
+    expect(title).toBeLessThan(switcher);
+    expect(switcher).toBeLessThan(undo);
     const workspace = readSource('src/pages/WorkspacePage.svelte');
     expect(workspace).toContain('<McuSwitcherModal');
     expect(workspace).toContain('topBarUI.switcherOpen');

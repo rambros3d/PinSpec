@@ -1,5 +1,7 @@
 <script lang="ts">
-  import { AlertCircle, PanelRight, X } from 'lucide-svelte';
+  import AlertCircle from '@solar-icons/svelte/bold-duotone/danger-circle';
+  import PanelRight from '@solar-icons/svelte/bold-duotone/panel-right';
+  import X from '@solar-icons/svelte/bold-duotone/close';
   import { onMount } from 'svelte';
   import CombinedSidebar from '../components/workspace/CombinedSidebar.svelte';
   import CompatibleMcuFinder from '../components/workspace/CompatibleMcuFinder.svelte';

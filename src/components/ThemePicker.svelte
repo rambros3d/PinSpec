@@ -1,5 +1,7 @@
 <script lang="ts">
-  import { Monitor, Moon, Sun } from 'lucide-svelte';
+  import Monitor from '@solar-icons/svelte/bold-duotone/monitor';
+  import Moon from '@solar-icons/svelte/bold-duotone/moon';
+  import Sun from '@solar-icons/svelte/bold-duotone/sun';
   import { MODE_LABELS, themeStore } from '../state/theme.svelte';
 
   interface Props {

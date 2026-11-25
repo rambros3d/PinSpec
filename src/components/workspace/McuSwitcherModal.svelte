@@ -1,5 +1,7 @@
 <script lang="ts">
-  import { Cpu, Search, X } from 'lucide-svelte';
+  import Cpu from '@solar-icons/svelte/bold-duotone/cpu';
+  import Search from '@solar-icons/svelte/bold-duotone/magnifier';
+  import X from '@solar-icons/svelte/bold-duotone/close';
   import { onMount } from 'svelte';
   import { catalogStore, searchCatalogEntries } from '../../state/catalog.svelte';
   import { openDialogWithFocus } from '../../state/dialog-focus';

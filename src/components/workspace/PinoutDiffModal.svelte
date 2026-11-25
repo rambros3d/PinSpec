@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { FileUp, X } from 'lucide-svelte';
+  import FileUp from '@solar-icons/svelte/bold-duotone/import';
+  import X from '@solar-icons/svelte/bold-duotone/close';
   import { onMount, tick } from 'svelte';
   import { parsePinoutJson } from '../../core/exporters/json';
   import {

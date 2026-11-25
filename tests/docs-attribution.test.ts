@@ -128,6 +128,15 @@ describe('multi-vendor documentation and attribution', () => {
       expect(readme, route).toContain(route);
     }
     expect(readme).toContain('pincraft:shell_preferences_v1');
+    expect(readme).toContain('[Solar Icons](https://github.com/saoudi-h/solar-icons)');
+    expect(readme).toContain('MIT licensed');
+    expect(readme).toContain('CC BY 4.0 by 480 Design');
+  });
+
+  it('documents the single icon dependency without a retired library', () => {
+    const pkg = JSON.parse(read('package.json')) as { dependencies: Record<string, string> };
+    expect(pkg.dependencies).toHaveProperty('@solar-icons/svelte');
+    expect(pkg.dependencies).not.toHaveProperty('lucide-svelte');
   });
 
   it('describes shipped multi-vendor behavior in AGENTS.md', () => {

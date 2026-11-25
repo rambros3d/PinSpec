@@ -1,17 +1,14 @@
 <script lang="ts">
-  import {
-    AlertCircle,
-    ArrowRight,
-    CircuitBoard,
-    Database,
-    FileUp,
-    FolderOpen,
-    GitCompare,
-    Plus,
-    RefreshCw,
-    Upload,
-    X,
-  } from 'lucide-svelte';
+  import AlertCircle from '@solar-icons/svelte/bold-duotone/danger-circle';
+  import ArrowRight from '@solar-icons/svelte/bold-duotone/arrow-right';
+  import CircuitBoard from '@solar-icons/svelte/bold-duotone/cpu';
+  import Database from '@solar-icons/svelte/bold-duotone/database';
+  import FileUp from '@solar-icons/svelte/bold-duotone/import';
+  import FolderOpen from '@solar-icons/svelte/bold-duotone/folder-open';
+  import GitCompare from '@solar-icons/svelte/bold-duotone/git-diff';
+  import Plus from '@solar-icons/svelte/bold-duotone/add';
+  import Upload from '@solar-icons/svelte/bold-duotone/upload';
+  import X from '@solar-icons/svelte/bold-duotone/close';
   import { onMount } from 'svelte';
   import PresetGrid from '../components/landing/PresetGrid.svelte';
   import QuickSearchBar from '../components/landing/QuickSearchBar.svelte';

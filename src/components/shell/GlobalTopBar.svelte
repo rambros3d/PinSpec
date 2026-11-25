@@ -1,20 +1,16 @@
 <script lang="ts">
-  import {
-    ChevronDown,
-    ChevronRight,
-    Download,
-    GitCompare,
-    Keyboard,
-    Pencil,
-    Redo2,
-    Search,
-    SearchCheck,
-    Share2,
-    Trash2,
-    Undo2,
-    X,
-  } from 'lucide-svelte';
-  import { onMount, tick } from 'svelte';
+  import ChevronDown from '@solar-icons/svelte/bold-duotone/alt-arrow-down';
+  import ChevronRight from '@solar-icons/svelte/bold-duotone/alt-arrow-right';
+  import Download from '@solar-icons/svelte/bold-duotone/download';
+  import GitCompare from '@solar-icons/svelte/bold-duotone/git-diff';
+  import Keyboard from '@solar-icons/svelte/bold-duotone/keyboard';
+  import Pencil from '@solar-icons/svelte/bold-duotone/pen';
+  import Redo2 from '@solar-icons/svelte/bold-duotone/undo-right';
+  import SearchCheck from '@solar-icons/svelte/bold-duotone/magnifier-check';
+  import Share2 from '@solar-icons/svelte/bold-duotone/share';
+  import Trash2 from '@solar-icons/svelte/bold-duotone/trash-bin-trash';
+  import Undo2 from '@solar-icons/svelte/bold-duotone/undo-left';
+  import { tick } from 'svelte';
   import { shouldShowScrollAffordance } from '../../core/scroll-affordance';
   import { router } from '../../state/router.svelte';
   import { topBarUI } from '../../state/top-bar-ui.svelte';
@@ -40,21 +36,18 @@
     router.route.view === 'workspace' || router.route.view === 'shared' ? null : router.route.view,
   );
   const routeTitle = $derived(
-    isWorkspace
-      ? (workspaceStore.chip?.id ?? 'Workspace')
-      : router.route.view === 'landing'
-        ? 'Home'
-        : router.route.view === 'catalog'
-          ? 'Catalog'
-          : router.route.view === 'projects'
-            ? 'Projects'
-            : 'About',
+    router.route.view === 'landing'
+      ? 'Home'
+      : router.route.view === 'catalog'
+        ? 'Catalog'
+        : router.route.view === 'projects'
+          ? 'Projects'
+          : 'About',
   );
 
   let confirmClear = $state(false);
   let scrollRowEl = $state<HTMLDivElement | null>(null);
   let showScrollHint = $state(false);
-  let searchInputRef = $state<HTMLInputElement | null>(null);
   let editingName = $state(false);
   let nameDraft = $state('');
   let nameInputRef = $state<HTMLInputElement | null>(null);
@@ -92,17 +85,6 @@
     updateScrollHint();
   });
 
-  onMount(() => {
-    /** Ctrl+F in a workspace focuses the bar's input and selects its query. */
-    topBarUI.focusSearch = () => {
-      searchInputRef?.focus();
-      searchInputRef?.select();
-    };
-    return () => {
-      topBarUI.focusSearch = null;
-    };
-  });
-
   function navigate(link: SectionLink): void {
     if (link.id === 'home') router.navigateHome();
     else if (link.id === 'catalog') router.navigateCatalog();
@@ -137,9 +119,46 @@
       </a>
     {/if}
 
-    <span class="shrink-0 whitespace-nowrap font-mono text-xs font-semibold text-base-content/70">
-      {routeTitle}
-    </span>
+    {#if isWorkspace}
+      {#if editingName}
+        <input
+          bind:this={nameInputRef}
+          bind:value={nameDraft}
+          onkeydown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              commitName();
+            } else if (e.key === 'Escape') {
+              e.preventDefault();
+              e.stopPropagation();
+              cancelNameEdit();
+            }
+          }}
+          onblur={commitName}
+          type="text"
+          maxlength="48"
+          aria-label="Project name"
+          class="input input-xs w-40 shrink-0 font-mono"
+        />
+      {:else}
+        <button
+          type="button"
+          onclick={() => void beginNameEdit()}
+          class="btn btn-ghost btn-xs shrink-0 gap-1 font-mono text-xs text-foreground"
+          title="Rename project"
+          aria-label="Rename project"
+        >
+          <span class="max-w-[16rem] truncate">
+            {workspaceStore.state.projectName ?? 'Unnamed project'}
+          </span>
+          <Pencil class="size-3 shrink-0" />
+        </button>
+      {/if}
+    {:else}
+      <span class="shrink-0 whitespace-nowrap font-mono text-xs font-semibold text-base-content/70">
+        {routeTitle}
+      </span>
+    {/if}
 
     {#if !isWorkspace}
     <nav class="flex shrink-0 items-center gap-1" aria-label="Sections">
@@ -179,71 +198,7 @@
         </button>
       {/if}
 
-      {#if editingName}
-        <input
-          bind:this={nameInputRef}
-          bind:value={nameDraft}
-          onkeydown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              commitName();
-            } else if (e.key === 'Escape') {
-              e.preventDefault();
-              e.stopPropagation();
-              cancelNameEdit();
-            }
-          }}
-          onblur={commitName}
-          type="text"
-          maxlength="48"
-          aria-label="Project name"
-          class="input input-xs w-40 shrink-0 font-mono"
-        />
-      {:else}
-        <button
-          type="button"
-          onclick={() => void beginNameEdit()}
-          class="btn btn-ghost btn-xs shrink-0 gap-1 font-mono text-[11px] text-base-content/70"
-          title="Rename project"
-          aria-label="Rename project"
-        >
-          <Pencil class="size-3 shrink-0" />
-          <span class="max-w-[10rem] truncate">
-            {workspaceStore.state.projectName ?? 'Unnamed project'}
-          </span>
-        </button>
-      {/if}
-
-      <div class="min-w-[9rem] max-w-xs relative flex flex-1 shrink items-center">
-        <Search class="size-3.5 text-base-content/40 absolute left-2.5 pointer-events-none" />
-        <input
-          bind:this={searchInputRef}
-          value={workspaceStore.globalSearch}
-          oninput={(e) => (workspaceStore.globalSearch = (e.currentTarget as HTMLInputElement).value)}
-          type="text"
-          placeholder="Find pin or signal (Ctrl+F)..."
-          aria-label="Find pin or signal"
-          class="input input-xs w-full pl-8 pr-14 font-mono"
-        />
-        {#if workspaceStore.globalSearch}
-          <div class="absolute right-2 flex items-center gap-1">
-            <span class="font-mono-tabular text-[10px] text-info">
-              {workspaceStore.searchMatchingPins.length}
-            </span>
-            <button
-              type="button"
-              onclick={() => (workspaceStore.globalSearch = '')}
-              class="btn btn-ghost btn-xs btn-square"
-              title="Clear search"
-              aria-label="Clear search"
-            >
-              <X class="size-3" />
-            </button>
-          </div>
-        {/if}
-      </div>
-
-      <div class="flex shrink-0 items-center gap-1">
+      <div class="ml-auto flex shrink-0 items-center gap-1">
         <button
           type="button"
           onclick={() => workspaceStore.undo()}
@@ -311,12 +266,13 @@
           <Download class="size-3.5" />
           <span>Export</span>
         </button>
+        <ThemePicker compact={true} />
       </div>
     {/if}
 
-    <div class="ml-auto flex shrink-0 items-center gap-1">
-      <ThemePicker compact={true} />
-      {#if !isWorkspace}
+    {#if !isWorkspace}
+      <div class="ml-auto flex shrink-0 items-center gap-1">
+        <ThemePicker compact={true} />
         <button
           type="button"
           onclick={() => (topBarUI.shortcutHelpOpen = true)}
@@ -326,8 +282,8 @@
         >
           <Keyboard class="size-4" />
         </button>
-      {/if}
-    </div>
+      </div>
+    {/if}
   </div>
 
   {#if confirmClear}

@@ -157,6 +157,79 @@ describe('daisyUI token integration', () => {
     }
   });
 
+  it('uses one verified bold duotone icon package across delivered UI', () => {
+    const srcFiles: string[] = [];
+    for (const file of sourceFiles()) {
+      if (file.startsWith(path.join(ROOT, 'src'))) srcFiles.push(file);
+    }
+    const offenders: string[] = [];
+    const unverified: string[] = [];
+    const importPattern = /from '@solar-icons\/svelte\/([^']+)'/g;
+    for (const file of srcFiles) {
+      const source = fs.readFileSync(file, 'utf8');
+      if (source.includes('lucide-svelte')) offenders.push(file);
+      for (const match of source.matchAll(importPattern)) {
+        const target = match[1];
+        if (!target.startsWith('bold-duotone/')) {
+          offenders.push(`${path.basename(file)}: ${target}`);
+          continue;
+        }
+        const slug = target.slice('bold-duotone/'.length);
+        const iconFile = path.join(
+          ROOT,
+          'node_modules/@solar-icons/svelte/dist/icons/bold-duotone',
+          `${slug}.svelte`,
+        );
+        if (!fs.existsSync(iconFile)) unverified.push(`${path.basename(file)}: ${slug}`);
+      }
+    }
+    expect(offenders).toEqual([]);
+    expect(unverified).toEqual([]);
+
+    const packageJson = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8')) as {
+      dependencies: Record<string, string>;
+    };
+    expect(packageJson.dependencies).toHaveProperty('@solar-icons/svelte');
+    expect(packageJson.dependencies).not.toHaveProperty('lucide-svelte');
+    const lockfile = fs.readFileSync(path.join(ROOT, 'package-lock.json'), 'utf8');
+    expect(lockfile).toContain('@solar-icons/svelte');
+    expect(lockfile).not.toContain('lucide-svelte');
+  });
+
+  it('derives the duotone secondary layer from the base-content theme token', () => {
+    const css = fs.readFileSync(path.join(ROOT, 'src/app.css'), 'utf8');
+    const rule = css.match(/\.solar\s*\{[\s\S]*?\}/)?.[0] ?? '';
+    expect(rule).toContain(
+      '--solar-secondary-color: color-mix(in oklab, currentColor 60%, var(--color-base-content));',
+    );
+    expect(rule).not.toContain('--solar-color');
+    expect(rule).not.toContain('--depth');
+    expect(rule).not.toContain('--noise');
+    expect(rule).not.toMatch(/#[0-9a-fA-F]{3,8}\b|\brgba?\(|\bhsla?\(|\boklch\(/);
+    for (const file of sourceFiles().filter((file) => /\.svelte$/.test(file))) {
+      expect(fs.readFileSync(file, 'utf8'), file).not.toMatch(
+        /#[0-9a-fA-F]{3,8}\b|\brgba?\(|\bhsla?\(|\boklch\(/,
+      );
+    }
+  });
+
+  it('keeps the refined top bar and canvas find on theme tokens', () => {
+    const read = (rel: string): string => fs.readFileSync(path.join(ROOT, rel), 'utf8');
+    const bar = read('src/components/shell/GlobalTopBar.svelte');
+    const canvas = read('src/components/workspace/PackageCanvas.svelte');
+    for (const [name, source] of [
+      ['bar', bar],
+      ['canvas', canvas],
+    ] as const) {
+      expect(source, name).not.toMatch(/#[0-9a-fA-F]{3,8}\b|\brgba?\(|\bhsla?\(|\boklch\(/);
+      expect(source, name).toContain('bg-base-100');
+      expect(source, name).toContain('text-base-content');
+    }
+    expect(bar).not.toContain('workspaceStore.globalSearch');
+    expect(canvas).toContain('workspaceStore.globalSearch');
+    expect(canvas).toContain('input input-xs');
+  });
+
   it('scopes texture effects to the two package renderers', () => {
     const files = sourceFiles().filter((file) => /\.svelte$/.test(file));
     const textured = files.filter((file) => /feTurbulence/.test(fs.readFileSync(file, 'utf8')));

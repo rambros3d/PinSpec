@@ -1,5 +1,6 @@
 <script lang="ts">
   import {
+    CircuitBoard,
     FolderOpen,
     Home,
     Info,
@@ -15,7 +16,7 @@
   import { workspaceStore } from '../../state/workspace.svelte';
 
   interface Section {
-    id: 'home' | 'catalog' | 'projects' | 'about';
+    id: 'home' | 'workspace' | 'catalog' | 'projects' | 'about';
     label: string;
     hash: string;
     icon: typeof Home;
@@ -23,25 +24,40 @@
 
   const SECTIONS: readonly Section[] = [
     { id: 'home', label: 'Home', hash: '#/', icon: Home },
+    { id: 'workspace', label: 'Workspace', hash: '', icon: CircuitBoard },
     { id: 'catalog', label: 'Catalog', hash: '#/catalog', icon: LayoutGrid },
     { id: 'projects', label: 'Projects', hash: '#/projects', icon: FolderOpen },
     { id: 'about', label: 'About', hash: '#/about', icon: Info },
   ];
 
-  const TOP_SECTIONS = SECTIONS.filter((s) => s.id === 'home' || s.id === 'projects');
+  const TOP_SECTIONS = SECTIONS.filter(
+    (s) => s.id === 'home' || s.id === 'workspace' || s.id === 'projects',
+  );
   const BOTTOM_SECTIONS = SECTIONS.filter((s) => s.id === 'catalog' || s.id === 'about');
 
   const expanded = $derived(shellPreferences.sidebarExpanded);
   const activeSection = $derived(
-    router.route.view === 'workspace' || router.route.view === 'shared' ? null : router.route.view,
+    router.route.view === 'workspace' || router.route.view === 'shared'
+      ? 'workspace'
+      : router.route.view,
   );
   const recent = $derived(workspaceStore.recentSessions.slice(0, 10));
+  const workspaceTarget = $derived(
+    workspaceStore.chip?.id ?? workspaceStore.recentSessions[0]?.mcuId ?? null,
+  );
 
   function navigate(section: Section): void {
     if (section.id === 'home') router.navigateHome();
     else if (section.id === 'catalog') router.navigateCatalog();
     else if (section.id === 'projects') router.navigateProjects();
     else router.navigateAbout();
+  }
+
+  /** Open the loaded chip, or hydrate the most recent session before routing. */
+  function openWorkspace(): void {
+    if (!workspaceTarget) return;
+    if (!workspaceStore.chip) void workspaceStore.openMcu(workspaceTarget);
+    router.navigateMcu(workspaceTarget);
   }
 
   function sectionClass(section: Section): string {
@@ -90,21 +106,54 @@
   <nav class="shrink-0 space-y-1 py-2" aria-label="Sections">
     {#each TOP_SECTIONS as section (section.id)}
       {@const Icon = section.icon}
-      <a
-        href={section.hash}
-        onclick={(e) => {
-          e.preventDefault();
-          navigate(section);
-        }}
-        aria-current={activeSection === section.id ? 'page' : undefined}
-        title={section.label}
-        class={sectionClass(section)}
-      >
-        <Icon class="size-4 shrink-0" />
-        {#if expanded}
-          <span class="truncate text-xs">{section.label}</span>
+      {#if section.id === 'workspace'}
+        {#if workspaceTarget}
+          <a
+            href={`#/mcu/${workspaceTarget}`}
+            onclick={(e) => {
+              e.preventDefault();
+              openWorkspace();
+            }}
+            aria-current={activeSection === section.id ? 'page' : undefined}
+            title={section.label}
+            class={sectionClass(section)}
+          >
+            <Icon class="size-4 shrink-0" />
+            {#if expanded}
+              <span class="truncate text-xs">{section.label}</span>
+            {/if}
+          </a>
+        {:else}
+          <button
+            type="button"
+            disabled
+            title={section.label}
+            aria-label={section.label}
+            class={`${sectionClass(section)} cursor-not-allowed opacity-40`}
+          >
+            <Icon class="size-4 shrink-0" />
+            {#if expanded}
+              <span class="truncate text-xs">{section.label}</span>
+            {/if}
+          </button>
         {/if}
-      </a>
+      {:else}
+        <a
+          href={section.hash}
+          onclick={(e) => {
+            e.preventDefault();
+            navigate(section);
+          }}
+          aria-current={activeSection === section.id ? 'page' : undefined}
+          title={section.label}
+          class={sectionClass(section)}
+        >
+          <Icon class="size-4 shrink-0" />
+          {#if expanded}
+            <span class="truncate text-xs">{section.label}</span>
+          {/if}
+        </a>
+      {/if}
     {/each}
   </nav>
 
@@ -127,6 +176,9 @@
               title={`Open ${session.mcuId}`}
             >
               <span class="block truncate font-mono text-[11px] text-foreground">{session.mcuId}</span>
+              {#if session.state.projectName}
+                <span class="block truncate text-[10px] text-base-content/70">{session.state.projectName}</span>
+              {/if}
               <span class="block font-mono-tabular text-[10px] text-base-content/60">
                 {session.assignedCount}/{session.pinCount} pins
               </span>

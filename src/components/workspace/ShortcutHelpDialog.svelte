@@ -61,8 +61,8 @@
         {/each}
       </dl>
     </div>
-    <form method="dialog" class="modal-backdrop">
-      <button aria-label="Close shortcut help">close</button>
-    </form>
   </div>
+  <form method="dialog" class="modal-backdrop">
+    <button aria-label="Close shortcut help">close</button>
+  </form>
 </dialog>

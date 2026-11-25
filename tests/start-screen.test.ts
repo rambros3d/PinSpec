@@ -42,6 +42,31 @@ describe('start screen layout', () => {
     expect(search).toContain('export function focusInput()');
     expect(page).toContain('focusQuickSearch');
   });
+
+  it('restores quick-search filters from the localStorage-only store', () => {
+    const search = read('src/components/landing/QuickSearchBar.svelte');
+    expect(search).toContain('discoveryPreferences.quickSearch');
+    for (const field of [
+      'filters.query',
+      'filters.vendor',
+      'filters.family',
+      'filters.package',
+    ]) {
+      expect(search, field).toContain(field);
+    }
+    expect(search).toContain('filters.reset()');
+    expect(search).not.toContain('workspaceStore.state');
+    expect(read('src/core/types.ts')).not.toContain('quickSearchFilters');
+  });
+
+  it('uses daisyUI alert and loading classes on quick-search and statistics surfaces', () => {
+    const search = read('src/components/landing/QuickSearchBar.svelte');
+    expect(search).toContain('alert alert-soft alert-error');
+    expect(search).toContain('loading loading-spinner loading-xs');
+    expect(page).toContain('alert alert-soft alert-error');
+    expect(page).toContain('Catalog statistics unavailable.');
+    expect(page).toContain('loading loading-spinner loading-xs');
+  });
 });
 
 describe('start screen actions', () => {
@@ -75,6 +100,13 @@ describe('start screen actions', () => {
     }
     expect(workspace).toContain('workspaceStore.setPendingHandoff(');
     expect(workspace).not.toContain('BoardSelectorModal');
+  });
+
+  it('keeps global shortcuts out of the inline project-name input', () => {
+    expect(workspace).toContain("e.key === '?' && !inInput");
+    expect(workspace).toContain("(e.ctrlKey || e.metaKey) && !inInput && e.key.toLowerCase() === 'f'");
+    expect(workspace).toContain("(e.ctrlKey || e.metaKey) && !inInput && e.key.toLowerCase() === 'k'");
+    expect(workspace).toContain("e.key === 'Escape' && inInput");
   });
 
   it('keeps start-screen presentation state out of shareable pin configuration', () => {

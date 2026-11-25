@@ -15,13 +15,12 @@
     catalogPackageKinds,
   } from '../core/vendor-view';
   import { catalogStore, searchCatalogEntries } from '../state/catalog.svelte';
+  import { discoveryPreferences } from '../state/discovery-preferences.svelte';
   import { router } from '../state/router.svelte';
-  import type { CatalogIndexEntry, VendorId } from '../core/types';
+  import type { CatalogIndexEntry } from '../core/types';
 
-  let query = $state('');
-  let vendorFilter = $state<VendorId | 'all'>('all');
-  let familyFilter = $state('');
-  let packageFilter = $state('');
+  /* Discovery filters are localStorage-only preferences, never shareable. */
+  const filters = discoveryPreferences.catalog;
 
   const vendorTabs = $derived(buildVendorTabs(catalogStore.meta, catalogStore.index));
   const familyOptions = $derived(catalogFamilies(catalogStore.index));
@@ -29,13 +28,16 @@
   const results = $derived(
     searchCatalogEntries(
       catalogStore.index,
-      query,
-      { vendor: vendorFilter, family: familyFilter, packageKind: packageFilter },
+      filters.query,
+      { vendor: filters.vendor, family: filters.family, packageKind: filters.package },
       500,
     ),
   );
   const hasFilters = $derived(
-    query.trim().length > 0 || vendorFilter !== 'all' || familyFilter !== '' || packageFilter !== '',
+    filters.query.trim().length > 0 ||
+      filters.vendor !== 'all' ||
+      filters.family !== '' ||
+      filters.package !== '',
   );
 
   /* Component-local view state: no thumbnail field is persisted or shared. */
@@ -44,10 +46,7 @@
   let generation = 0;
 
   function resetFilters(): void {
-    query = '';
-    vendorFilter = 'all';
-    familyFilter = '';
-    packageFilter = '';
+    filters.reset();
   }
 
   /** Observe only rendered rows; without IntersectionObserver outlines stay approximate. */
@@ -141,7 +140,7 @@
       <div class="flex items-center gap-2.5">
         <Search class="size-4 text-base-content/40 shrink-0" />
         <input
-          bind:value={query}
+          bind:value={filters.query}
           type="text"
           class="input w-full font-mono"
           placeholder="Filter by part, family, package or core"
@@ -157,8 +156,8 @@
         {#each vendorTabs as tab (tab.id)}
           <button
             type="button"
-            onclick={() => (vendorFilter = tab.id)}
-            class={`btn btn-sm font-mono whitespace-nowrap ${vendorFilter === tab.id ? 'btn-primary' : 'btn-outline'}`}
+            onclick={() => (filters.vendor = tab.id)}
+            class={`btn btn-sm font-mono whitespace-nowrap ${filters.vendor === tab.id ? 'btn-primary' : 'btn-outline'}`}
           >
             {tab.label} <span class="font-mono-tabular opacity-75">({tab.count})</span>
           </button>
@@ -166,7 +165,7 @@
         <span class="text-base-content/60 mx-0.5">|</span>
         <label class="inline-flex items-center gap-1 text-base-content/60">
           Family
-          <select bind:value={familyFilter} class="select select-sm" aria-label="Filter by family">
+          <select bind:value={filters.family} class="select select-sm" aria-label="Filter by family">
             <option value="">All</option>
             {#each familyOptions as fam (fam)}
               <option value={fam}>{fam}</option>
@@ -175,7 +174,7 @@
         </label>
         <label class="inline-flex items-center gap-1 text-base-content/60">
           Package
-          <select bind:value={packageFilter} class="select select-sm" aria-label="Filter by package">
+          <select bind:value={filters.package} class="select select-sm" aria-label="Filter by package">
             <option value="">All</option>
             {#each packageOptions as pkg (pkg)}
               <option value={pkg}>{pkg}</option>
@@ -186,14 +185,17 @@
     </section>
 
     {#if catalogStore.indexError}
-      <div role="alert" class="card card-border bg-base-100 p-8 text-center space-y-3">
-        <p class="text-sm text-error">{catalogStore.indexError}</p>
+      <div role="alert" class="alert alert-soft alert-error p-8 text-center space-y-3">
+        <p class="text-sm">{catalogStore.indexError}</p>
         <button type="button" onclick={() => catalogStore.retry()} class="btn btn-sm btn-outline">
           Retry catalog load
         </button>
       </div>
     {:else if catalogStore.loadingIndex}
-      <p class="py-10 text-center text-xs text-base-content/60">Loading multi-vendor catalog...</p>
+      <p class="py-10 text-center text-xs text-base-content/60">
+        <span class="loading loading-spinner loading-xs"></span>
+        Loading multi-vendor catalog...
+      </p>
     {:else if results.length === 0}
       <p class="py-10 text-center text-xs text-base-content/60">No parts matched the current filters.</p>
     {:else}

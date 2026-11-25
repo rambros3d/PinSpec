@@ -15,6 +15,7 @@ import {
   normalizeAngle,
   parsePinPlacementPreference,
 } from './placement';
+import { normalizeProjectName } from './project-name';
 
 type CompactAssignment = [
   string,
@@ -49,6 +50,8 @@ interface CompactUrlPayload {
   z?: PackageRotation;
   /** Display-only overlay rotation in degrees, emitted only when non-zero. */
   q?: number;
+  /** Optional shareable project name, emitted only when normalized non-empty. */
+  n?: string;
 }
 
 export type DecodeResult =
@@ -102,6 +105,9 @@ export function encodeWorkspaceState(state: WorkspaceState): string {
     v: PINCRAFT_STATE_VERSION,
     m: state.mcuId,
   };
+
+  const projectName = normalizeProjectName(state.projectName);
+  if (projectName) payload.n = projectName;
 
   const assignmentEntries = sortedKeys(state.assignments as Record<string, unknown>);
   if (assignmentEntries.length > 0) {
@@ -252,6 +258,9 @@ export function decodeWorkspaceState(encoded: string): DecodeResult {
       locked,
       peripheralModes,
     };
+
+    const projectName = normalizeProjectName(obj.n);
+    if (projectName) state.projectName = projectName;
 
     if (obj.r && typeof obj.r === 'object' && !Array.isArray(obj.r)) {
       const remaps: Record<string, number> = {};

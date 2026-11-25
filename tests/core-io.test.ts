@@ -153,6 +153,47 @@ describe('exporters', () => {
     expect(exportEmbassyRust(moduleChip, sampleState)).toContain('use esp_hal::peripherals;');
   });
 
+  it('round-trips the optional project name through version-2 payloads', () => {
+    const named: WorkspaceState = {
+      ...sampleState,
+      projectName: 'amber-quartz-stm32h5',
+    };
+    const encoded = encodeWorkspaceState(named);
+    const decoded = decodeWorkspaceState(encoded);
+    expect(decoded.ok).toBe(true);
+    if (decoded.ok) {
+      expect(decoded.state.projectName).toBe('amber-quartz-stm32h5');
+    }
+
+    const file = exportPinoutJson(named, 'stm32');
+    const parsedFile = parsePinoutJson(file);
+    expect(file).toContain('"projectName": "amber-quartz-stm32h5"');
+    expect(parsedFile.ok).toBe(true);
+    if (parsedFile.ok) expect(parsedFile.state.projectName).toBe('amber-quartz-stm32h5');
+
+    const unnamed = createEmptyWorkspace('STM32G431CBU6');
+    expect(encodeWorkspaceState(unnamed)).toBe(
+      encodeWorkspaceState({ ...unnamed, projectName: '   ' }),
+    );
+    expect(exportPinoutJson(unnamed)).not.toContain('projectName');
+    const unnamedDecoded = decodeWorkspaceState(encodeWorkspaceState(unnamed));
+    expect(unnamedDecoded.ok).toBe(true);
+    if (unnamedDecoded.ok) expect(unnamedDecoded.state.projectName).toBeUndefined();
+  });
+
+  it('ignores malformed project names without rejecting version-2 payloads', () => {
+    const file = JSON.parse(exportPinoutJson(sampleState)) as Record<string, unknown>;
+    file.projectName = 42;
+    const imported = parsePinoutJson(JSON.stringify(file));
+    expect(imported.ok).toBe(true);
+    if (imported.ok) expect(imported.state.projectName).toBeUndefined();
+
+    file.projectName = '  Mixed!! Name  ';
+    const normalized = parsePinoutJson(JSON.stringify(file));
+    expect(normalized.ok).toBe(true);
+    if (normalized.ok) expect(normalized.state.projectName).toBe('mixed-name');
+  });
+
   it('round-trips extended mux fields through URL, JSON and history', () => {
     const extended: WorkspaceState = {
       ...sampleState,

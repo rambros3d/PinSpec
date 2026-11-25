@@ -131,6 +131,10 @@ describe('document viewport lock', () => {
     expect(sidebar).toContain('shell-panel fixed bottom-0 left-0 top-12 z-40');
     expect(sidebar).toContain('shell-rail w-12');
     expect(sidebar).toContain('w-72');
+    expect(sidebar).toContain("label: 'Workspace'");
+    expect(sidebar).toContain('cursor-not-allowed opacity-40');
+    const shell = readSource('src/components/shell/AppShell.svelte');
+    expect(shell.match(/<GlobalSidebar\s*\/>/g)?.length).toBe(1);
     const css = readSource('src/app.css');
     expect(css).toContain('z-index: var(--shell-panel-z)');
     expect(css).toContain('z-index: var(--shell-backdrop-z)');
@@ -301,7 +305,8 @@ describe('native dialog contract', () => {
     expect(handler.indexOf(guard), 'workspace guard placement').toBeLessThan(
       handler.indexOf("e.key.toLowerCase() === 'f'"),
     );
-    expect(handler).not.toContain('Escape');
+    expect(handler).toContain("if (e.key === 'Escape' && inInput) return;");
+    expect(handler).not.toContain('dialog.close()');
 
     const canvas = readSource('src/components/workspace/PackageCanvas.svelte');
     const canvasHandler =
@@ -315,12 +320,13 @@ describe('native dialog contract', () => {
     );
   });
 
-  it('keeps the shared workspace shortcuts without dialog Escape handling', () => {
+  it('keeps the shared workspace shortcuts and defers Escape to inline editors', () => {
     const page = readSource('src/pages/WorkspacePage.svelte');
     const handler = page.match(/const onKeyDown = \(e: KeyboardEvent\) => \{[\s\S]*?\n    \};/)?.[0] ?? '';
     expect(handler).toContain("e.key.toLowerCase() === 'f'");
     expect(handler).toContain("e.key.toLowerCase() === 'k'");
-    expect(handler).not.toContain('Escape');
+    expect(handler).toContain("e.key === 'Escape' && inInput");
+    expect(handler).toContain("e.key === '?' && !inInput");
   });
 });
 

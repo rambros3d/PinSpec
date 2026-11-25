@@ -2,23 +2,20 @@
   import { ArrowRight, Cpu, Search, X } from 'lucide-svelte';
   import { onMount } from 'svelte';
   import { catalogStore, searchCatalogEntries } from '../../state/catalog.svelte';
+  import { discoveryPreferences } from '../../state/discovery-preferences.svelte';
   import {
     buildVendorTabs,
     catalogFamilies,
     catalogPackageKinds,
   } from '../../core/vendor-view';
-  import type { VendorId } from '../../core/types';
-
   interface Props {
     onSelect: (mcuId: string) => void;
   }
 
   let { onSelect }: Props = $props();
 
-  let query = $state('');
-  let vendorFilter = $state<VendorId | 'all'>('all');
-  let familyFilter = $state('');
-  let pkgFilter = $state('');
+  /* Independent localStorage-only filters; never part of shareable state. */
+  const filters = discoveryPreferences.quickSearch;
   let focused = $state(false);
   let activeIdx = $state(0);
   let inputEl = $state<HTMLInputElement | null>(null);
@@ -38,18 +35,18 @@
   const results = $derived.by(() =>
     searchCatalogEntries(
       catalogStore.index,
-      query,
-      { vendor: vendorFilter, family: familyFilter, packageKind: pkgFilter },
+      filters.query,
+      { vendor: filters.vendor, family: filters.family, packageKind: filters.package },
       18,
     ),
   );
 
   const showDropdown = $derived(
     focused &&
-      (query.trim().length > 0 ||
-        vendorFilter !== 'all' ||
-        familyFilter !== '' ||
-        pkgFilter !== ''),
+      (filters.query.trim().length > 0 ||
+        filters.vendor !== 'all' ||
+        filters.family !== '' ||
+        filters.package !== ''),
   );
 
   $effect(() => {
@@ -110,7 +107,7 @@
     <Search class="size-4 text-base-content/40 absolute left-3.5 pointer-events-none" />
     <input
       bind:this={inputEl}
-      bind:value={query}
+      bind:value={filters.query}
       onfocus={() => (focused = true)}
       onkeydown={handleKeydown}
       type="text"
@@ -118,11 +115,11 @@
       class="input input-lg w-full pl-10 pr-20 font-mono"
     />
     <div class="absolute right-3 flex items-center gap-1.5">
-      {#if query}
+      {#if filters.query}
         <button
           type="button"
           onclick={() => {
-            query = '';
+            filters.query = '';
             inputEl?.focus();
           }}
           class="btn btn-ghost btn-sm btn-square"
@@ -146,12 +143,12 @@
       <button
         type="button"
         onclick={() => {
-          vendorFilter = tab.id;
+          filters.vendor = tab.id;
           focused = true;
           inputEl?.focus();
         }}
         class={`btn btn-sm font-mono whitespace-nowrap ${
-          vendorFilter === tab.id ? 'btn-primary' : 'btn-outline'
+          filters.vendor === tab.id ? 'btn-primary' : 'btn-outline'
         }`}
       >
         {tab.label}
@@ -164,7 +161,7 @@
     <label class="inline-flex items-center gap-1 text-base-content/60">
       Family
       <select
-        bind:value={familyFilter}
+        bind:value={filters.family}
         class="select select-sm"
         aria-label="Filter by family"
       >
@@ -177,7 +174,7 @@
     <label class="inline-flex items-center gap-1 text-base-content/60">
       Package
       <select
-        bind:value={pkgFilter}
+        bind:value={filters.package}
         class="select select-sm"
         aria-label="Filter by package"
       >
@@ -187,14 +184,10 @@
         {/each}
       </select>
     </label>
-    {#if familyFilter || pkgFilter || vendorFilter !== 'all'}
+    {#if filters.family || filters.package || filters.vendor !== 'all'}
       <button
         type="button"
-        onclick={() => {
-          vendorFilter = 'all';
-          familyFilter = '';
-          pkgFilter = '';
-        }}
+        onclick={() => filters.reset()}
         class="btn btn-link btn-sm ml-1"
       >
         Reset
@@ -208,6 +201,7 @@
       <div class="flex items-center justify-between px-3.5 py-2 border-b border-base-300 bg-base-200 text-[11px] font-mono-tabular text-base-content/60">
         <span>
           {#if catalogStore.loadingIndex}
+            <span class="loading loading-spinner loading-xs"></span>
             Loading multi-vendor catalog...
           {:else}
             Showing {results.length} matching parts
@@ -218,8 +212,8 @@
 
       <div class="overflow-y-auto divide-y divide-base-300">
         {#if catalogStore.indexError}
-          <div role="alert" class="py-6 px-4 text-center text-xs space-y-2">
-            <p class="font-medium text-error">{catalogStore.indexError}</p>
+          <div role="alert" class="alert alert-soft alert-error py-6 px-4 text-center text-xs space-y-2">
+            <p class="font-medium">{catalogStore.indexError}</p>
             <button
               type="button"
               onclick={() => catalogStore.retry()}

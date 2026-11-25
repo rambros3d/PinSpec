@@ -295,3 +295,19 @@ describe('workspace rotation control', () => {
     vi.unstubAllGlobals();
   });
 });
+
+describe('name pill keeps the workspace bar contract', () => {
+  it('stays within the 48px overflow-scrolling bar with token-based icons', () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'src/components/shell/GlobalTopBar.svelte'),
+      'utf8',
+    );
+    expect(source).toContain('global-top-bar h-12 shrink-0');
+    expect(source).toContain('overflow-x-auto');
+    expect(source).toContain('min-w-0');
+    expect(source).toContain('aria-label="Project name"');
+    expect(source).toContain('<Pencil class="size-3 shrink-0" />');
+    expect(source).not.toMatch(/#[0-9a-fA-F]{3,8}\b|\brgba?\(/);
+    expect(source).not.toMatch(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]/u);
+  });
+});

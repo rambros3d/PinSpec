@@ -99,6 +99,43 @@ describe('daisyUI token integration', () => {
     expect(offenders).toEqual([]);
   });
 
+  it('uses daisyUI component classes on the audited status and pending surfaces', () => {
+    const read = (rel: string): string => fs.readFileSync(path.join(ROOT, rel), 'utf8');
+    const about = read('src/pages/AboutPage.svelte');
+    expect(about).toContain('tabs tabs-box w-fit');
+    expect(about).not.toContain('tabs-boxed');
+
+    for (const rel of [
+      'src/pages/LandingPage.svelte',
+      'src/pages/CatalogPage.svelte',
+      'src/components/landing/QuickSearchBar.svelte',
+      'src/components/about/ProvenancePanel.svelte',
+    ]) {
+      expect(read(rel), rel).toContain('alert alert-soft alert-error');
+    }
+
+    const workspacePage = read('src/pages/WorkspacePage.svelte');
+    expect(workspacePage).toContain('loading loading-spinner loading-lg text-info');
+    expect(workspacePage).not.toContain('border-t-transparent');
+
+    for (const rel of [
+      'src/pages/CatalogPage.svelte',
+      'src/components/landing/QuickSearchBar.svelte',
+      'src/components/about/ProvenancePanel.svelte',
+      'src/pages/LandingPage.svelte',
+      'src/components/workspace/McuSwitcherModal.svelte',
+      'src/components/workspace/CompatibleMcuFinder.svelte',
+    ]) {
+      expect(read(rel), rel).toContain('loading loading-spinner loading-xs');
+    }
+
+    const summary = read('src/components/workspace/SummaryDrawer.svelte');
+    expect(summary).toContain('class="alert alert-warning p-2.5 text-xs space-y-1"');
+    expect(summary).toContain('class="card card-border bg-base-200 p-2.5 text-xs space-y-1"');
+    expect(summary).not.toMatch(/class=\{`[^`]*card-card[^`]*\}/);
+    expect(summary).not.toMatch(/class=\{`[^`]*card card-border[^`]*alert[^`]*\}/);
+  });
+
   it('keeps the changed sidebar and shortcut dialog on theme tokens', () => {
     for (const rel of [
       'src/components/shell/GlobalSidebar.svelte',

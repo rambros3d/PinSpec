@@ -18,6 +18,7 @@
     GPIO_PULLS,
     GPIO_SPEEDS,
     type ChipData,
+    type DmaAnalysisEntry,
     type GpioConfig,
     type OneHopFix,
     type PeripheralStatus,
@@ -499,41 +500,46 @@
           <p>Enable peripherals like SPI, USART, ADC, or TIM to inspect DMA streams and DMAMUX mappings.</p>
         </div>
       {:else}
-        {#each report.dmaAnalysis as item (`${item.peripheral}:${item.signal}`)}
-          <div
-            class={`card card-border p-2.5 text-xs space-y-1 ${
-              item.status === 'contention' ? 'alert alert-warning' : 'bg-base-200'
-            }`}
-          >
-            <div class="flex items-center justify-between gap-2">
-              <span class="font-mono font-semibold text-foreground">
-                {item.peripheral}_{item.signal}
-              </span>
-              <span
-                class={`badge badge-xs ${
-                  item.status === 'contention' || item.status === 'shared'
-                    ? 'badge-warning'
-                    : 'badge-success'
-                }`}
-              >
-                {item.status === 'contention'
-                  ? 'Contention'
-                  : item.status === 'shared'
-                    ? 'Shared'
-                    : item.isMuxed
-                      ? 'DMAMUX / GPDMA'
-                      : 'Available'}
-              </span>
-            </div>
-            <div class="font-mono-tabular text-[11px] text-base-content/60 break-words">
-              {item.channels.join(', ')}
-            </div>
-            {#if item.contendingWith.length > 0}
-              <div class="text-[11px] text-warning">
-                Shares channel with: {item.contendingWith.join(', ')}
-              </div>
-            {/if}
+        {#snippet dmaRow(item: DmaAnalysisEntry)}
+          <div class="flex items-center justify-between gap-2">
+            <span class="font-mono font-semibold text-foreground">
+              {item.peripheral}_{item.signal}
+            </span>
+            <span
+              class={`badge badge-xs ${
+                item.status === 'contention' || item.status === 'shared'
+                  ? 'badge-warning'
+                  : 'badge-success'
+              }`}
+            >
+              {item.status === 'contention'
+                ? 'Contention'
+                : item.status === 'shared'
+                  ? 'Shared'
+                  : item.isMuxed
+                    ? 'DMAMUX / GPDMA'
+                    : 'Available'}
+            </span>
           </div>
+          <div class="font-mono-tabular text-[11px] text-base-content/60 break-words">
+            {item.channels.join(', ')}
+          </div>
+          {#if item.contendingWith.length > 0}
+            <div class="text-[11px] text-warning">
+              Shares channel with: {item.contendingWith.join(', ')}
+            </div>
+          {/if}
+        {/snippet}
+        {#each report.dmaAnalysis as item (`${item.peripheral}:${item.signal}`)}
+          {#if item.status === 'contention'}
+            <div class="alert alert-warning p-2.5 text-xs space-y-1">
+              {@render dmaRow(item)}
+            </div>
+          {:else}
+            <div class="card card-border bg-base-200 p-2.5 text-xs space-y-1">
+              {@render dmaRow(item)}
+            </div>
+          {/if}
         {/each}
       {/if}
     </div>

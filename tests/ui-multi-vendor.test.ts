@@ -226,10 +226,16 @@ describe('vendor-aware discovery and presets', () => {
     ]) {
       const source = readSource(site);
       expect(source, site).toContain('buildVendorTabs');
-      expect(source, site).toContain('vendorFilter');
+      expect(source, site).toMatch(/vendorFilter|filters\.vendor/);
       expect(source, site).toContain('familyOptions');
       expect(source, site).toMatch(/packageOptions|pkgOptions/);
     }
+    const search = readSource('src/components/landing/QuickSearchBar.svelte');
+    expect(search).toContain('discoveryPreferences.quickSearch');
+    expect(search).toContain('filters.reset()');
+    const catalog = readSource('src/pages/CatalogPage.svelte');
+    expect(catalog).toContain('discoveryPreferences.catalog');
+    expect(catalog).toContain('filters.reset()');
   });
 
   it('uses cross-vendor presets', () => {

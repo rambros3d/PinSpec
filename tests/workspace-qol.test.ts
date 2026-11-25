@@ -74,6 +74,25 @@ describe('catalog error state and retry', () => {
   });
 });
 
+describe('workspace status surfaces', () => {
+  it('uses the daisyUI spinner for the workspace load view', () => {
+    const page = readSource('src/pages/WorkspacePage.svelte');
+    expect(page).toContain('loading loading-spinner loading-lg text-info');
+    expect(page).toContain('Loading {mcuId ?? \'shared pinout\'}...');
+    expect(page).not.toContain('border-t-transparent');
+  });
+
+  it('splits DMA contention and ordinary rows into separate component families', () => {
+    const drawer = readSource('src/components/workspace/SummaryDrawer.svelte');
+    expect(drawer).toContain('{#snippet dmaRow(item: DmaAnalysisEntry)}');
+    expect(drawer).toContain('class="alert alert-warning p-2.5 text-xs space-y-1"');
+    expect(drawer).toContain('class="card card-border bg-base-200 p-2.5 text-xs space-y-1"');
+    expect(drawer).toContain('{@render dmaRow(item)}');
+    expect(drawer).not.toMatch(/class=\{`[^`]*card card-border[^`]*alert alert-warning[^`]*\}/);
+    expect(drawer).toContain('Shares channel with:');
+  });
+});
+
 describe('pin table states and sort semantics', () => {
   it('distinguishes no assignments from a filter with no matches', () => {
     const source = readSource('src/components/workspace/SummaryDrawer.svelte');
@@ -187,6 +206,21 @@ describe('dialog focus management', () => {
 });
 
 describe('shortcut help', () => {
+  it('places the modal backdrop as a direct dialog child outside the modal box', () => {
+    const help = readSource('src/components/workspace/ShortcutHelpDialog.svelte');
+    const boxOpen = help.indexOf('<div class="modal-box');
+    const backdrop = help.indexOf('<form method="dialog" class="modal-backdrop">');
+    const dialogClose = help.indexOf('</dialog>');
+    expect(boxOpen).toBeGreaterThan(-1);
+    expect(backdrop).toBeGreaterThan(boxOpen);
+    expect(backdrop).toBeLessThan(dialogClose);
+    expect(help.slice(backdrop, dialogClose)).not.toContain('</div>');
+    expect(help).toMatch(/<\/div>\s*<form method="dialog" class="modal-backdrop">/);
+    expect(help).toContain('onclose={onClose}');
+    expect(help).toContain('oncancel=');
+    expect(help).toContain('openDialogWithFocus(');
+  });
+
   it('renders the shared SHORTCUTS reference without a local shortcut array', () => {
     const help = readSource('src/components/workspace/ShortcutHelpDialog.svelte');
     expect(help).toContain("import { SHORTCUTS } from '../../data/provenance'");
@@ -213,9 +247,17 @@ describe('shortcut help', () => {
     const handler =
       page.match(/const onKeyDown = \(e: KeyboardEvent\) => \{[\s\S]*?\n    \};/)?.[0] ?? '';
     expect(handler).toContain('topBarUI.focusSearch?.()');
-    expect(readSource('src/components/shell/GlobalTopBar.svelte')).toContain(
-      'searchInputRef?.select()',
+    expect(handler).toContain(
+      "(e.ctrlKey || e.metaKey) && !inInput && e.key.toLowerCase() === 'f'",
     );
+    expect(handler).toContain(
+      "(e.ctrlKey || e.metaKey) && !inInput && e.key.toLowerCase() === 'k'",
+    );
+    expect(handler).toContain("e.key === 'Escape' && inInput");
+    expect(handler).toContain("e.key === '?' && !inInput");
+    expect(bar).toContain('aria-label="Project name"');
+    expect(bar).toContain('e.stopPropagation()');
+    expect(bar).toContain('searchInputRef?.select()');
   });
 });
 

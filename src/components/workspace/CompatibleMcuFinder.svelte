@@ -238,6 +238,7 @@
 
       {#if loading}
         <p class="px-4 py-8 text-center text-xs text-base-content/60">
+          <span class="loading loading-spinner loading-xs"></span>
           Loading up to {MAX_COMPATIBILITY_RESULTS} shards ({MAX_CONCURRENT_SHARD_LOADS} at a time)...
         </p>
       {:else if !hasSearched}

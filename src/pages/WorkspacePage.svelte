@@ -146,10 +146,13 @@
       const inInput =
         target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT');
 
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
+      // Inline editors own Escape; global shortcuts never fire while typing.
+      if (e.key === 'Escape' && inInput) return;
+
+      if ((e.ctrlKey || e.metaKey) && !inInput && e.key.toLowerCase() === 'f') {
         e.preventDefault();
         topBarUI.focusSearch?.();
-      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+      } else if ((e.ctrlKey || e.metaKey) && !inInput && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         topBarUI.switcherOpen = true;
       } else if ((e.ctrlKey || e.metaKey) && !inInput && e.key.toLowerCase() === 'z') {
@@ -210,7 +213,7 @@
   {#if workspaceStore.loading}
     <div class="workspace-canvas flex items-center justify-center">
       <div class="text-center space-y-2">
-        <div class="w-8 h-8 border-2 border-info border-t-transparent rounded-selector animate-spin mx-auto"></div>
+        <div><span class="loading loading-spinner loading-lg text-info"></span></div>
         <p class="text-xs font-mono text-base-content/60">
           Loading {mcuId ?? 'shared pinout'}...
         </p>

@@ -5,6 +5,7 @@
     Download,
     GitCompare,
     Keyboard,
+    Pencil,
     Redo2,
     Search,
     SearchCheck,
@@ -13,7 +14,7 @@
     Undo2,
     X,
   } from 'lucide-svelte';
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import { shouldShowScrollAffordance } from '../../core/scroll-affordance';
   import { router } from '../../state/router.svelte';
   import { topBarUI } from '../../state/top-bar-ui.svelte';
@@ -54,6 +55,29 @@
   let scrollRowEl = $state<HTMLDivElement | null>(null);
   let showScrollHint = $state(false);
   let searchInputRef = $state<HTMLInputElement | null>(null);
+  let editingName = $state(false);
+  let nameDraft = $state('');
+  let nameInputRef = $state<HTMLInputElement | null>(null);
+
+  /** Transient edit mode only: no editing state enters persisted project data. */
+  async function beginNameEdit(): Promise<void> {
+    nameDraft = workspaceStore.state.projectName ?? '';
+    editingName = true;
+    await tick();
+    nameInputRef?.focus();
+    nameInputRef?.select();
+  }
+
+  function commitName(): void {
+    if (!editingName) return;
+    editingName = false;
+    workspaceStore.renameProject(nameDraft);
+  }
+
+  function cancelNameEdit(): void {
+    editingName = false;
+    nameDraft = workspaceStore.state.projectName ?? '';
+  }
 
   function updateScrollHint(): void {
     if (!scrollRowEl) return;
@@ -152,6 +176,41 @@
             {workspaceStore.chip.core} - {workspaceStore.chip.flashKb ?? '—'}KB/{workspaceStore.chip.ramKb}KB - {workspaceStore.chip.package.name} ({workspaceStore.chip.package.pinCount})
           </span>
           <ChevronDown class="size-3.5 text-base-content/40 shrink-0" />
+        </button>
+      {/if}
+
+      {#if editingName}
+        <input
+          bind:this={nameInputRef}
+          bind:value={nameDraft}
+          onkeydown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              commitName();
+            } else if (e.key === 'Escape') {
+              e.preventDefault();
+              e.stopPropagation();
+              cancelNameEdit();
+            }
+          }}
+          onblur={commitName}
+          type="text"
+          maxlength="48"
+          aria-label="Project name"
+          class="input input-xs w-40 shrink-0 font-mono"
+        />
+      {:else}
+        <button
+          type="button"
+          onclick={() => void beginNameEdit()}
+          class="btn btn-ghost btn-xs shrink-0 gap-1 font-mono text-[11px] text-base-content/70"
+          title="Rename project"
+          aria-label="Rename project"
+        >
+          <Pencil class="size-3 shrink-0" />
+          <span class="max-w-[10rem] truncate">
+            {workspaceStore.state.projectName ?? 'Unnamed project'}
+          </span>
         </button>
       {/if}
 

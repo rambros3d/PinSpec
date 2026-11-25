@@ -15,6 +15,7 @@ import {
   normalizeAngle,
   parsePinPlacementPreference,
 } from '../placement';
+import { normalizeProjectName } from '../project-name';
 
 /** The single PinCraft project-file schema (no legacy version shim). */
 export interface PinCraftProjectFile {
@@ -22,6 +23,8 @@ export interface PinCraftProjectFile {
   version: 2;
   mcuId: string;
   vendor?: VendorId;
+  /** Optional shareable project label; omitted from files without a name. */
+  projectName?: string;
   peripheralModes: Record<string, string>;
   assignments: Record<string, PinAssignment>;
   labels: Record<string, string>;
@@ -110,11 +113,13 @@ export function exportPinoutJson(state: WorkspaceState, vendor?: VendorId): stri
     .map(([k]) => k)
     .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 
+  const projectName = normalizeProjectName(state.projectName);
   const doc: PinCraftProjectFile = {
     format: 'pincraft-pinout',
     version: PINCRAFT_STATE_VERSION,
     mcuId: state.mcuId,
     ...(vendor ? { vendor } : {}),
+    ...(projectName ? { projectName } : {}),
     peripheralModes: sortRecordKeys(cleanModes),
     assignments: cleanAssignments,
     labels: sortRecordKeys(cleanLabels),
@@ -229,6 +234,9 @@ export function parsePinoutJson(raw: string): JsonImportResult {
       locked,
       peripheralModes: sortRecordKeys(peripheralModes),
     };
+
+    const projectName = normalizeProjectName(obj.projectName);
+    if (projectName) state.projectName = projectName;
 
     if (obj.activeRemaps && typeof obj.activeRemaps === 'object' && !Array.isArray(obj.activeRemaps)) {
       const remaps: Record<string, number> = {};

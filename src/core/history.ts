@@ -13,6 +13,7 @@ export function cloneWorkspaceState(state: WorkspaceState): WorkspaceState {
     locked: { ...state.locked },
     peripheralModes: { ...state.peripheralModes },
   };
+  if (state.projectName !== undefined) cloned.projectName = state.projectName;
   if (state.activeRemaps && Object.keys(state.activeRemaps).length > 0) {
     cloned.activeRemaps = { ...state.activeRemaps };
   }
@@ -44,6 +45,7 @@ export function cloneWorkspaceState(state: WorkspaceState): WorkspaceState {
 
 export function statesEqual(a: WorkspaceState, b: WorkspaceState): boolean {
   if (a.mcuId !== b.mcuId) return false;
+  if (a.projectName !== b.projectName) return false;
   if (normalizePackageRotation(a.packageRotation) !== normalizePackageRotation(b.packageRotation)) {
     return false;
   }

@@ -455,6 +455,8 @@ export interface WorkspaceState {
   labels: Record<string, string>; // custom net names keyed by pos
   locked: Record<string, boolean>; // locked flags keyed by pos
   peripheralModes: Record<string, string>; // e.g. { SPI1: "full_duplex" }
+  /** Shareable pin-planning metadata: the short project label; never a UI preference. */
+  projectName?: string;
   activeRemaps?: Record<string, number>; // peripheral -> selected remap ID
   pioAssignments?: Record<string, PioPinAssignment>; // physical pin pos -> PIO binding
   gpioConfig?: Record<string, GpioConfig>; // physical pin pos -> electrical settings

@@ -85,6 +85,9 @@ the same fixed overlay and backdrop behavior as before.
 The bar SHALL show a route title, section links for Home, Catalog, and Projects,
 the theme control, and the shortcuts control. On workspace and shared routes it
 SHALL also show the merged workspace actions in place of the former toolbar.
+The shortcuts control SHALL open the shared help dialog whose backdrop is a
+direct child of the dialog element and outside `.modal-box`, without changing
+focus or dismissal behavior.
 
 #### Scenario: Route context on shell pages
 
@@ -96,6 +99,11 @@ SHALL also show the merged workspace actions in place of the former toolbar.
 - **WHEN** the user activates the shortcuts control in the global bar
 - **THEN** the same shortcut-help dialog as the `?` key opens with focus inside
 
+#### Scenario: Shortcut help keeps daisyUI dialog structure
+
+- **WHEN** shortcut help is opened from the global bar on any route
+- **THEN** its backdrop is a direct child of the dialog outside `.modal-box`, and Escape, cancel, backdrop click, and the close control still close the dialog and restore focus
+
 #### Scenario: Compact overflow
 
 - **WHEN** the bar controls do not fit the viewport
@@ -106,7 +114,9 @@ SHALL also show the merged workspace actions in place of the former toolbar.
 On workspace and shared routes the global bar SHALL host the MCU switcher, pin and
 signal search, undo, redo, clear, alternatives, compare, share, export, and
 rotation and fit controls where still needed. Each action SHALL keep its prior
-behavior and keyboard shortcut.
+behavior and keyboard shortcut. The MCU switcher SHALL pair its existing pending
+message with an extra-small daisyUI loading indicator while catalog data is
+loading.
 
 #### Scenario: All actions available once
 
@@ -123,11 +133,18 @@ behavior and keyboard shortcut.
 - **WHEN** the user activates an undo, redo, share, or export control in the global bar
 - **THEN** that action behaves as before the bar change
 
+#### Scenario: MCU switcher pending state
+
+- **WHEN** the MCU switcher is opened while the catalog index is still loading
+- **THEN** the existing loading text is shown with a `loading loading-spinner loading-xs` indicator and the switcher keeps its search and selection behavior
+
 ### Requirement: The global bar does not change routes, persistence, or pin configuration
 
 Adding the bar and reserving rail space SHALL NOT change hash routing, data
-fetches through `dataUrl()`, the version-2 share and project schemas, or the
-localStorage-only presentation preferences. Pin configuration remains shareable.
+fetches through `dataUrl()`, or the localStorage-only presentation preferences.
+The version-2 share and project schemas gain only an optional shareable
+project-name field and keep their version. Pin configuration, including that
+field, remains shareable.
 
 #### Scenario: Routes and subpaths are unchanged
 
@@ -143,3 +160,13 @@ localStorage-only presentation preferences. Pin configuration remains shareable.
 
 - **WHEN** a workspace is shared or exported as a version-2 file
 - **THEN** assignments, labels, locks, modes, remaps, and PIO bindings are preserved in the payload
+
+#### Scenario: Optional project name is shareable
+
+- **WHEN** a named workspace is shared or exported from the global bar
+- **THEN** the version-2 payload contains the project name and its version remains 2
+
+#### Scenario: Project name is not a presentation preference
+
+- **WHEN** the bar edits a project name and shell preferences are written
+- **THEN** the name enters workspace history, recent sessions, share links, and project files while the shell preference record stays free of it

@@ -321,7 +321,7 @@
       </button>
 
       {#if importError}
-        <p role="alert" class="alert alert-error text-xs flex items-start gap-2">
+        <p role="alert" class="alert alert-soft alert-error text-xs flex items-start gap-2">
           <AlertCircle class="size-4 shrink-0" />
           <span>{importError}</span>
         </p>
@@ -384,11 +384,14 @@
             {/each}
           </div>
         {:else if catalogStore.indexError}
-          <p role="alert" class="text-xs text-error">
+          <p role="alert" class="alert alert-soft alert-error text-xs">
             Catalog statistics unavailable. Use the retry control in the search results to reload the catalog.
           </p>
         {:else}
-          <p class="text-xs text-base-content/60">Loading catalog statistics...</p>
+          <p class="text-xs text-base-content/60">
+            <span class="loading loading-spinner loading-xs"></span>
+            Loading catalog statistics...
+          </p>
         {/if}
       </section>
 

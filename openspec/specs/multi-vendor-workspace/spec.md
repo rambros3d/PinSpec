@@ -135,7 +135,8 @@ Curated presets SHALL include STM32, CH32, RP, and ESP32 parts and SHALL open th
 selected generated chip when activated from the start screen or the workspace.
 ESP32 entries SHALL be starter chips that resolve to generated module shards,
 and no ESP32 board preset or `.ioc` import SHALL be added. No chip preview on the
-start screen SHALL fetch a hardcoded snapshot or build a demo state.
+start screen SHALL fetch a hardcoded snapshot or build a demo state. New
+preset sessions SHALL receive a generated project name from chip data.
 
 #### Scenario: Open an RP preset
 
@@ -161,3 +162,8 @@ start screen SHALL fetch a hardcoded snapshot or build a demo state.
 
 - **WHEN** the start screen `.ioc` entry point is used
 - **THEN** it resolves STM32 parts only and no ESP32 board preset is listed
+
+#### Scenario: Preset session receives a generated name
+
+- **WHEN** a preset or starter chip creates a new workspace session for a generated chip
+- **THEN** the session's project name uses a lowercase sanitized suffix from that chip's generated family or MCU identifier

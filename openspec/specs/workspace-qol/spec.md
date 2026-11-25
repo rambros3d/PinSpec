@@ -13,7 +13,9 @@ operable by keyboard on desktop and mobile viewports.
 When the static catalog cannot be loaded, the landing quick-search dropdown
 SHALL show the failure message and a retry action instead of a normal result
 list. Retrying SHALL start a new catalog load; a successful retry SHALL restore
-normal search results, and a failed retry SHALL show the failure again.
+normal search results, and a failed retry SHALL show the failure again. Covered
+error rows SHALL use daisyUI alert classes and pending rows SHALL use daisyUI
+loading indicators.
 
 #### Scenario: Failed catalog fetch shows an error row
 
@@ -29,6 +31,11 @@ normal search results, and a failed retry SHALL show the failure again.
 
 - **WHEN** the user activates the retry control and the catalog requests fail again
 - **THEN** the dropdown shows the failure message and the retry control again without leaving an empty result list
+
+#### Scenario: Error and pending surfaces adopt component classes
+
+- **WHEN** a catalog error or pending state is shown on any covered surface
+- **THEN** the error uses `alert alert-soft alert-error` with unchanged text and the pending text is accompanied by `loading loading-spinner loading-xs`
 
 ### Requirement: Pin table empty states are distinct and sortable headers are described
 
@@ -116,6 +123,8 @@ dialog when it opens and SHALL return focus to the control that opened it when
 it closes, including close by Escape, cancel, backdrop click, and the dialog's
 own close action. This applies to the export, MCU switcher, board selector,
 compatible-part finder, pinout diff, ambiguous-part, and shortcut-help dialogs.
+The shortcut-help modal backdrop SHALL be a direct child of the dialog element
+outside `.modal-box`.
 
 #### Scenario: Export dialog opens with focus inside
 
@@ -126,6 +135,11 @@ compatible-part finder, pinout diff, ambiguous-part, and shortcut-help dialogs.
 
 - **WHEN** any workspace native dialog is closed by Escape or its close control
 - **THEN** focus returns to the control that opened that dialog
+
+#### Scenario: Shortcut help backdrop keeps dismissal behavior
+
+- **WHEN** shortcut help is closed by a backdrop click with the backdrop placed directly under the dialog
+- **THEN** the dialog closes and focus returns to the control that opened it
 
 ### Requirement: Workspace search shortcut selects existing text
 
@@ -238,7 +252,8 @@ A help dialog SHALL be openable with the `?` key and from the shortcuts control
 in the global top bar, and SHALL list the keyboard shortcuts available in the
 workspace. It SHALL follow the same focus, Escape, and close behavior as the
 other workspace dialogs and SHALL NOT appear while the user is typing in a text
-field.
+field. The inline project-name input in the global top bar is such a text field,
+and Escape there SHALL cancel the name edit before any dialog or popover closes.
 
 #### Scenario: Help opens from the keyboard
 
@@ -254,3 +269,13 @@ field.
 
 - **WHEN** the user activates the shortcuts control in the global top bar
 - **THEN** the same help dialog opens with focus inside and the same close behavior as the `?` shortcut
+
+#### Scenario: Project-name input does not open help
+
+- **WHEN** the user types `?` while the inline project-name input has focus
+- **THEN** the character is entered in that input and no help dialog opens
+
+#### Scenario: Escape cancels the name edit first
+
+- **WHEN** the inline project-name input has focus and the user presses Escape
+- **THEN** the name edit is cancelled and no help dialog or other popover is opened

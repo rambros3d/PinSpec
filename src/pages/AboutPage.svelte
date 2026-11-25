@@ -19,7 +19,7 @@
 
 <div class="shell-route flex flex-col bg-base-200 text-foreground">
   <main class="max-w-5xl w-full mx-auto px-6 py-8 space-y-6 flex-1">
-    <div role="tablist" aria-label="About sections" class="tabs tabs-boxed w-fit">
+    <div role="tablist" aria-label="About sections" class="tabs tabs-box w-fit">
       {#each ABOUT_TABS as tab (tab)}
         <button
           type="button"

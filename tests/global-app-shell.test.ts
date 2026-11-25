@@ -100,6 +100,22 @@ describe('global top bar', () => {
     expect(state).toContain('Nothing here is persisted');
   });
 
+  it('shows an inline-editable project-name pill beside the MCU pill', () => {
+    expect(bar).toContain('workspaceStore.state.projectName ?? \'Unnamed project\'');
+    expect(bar).toContain('aria-label="Rename project"');
+    expect(bar).toContain('aria-label="Project name"');
+    expect(bar).toContain('beginNameEdit()');
+    expect(bar).toContain('workspaceStore.renameProject(nameDraft)');
+    expect(bar).toContain('cancelNameEdit()');
+    expect(bar).toContain('onblur={commitName}');
+    expect(bar).toContain('e.key === \'Enter\'');
+    expect(bar).toContain('e.key === \'Escape\'');
+    const mcu = bar.indexOf('title="Switch MCU"');
+    const pill = bar.indexOf('aria-label="Rename project"');
+    expect(mcu).toBeGreaterThan(-1);
+    expect(pill).toBeGreaterThan(mcu);
+  });
+
   it('opens the same help dialog on every route through the shared flag', () => {
     expect(bar).toContain('topBarUI.shortcutHelpOpen = true');
     expect(shell).toContain('topBarUI.shortcutHelpOpen');
@@ -132,13 +148,14 @@ describe('collapsible sidebar overlay', () => {
     expect(contentBlock).toContain('padding-left: 3rem');
   });
 
-  it('offers four section entries with active-route indication', () => {
+  it('offers the five section entries with active-route indication', () => {
     for (const entry of [
       "hash: '#/'",
       "hash: '#/catalog'",
       "hash: '#/projects'",
       "hash: '#/about'",
       "label: 'Home'",
+      "label: 'Workspace'",
       "label: 'Catalog'",
       "label: 'Projects'",
       "label: 'About'",
@@ -150,6 +167,26 @@ describe('collapsible sidebar overlay', () => {
     expect(sidebar).toContain('router.navigateCatalog()');
     expect(sidebar).toContain('router.navigateProjects()');
     expect(sidebar).toContain('router.navigateAbout()');
+    const top = sidebar.indexOf("id: 'home'");
+    const workspace = sidebar.indexOf("id: 'workspace'");
+    const projects = sidebar.indexOf("id: 'projects'");
+    expect(workspace).toBeGreaterThan(top);
+    expect(projects).toBeGreaterThan(workspace);
+  });
+
+  it('resolves the Workspace entry from the loaded chip or the most recent session', () => {
+    expect(sidebar).toContain('workspaceStore.chip?.id');
+    expect(sidebar).toContain('workspaceStore.recentSessions[0]?.mcuId');
+    expect(sidebar).toContain('router.navigateMcu(workspaceTarget)');
+    expect(sidebar).toContain('void workspaceStore.openMcu(workspaceTarget)');
+    expect(sidebar).toContain('href={`#/mcu/${workspaceTarget}`}');
+    expect(sidebar).toContain('disabled');
+    expect(sidebar).toContain('cursor-not-allowed opacity-40');
+    const disabled = sidebar.indexOf('cursor-not-allowed opacity-40');
+    const firstSection = sidebar.indexOf('{#each TOP_SECTIONS');
+    const recent = sidebar.indexOf('Recent projects');
+    expect(disabled).toBeGreaterThan(firstSection);
+    expect(disabled).toBeLessThan(recent);
   });
 
   it('keeps recent sessions between the top and bottom groups', () => {
@@ -163,6 +200,11 @@ describe('collapsible sidebar overlay', () => {
     expect(top).toBeLessThan(recent);
     expect(recent).toBeLessThan(separator);
     expect(separator).toBeLessThan(bottom);
+  });
+
+  it('shows saved project names on recent-session entries', () => {
+    expect(sidebar).toContain('{#if session.state.projectName}');
+    expect(sidebar).toContain('{session.state.projectName}');
   });
 
   it('lists ten recent sessions with open and delete wiring', () => {
@@ -181,15 +223,25 @@ describe('collapsible sidebar overlay', () => {
 describe('catalog route', () => {
   const page = read('src/pages/CatalogPage.svelte');
 
-  it('browses the generated index with query, vendor, family and package filters', () => {
+  it('browses the generated index with locally persisted query, vendor, family and package filters', () => {
     expect(page).toContain('catalogStore.index');
     expect(page).toContain('searchCatalogEntries(');
     expect(page).toContain('buildVendorTabs(');
     expect(page).toContain('catalogFamilies(');
     expect(page).toContain('catalogPackageKinds(');
-    expect(page).toContain('vendorFilter');
-    expect(page).toContain('familyFilter');
-    expect(page).toContain('packageFilter');
+    expect(page).toContain('discoveryPreferences.catalog');
+    for (const field of [
+      'filters.query',
+      'filters.vendor',
+      'filters.family',
+      'filters.package',
+    ]) {
+      expect(page, field).toContain(field);
+    }
+    expect(page).toContain('filters.reset()');
+    expect(read('src/state/discovery-preferences.svelte.ts')).toContain(
+      "'pincraft:discovery_preferences_v1'",
+    );
     expect(page).toContain('router.navigateMcu(entry.id)');
   });
 
@@ -199,6 +251,8 @@ describe('catalog route', () => {
     expect(page).toContain('Retry catalog load');
     expect(page).toContain('catalogStore.loadingIndex');
     expect(page).toContain('Loading multi-vendor catalog...');
+    expect(page).toContain('alert alert-soft alert-error');
+    expect(page).toContain('loading loading-spinner loading-xs');
   });
 
   it('shows the generated module marker without a hardcoded part table', () => {
@@ -230,6 +284,16 @@ describe('projects route', () => {
     expect(page).toContain('No recent projects');
     expect(page).toContain('href="#/catalog"');
     expect(page).not.toContain('<table');
+  });
+
+  it('shows and renames the saved project name on each card', () => {
+    expect(page).toContain('session.state.projectName');
+    expect(page).toContain('beginRename(session.mcuId, session.state.projectName)');
+    expect(page).toContain('aria-label={`Rename ${session.mcuId}`}');
+    expect(page).toContain('workspaceStore.renameProject(nameDraft, mcuId)');
+    expect(page).toContain('onblur={commitRename}');
+    expect(page).toContain('cancelRename()');
+    expect(page).toContain('maxlength="48"');
   });
 
   it('imports and exports version-2 project files only', () => {
@@ -275,6 +339,8 @@ describe('about route', () => {
     expect(read('src/state/shell-preferences.svelte.ts')).toContain(
       "ABOUT_TABS = ['sources']",
     );
+    expect(page).toContain('class="tabs tabs-box w-fit"');
+    expect(page).not.toContain('tabs-boxed');
   });
 
   it('keeps loading and retry states on the merged surface', () => {
@@ -285,6 +351,8 @@ describe('about route', () => {
     expect(panel).toContain('Loading catalog statistics...');
     expect(panel).toContain('Catalog statistics unavailable');
     expect(panel).not.toContain('SHORTCUTS');
+    expect(panel).toContain('alert alert-soft alert-error');
+    expect(panel).toContain('loading loading-spinner loading-xs');
   });
 
   it('offers a Hotkeys entry immediately above About without a route', () => {
@@ -298,6 +366,22 @@ describe('about route', () => {
     const about = sidebar.indexOf('{section.label}', hotkeys);
     expect(hotkeys).toBeGreaterThan(-1);
     expect(about).toBeGreaterThan(hotkeys);
+  });
+});
+
+describe('shell documentation', () => {
+  it('documents local-only discovery filters and the Workspace sidebar target', () => {
+    const readme = read('README.md');
+    expect(readme).toContain('pincraft:discovery_preferences_v1');
+    expect(readme).toContain('Catalog and quick-search discovery filters');
+    expect(readme).toContain('absent from share URLs, version-2 project files');
+    expect(readme).toContain('Home, Workspace, and Projects form the top group');
+    expect(readme).toContain('Workspace appears next to Home');
+    expect(readme).toContain('most recent local session');
+    expect(readme).toContain('word-word-family');
+    expect(readme).toContain('shareable pin-planning metadata');
+    expect(readme).toContain('version-2 share URLs');
+    expect(readme).toContain('inline editing mode itself is component-local');
   });
 });
 

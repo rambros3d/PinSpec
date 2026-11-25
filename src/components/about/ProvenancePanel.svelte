@@ -112,14 +112,19 @@
       </table>
     </div>
   {:else if catalogStore.indexError}
-    <p role="alert" class="px-5 py-6 text-center text-xs text-error">{catalogStore.indexError}</p>
+    <p role="alert" class="alert alert-soft alert-error px-5 py-6 text-center text-xs">
+      {catalogStore.indexError}
+    </p>
     <div class="px-5 pb-5 text-center">
       <button type="button" onclick={() => catalogStore.retry()} class="btn btn-sm btn-outline">
         Retry catalog load
       </button>
     </div>
   {:else}
-    <p class="px-5 py-6 text-center text-xs text-base-content/60">Loading catalog statistics...</p>
+    <p class="px-5 py-6 text-center text-xs text-base-content/60">
+      <span class="loading loading-spinner loading-xs"></span>
+      Loading catalog statistics...
+    </p>
   {/if}
 
   <span class="sr-only">{tab} tab</span>

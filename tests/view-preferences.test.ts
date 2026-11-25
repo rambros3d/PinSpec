@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { SHELL_PREFERENCES_STORAGE_KEY } from '../src/state/shell-preferences.svelte';
 import { VIEW_PREFERENCES_STORAGE_KEY } from '../src/state/workspace-preferences.svelte';
 
 function installStorage(): Map<string, string> {
@@ -94,6 +95,39 @@ describe('localStorage-only view preferences', () => {
     expect(preferences.isCategoryOpen('timers')).toBe(false);
     expect(preferences.summaryTab).toBe('pins');
     expect(preferences.dockTab).toBe('peripherals');
+  });
+
+  it('keeps shareable project names in recent sessions and out of shell preferences', async () => {
+    installStorage();
+    vi.resetModules();
+    const { workspaceStore } = await import('../src/state/workspace.svelte.ts');
+    const { catalogStore } = await import('../src/state/catalog.svelte.ts');
+    catalogStore.primeChip({
+      id: 'STM32G431CBU6',
+      family: 'STM32G4',
+      muxModel: 'af',
+      core: 'Cortex-M4',
+      flashKb: 128,
+      ramKb: 32,
+      package: { name: 'UFQFPN48', kind: 'perimeter', pinCount: 2, sides: [1, 0, 1, 0] },
+      pins: [],
+      peripherals: {},
+    });
+    await workspaceStore.openMcu('STM32G431CBU6');
+    workspaceStore.renameProject('  Saved Name  ');
+
+    const recent = JSON.parse(
+      window.localStorage.getItem('pincraft:recent_sessions_v1') ?? '[]',
+    ) as Array<{ state: { projectName?: string } }>;
+    expect(recent[0].state.projectName).toBe('saved-name');
+
+    const { ShellPreferencesStore } = await import('../src/state/shell-preferences.svelte.ts');
+    const shell = new ShellPreferencesStore();
+    shell.sidebarExpanded = true;
+    const storedShell = window.localStorage.getItem(SHELL_PREFERENCES_STORAGE_KEY) ?? '{}';
+    expect(storedShell).not.toContain('projectName');
+    expect(storedShell).not.toContain('saved-name');
+    expect(window.localStorage.getItem(VIEW_PREFERENCES_STORAGE_KEY)).toBeNull();
   });
 
   it('accepts all drawer and dock tabs and remains usable when storage is unavailable', async () => {

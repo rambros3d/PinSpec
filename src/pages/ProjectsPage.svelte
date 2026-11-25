@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { AlertCircle, Clock, FileUp, FolderOpen, Trash2 } from 'lucide-svelte';
+  import { AlertCircle, Clock, FileUp, FolderOpen, Pencil, Trash2 } from 'lucide-svelte';
+  import { tick } from 'svelte';
   import PackageThumbnail from '../components/catalog/PackageThumbnail.svelte';
   import { exportPinoutJson, parsePinoutJson } from '../core/exporters/json';
   import { approximateThumbnailGeometry } from '../core/package-thumbnail';
@@ -8,8 +9,32 @@
 
   let importError = $state<string | null>(null);
   let fileInput = $state<HTMLInputElement | null>(null);
+  let editingMcuId = $state<string | null>(null);
+  let nameDraft = $state('');
+  let nameInputRef = $state<HTMLInputElement | null>(null);
 
   const sessions = $derived(workspaceStore.recentSessions.slice(0, 10));
+
+  /** Inline name editing is component-local; only the committed name is stored. */
+  async function beginRename(mcuId: string, currentName?: string): Promise<void> {
+    editingMcuId = mcuId;
+    nameDraft = currentName ?? '';
+    await tick();
+    nameInputRef?.focus();
+    nameInputRef?.select();
+  }
+
+  function commitRename(): void {
+    if (!editingMcuId) return;
+    const mcuId = editingMcuId;
+    editingMcuId = null;
+    workspaceStore.renameProject(nameDraft, mcuId);
+  }
+
+  function cancelRename(): void {
+    editingMcuId = null;
+    nameDraft = '';
+  }
 
   function openSession(mcuId: string): void {
     void workspaceStore.openMcu(mcuId);
@@ -106,8 +131,44 @@
                 geometry={approximateThumbnailGeometry(session.packageName, session.pinCount)}
                 size={44}
               />
-              <div class="min-w-0">
+              <div class="min-w-0 flex-1">
                 <p class="font-mono text-sm font-semibold text-foreground truncate">{session.mcuId}</p>
+                {#if editingMcuId === session.mcuId}
+                  <input
+                    bind:this={nameInputRef}
+                    bind:value={nameDraft}
+                    onkeydown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        commitRename();
+                      } else if (e.key === 'Escape') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        cancelRename();
+                      }
+                    }}
+                    onblur={commitRename}
+                    type="text"
+                    maxlength="48"
+                    placeholder="Project name"
+                    aria-label={`Rename ${session.mcuId}`}
+                    class="input input-xs w-full font-mono"
+                  />
+                {:else}
+                  {#if session.state.projectName}
+                    <p class="truncate text-xs text-base-content/70">{session.state.projectName}</p>
+                  {/if}
+                  <button
+                    type="button"
+                    onclick={() => void beginRename(session.mcuId, session.state.projectName)}
+                    class="btn btn-ghost btn-xs gap-1 font-mono text-[11px] text-base-content/60"
+                    aria-label={`Rename ${session.mcuId}`}
+                    title="Rename project"
+                  >
+                    <Pencil class="size-3 shrink-0" />
+                    Rename
+                  </button>
+                {/if}
                 <p class="font-mono text-[11px] text-base-content/60 truncate">{session.packageName}</p>
               </div>
             </div>

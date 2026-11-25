@@ -161,7 +161,10 @@
     <!-- Results List -->
     <div class="flex-1 min-h-0 overflow-y-auto divide-y divide-base-300">
       {#if catalogStore.loadingIndex}
-        <div class="py-10 text-center text-xs text-base-content/60">Loading multi-vendor catalog...</div>
+        <div class="py-10 text-center text-xs text-base-content/60">
+          <span class="loading loading-spinner loading-xs"></span>
+          Loading multi-vendor catalog...
+        </div>
       {:else if results.length === 0}
         <div class="py-10 text-center text-xs text-base-content/60">
           No parts matched "{query}".

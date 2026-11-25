@@ -47,12 +47,12 @@ resizing, or reflowing the canvas or any other content.
 
 ### Requirement: The sidebar provides four section entries
 
-The sidebar SHALL provide entries for Home, Catalog, Projects, and About,
-targeting `#/`, `#/catalog`, `#/projects`, and `#/about`, with no word "screen" in
-any navigation label. Home and Projects SHALL appear at the top followed by the
-recent-projects list. Catalog and About SHALL appear at the bottom after a visual
-separator. The sidebar SHALL indicate the active destination and SHALL remain
-usable while a workspace or shared pinout is open.
+The sidebar SHALL provide entries for Home, Workspace, Catalog, Projects, and
+About, targeting `#/`, `#/mcu/<PART_NUMBER>`, `#/catalog`, `#/projects`, and
+`#/about`, with no word "screen" in any navigation label. Home and Projects
+SHALL appear at the top followed by the recent-projects list. Catalog and About SHALL appear at the
+bottom after a visual separator. The sidebar SHALL indicate the active
+destination and SHALL remain usable while a workspace or shared pinout is open.
 
 #### Scenario: Section entries navigate to their routes
 
@@ -67,19 +67,35 @@ usable while a workspace or shared pinout is open.
 #### Scenario: Navigation labels drop the word screen
 
 - **WHEN** the sidebar section entries are rendered
-- **THEN** the labels are Home, Catalog, Projects, and About without the word "screen"
+- **THEN** the labels are Home, Workspace, Catalog, Projects, and About without the word "screen", and Workspace appears next to Home in the top group
 
 #### Scenario: Bottom group is separated
 
 - **WHEN** the sidebar is viewed in either rail or expanded state
 - **THEN** Home and Projects sit above the recent-projects list and Catalog and About form a bottom group preceded by a visual separator
 
+#### Scenario: Workspace entry resolves its target
+
+- **WHEN** a chip is loaded, or no chip is loaded and a recent session exists
+- **THEN** activating Workspace opens `#/mcu/<PART_NUMBER>` for the chip or for the most recent session
+
+#### Scenario: Workspace entry is visibly disabled
+
+- **WHEN** no chip is loaded and no recent session exists
+- **THEN** the Workspace entry is visibly disabled and activation does not change the route
+
+#### Scenario: Workspace entry keeps sidebar geometry
+
+- **WHEN** the Workspace entry is added to the single sidebar mount
+- **THEN** the collapsed rail remains 3rem, the expanded panel remains an overlay with a backdrop, and no second sidebar is mounted
+
 ### Requirement: Recent projects are listed in the sidebar
 
 The sidebar recent-projects area SHALL list at most 10 sessions from
 `pincraft:recent_sessions_v1` in the same order as the workspace store. Each
 entry SHALL offer quick open and delete. Opening SHALL restore the saved pin
-configuration through the existing workspace handoff.
+configuration through the existing workspace handoff. Each entry SHALL also
+display its saved project name when present.
 
 #### Scenario: Recent projects are limited to ten
 
@@ -101,13 +117,24 @@ configuration through the existing workspace handoff.
 - **WHEN** no recent sessions are stored
 - **THEN** the sidebar shows an empty-state message and no open or delete control for a session
 
+#### Scenario: Recent entry shows its project name
+
+- **WHEN** a saved session carries a project name
+- **THEN** its sidebar entry displays that name alongside the MCU identifier
+
+#### Scenario: Recent entry without a name
+
+- **WHEN** a saved session has no project-name field
+- **THEN** its sidebar entry shows no name text and keeps its open and delete controls
+
 ### Requirement: The catalog route browses all generated parts
 
 The `#/catalog` route SHALL render a full-screen catalog browser over all
 entries in `index.json` with search and vendor, family, and package filters.
-Selecting a part SHALL open its workspace route through the existing catalog
-load and handoff path. Catalog load failure SHALL remain retryable on this
-route.
+Those filters SHALL be restored from browser-local storage on open and after a
+reload, and clearing them SHALL clear the stored values. Selecting a part SHALL
+open its workspace route through the existing catalog load and handoff path.
+Catalog load failure SHALL remain retryable on this route.
 
 #### Scenario: Catalog route lists available parts
 
@@ -128,6 +155,11 @@ route.
 
 - **WHEN** the catalog index cannot be loaded on `#/catalog`
 - **THEN** the route shows a failure message with a retry control instead of an empty part list
+
+#### Scenario: Catalog filters return after navigation
+
+- **WHEN** the user sets filters, leaves the catalog route, and returns or reloads
+- **THEN** the same query and vendor, family, and package filters are applied and the result list matches them
 
 ### Requirement: New project opens the catalog
 
@@ -223,8 +255,11 @@ shareable fields.
 
 Sidebar expansion and the selected About tab SHALL be UI preferences persisted
 only in localStorage. Their defaults SHALL be collapsed and the first About
-tab. Neither value SHALL appear in share URLs, project JSON, recent session
-state, or undo history.
+tab. Catalog discovery filters and equivalent quick-search filters SHALL also
+be UI preferences in localStorage, with default empty query, family, and
+package values and an `all` vendor value. Neither these values nor the shell
+values SHALL appear in share URLs, project JSON, recent session state, or undo
+history.
 
 #### Scenario: Shell preferences survive reload
 
@@ -240,6 +275,16 @@ state, or undo history.
 
 - **WHEN** a workspace opened through the shell is shared or exported as project JSON
 - **THEN** neither the payload nor the project JSON contains a sidebar or About tab field and all pin configuration is preserved
+
+#### Scenario: Discovery filters are local only
+
+- **WHEN** discovery filters are changed and the workspace is shared or exported
+- **THEN** the filters persist across reload in localStorage and no filter field appears in a share URL or project file
+
+#### Scenario: Discovery filters use defaults when storage is unavailable
+
+- **WHEN** localStorage is unavailable or the stored filter record is malformed
+- **THEN** discovery surfaces use their defaults without failing and in-memory filter changes still apply
 
 ### Requirement: Existing routes and data loading remain stable
 

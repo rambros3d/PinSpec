@@ -1,6 +1,7 @@
 import { cloneWorkspaceState, createWorkspaceHistory, type HistoryStack } from '../core/history';
 import { cycleRotationClockwise } from '../core/package-rotation';
 import { normalizeAngle } from '../core/placement';
+import { generateProjectName, normalizeProjectName } from '../core/project-name';
 import { getChipMuxModel, normalizePackageRotation, type PackageRotation } from '../core/types';
 import {
   allocatePeripheralMode,
@@ -187,6 +188,35 @@ class WorkspaceStore {
     saveRecentToStorage(updated);
   }
 
+  /**
+   * Sanitize and commit a project name. The active chip goes through history;
+   * a saved session is updated in place so a later reopen restores the name.
+   */
+  renameProject(name: string, mcuId?: string): void {
+    const normalized = normalizeProjectName(name);
+    const target = (mcuId ?? this.chip?.id)?.toUpperCase();
+    if (!target) return;
+
+    if (target === this.chip?.id.toUpperCase()) {
+      const next = cloneWorkspaceState(this.state);
+      if (normalized) next.projectName = normalized;
+      else delete next.projectName;
+      this.commit(next);
+      return;
+    }
+
+    const session = this.recentSessions.find((s) => s.mcuId.toUpperCase() === target);
+    if (!session) return;
+    const savedState = cloneWorkspaceState(session.state);
+    if (normalized) savedState.projectName = normalized;
+    else delete savedState.projectName;
+    const updated = this.recentSessions.map((s) =>
+      s.mcuId === session.mcuId ? { ...s, state: savedState } : s,
+    );
+    this.recentSessions = updated;
+    saveRecentToStorage(updated);
+  }
+
   private commit(next: WorkspaceState): void {
     if (this.history.push(next)) {
       this.state = this.history.current;
@@ -222,6 +252,10 @@ class WorkspaceStore {
         initialState = existing
           ? cloneWorkspaceState(existing.state)
           : createEmptyWorkspace(chip.id);
+        // Only a fresh session gets a generated label; hydration reuses stored names.
+        if (!existing) {
+          initialState.projectName = generateProjectName(chip, () => Math.random());
+        }
       }
 
       this.history.reset(initialState);

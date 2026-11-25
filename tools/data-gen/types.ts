@@ -37,6 +37,8 @@ export interface SourceSpec {
   url: string;
   dir: string;
   license: string;
+  /** Explicit upstream branch for shallow clones (for example `master`). */
+  branch?: string;
   /**
    * When present, these files are fetched individually instead of cloning `url`.
    * `url` then names the upstream project (used for provenance only).

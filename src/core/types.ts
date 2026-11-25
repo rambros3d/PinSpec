@@ -5,17 +5,19 @@
  */
 export const PINCRAFT_STATE_VERSION = 2;
 
-export type VendorId = 'stm32' | 'ch32' | 'rp' | 'esp32';
+export type VendorId = 'stm32' | 'ch32' | 'rp' | 'esp32' | 'microchip' | 'nordic';
 
 export type MuxModel =
-  | 'af' // Independent per-pin alternate functions (most STM32)
+  | 'af' // Independent per-pin alternate functions (STM32, Microchip SAM)
   | 'remap-group' // Coupled peripheral AFIO remap slots (CH32)
   | 'funcsel-pio' // Per-pin FUNCSEL + shared PWM slices + flexible PIO (RP2040/RP235x)
-  | 'gpio-matrix'; // ESP32 GPIO matrix: output fan-out, single-source inputs
+  | 'gpio-matrix' // ESP32 GPIO matrix: output fan-out, single-source inputs
+  | 'psel'; // Nordic PSEL: named function routed to any declared GPIO
 
 export type PinTag =
   | 'debug-swd' // SWDIO / SWCLK
   | 'debug-sdi' // WCH 1-wire SWIO (e.g., PD1 on CH32V00x)
+  | 'nfc' // NFC antenna pad named in an upstream symbol
   | 'usb' // USB D+/D- or USB-C PD CC1/CC2
   | 'adc' // Analog input capable
   | 'hstx' // RP235x high-speed TX pins (GPIO12-19)
@@ -109,11 +111,38 @@ export interface ChipPioConfig {
   gpioBaseOptions: number[];
 }
 
+/** One ATDF ordercode and its package, pinout and electrical ranges. */
+export interface ChipVariantMetadata {
+  ordercode: string;
+  package: string;
+  pinout: string;
+  tempMin?: string;
+  tempMax?: string;
+  vccMin?: string;
+  vccMax?: string;
+  speedMax?: string;
+}
+
+/** One pinout declared by an upstream device file, with its physical pin count. */
+export interface ChipPinoutMetadata {
+  name: string;
+  package: string;
+  pinCount: number;
+}
+
+/** Upstream capability names retained as evidence without inferred behavior. */
+export interface ChipCapabilityEvidence {
+  interrupts: string[];
+  params: string[];
+}
+
 export interface ChipData {
   id: string;
   vendor?: VendorId;
   muxModel?: MuxModel;
   family: string;
+  /** Upstream series identifier (for example SAMD21) when the source declares one. */
+  series?: string;
   core: string;
   /** Null for bare dies with no module flash capacity; never a guessed number. */
   flashKb: number | null;
@@ -124,6 +153,12 @@ export interface ChipData {
   pio?: ChipPioConfig;
   /** Declared GPIO-matrix route capacity; absent means no limit is enforced. */
   matrixRouteCapacity?: number;
+  /** Ordercodes of one ATDF part; ordercodes do not create extra shards. */
+  variants?: ChipVariantMetadata[];
+  /** All pinouts declared by the part, with their upstream package names. */
+  pinouts?: ChipPinoutMetadata[];
+  /** Interrupt and instance parameter names from the upstream device file. */
+  capabilityEvidence?: ChipCapabilityEvidence;
 }
 
 /** One upstream repository contributing data to a vendor. */
@@ -159,7 +194,7 @@ export interface CatalogVendorSource {
   evidenceFiles?: CatalogEvidenceFile[];
 }
 
-/** Stable identifiers of the eleven upstream sources recorded by the gate. */
+/** Stable identifiers of the thirteen upstream sources recorded by the gate. */
 export type CatalogSourceId =
   | 'st-open-pin-data'
   | 'stm32-data-generated'
@@ -171,9 +206,11 @@ export type CatalogSourceId =
   | 'esp-gpio-tool'
   | 'esp-hal-metadata'
   | 'espressif-kicad'
-  | 'esp-idf';
+  | 'esp-idf'
+  | 'microchip-atdf'
+  | 'nrf-pacs';
 
-/** The eleven upstream source identifiers in deterministic order. */
+/** The thirteen upstream source identifiers in deterministic order. */
 export const CATALOG_SOURCE_IDS: readonly CatalogSourceId[] = [
   'st-open-pin-data',
   'stm32-data-generated',
@@ -186,6 +223,8 @@ export const CATALOG_SOURCE_IDS: readonly CatalogSourceId[] = [
   'esp-hal-metadata',
   'espressif-kicad',
   'esp-idf',
+  'microchip-atdf',
+  'nrf-pacs',
 ];
 
 /** One upstream source record keyed by a stable `CatalogSourceId`. */
@@ -198,7 +237,7 @@ export interface CatalogSourceRecord {
 
 /**
  * `meta.json.sources` holds both per-vendor summaries (legacy consumers) and
- * the eleven canonical source records keyed by `CatalogSourceId`. The key sets
+ * the thirteen canonical source records keyed by `CatalogSourceId`. The key sets
  * are disjoint, so both views coexist without ambiguity.
  */
 export type CatalogMetaSources = Partial<Record<VendorId, CatalogVendorSource>> &
@@ -211,7 +250,7 @@ export interface CatalogMeta {
   chipCount: number;
   matchRate?: number;
   families: string[];
-  /** Vendors actually emitted in this build plus the eleven source records. */
+  /** Vendors actually emitted in this build plus the thirteen source records. */
   sources?: CatalogMetaSources;
 }
 
@@ -229,6 +268,8 @@ export interface CatalogIndexEntry {
   id: string;
   vendor?: VendorId;
   family: string;
+  /** Upstream series identifier carried alongside the vendor family. */
+  series?: string;
   core: string;
   package: string;
   pinCount: number;
@@ -525,7 +566,17 @@ export function getChipMuxModel(chip: Pick<ChipData, 'muxModel' | 'vendor'>): Mu
   if (vendor === 'ch32') return 'remap-group';
   if (vendor === 'rp') return 'funcsel-pio';
   if (vendor === 'esp32') return 'gpio-matrix';
+  if (vendor === 'nordic') return 'psel';
   return 'af';
+}
+
+/**
+ * True for mux models that route a signal to any eligible GPIO and therefore
+ * share matrix-aware scarcity scoring and alternate discovery. ESP32 adds
+ * output fan-out and route-capacity diagnostics; Nordic PSEL does not.
+ */
+export function isFlexibleRoutingMux(model: MuxModel): boolean {
+  return model === 'gpio-matrix' || model === 'psel';
 }
 
 export function formatMuxLabel(
@@ -543,5 +594,6 @@ export function formatMuxLabel(
     return 'AFIO';
   }
   if (muxModel === 'gpio-matrix') return sig.signal;
+  if (muxModel === 'psel') return sig.funcLabel ?? sig.signal;
   return sig.af !== null ? `AF${sig.af}` : 'AFIO';
 }

@@ -322,7 +322,7 @@ describe('metadata and warnings', () => {
     const meta = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
     expect(doc.warningCount).toBe(doc.warnings.length);
     expect(doc.warnings.every((w: { vendor: string }) => typeof w.vendor === 'string')).toBe(true);
-    const otherWarnings = ['ch32', 'rp', 'esp32'].reduce(
+    const otherWarnings = ['ch32', 'rp', 'esp32', 'microchip', 'nordic'].reduce(
       (sum, vendor) => sum + (doc.warningsByVendor[vendor] ?? 0),
       0,
     );
@@ -332,7 +332,9 @@ describe('metadata and warnings', () => {
       meta.chipCount -
         meta.sources.stm32.chipCount -
         (meta.sources.rp?.chipCount ?? 0) -
-        (meta.sources.esp32?.chipCount ?? 0),
+        (meta.sources.esp32?.chipCount ?? 0) -
+        (meta.sources.microchip?.chipCount ?? 0) -
+        (meta.sources.nordic?.chipCount ?? 0),
     );
     expect(meta.sources.stm32.commit).toBe(meta.stm32DataCommit);
     expect(meta.sources.stm32.openPinDataCommit).toBe(meta.openPinDataCommit);

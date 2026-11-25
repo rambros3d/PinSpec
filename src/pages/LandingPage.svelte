@@ -37,7 +37,7 @@
   import { router } from '../state/router.svelte';
   import { workspaceStore } from '../state/workspace.svelte';
 
-  /** Seven canonical upstream sources credited in the technical footer. */
+  /** Thirteen canonical upstream sources credited in the technical footer. */
   const PROVENANCE_SOURCES: ReadonlyArray<{
     id: CatalogSourceId;
     label: string;
@@ -110,6 +110,18 @@
       url: 'https://github.com/espressif/esp-idf',
       license: 'Apache-2.0',
     },
+    {
+      id: 'microchip-atdf',
+      label: 'Microchip-MPLAB-Harmony/dev_packs (ATDF)',
+      url: 'https://github.com/Microchip-MPLAB-Harmony/dev_packs',
+      license: 'Apache-2.0',
+    },
+    {
+      id: 'nrf-pacs',
+      label: 'nrf-rs/nrf-pacs',
+      url: 'https://github.com/nrf-rs/nrf-pacs',
+      license: '0BSD',
+    },
   ];
 
   const PROVENANCE_VENDORS: ReadonlyArray<{ id: VendorId; label: string }> = [
@@ -117,6 +129,8 @@
     { id: 'ch32', label: 'CH32' },
     { id: 'rp', label: 'RP' },
     { id: 'esp32', label: 'ESP32' },
+    { id: 'microchip', label: 'SAM' },
+    { id: 'nordic', label: 'Nordic' },
   ];
 
   /** Text-only keyboard reference shown in the right rail. */

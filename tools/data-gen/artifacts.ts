@@ -48,7 +48,7 @@ export function buildWarningsDocument(
 }
 
 /**
- * Maps the adapter/declared source ids onto the eleven canonical provenance ids.
+ * Maps the adapter/declared source ids onto the thirteen canonical provenance ids.
  * KiCad symbols and footprints collapse to `kicad`, except the Espressif
  * library, which keeps its own id and SHA for separate license attribution.
  * picotool and pico-sdk collapse to `pico-sdk`, matching the README and footer.
@@ -61,6 +61,10 @@ export function canonicalSourceId(sourceId: string): string {
   if (sourceId === 'esp-gpio-tool') return 'esp-gpio-tool';
   if (sourceId === 'esp-hal-metadata') return 'esp-hal-metadata';
   if (sourceId === 'esp-idf') return 'esp-idf';
+  if (sourceId === 'microchip-atdf') return 'microchip-atdf';
+  if (sourceId === 'nrf-pacs') return 'nrf-pacs';
+  if (sourceId === 'zephyr-nordic') return 'zephyr';
+  if (sourceId === 'kicad-mcu-nordic') return 'kicad';
   if (sourceId.startsWith('kicad')) return 'kicad';
   if (sourceId === 'picotool' || sourceId === 'pico-sdk') return 'pico-sdk';
   if (sourceId === 'zephyr') return 'zephyr';
@@ -68,7 +72,7 @@ export function canonicalSourceId(sourceId: string): string {
   return sourceId;
 }
 
-/** Builds the eleven-source provenance map from resolved upstream sources. */
+/** Builds the thirteen-source provenance map from resolved upstream sources. */
 export function buildSourceRegistry(
   sources: ResolvedSource[],
 ): Partial<Record<string, CatalogSourceRecord>> {

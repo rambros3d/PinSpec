@@ -35,6 +35,36 @@ export const LICENSE_ESPRESSIF_KICAD = 'CC-BY-SA-4.0 (generated-file exception)'
 export const LICENSE_ESP_IDF = 'Apache-2.0';
 /** Pinned ESP-IDF release tag used for all fetched header evidence. */
 export const ESP_IDF_REF = 'v5.4.1';
+/** License of the Microchip ATDF files in MPLAB Harmony dev packs. */
+export const LICENSE_MICROCHIP_ATDF = 'Apache-2.0';
+/** License of the nrf-pacs CMSIS-SVD definitions. */
+export const LICENSE_NRF_PACS = '0BSD';
+/**
+ * Pinned `Microchip-MPLAB-Harmony/dev_packs` revision used for raw ATDF fetches.
+ * A full clone of this repository is disproportionate for the 39 consumed
+ * files, so each file is fetched directly from this immutable ref.
+ */
+export const DEV_PACKS_REF = '345dc12d42a4fdec72117b64a8c3527023bdeca9';
+
+/**
+ * Curated ATDF files under the pinned dev-packs ref, grouped by SAM family.
+ * These are upstream file paths, not transcribed chip facts; every device
+ * fact is read from the fetched XML by `adapters/sam/`.
+ */
+export const SAM_ATDF_PATHS: readonly string[] = [
+  ...['E15A', 'E16A', 'E17A', 'E18A', 'G15A', 'G16A', 'G17A', 'G17AU', 'G18A', 'G18AU', 'J15A', 'J16A', 'J17A', 'J18A'].map(
+    (part) => `Microchip/SAMD21_DFP/3.6.144/samd21a/atdf/ATSAMD21${part}.atdf`,
+  ),
+  ...['G18A', 'G19A', 'J18A', 'J19A', 'J20A', 'N19A', 'N20A', 'P19A', 'P20A'].map(
+    (part) => `Microchip/SAMD51_DFP/3.7.237/samd51a/atdf/ATSAMD51${part}.atdf`,
+  ),
+  ...['G18A', 'G19A', 'J18A', 'J19A', 'J20A', 'N19A', 'N20A'].map(
+    (part) => `Microchip/SAME51_DFP/3.7.242/atdf/ATSAME51${part}.atdf`,
+  ),
+  ...['J19B', 'J20B', 'J21B', 'N19B', 'N20B', 'N21B', 'Q19B', 'Q20B', 'Q21B'].map(
+    (part) => `Microchip/SAMV71_DFP/4.10.230/samv71b/atdf/ATSAMV71${part}.atdf`,
+  ),
+];
 
 /** Builds the default `.cache` location for a repository root. */
 export function defaultCacheDir(root: string = process.cwd()): string {
@@ -78,11 +108,12 @@ export function resolveRawRevision(spec: SourceSpec): string {
 }
 
 /** Shallow-clones `url` into `targetDir` only when that directory is absent. */
-export function ensureRepo(url: string, targetDir: string): void {
+export function ensureRepo(url: string, targetDir: string, branch?: string): void {
   if (fs.existsSync(targetDir)) return;
   fs.mkdirSync(path.dirname(targetDir), { recursive: true });
   console.log(`Cloning ${url} into ${targetDir}...`);
-  execSync(`git clone --depth 1 ${url} "${targetDir}"`, { stdio: 'inherit' });
+  const branchArg = branch ? ` --branch ${branch}` : '';
+  execSync(`git clone --depth 1${branchArg} ${url} "${targetDir}"`, { stdio: 'inherit' });
 }
 
 /**
@@ -109,7 +140,7 @@ export function acquireSource(spec: SourceSpec): ResolvedSource {
     ensureRawFiles(spec);
     return { ...spec, commit: resolveRawRevision(spec) };
   }
-  ensureRepo(spec.url, spec.dir);
+  ensureRepo(spec.url, spec.dir, spec.branch);
   return { ...spec, commit: resolveRevision(spec.dir) };
 }
 
@@ -320,12 +351,87 @@ export function esp32SourceSpecs(cacheDir: string = defaultCacheDir()): SourceSp
   ];
 }
 
+/** Raw-file source declarations for the curated Microchip ATDF subset. */
+export function microchipAtdfSourceSpecs(cacheDir: string = defaultCacheDir()): SourceSpec[] {
+  const base = 'https://raw.githubusercontent.com/Microchip-MPLAB-Harmony/dev_packs';
+  return [
+    {
+      id: 'microchip-atdf',
+      url: 'https://github.com/Microchip-MPLAB-Harmony/dev_packs',
+      dir: path.join(cacheDir, 'microchip-atdf'),
+      license: LICENSE_MICROCHIP_ATDF,
+      rawFiles: SAM_ATDF_PATHS.map((file) => ({ url: `${base}/${DEV_PACKS_REF}/${file}`, path: file })),
+    },
+  ];
+}
+
+/** SVD files consumed by the Nordic adapter from the nrf-pacs checkout. */
+export const NRF_PACS_SVD_FILES = [
+  'nrf52840.svd',
+  'nrf5340-app.svd',
+  'nrf5340-net.svd',
+] as const;
+
+/** Zephyr Nordic device-tree, pinctrl binding, and pinctrl header paths. */
+export const ZEPHYR_NORDIC_FILES = [
+  'dts/arm/nordic/nrf52840.dtsi',
+  'dts/arm/nordic/nrf5340_cpuapp.dtsi',
+  'dts/arm/nordic/nrf5340_cpuapp_peripherals.dtsi',
+  'dts/arm/nordic/nrf5340_cpuapp_qkaa.dtsi',
+  'dts/arm/nordic/nrf5340_cpunet.dtsi',
+  'dts/bindings/pinctrl/nordic,nrf-pinctrl.yaml',
+  'include/zephyr/dt-bindings/pinctrl/nrf-pinctrl.h',
+] as const;
+
+/** KiCad Nordic symbol files consumed by the Nordic adapter. */
+export const KICAD_NORDIC_FILES = [
+  'nRF52840.kicad_sym',
+  'nRF5340-QKxx.kicad_sym',
+] as const;
+
+/** Source declarations for the Nordic pilot selectors. */
+export function nordicSourceSpecs(cacheDir: string = defaultCacheDir()): SourceSpec[] {
+  const zephyrBase = 'https://raw.githubusercontent.com/zephyrproject-rtos/zephyr/main';
+  const kicadBase = 'https://gitlab.com/kicad/libraries/kicad-symbols/-/raw/master';
+  return [
+    {
+      id: 'nrf-pacs',
+      url: 'https://github.com/nrf-rs/nrf-pacs',
+      dir: path.join(cacheDir, 'nrf-pacs'),
+      license: LICENSE_NRF_PACS,
+      branch: 'master',
+    },
+    {
+      id: 'zephyr-nordic',
+      url: 'https://github.com/zephyrproject-rtos/zephyr',
+      dir: path.join(cacheDir, 'zephyr-nordic'),
+      license: LICENSE_ZEPHYR,
+      rawFiles: ZEPHYR_NORDIC_FILES.map((file) => ({
+        url: `${zephyrBase}/${file}`,
+        path: file,
+      })),
+    },
+    {
+      id: 'kicad-mcu-nordic',
+      url: 'https://gitlab.com/kicad/libraries/kicad-symbols',
+      dir: path.join(cacheDir, 'kicad-nordic'),
+      license: LICENSE_KICAD,
+      rawFiles: KICAD_NORDIC_FILES.map((file) => ({
+        url: `${kicadBase}/MCU_Nordic.kicad_symdir/${file}`,
+        path: `MCU_Nordic.kicad_symdir/${file}`,
+      })),
+    },
+  ];
+}
+
 /** Every source configured for the current pipeline (used by CI pre-fetch). */
 export const SOURCE_SPECS: SourceSpec[] = [
   ...stm32SourceSpecs(),
   ...ch32SourceSpecs(),
   ...rpSourceSpecs(),
   ...esp32SourceSpecs(),
+  ...microchipAtdfSourceSpecs(),
+  ...nordicSourceSpecs(),
 ];
 
 function main(): void {

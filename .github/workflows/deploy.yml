@@ -36,7 +36,7 @@ jobs:
         if: github.event_name == 'schedule'
         run: rm -rf .cache
 
-      - name: Acquire all seven upstream sources and record their revisions
+      - name: Acquire all upstream sources and record their revisions
         run: npm run acquire-sources
 
       - name: Generate catalog from upstream sources via vendor adapters and gates

@@ -90,8 +90,8 @@ describe('ESP32 source declarations and provenance ids', () => {
     expect(specs[2].rawFiles).toHaveLength(ESP_KICAD_FILES.length);
   });
 
-  it('keeps eleven canonical ids and a distinct espressif-kicad mapping', () => {
-    expect(CATALOG_SOURCE_IDS).toHaveLength(11);
+  it('keeps thirteen canonical ids and a distinct espressif-kicad mapping', () => {
+    expect(CATALOG_SOURCE_IDS).toHaveLength(13);
     expect(canonicalSourceId('espressif-kicad')).toBe('espressif-kicad');
     expect(canonicalSourceId('kicad-symbols')).toBe('kicad');
     expect(canonicalSourceId('esp-gpio-tool')).toBe('esp-gpio-tool');
@@ -99,9 +99,9 @@ describe('ESP32 source declarations and provenance ids', () => {
     expect(canonicalSourceId('esp-idf')).toBe('esp-idf');
   });
 
-  it('registers the strict ESP32 adapter last in the default list', () => {
+  it('registers the strict ESP32 adapter before the SAM and Nordic adapters', () => {
     expect(DEFAULT_ADAPTERS.map((adapter) => adapter.vendor)).toEqual([
-      'stm32', 'ch32', 'rp', 'esp32',
+      'stm32', 'ch32', 'rp', 'esp32', 'microchip', 'nordic',
     ]);
     expect(esp32Adapter.strict).toBe(true);
     expect(esp32Adapter.vendor).toBe('esp32');

@@ -1,6 +1,6 @@
 # AGENTS.md
 
-## Project: PinCraft (STM32 / CH32 / RP / ESP32 Pinout Configurator)
+## Project: PinCraft (STM32 / CH32 / RP / ESP32 / Microchip SAM / Nordic Pinout Configurator)
 
 PinCraft is a fast, static, CubeMX-style pinout planning web application. It is a
 browser-native alternative to STM32CubeMX: no backend, no install, no cloud
@@ -14,11 +14,11 @@ workspace, and an automated build-time catalog generator.
 
 ### Current implementation status
 
-All STM32, CH32, RP, and ESP32 pipeline phases are shipped: the CI-native
-adapter generator, CH32/RP/ESP32 adapters, vendor-aware core solver,
-exporters/state, workspace UI, and the `multi-vendor-ci-gates`
+All STM32, CH32, RP, ESP32, Microchip SAM, and Nordic pipeline phases are shipped: the
+CI-native adapter generator, CH32/RP/ESP32/SAM/Nordic adapters, vendor-aware core
+solver, exporters/state, workspace UI, and the `multi-vendor-ci-gates`
 gate/documentation phase. The landing page, exporters, and GitHub Pages
-deployment are green for all four vendors. The gate suite is the single release contract shared by local
+deployment are green for all six vendors. The gate suite is the single release contract shared by local
 generation and CI; its delta spec lives in `openspec/specs/multi-vendor-ci-gates/`.
 
 Backward compatibility with legacy `version: 1` share links and project files
@@ -185,11 +185,11 @@ fetches resolve relative to `import.meta.env.BASE_URL`, e.g.
 
 ```
 PinCraft/
-+-- tools/data-gen/            # STM32 + CH32 + RP adapter orchestrator
++-- tools/data-gen/            # STM32 + CH32 + RP + ESP32 + SAM adapter orchestrator
 |   +-- index.ts               # CLI entry point, emitters, gate invocation
 |   +-- gates.ts               # Pure per-vendor and global gate helpers
 |   +-- artifacts.ts           # In-memory shard preparation and artifact writers
-|   +-- adapters/{stm32,ch32,rp,esp32}  # Vendor source parsing and assertions
+|   +-- adapters/{stm32,ch32,rp,esp32,sam}  # Vendor source parsing and assertions
 |   +-- sources.ts             # Source declarations and license constants
 |   +-- helpers.ts             # Pure normalization helpers
 +-- src/
@@ -239,12 +239,17 @@ PinCraft/
 | `esp-rs/esp-hal` `esp-metadata` | MIT / Apache-2.0 | ESP32 IO_MUX functions, matrix signal ids, limitations, DMA, SoC facts |
 | `espressif/kicad-libraries` | CC-BY-SA-4.0 (generated-file exception) | ESP32 symbol pins, footprint pad numbers, exposed-pad geometry |
 | `espressif/esp-idf` | Apache-2.0 | Pinned `gpio_sig_map.h`, `soc_caps.h`, and `io_mux_reg.h` matrix evidence |
+| `Microchip-MPLAB-Harmony/dev_packs` ATDF | Apache-2.0 | Curated raw ATDF files - variants, pinouts, module signals, memories, interrupts |
+| `nrf-rs/nrf-pacs` | 0BSD | Nordic SVD - peripherals, interrupts, CPU, address blocks |
+| KiCad `MCU_Nordic` symbols | CC-BY-SA-4.0 (generated-file exception) | Nordic physical pin numbers, ball IDs, multi-function names |
+| `zephyrproject-rtos/zephyr` Nordic DTS and pinctrl | Apache-2.0 | Nordic GPIO counts, flash/SRAM, PSEL function names |
 
 `npm run gen-data` (or `npm run acquire-sources` on its own) shallow-clones the
 git sources and fetches the raw reference files into the gitignored `.cache/`.
 The generator records a short SHA (or SHA-256 for raw files), license, and URL
-for each of the eleven canonical sources in `meta.json`, and the landing footer
-displays them. The local cache check is existence-only: it does not refresh an
+for each of the thirteen canonical sources in `meta.json`, and the landing footer
+displays them. SAM ATDF files are fetched individually from a pinned ref; no
+full 320 MB pack clone is performed. The local cache check is existence-only: it does not refresh an
 existing checkout. The weekly CI schedule deletes `.cache/` before acquisition
 so SHAs advance; to update locally, delete the relevant `.cache/` entry first.
 
@@ -274,7 +279,7 @@ so SHAs advance; to update locally, delete the relevant `.cache/` entry first.
 ### Emitted artifacts
 
 - `public/data/meta.json` - generated timestamp, per-vendor counts and
-  match/coverage ratios, the eleven canonical source records (`sha`, `url`,
+  match/coverage ratios, the thirteen canonical source records (`sha`, `url`,
   `license`), and legacy STM32 top-level fields.
 - `public/data/index.json` - compact search index with `vendor`, `id`, `family`,
   `core`, `package`, `pinCount`, `flashKb`, `ramKb`, and peripheral counts.
@@ -301,7 +306,12 @@ writing anything, so a failure exits non-zero with no partial catalog. It must:
   `remaps[]`, bonded names/tags, and the PD1 `debug-sdi` tag.
 - Assert RP2040/RP2350A/RP2350B pin and GPIO counts, QFN exposed pads, the
   `PWM0A`..`PWM11B` slice range, and HSTX/ADC/QSPI/SWD/PIO tags.
-- Record all eleven source SHAs and per-vendor counts/ratios in `meta.json`, and
+- Emit exactly 39 SAM D21/D51/E51/SAMV71 parts from curated ATDF files and
+  assert `ATSAMD21G18A` (48 pins), `ATSAMD51P20A` (TQFP128 and TFBGA120
+  pinouts), `ATSAME51J20A` (64 pins), `ATSAMV71Q21B` (144 pins), function-letter
+  AF indices, and the `microchip-atdf` SHA. Missing DMA channel maps and other
+  gaps are attributed warnings, never invented values.
+- Record all thirteen source SHAs and per-vendor counts/ratios in `meta.json`, and
   attribute every deferred part in `build-warnings.json` without failing.
 
 ---
@@ -435,30 +445,33 @@ Ctrl+Click remap, Ctrl+Z/Y undo/redo, `0` fit view, Escape cancel.
 
 ## Multi-vendor architecture (shipped)
 
-WCH CH32 and Raspberry Pi RP2040/RP235x support is implemented for all three
-vendors. Zero STM32 regressions remains mandatory.
+WCH CH32, Raspberry Pi RP2040/RP235x, ESP32, Microchip SAM, and Nordic support is
+implemented alongside STM32. Zero STM32 regressions remains mandatory.
 
 ### Schema generalization
 
 `src/core/types.ts` carries the generalized schema:
 
-- `VendorId = 'stm32' | 'ch32' | 'rp'`
-- `MuxModel = 'af' | 'remap-group' | 'funcsel-pio'`
+- `VendorId = 'stm32' | 'ch32' | 'rp' | 'esp32' | 'microchip' | 'nordic'`
+- `MuxModel = 'af' | 'remap-group' | 'funcsel-pio' | 'gpio-matrix' | 'psel'`
 - `PinTag` including `debug-sdi`, `hstx`, `qspi`, `bonded`, `5v-tolerant`
 - `PinSignal.funcLabel`, `remapId`, `resourceId`
 - `PeripheralRemapOption`
 - `ChipData.vendor`, `muxModel`, `pio`, `PackageInfo.hasExposedPad`,
   `PinInfo.bondedNames/tags/note`, `PeripheralInfo.remaps`
+- `PinTag` includes `nfc` for symbol-declared Nordic NFC pads
 - `WorkspaceState.activeRemaps`, `pioAssignments`
 - `index.json` entries carry `vendor`; `meta.json` carries per-vendor `sources`
-  and the eleven canonical source records
+  and the thirteen canonical source records
+- `ChipData.variants`, `pinouts`, and `capabilityEvidence` retain ATDF ordercode
+  and capability metadata without adding shards
 - Legacy state without these fields defaults to `vendor: 'stm32'`
 
 ### Data adapters
 
 The orchestrator in `tools/data-gen/index.ts` registers `adapters/stm32`,
-`adapters/ch32`, and `adapters/rp`, collects vendor-attributed warnings, runs
-all gates, and writes artifacts once.
+`adapters/ch32`, `adapters/rp`, `adapters/esp32`, `adapters/sam`, and `adapters/nordic`, collects
+vendor-attributed warnings, runs all gates, and writes artifacts once.
 
 - **RP:** datasheet-verified QFN-56/60/80 specs for RP2040, RP2350A/B,
   RP2354A/B from KiCad, pico-sdk/picotool, Zephyr, and Raspberry Pi docs.
@@ -478,6 +491,12 @@ all gates, and writes artifacts once.
   against pinned ESP-IDF headers. Bare dies carry `flashKb: null`; named
   modules and MPNs carry first-party flash evidence. Unavailable records are
   deferred with vendor attribution.
+- **SAM:** `tools/data-gen/adapters/sam/` reads 39 curated ATDF files fetched as
+  raw files from a pinned `dev_packs` ref with SHA-256 provenance. Variants,
+  pinouts, instance signals, and memory segments are normalized; single-letter
+  functions map to AF indices and non-letter functions keep their labels with
+  `af: null`. DMA channel maps and unreadable facts are attributed warnings.
+- **Nordic:** `tools/data-gen/adapters/nordic/` joins nrf-pacs CMSIS-SVD, Zephyr Nordic device-tree/pinctrl, and KiCad Nordic symbols into PSEL shards. Physical pins come from symbol numbers and multi-function names, routing labels from Zephyr pinctrl functions with `af: null`, and electrical tags only from acquired declarations. Pilots without a complete machine-readable pin set are deferred with vendor attribution.
 
 ### Solver extensions
 
@@ -511,7 +530,7 @@ all gates, and writes artifacts once.
 
 ### Multi-vendor gates
 
-- **Gate 1:** `gen-data` succeeds for all four vendors; `meta.json` records
+- **Gate 1:** `gen-data` succeeds for all six vendors; `meta.json` records
   counts and SHAs; assertions pass for RP2040 (56), RP2350A (60), RP2350B (80),
   CH32V003F4P6 (20), CH32V003J4M6 (8 bonded), CH32V203C8T6 (48),
   CH32X035G8U6 (28), STM32G431CBU6 (48).
@@ -520,6 +539,13 @@ all gates, and writes artifacts once.
   GPIO12-17 for flash; ESP32-WROOM-E has GPIO0/BOOT at pad 25 and EN at pad 3;
   ESP32 GPIO34-39 are input-only; matrix counts match the pinned
   `gpio_sig_map.h`.
+- **Gate 1 (SAM):** exactly 39 parts; `ATSAMD21G18A` (48), `ATSAMD51P20A`
+   (TQFP128/TFBGA120), `ATSAME51J20A` (64), `ATSAMV71Q21B` (144); function-letter
+   AF indices and the `microchip-atdf` SHA.
+- **Gate 1 (Nordic):** `nRF52840-QIAA` pins agree with the acquired KiCad symbol,
+   SVD/device-tree peripherals are represented, at least one PSEL `funcLabel`
+   has a null AF, and all three Nordic source SHAs are recorded. Parts without
+   complete physical-pin evidence are deferred, not invented.
 - **Gate 2:** all unit tests pass, including CH32 atomic remap, locked/occupied
   remap blocks, bonded-pin exclusion, SWIO warning, RP PWM slice collision,
   RP2350B GPIOBASE error vs valid shifted window, vendor exporters, gate
@@ -538,7 +564,7 @@ all gates, and writes artifacts once.
 
 ```bash
 npm ci                                   # clean install from package-lock.json
-npm run acquire-sources                  # fetch all eleven upstream sources
+npm run acquire-sources                  # fetch all thirteen upstream sources
 npm run gen-data                         # emit shards and run all release gates
 npm test                                 # Vitest unit tests
 npm run check                            # tsc --noEmit (strict)

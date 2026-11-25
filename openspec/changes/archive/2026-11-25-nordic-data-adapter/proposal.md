@@ -11,7 +11,7 @@ PinCraft has no Nordic catalog data. nRF parts are described by machine-readable
 - Derive peripheral inventory, interrupts, GPIO counts, and memory from SVD and Zephyr DTS; derive physical pin numbers, ball IDs, multi-function names, and package pin count from the KiCad symbol; derive PSEL routing from Zephyr pinctrl names and function constants. Fixed pins (SWD, NFC, reset, QSPI) are emitted only when a machine-readable symbol name or DTS property supports them. Every other value is deferred to `build-warnings.json`, never hand-curated.
 - Add strict Nordic gates asserting the nRF52840-QIAA reference part against the pin set derived from the acquired KiCad symbol, its SVD/DTS peripheral inventory, and at least one PSEL `funcLabel` with a null AF. Emit nRF5340 and nRF54L15 only when their own machine-readable sources are present and complete; otherwise defer with vendor-attributed warnings.
 - Add the `psel` mux model to core types and reuse the existing matrix-aware scoring for flexible routing. Apply input-only and strapping penalties only where source data declares those tags; do not synthesize strapping facts.
-- Extend provenance and documentation wording from eleven to twelve canonical sources and from four to five vendors, add `nordic` to the provenance vendor list and vendor tabs, and update `README.md`, `AGENTS.md`, footer attribution data, and related tests.
+- Extend provenance and documentation wording from twelve to thirteen canonical sources and from five to six vendors, add `nordic` to the provenance vendor list and vendor tabs, and update `README.md`, `AGENTS.md`, footer attribution data, and related tests.
 - Add `tests/data-gen-nordic.test.ts` with synthetic SVD, DTS, and KiCad fixtures, and extend adapter-list, gate-contract, docs-attribution, and vendor-tab tests.
 
 ## Capabilities
@@ -22,7 +22,7 @@ PinCraft has no Nordic catalog data. nRF parts are described by machine-readable
 
 ### Modified Capabilities
 
-- `multi-vendor-ci-gates`: Move the provenance and documentation contracts from eleven to twelve canonical sources and from four to five vendors, add `nordic` to the provenance vendor list and deferred-part warning scenarios, and register a strict Nordic generation gate in the shared gate suite.
+- `multi-vendor-ci-gates`: Move the provenance and documentation contracts from twelve to thirteen canonical sources and from five to six vendors, add `nordic` to the provenance vendor list and deferred-part warning scenarios, and register a strict Nordic generation gate in the shared gate suite.
 
 ## Impact
 

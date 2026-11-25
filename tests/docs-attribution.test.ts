@@ -35,8 +35,22 @@ const TOUCHED_FILES = [
   'tools/data-gen/adapters/esp32/join.ts',
   'tools/data-gen/adapters/esp32/modules.ts',
   'tools/data-gen/adapters/esp32/types.ts',
+  'tools/data-gen/adapters/nordic/index.ts',
+  'tools/data-gen/adapters/nordic/svd.ts',
+  'tools/data-gen/adapters/nordic/zephyr.ts',
+  'tools/data-gen/adapters/nordic/pinctrl.ts',
+  'tools/data-gen/adapters/nordic/kicad.ts',
+  'tools/data-gen/adapters/nordic/parts.ts',
+  'tools/data-gen/adapters/nordic/gates.ts',
+  'tools/data-gen/adapters/sam/index.ts',
+  'tools/data-gen/adapters/sam/atdf.ts',
+  'tools/data-gen/adapters/sam/gates.ts',
+  'tools/data-gen/adapters/sam/sources.ts',
+  'tools/data-gen/adapters/sam/variants.ts',
   'tools/data-gen/sources.ts',
   'tests/data-gen-esp32.test.ts',
+  'tests/data-gen-sam.test.ts',
+  'tests/data-gen-nordic.test.ts',
   'tests/gates-contracts.test.ts',
   'tests/subpath-contracts.test.ts',
   'tests/docs-attribution.test.ts',
@@ -69,6 +83,8 @@ const SOURCE_TOKENS = [
   'esp-rs/esp-hal',
   'espressif/kicad-libraries',
   'espressif/esp-idf',
+  'Microchip-MPLAB-Harmony/dev_packs',
+  'nrf-rs/nrf-pacs',
 ];
 
 describe('multi-vendor documentation and attribution', () => {
@@ -108,7 +124,7 @@ describe('multi-vendor documentation and attribution', () => {
     expect(agents).not.toContain('## Multi-vendor expansion (roadmap)');
   });
 
-  it('renders all eleven sources, licenses, and live metadata in the landing footer', () => {
+  it('renders all thirteen sources, licenses, and live metadata in the landing footer', () => {
     const footer = read('src/pages/LandingPage.svelte');
     for (const token of [...SOURCE_TOKENS, ...LICENSE_TOKENS]) {
       expect(footer, token).toContain(token);
@@ -116,11 +132,13 @@ describe('multi-vendor documentation and attribution', () => {
     expect(footer).toContain('Upstream data sources and licenses');
     expect(footer).toContain('catalogStore.meta');
     expect(footer).toContain('sources');
+    expect(footer).toContain('microchip-atdf');
+    expect(footer).toContain('nrf-pacs');
   });
 
-  it('advertises all four vendors in the document metadata', () => {
+  it('advertises all six vendors in the document metadata', () => {
     const html = read('index.html');
-    expect(html).toContain('STM32 / CH32 / RP / ESP32');
+    expect(html).toContain('STM32 / CH32 / RP / ESP32 / Microchip SAM / Nordic');
     expect(html).toContain('CubeMX-style');
   });
 });

@@ -204,7 +204,7 @@ export function createProvenanceGate(
           }
         }
       }
-      for (const vendor of ['stm32', 'ch32', 'rp', 'esp32'] as VendorId[]) {
+      for (const vendor of ['stm32', 'ch32', 'rp', 'esp32', 'microchip', 'nordic'] as VendorId[]) {
         const entry = meta.sources?.[vendor];
         if (!entry) continue;
         if (!Number.isFinite(entry.chipCount) || entry.chipCount < 0) {

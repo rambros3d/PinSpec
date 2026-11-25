@@ -2,7 +2,7 @@
 
 ## Context
 
-The catalog build runs one orchestrator over `DEFAULT_ADAPTERS`. Each adapter declares source specs, emits `ChipData` shards and index entries, contributes gates, and records warnings through a shared collector. The orchestrator owns all writes to `public/data/` and evaluates per-vendor gates before global gates, so a failing vendor aborts without publishing a partial catalog. Provenance is stored in `meta.json` under `sources`, keyed by vendor for legacy consumers and by `CatalogSourceId` for the canonical registry. Eleven canonical ids and four vendor summaries exist today; `canonicalSourceId` deliberately collapses related source specs, and `buildSourceRegistry` keeps the first declaration after sources are sorted by spec id.
+The catalog build runs one orchestrator over `DEFAULT_ADAPTERS`. Each adapter declares source specs, emits `ChipData` shards and index entries, contributes gates, and records warnings through a shared collector. The orchestrator owns all writes to `public/data/` and evaluates per-vendor gates before global gates, so a failing vendor aborts without publishing a partial catalog. Provenance is stored in `meta.json` under `sources`, keyed by vendor for legacy consumers and by `CatalogSourceId` for the canonical registry. Thirteen canonical ids and six vendor summaries exist after the SAM change; `canonicalSourceId` deliberately collapses related source specs, and `buildSourceRegistry` keeps the first declaration after sources are sorted by spec id.
 
 Nordic facts live in three machine-readable formats. The nrf-pacs SVD supplies peripherals, registers, interrupts, and memory, but no physical pins. The Zephyr device tree supplies peripheral inventory, interrupts, and `ngpios`, and its pinctrl binding and header define PSEL function names and constants. The KiCad Nordic symbol supplies physical pin numbers, ball identifiers, and multi-function names. No generated Nordic JSON database exists, and PSEL routing has no numbered AF. See `proposal.md` for motivation and the two delta specs for the behavior contract.
 
@@ -45,9 +45,9 @@ Alternative: clone both kicad-symbols and Zephyr in full, or add three new canon
 
 ### Canonical identifiers and provenance
 
-Extend `CatalogSourceId` and `CATALOG_SOURCE_IDS` from eleven to twelve entries by adding `nrf-pacs`. Add an explicit `canonicalSourceId` mapping from `zephyr-nordic` to `zephyr`; `kicad-mcu-nordic` uses the existing `kicad` prefix rule. The provenance gate vendor list gains `nordic`. The `nordic` vendor record lists the three source SHAs, URLs, and licenses so every consumed file is attributed. Documentation and count wording move from eleven to twelve sources and from four to five vendors in `README.md`, `AGENTS.md`, footer attribution data, and the docs-attribution test.
+Extend `CatalogSourceId` and `CATALOG_SOURCE_IDS` from twelve to thirteen entries by adding `nrf-pacs`. Add an explicit `canonicalSourceId` mapping from `zephyr-nordic` to `zephyr`; `kicad-mcu-nordic` uses the existing `kicad` prefix rule. The provenance gate vendor list gains `nordic`. The `nordic` vendor record lists the three source SHAs, URLs, and licenses so every consumed file is attributed. Documentation and count wording move from twelve to thirteen sources and from five to six vendors in `README.md`, `AGENTS.md`, footer attribution data, and the docs-attribution test.
 
-Alternative: keep eleven canonical ids by folding the SVD into an existing id. Rejected because provenance would lose the distinct 0BSD source and its SHA.
+Alternative: keep twelve canonical ids by folding the SVD into an existing id. Rejected because provenance would lose the distinct 0BSD source and its SHA.
 
 ### Schema and solver compatibility
 

@@ -4,12 +4,12 @@
 
 ### Requirement: Source provenance in metadata
 
-`meta.json` MUST record `generatedAt`, a short SHA for every upstream source, per-vendor part counts, per-vendor match or coverage ratios, and the twelve upstream source identifiers (ST open pin data, Embassy stm32-data-generated, ch32-device-data, KiCad, pico-sdk, Zephyr, Raspberry Pi docs, esp-gpio-tool, esp-hal esp-metadata, espressif/kicad-libraries, ESP-IDF at a pinned release tag, and nrf-pacs). Per-vendor counts and ratios MUST be recorded for `stm32`, `ch32`, `rp`, `esp32`, and `nordic`.
+`meta.json` MUST record `generatedAt`, a short SHA for every upstream source, per-vendor part counts, per-vendor match or coverage ratios, and thirteen canonical source identifiers. Per-vendor counts and ratios MUST be recorded for `stm32`, `ch32`, `rp`, `esp32`, `microchip`, and `nordic`.
 
 #### Scenario: Metadata is complete
 
-- **WHEN** generation succeeds for all five vendors
-- **THEN** `meta.json` contains all twelve source SHAs and per-vendor counts and ratios, and the landing footer can render them
+- **WHEN** generation succeeds for all six vendors
+- **THEN** `meta.json` contains all thirteen source SHAs and per-vendor counts and ratios, and the landing footer can render them
 
 #### Scenario: Source SHA missing
 
@@ -20,6 +20,11 @@
 
 - **WHEN** generation succeeds with the ESP32 adapter registered
 - **THEN** `meta.json` contains non-empty SHA, URL, and license records for esp-gpio-tool, esp-hal esp-metadata, espressif/kicad-libraries, and ESP-IDF, plus an `esp32` vendor summary with chip count and ratios
+
+#### Scenario: SAM provenance records present
+
+- **WHEN** generation succeeds with the SAM adapter registered
+- **THEN** `meta.json` contains a non-empty SHA, URL, and Apache-2.0 license record for the Microchip ATDF source, plus a `microchip` vendor summary with chip count and ratios
 
 #### Scenario: Nordic provenance records present
 
@@ -52,16 +57,16 @@
 
 ### Requirement: Multi-vendor documentation and attribution
 
-`README.md` and `AGENTS.md` MUST document multi-vendor data generation, the gate commands, and the verification sequence, and the landing technical footer MUST list all twelve upstream sources with their licenses and render the SHAs and counts from `meta.json`. Documentation MUST cover STM32, CH32, RP, ESP32, and Nordic generation.
+`README.md` and `AGENTS.md` MUST document multi-vendor data generation, the gate commands, and the verification sequence, and the landing technical footer MUST list all thirteen upstream sources with their licenses and render the SHAs and counts from `meta.json`. Documentation MUST cover STM32, CH32, RP, ESP32, SAM, and Nordic generation.
 
 #### Scenario: Documentation reflects shipped behavior
 
 - **WHEN** the change is complete
-- **THEN** README and AGENTS.md describe STM32, CH32, RP, ESP32, and Nordic generation and the footer lists all twelve sources with licenses and live metadata
+- **THEN** README and AGENTS.md describe STM32, CH32, RP, ESP32, SAM, and Nordic generation and the footer lists all thirteen sources with licenses and live metadata
 
 #### Scenario: Footer omits a license
 
-- **WHEN** any of the twelve upstream licenses is missing from the footer or documentation
+- **WHEN** any of the thirteen upstream licenses is missing from the footer or documentation
 - **THEN** the documentation verification check fails
 
 #### Scenario: ESP32 attribution data available
@@ -69,10 +74,39 @@
 - **WHEN** `meta.json` is generated with the ESP32 adapter registered
 - **THEN** the four added ESP32 sources carry license and SHA values that the footer and documentation checks can render
 
+#### Scenario: SAM attribution data available
+
+- **WHEN** `meta.json` is generated with the SAM adapter registered
+- **THEN** the Microchip ATDF source carries an Apache-2.0 license and a SHA value that the footer and documentation checks can render
+
 #### Scenario: Nordic attribution data available
 
 - **WHEN** `meta.json` is generated with the Nordic adapter registered
 - **THEN** the nrf-pacs source, the Nordic Zephyr and KiCad evidence records, and the `nordic` vendor summary carry license and SHA values that the footer and documentation checks can render
+
+### Requirement: Canonical source identifier coverage
+
+The thirteen canonical source identifiers SHALL be ST open pin data, Embassy stm32-data-generated, ch32-device-data, KiCad, pico-sdk, Zephyr, Raspberry Pi docs, esp-gpio-tool, esp-hal esp-metadata, espressif/kicad-libraries, ESP-IDF at a pinned release tag, Microchip ATDF dev packs at a pinned ref, and nrf-pacs. Every identifier SHALL resolve to a recorded SHA, URL, and license.
+
+#### Scenario: All thirteen identifiers are recorded
+
+- **WHEN** generation succeeds with all adapters registered
+- **THEN** `meta.json` contains a SHA, URL, and license for each of the thirteen identifiers
+
+#### Scenario: Microchip ATDF identifier is present
+
+- **WHEN** generation succeeds with the SAM adapter registered
+- **THEN** the `microchip-atdf` record carries a SHA-256 content hash, the pinned raw-file URL, and the Apache-2.0 license
+
+#### Scenario: Nordic identifier is present
+
+- **WHEN** generation succeeds with the Nordic adapter registered
+- **THEN** the `nrf-pacs` record carries a SHA, the pinned SVD URL, and the 0BSD license
+
+#### Scenario: Canonical identifier missing
+
+- **WHEN** any of the thirteen identifiers is absent from `meta.json`
+- **THEN** the provenance gate fails generation and names the missing identifier
 
 ## ADDED Requirements
 

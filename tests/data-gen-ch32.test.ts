@@ -629,7 +629,7 @@ describe('CH32 deferral, gates, provenance, and registration', () => {
   });
 
   it('registers all three adapters without changing the STM32 adapter contract', () => {
-    expect(DEFAULT_ADAPTERS.map((a) => a.vendor)).toEqual(['stm32', 'ch32', 'rp', 'esp32']);
+    expect(DEFAULT_ADAPTERS.map((a) => a.vendor)).toEqual(['stm32', 'ch32', 'rp', 'esp32', 'microchip', 'nordic']);
     expect(DEFAULT_ADAPTERS[0]).toBe(stm32Adapter);
     expect(DEFAULT_ADAPTERS[1]).toBe(ch32Adapter);
     expect(DEFAULT_ADAPTERS[2]).toBe(rpAdapter);

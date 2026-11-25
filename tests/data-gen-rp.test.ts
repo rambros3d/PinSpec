@@ -419,7 +419,7 @@ describe('RP tags, defers, gates, provenance and registration', () => {
   });
 
   it('keeps three adapters registered without changing STM32/CH32 contracts', () => {
-    expect(DEFAULT_ADAPTERS.map((a) => a.vendor)).toEqual(['stm32', 'ch32', 'rp', 'esp32']);
+    expect(DEFAULT_ADAPTERS.map((a) => a.vendor)).toEqual(['stm32', 'ch32', 'rp', 'esp32', 'microchip', 'nordic']);
     expect(DEFAULT_ADAPTERS[2]).toBe(rpAdapter);
     expect(rpAdapter.sourceSpecs.map((s) => s.id)).toEqual(rpSourceSpecs().map((s) => s.id));
     expect(rpAdapter.primarySourceId).toBe('kicad-symbols');

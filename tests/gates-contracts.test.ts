@@ -12,6 +12,9 @@ import {
   ch32ReferenceGate,
 } from '../tools/data-gen/adapters/ch32';
 import { rpReferenceGate } from '../tools/data-gen/adapters/rp';
+import { createSamGates, samAdapter } from '../tools/data-gen/adapters/sam';
+import { createNordicGates, nordicAdapter } from '../tools/data-gen/adapters/nordic';
+import { generateNordicParts } from '../tools/data-gen/adapters/nordic/parts';
 import { buildMetaDocument, buildSourceRegistry } from '../tools/data-gen/artifacts';
 import {
   createArtifactBudgetGate,
@@ -297,7 +300,7 @@ describe('provenance and warning contracts', () => {
       : {}),
   }));
 
-  it('emits all eleven source ids with sha, url, and license', () => {
+  it('emits all thirteen source ids with sha, url, and license', () => {
     const registry = buildSourceRegistry(sources);
     for (const id of CATALOG_SOURCE_IDS) {
       expect(registry[id], id).toBeDefined();
@@ -379,6 +382,36 @@ describe('provenance and warning contracts', () => {
     expect(createWarningsContractGate().evaluate(ctx([], { warningDoc: doc })).errors).toEqual([]);
   });
 
+  it('accepts a deferred SAM record with microchip attribution', () => {
+    const collector = createWarningCollector();
+    collector.add({
+      id: 'ATSAMD21G18A',
+      vendor: 'microchip',
+      source: 'microchip-atdf',
+      reason: 'ATDF declares no DMA channel-to-signal map; channels deferred.',
+    });
+    const doc = buildWarningsDocument('2026-01-01T00:00:00.000Z', collector.all(), {
+      totalVariants: 1, matchedVariants: 1, matchRate: 100,
+    });
+    expect(doc.warningsByVendor.microchip).toBe(1);
+    expect(createWarningsContractGate().evaluate(ctx([], { warningDoc: doc })).errors).toEqual([]);
+  });
+
+  it('accepts a deferred Nordic part with vendor attribution', () => {
+    const collector = createWarningCollector();
+    collector.add({
+      id: 'nRF54L15',
+      vendor: 'nordic',
+      source: 'nrf-pacs',
+      reason: 'No machine-readable SVD and no KiCad symbol; part deferred.',
+    });
+    const doc = buildWarningsDocument('2026-01-01T00:00:00.000Z', collector.all(), {
+      totalVariants: 1, matchedVariants: 0, matchRate: 0,
+    });
+    expect(doc.warningsByVendor.nordic).toBe(1);
+    expect(createWarningsContractGate().evaluate(ctx([], { warningDoc: doc })).errors).toEqual([]);
+  });
+
   it('rejects a warning document with missing attribution', () => {
     const doc = buildWarningsDocument('2026-01-01T00:00:00.000Z', [], {
       totalVariants: 0, matchedVariants: 0, matchRate: 100,
@@ -387,6 +420,114 @@ describe('provenance and warning contracts', () => {
     const errors = createWarningsContractGate().evaluate(ctx([], { warningDoc: doc })).errors;
     expect(errors.some((e) => e.includes('id'))).toBe(true);
     expect(errors.some((e) => e.includes('source'))).toBe(true);
+  });
+});
+
+describe('SAM strict gate contract', () => {
+  function samChips(): ChipData[] {
+    const base = (id: string, pinCount = 8): ChipData =>
+      chip(id, {
+        vendor: 'microchip',
+        muxModel: 'af',
+        family: 'SAM',
+        package: {
+          name: 'TQFP', kind: 'perimeter', pinCount,
+          sides: [Math.ceil(pinCount / 4), 0, Math.floor(pinCount / 4), 0],
+        },
+        pins: [
+          { pos: '1', name: 'PA00', type: 'io', signals: [{ peripheral: 'PORTA', signal: 'PAD0', af: 0 }] },
+          ...Array.from({ length: pinCount - 1 }, (_, i) => ({
+            pos: String(i + 2), name: `GPIO${i}`, type: 'io' as const, signals: [],
+          })),
+        ],
+      });
+    const chips = [
+      base('ATSAMD21G18A', 48),
+      base('ATSAMD51P20A', 120),
+      base('ATSAME51J20A', 64),
+      base('ATSAMV71Q21B', 144),
+      ...Array.from({ length: 35 }, (_, i) => base(`SAMPART${i}`)),
+    ];
+    chips[1].pinouts = [
+      { name: 'SAMD51P', package: 'TQFP128', pinCount: 128 },
+      { name: 'SAMD51PC', package: 'TFBGA120', pinCount: 120 },
+    ];
+    return chips;
+  }
+
+  const samSources: ResolvedSource[] = [{
+    id: 'microchip-atdf', url: 'https://example.test/dev_packs', dir: '/tmp',
+    license: 'Apache-2.0', commit: 'abc1234',
+  }];
+
+  it('registers strict SAM gates and accepts a complete catalog', () => {
+    expect(samAdapter.strict).toBe(true);
+    expect(createSamGates().map((gate) => gate.name)).toEqual([
+      'sam-reference-parts', 'sam-shard-values', 'sam-provenance',
+    ]);
+    const results = createSamGates().map((gate) =>
+      gate.evaluate(ctx(samChips(), { sources: samSources })),
+    );
+    expect(results.map((result) => result.errors)).toEqual([[], [], []]);
+  });
+
+  it('fails the reference gate on a short count or missing AF index', () => {
+    const reference = createSamGates()[0];
+    expect(reference.evaluate(ctx(samChips().slice(1), { sources: samSources })).errors[0]).toContain('39');
+    const noAf = samChips().map((item) => ({
+      ...item,
+      pins: item.pins.map((pin) => ({ ...pin, signals: [] })),
+    }));
+    expect(reference.evaluate(ctx(noAf, { sources: samSources })).errors.some((e) => e.includes('function-letter'))).toBe(true);
+  });
+
+  it('fails provenance when the microchip-atdf SHA is missing', () => {
+    const provenance = createSamGates()[2];
+    const errors = provenance.evaluate(ctx(samChips(), { sources: [] })).errors;
+    expect(errors.some((e) => e.includes('microchip-atdf'))).toBe(true);
+  });
+});
+
+describe('Nordic strict gate contract', () => {
+  const nordicSources: ResolvedSource[] = [
+    ...nordicAdapter.sourceSpecs.map((spec) => ({ ...spec, commit: 'abc1234' })),
+  ];
+
+  function nordicChips(): ChipData[] {
+    const collector = createWarningCollector();
+    return Array.from(
+      generateNordicParts({
+        paths: testPaths(),
+        sources: nordicSources,
+        warnings: collector,
+      }).chips.values(),
+    );
+  }
+
+  it('registers strict Nordic gates and accepts the generated reference part', () => {
+    expect(nordicAdapter.strict).toBe(true);
+    expect(createNordicGates().map((gate) => gate.name)).toEqual([
+      'nordic-reference-parts', 'nordic-shard-values', 'nordic-provenance',
+    ]);
+    const chips = nordicChips();
+    expect(chips.length).toBeGreaterThan(0);
+    const results = createNordicGates().map((gate) =>
+      gate.evaluate(ctx(chips, { sources: nordicSources })),
+    );
+    expect(results.map((result) => result.errors)).toEqual([[], [], []]);
+  });
+
+  it('fails on a missing PSEL label and incomplete provenance', () => {
+    const chip = nordicChips()[0];
+    const stripped = { ...chip, pins: chip.pins.map((pin) => ({ ...pin, signals: [] })) };
+    const reference = createNordicGates()[0];
+    expect(reference.evaluate(ctx([stripped], { sources: nordicSources })).errors.some(
+      (error) => error.includes('PSEL'),
+    )).toBe(true);
+    const provenance = createNordicGates()[2];
+    expect(provenance.evaluate(ctx([chip], { sources: [] })).errors.some(
+      (error) => error.includes('nrf-pacs'),
+    )).toBe(true);
   });
 });
 

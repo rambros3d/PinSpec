@@ -31,7 +31,7 @@ import type {
   SolverReport,
   WorkspaceState,
 } from './types';
-import { formatMuxLabel, getChipMuxModel } from './types';
+import { formatMuxLabel, getChipMuxModel, isFlexibleRoutingMux } from './types';
 
 export const PERIPHERAL_MODE_TEMPLATES: Record<PeripheralKind, PeripheralModeTemplate[]> = {
   spi: [
@@ -339,8 +339,10 @@ export const MATRIX_ALTERNATE_LIMIT = 12;
 /**
  * Scarcity score for one candidate pin. The optional placement context adds a
  * term that is exactly zero when no preference is enabled, so the default
- * allocator path keeps its original scores and assignments. The matrix term is
- * gated on `gpio-matrix` and is exactly zero for every existing vendor.
+ * allocator path keeps its original scores and assignments. Electrical penalty
+ * terms apply to every flexible-routing mux (`gpio-matrix` and `psel`) and are
+ * zero for vendors without the corresponding derived tags. Direct-route timing
+ * remains specific to `gpio-matrix`.
  */
 export function computePinScarcityScore(
   pin: PinInfo,
@@ -400,14 +402,16 @@ export function computePinScarcityScore(
   const preference = affinity ? affinity.preference : state.placement?.[targetPeripheral];
   score += placementAffinityForPin(pin, chip, preference, affinity ?? {});
 
-  if (getChipMuxModel(chip) === 'gpio-matrix') {
+  const muxModel = getChipMuxModel(chip);
+  if (muxModel === 'gpio-matrix' && hasSpeedCriticalSignal(chip, targetPeripheral)) {
     // Speed-critical routes prefer the direct IO_MUX path over the matrix.
-    if (hasSpeedCriticalSignal(chip, targetPeripheral)) {
-      const direct = pin.signals.some(
-        (sig) => sig.peripheral === targetPeripheral && sig.directRoute === true,
-      );
-      score += direct ? -12 : 6;
-    }
+    const direct = pin.signals.some(
+      (sig) => sig.peripheral === targetPeripheral && sig.directRoute === true,
+    );
+    score += direct ? -12 : 6;
+  }
+  if (isFlexibleRoutingMux(muxModel)) {
+    // Penalties fire only for tags declared by the acquired source data.
     if (pinHasTag(pin, 'strapping')) score += 18;
     if (pinHasTag(pin, 'input-only')) score += 30;
     if (pinHasTag(pin, 'cap-restricted')) score += 12;
@@ -424,7 +428,7 @@ export function findAlternatePins(
   const current = state.assignments[pos];
   if (!current || current.peripheral === 'GPIO') return [];
 
-  if (getChipMuxModel(chip) === 'gpio-matrix') {
+  if (isFlexibleRoutingMux(getChipMuxModel(chip))) {
     const usedSignals = new Set<string>();
     const usedResources = new Set<string>();
     for (const asgn of Object.values(state.assignments)) {
@@ -1224,7 +1228,7 @@ export function reallocatePeripheralPlacement(
  * schema without changing assignments or workspace state.
  */
 export function validateMatrixPlan(chip: ChipData, state: WorkspaceState): DiagnosticItem[] {
-  if (getChipMuxModel(chip) !== 'gpio-matrix') return [];
+  if (!isFlexibleRoutingMux(getChipMuxModel(chip))) return [];
   const reported = new Set<DiagnosticItem['code']>([
     'DUPLICATE_SIGNAL',
     'RESOURCE_CONFLICT',
@@ -1248,7 +1252,7 @@ export function reallocateMatrixPlacement(
   preference?: PinPlacementPreference | null,
   signalNames?: readonly string[],
 ): WorkspaceState {
-  if (getChipMuxModel(chip) !== 'gpio-matrix') {
+  if (!isFlexibleRoutingMux(getChipMuxModel(chip))) {
     return reallocatePeripheralPlacement(chip, state, peripheral, preference, signalNames);
   }
 
@@ -1754,18 +1758,20 @@ function analyzeActiveRemaps(
 }
 
 /**
- * GPIO-matrix electrical diagnostics. Every trigger is derived from chip data
- * (tags, signal direction, peripheral names, declared capacity) and is inert
- * for STM32, CH32, and RP chips.
+ * Electrical diagnostics for flexible-routing vendors. Every trigger is
+ * derived from chip data (tags, signal direction, peripheral names, declared
+ * capacity). Electrical checks apply to both `gpio-matrix` and `psel`; Wi-Fi
+ * and route-capacity checks remain specific to `gpio-matrix`.
  */
 function analyzeMatrix(
   chip: ChipData,
   state: WorkspaceState,
   pinMap: Map<string, PinInfo>,
 ): DiagnosticItem[] {
-  if (getChipMuxModel(chip) !== 'gpio-matrix') return [];
+  const muxModel = getChipMuxModel(chip);
+  if (!isFlexibleRoutingMux(muxModel)) return [];
   const diagnostics: DiagnosticItem[] = [];
-  const wifiEnabled = Object.entries(chip.peripherals).some(([name]) => {
+  const wifiEnabled = muxModel === 'gpio-matrix' && Object.entries(chip.peripherals).some(([name]) => {
     if (!/WIFI/i.test(name)) return false;
     const mode = state.peripheralModes[name];
     if (mode !== undefined) return mode !== 'disabled';
@@ -1828,7 +1834,7 @@ function analyzeMatrix(
     });
   }
 
-  const capacity = chip.matrixRouteCapacity;
+  const capacity = muxModel === 'gpio-matrix' ? chip.matrixRouteCapacity : undefined;
   if (capacity !== undefined) {
     const routePins = Object.entries(state.assignments)
       .filter(([, asgn]) => asgn.peripheral !== 'GPIO')

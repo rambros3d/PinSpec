@@ -172,11 +172,13 @@ describe('peripheral configuration detail and RP PIO panel', () => {
 describe('vendor-aware discovery and presets', () => {
   it('builds vendor tabs with live per-source counts', () => {
     const tabs = buildVendorTabs(meta, index);
-    expect(tabs.map((t) => t.id)).toEqual(['all', 'stm32', 'ch32', 'rp', 'esp32']);
+    expect(tabs.map((t) => t.id)).toEqual(['all', 'stm32', 'ch32', 'rp', 'esp32', 'microchip', 'nordic']);
     expect(tabs[1].count).toBe(meta.sources?.stm32?.chipCount);
     expect(tabs[2].count).toBe(meta.sources?.ch32?.chipCount);
     expect(tabs[3].count).toBe(meta.sources?.rp?.chipCount);
     expect(tabs[4].count).toBe(meta.sources?.esp32?.chipCount);
+    expect(tabs[5].count).toBe(meta.sources?.microchip?.chipCount);
+    expect(tabs[6].count).toBe(meta.sources?.nordic?.chipCount);
   });
 
   it('filters the generated index by vendor, family and package', () => {
@@ -239,7 +241,7 @@ describe('workspace exports and provenance copy', () => {
     expect(modal).toContain('copyContent');
   });
 
-  it('contains no STM32-only claims and credits all eleven upstream sources', () => {
+  it('contains no STM32-only claims and credits all twelve upstream sources', () => {
     const stm32OnlyClaims = [
       'Fast STM32 pinout planning',
       'Jump to STM32 MCU',
@@ -274,6 +276,7 @@ describe('workspace exports and provenance copy', () => {
       'esp-rs/esp-hal',
       'espressif/kicad-libraries',
       'espressif/esp-idf',
+      'Microchip-MPLAB-Harmony/dev_packs',
     ]) {
       expect(footer, source).toContain(source);
     }
@@ -282,6 +285,7 @@ describe('workspace exports and provenance copy', () => {
     expect(meta.sources?.ch32).toBeDefined();
     expect(meta.sources?.rp).toBeDefined();
     expect(meta.sources?.esp32).toBeDefined();
+    expect(meta.sources?.microchip).toBeDefined();
   });
 });
 

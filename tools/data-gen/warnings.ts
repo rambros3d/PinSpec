@@ -8,6 +8,8 @@ export const DEFAULT_WARNING_SOURCE: Record<VendorId, string> = {
   ch32: 'ch32-device-data',
   rp: 'kicad',
   esp32: 'esp-gpio-tool',
+  microchip: 'microchip-atdf',
+  nordic: 'nrf-pacs',
 };
 
 /** Creates a fresh collector that preserves insertion order. */

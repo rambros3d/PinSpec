@@ -6,11 +6,14 @@ import {
   evaluateWorkspace,
   findAlternatePins,
   findOneHopFixForSignal,
+  reallocateMatrixPlacement,
   remapPinAssignment,
+  validateMatrixPlan,
 } from '../src/core/solver';
 import {
   formatMuxLabel,
   getChipMuxModel,
+  isFlexibleRoutingMux,
   type ChipData,
   type OneHopFix,
   type WorkspaceState,
@@ -480,3 +483,38 @@ describe('RP shared resources, PIO and GPIOBASE windows', () => {
     });
   });
 });
+
+describe('Nordic PSEL allocation', () => {
+  const pselSignal = { peripheral: 'UART0', signal: 'TX', af: null, funcLabel: 'UART_TX' };
+  const pselChip: ChipData = {
+    id: 'nRF52840TEST',
+    vendor: 'nordic',
+    muxModel: 'psel',
+    family: 'Nordic',
+    core: 'Cortex-M4',
+    flashKb: 1024,
+    ramKb: 256,
+    package: { name: 'AQFN-1EP', kind: 'perimeter', pinCount: 3, sides: [2, 0, 1, 0] },
+    pins: [
+      { pos: '1', name: 'P0.02', type: 'io', signals: [{ ...pselSignal }] },
+      { pos: '2', name: 'P0.03', type: 'io', tags: ['strapping'], signals: [{ ...pselSignal }] },
+      { pos: '3', name: 'VDD', type: 'power', signals: [] },
+    ],
+    peripherals: { UART0: { kind: 'usart', signals: ['TX'] } },
+  };
+
+  it('uses flexible-routing scoring without inventing matrix route capacity', () => {
+    expect(getChipMuxModel(pselChip)).toBe('psel');
+    expect(isFlexibleRoutingMux(getChipMuxModel(pselChip))).toBe(true);
+    const state = createEmptyWorkspace(pselChip.id);
+    const allocated = reallocateMatrixPlacement(pselChip, state, 'UART0', undefined, ['TX']);
+    expect(allocated.assignments['1']).toMatchObject({ peripheral: 'UART0', signal: 'TX', af: null, funcLabel: 'UART_TX' });
+    expect(validateMatrixPlan(pselChip, allocated).some((d) => d.code === 'MATRIX_ROUTE_LIMIT')).toBe(false);
+
+    const alternates = findAlternatePins(pselChip, allocated, '1');
+    expect(alternates.map((alt) => alt.pos)).toContain('2');
+    expect(alternates.find((alt) => alt.pos === '2')?.funcLabel).toBe('UART_TX');
+    expect(evaluateWorkspace(pselChip, allocated).errorCount).toBe(0);
+  });
+});
+

@@ -19,7 +19,9 @@ import type {
 } from '../../src/core/types';
 import { ch32Adapter } from './adapters/ch32';
 import { esp32Adapter } from './adapters/esp32';
+import { nordicAdapter } from './adapters/nordic';
 import { rpAdapter } from './adapters/rp';
+import { samAdapter } from './adapters/sam';
 import { stm32Adapter } from './adapters/stm32';
 import {
   buildMetaDocument,
@@ -51,6 +53,8 @@ export const DEFAULT_ADAPTERS: VendorAdapter[] = [
   ch32Adapter,
   rpAdapter,
   esp32Adapter,
+  samAdapter,
+  nordicAdapter,
 ];
 
 /** End-of-run view used for logging and tests. */

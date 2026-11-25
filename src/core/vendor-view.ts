@@ -95,6 +95,7 @@ export function orderPeripheralNames(names: string[], partition: PeripheralParti
 export const PIN_TAG_LABELS: Record<PinTag, string> = {
   'debug-sdi': 'SWIO',
   'debug-swd': 'SWD',
+  nfc: 'NFC',
   usb: 'USB',
   adc: 'ADC',
   hstx: 'HSTX',
@@ -117,6 +118,7 @@ export const PIN_TAG_LABELS: Record<PinTag, string> = {
 export const PIN_TAG_ORDER: PinTag[] = [
   'debug-sdi',
   'debug-swd',
+  'nfc',
   'hstx',
   'qspi',
   'usb',
@@ -176,7 +178,7 @@ export interface VendorTab {
  * count from the compact index when a vendor is missing from metadata.
  */
 export function buildVendorTabs(meta: CatalogMeta | null, index: CatalogIndexEntry[]): VendorTab[] {
-  const vendors: VendorId[] = ['stm32', 'ch32', 'rp', 'esp32'];
+  const vendors: VendorId[] = ['stm32', 'ch32', 'rp', 'esp32', 'microchip', 'nordic'];
   const allLabel = 'All';
   return [
     { id: 'all', label: allLabel, count: meta?.chipCount ?? index.length },

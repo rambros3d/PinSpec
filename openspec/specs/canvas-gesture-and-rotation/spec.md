@@ -84,7 +84,7 @@ When a package is rotated, geometry SHALL rotate to the active orientation while
 
 ### Requirement: Rotation is additive version-2 state
 
-Rotation SHALL be stored in version-2 workspace state as an optional field named `packageRotation` whose valid non-absent values are 0, 90, 180, and 270. An absent value SHALL behave as 0 and SHALL serialize identically to the same workspace before this capability. A legacy value of -90 SHALL normalize to 270. Any other unrecognized value SHALL normalize to 0.
+Rotation SHALL be stored in version-2 workspace state as an optional field named `packageRotation` whose valid non-absent values are 0, 90, 180, and 270. An absent value SHALL behave as 0 and SHALL serialize identically to the same workspace before this capability. The former counter-clockwise value -90 and every other unrecognized value SHALL normalize to 0.
 
 #### Scenario: Existing state stays byte-identical
 
@@ -93,7 +93,7 @@ Rotation SHALL be stored in version-2 workspace state as an optional field named
 
 #### Scenario: Untrusted rotation values are normalized
 
-- **WHEN** persisted state, a share link, or a project file contains a rotation value other than 0, 90, 180, 270, or legacy -90
+- **WHEN** persisted state, a share link, or a project file contains a rotation value other than 0, 90, 180, or 270
 - **THEN** the effective rotation is 0 and the rest of the state is still loaded
 
 ### Requirement: Rotation survives every persistence path

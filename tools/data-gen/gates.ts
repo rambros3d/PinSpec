@@ -235,9 +235,11 @@ export function createProvenanceGate(
           }
         }
       }
-      if (meta.chipCount !== ctx.index.length) {
+      const vendorChipCount = (['stm32', 'ch32', 'rp', 'esp32', 'microchip', 'nordic'] as VendorId[])
+        .reduce((total, vendor) => total + (meta.sources?.[vendor]?.chipCount ?? 0), 0);
+      if (vendorChipCount !== ctx.index.length) {
         errors.push(
-          `provenance gate failed: meta chipCount ${meta.chipCount} disagrees with index ${ctx.index.length}.`,
+          `provenance gate failed: meta vendor chip counts ${vendorChipCount} disagree with index ${ctx.index.length}.`,
         );
       }
       return { vendor: 'stm32', name: 'provenance', errors, notes: [] };

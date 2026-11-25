@@ -222,36 +222,16 @@ export function generateCatalog(
   const generatedAt = new Date().toISOString();
   const totalVariants = results.reduce((n, r) => n + r.totalVariants, 0);
   const matchedVariants = results.reduce((n, r) => n + r.matchedVariants, 0);
-  const legacyResult = results.find((r) => r.vendor === 'stm32') ?? results[0];
-  const legacyRate =
-    legacyResult.totalVariants > 0
-      ? (legacyResult.matchedVariants / legacyResult.totalVariants) * 100
-      : 0;
+  const overallRate = totalVariants > 0 ? (matchedVariants / totalVariants) * 100 : 0;
   const metaSources: CatalogMetaSources = {
     ...buildVendorSourcesMeta(adapters, sources, results),
     ...buildSourceRegistry(sources),
-  } as CatalogMetaSources;
-  const meta = buildMetaDocument(
-    generatedAt,
-    {
-      stm32DataCommit:
-        sources.find((s) => s.id === 'embassy-stm32-data')?.commit ??
-        sources[sources.length - 1]?.commit ??
-        'unknown',
-      openPinDataCommit:
-        sources.find((s) => s.id === 'stm32-open-pin-data')?.commit ??
-        sources[0]?.commit ??
-        'unknown',
-      chipCount: index.length,
-      matchRate: legacyRate,
-      families: Array.from(new Set(results.flatMap((r) => r.families))).sort(),
-    },
-    metaSources,
-  );
+  };
+  const meta = buildMetaDocument(generatedAt, metaSources);
   const warningDoc = buildWarningsDocument(generatedAt, warnings.all(), {
     totalVariants,
     matchedVariants,
-    matchRate: meta.matchRate ?? 0,
+    matchRate: overallRate,
   });
 
   const expectedSourceIds = Array.from(new Set(sourceSpecs.map((spec) => canonicalSourceId(spec.id))));
@@ -261,7 +241,7 @@ export function generateCatalog(
     index,
     totalVariants,
     matchedVariants,
-    matchRate: meta.matchRate ?? 0,
+    matchRate: overallRate,
     totalBytes,
     warnings: warnings.all(),
     sources,
@@ -283,7 +263,15 @@ export function generateCatalog(
   writeMetaFile(paths, meta);
   writeWarningsFile(paths, warningDoc);
 
-  logSummary(startedAt, vendorStats, warningDoc, meta, totalBytes, indexBytes);
+  logSummary(
+    startedAt,
+    vendorStats,
+    warningDoc,
+    index.length,
+    Array.from(new Set(results.flatMap((r) => r.families))).sort(),
+    totalBytes,
+    indexBytes,
+  );
 
   return { meta, warnings: warningDoc, gateResults, vendorStats, totalBytes };
 }
@@ -292,7 +280,8 @@ function logSummary(
   startedAt: number,
   vendorStats: GenerationSummary['vendorStats'],
   warningsDoc: WarningsDocument,
-  meta: CatalogMeta,
+  chipCount: number,
+  families: string[],
   totalBytes: number,
   indexBytes: number,
 ): void {
@@ -304,14 +293,14 @@ function logSummary(
     );
   }
   console.log(`  warnings by vendor: ${JSON.stringify(warningsDoc.warningsByVendor)}`);
-  console.log(`  total: ${meta.chipCount} chips, ${warningsDoc.warningCount} warnings`);
+  console.log(`  total: ${chipCount} chips, ${warningsDoc.warningCount} warnings`);
   console.log(`\nData generation complete in ${elapsedSec}s`);
-  console.log(`  Emitted MCUs : ${meta.chipCount}`);
+  console.log(`  Emitted MCUs : ${chipCount}`);
   console.log(`  Match rate   : ${warningsDoc.matchRate.toFixed(2)}% (${warningsDoc.matchedVariants}/${warningsDoc.totalVariants})`);
   console.log(`  Warnings     : ${warningsDoc.warningCount} (written to public/data/build-warnings.json)`);
   console.log(`  Index size   : ${(indexBytes / 1024).toFixed(1)} KB uncompressed`);
   console.log(`  Total output : ${(totalBytes / (1024 * 1024)).toFixed(2)} MB uncompressed`);
-  console.log(`  Families     : ${meta.families.join(', ')}`);
+  console.log(`  Families     : ${families.join(', ')}`);
 }
 
 function main(): void {

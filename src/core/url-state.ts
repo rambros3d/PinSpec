@@ -294,8 +294,6 @@ export function decodeWorkspaceState(encoded: string): DecodeResult {
       if (Object.keys(gpioConfig).length > 0) state.gpioConfig = gpioConfig;
     }
 
-    // Legacy `w` (overlay visibility) and `d` (dock tab) values are ignored:
-    // both are localStorage-only UI preferences and must not enter shared state.
     const rotation = normalizePackageRotation(obj.z);
     if (rotation !== 0) state.packageRotation = rotation;
     if (typeof obj.q === 'number') {

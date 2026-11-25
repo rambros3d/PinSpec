@@ -124,10 +124,9 @@ supposed to be desirable.
   undocumented SMPS variants), record each case in `public/data/build-warnings.json`,
   log the match ratio, and continue. Do not fail the whole catalog for a small
   subset of parts.
-- If a dependency conflict blocks `npm ci`, resolve it in the lockfile and
-  `.npmrc` rather than editing application code. The current `.npmrc` sets
-  `legacy-peer-deps=true` because `svelte-check@4` peer range excludes the
-  TypeScript 7 toolchain.
+- If a dependency conflict blocks `npm ci`, resolve it in the lockfile rather
+  than editing application code. No npm peer-dependency override is currently
+  required; do not add one without a documented conflict.
 - Keep generated output well within the GitHub Pages 1 GB limit. Target under
   150 MB uncompressed across all per-chip JSON shards by omitting unused
   register and memory-map fields.
@@ -135,8 +134,8 @@ supposed to be desirable.
 ### Hard engineering constraints
 
 - **Zero emojis.** Do not use emojis anywhere: UI copy, tooltips, buttons,
-  logs, code comments, commit messages, or documentation. Use monochrome vector
-  icons (`lucide-svelte` or inline SVG) instead.
+  logs, code comments, commit messages, or documentation. Use the Solar Svelte
+  icon package or inline SVG instead.
 - **Strict layer separation.** `src/core/` is 100% pure TypeScript with zero
   Svelte or DOM imports. The solver, history stack, URL codec, and exporters
   must remain deterministically unit-testable with Vitest on the host. Svelte
@@ -161,7 +160,7 @@ supposed to be desirable.
 | Framework | Vite + Svelte 5 (runes) + TypeScript `strict: true` |
 | Package manager | npm (`package-lock.json` is canonical; CI uses `npm ci`) |
 | Styling | Tailwind CSS v4 via `@tailwindcss/vite` |
-| UI primitives | Small custom Svelte 5 runes components; `lucide-svelte` icons |
+| UI primitives | Small custom Svelte 5 runes components; `@solar-icons/svelte` icons |
 | Search & compression | Token-ranking fuzzy search + `fflate` deflate/Base64URL |
 | Testing | Vitest (unit), `tsc --noEmit`, Vite production build |
 | Data pipeline | TypeScript CLI via `tsx` |
@@ -186,10 +185,11 @@ a narrow 3rem icon rail whose width is reserved so it never covers content;
 expansion is a fixed overlay with a backdrop that never reflows the workspace
 canvas. The sidebar also offers a Hotkeys entry above About that opens the shared
 shortcut dialog over the current route; the keyboard reference is not repeated
-on About. Sidebar expansion and the About tab are UI preferences in `localStorage`
-under `pincraft:shell_preferences_v1`; the bar's mode, dialog flags, and search
-focus callback are transient view state in `src/state/top-bar-ui.svelte.ts`.
-Neither category enters share URLs or project files.
+on About. Sidebar expansion is the only UI preference in `localStorage` under
+`pincraft:shell_preferences_v1`; the bar's dialog flags and search focus callback
+are transient view state in `src/state/top-bar-ui.svelte.ts`. Neither category
+enters share URLs or project files. About owns a single static provenance table
+and has no tab preference.
 
 `vite.config.ts` sets `base: process.env.BASE_PATH ?? '/'`. All runtime data
 fetches resolve relative to `import.meta.env.BASE_URL`, e.g.
@@ -204,7 +204,7 @@ PinCraft/
 |   +-- index.ts               # CLI entry point, emitters, gate invocation
 |   +-- gates.ts               # Pure per-vendor and global gate helpers
 |   +-- artifacts.ts           # In-memory shard preparation and artifact writers
-|   +-- adapters/{stm32,ch32,rp,esp32,sam}  # Vendor source parsing and assertions
+|   +-- adapters/{stm32,ch32,rp,esp32,sam,nordic}  # Six vendor source parsers and assertions
 |   +-- sources.ts             # Source declarations and license constants
 |   +-- helpers.ts             # Pure normalization helpers
 +-- src/
@@ -217,18 +217,16 @@ PinCraft/
 |   |   +-- history.ts
 |   |   +-- url-state.ts
 |   |   +-- exporters/{embassy-rust,c-header,csv,json}.ts
-|   +-- state/                 # Svelte 5 runes stores
-|   |   +-- router.svelte.ts
-|   |   +-- catalog.svelte.ts
-|   |   +-- workspace.svelte.ts
-|   |   +-- theme.svelte.ts
+|   +-- state/                 # Nine Svelte 5 runes stores plus the dialog-focus helper
+|   |   +-- {router,catalog,workspace,theme,shell-preferences,
+|   |   |   workspace-preferences,discovery-preferences,
+|   |   |   placement-selection,top-bar-ui}.svelte.ts
 |   +-- pages/{LandingPage,CatalogPage,ProjectsPage,AboutPage,WorkspacePage}.svelte
 |   +-- components/shell/{AppShell,GlobalSidebar,GlobalTopBar}.svelte
 |   +-- components/landing/{PresetGrid,QuickSearchBar}.svelte
-|   +-- components/workspace/{PeripheralTree,PackageCanvas,
-|   |   PerimeterPackage,GridPackage,PinPopover,PinContextMenu,
-|   |   SummaryDrawer,McuSwitcherModal,ExportModal}.svelte
-|   +-- data/hero-chip.json    # Checked-in STM32G431CBU6 snapshot
+|   +-- components/catalog/PackageThumbnail.svelte
+|   +-- components/about/ProvenancePanel.svelte
+|   +-- components/workspace/    # Roughly 25 pin-planning and dialog components
 +-- tests/                     # Vitest: solver, core I/O, data-gen helpers
 +-- .github/workflows/deploy.yml
 +-- vite.config.ts
@@ -263,8 +261,8 @@ PinCraft/
 `npm run gen-data` (or `npm run acquire-sources` on its own) shallow-clones the
 git sources and fetches the raw reference files into the gitignored `.cache/`.
 The generator records a short SHA (or SHA-256 for raw files), license, and URL
-for each of the thirteen canonical sources in `meta.json`, and the landing footer
-displays them. SAM ATDF files are fetched individually from a pinned ref; no
+for each of the thirteen canonical sources in `meta.json`, and the About
+provenance table displays them. SAM ATDF files are fetched individually from a pinned ref; no
 full 320 MB pack clone is performed. The local cache check is existence-only: it does not refresh an
 existing checkout. The weekly CI schedule deletes `.cache/` before acquisition
 so SHAs advance; to update locally, delete the relevant `.cache/` entry first.
@@ -295,15 +293,15 @@ so SHAs advance; to update locally, delete the relevant `.cache/` entry first.
 ### Emitted artifacts
 
 - `public/data/meta.json` - generated timestamp, per-vendor counts and
-  match/coverage ratios, the thirteen canonical source records (`sha`, `url`,
-  `license`), and legacy STM32 top-level fields.
+  match/coverage ratios, and the thirteen canonical source records (`sha`, `url`,
+  `license`) under `sources`.
 - `public/data/index.json` - compact search index with `vendor`, `id`, `family`,
   `core`, `package`, `pinCount`, `flashKb`, `ramKb`, and peripheral counts.
 - `public/data/chips/<MCU>.json` - full `ChipData` for one part.
 - `public/data/build-warnings.json` - always present; `{ id, vendor, source,
   reason }[]` plus aggregate counts for every deferred/unmapped part.
-- `src/data/hero-chip.json` - checked-in `STM32G431CBU6` snapshot; its absence
-  aborts generation.
+- No checked-in chip snapshot exists. Shards are fetched lazily from generated
+  data under `public/data/chips/`.
 
 ### Release gates (`multi-vendor-ci-gates`, build-blocking)
 
@@ -404,7 +402,7 @@ Non-blocking warnings:
   sanitized to snake_case.
 - `c-header.ts`: STM32 PORT/PIN/AF macros, RP Pico SDK `GPIO_FUNC_*` and PWM
   slice macros, or CH32/ch32v003fun macros with a remap summary.
-- `csv.ts`: `Vendor,Position,Pin,Type,Peripheral,Signal,Mux,Resource,Label,Locked`.
+- `csv.ts`: `Vendor,Position,Pin,Type,Peripheral,Signal,Mux,Resource,Label,Locked,Level,Drive,Pull,Speed`.
 - `json.ts`: version-2, deterministically key-sorted project file with import
   parser; empty `activeRemaps`/`pioAssignments` are omitted from share links.
 
@@ -412,31 +410,24 @@ Non-blocking warnings:
 
 ## UI specifications
 
-### Landing page
+### Start screen
 
-Dark by default (`#0b0e14` canvas, `#121722` surface, `#1f2937` hairline,
-`#e5e7eb` text, `#94a3b8` muted), high-contrast light toggle persisted in
-`localStorage`. Faint SVG dot-grid hero backdrop.
+The start screen is a three-zone shell using daisyUI semantic tokens, with the
+theme mode persisted in `localStorage`. It has no hero chip preview, no landing
+export preview, and no technical footer.
 
-Semantic pin colors must be consistent across landing and workspace:
+- Actions column: new pinout from the catalog, board presets, recent sessions,
+  `.ioc` import, version-2 JSON import, and a two-file compare dialog. It is the
+  only surface that accepts `.ioc` files; the compare dialog accepts JSON only.
+- Discovery column: fuzzy catalog quick search with vendor, family, and package
+  filters plus curated starter chips, including generated ESP32 module shards.
+- Rail: compact generated catalog facts (indexed part count, family count, sync
+  date, and per-vendor chip counts) with a retry control on load failure.
 
-| State | Color |
-|---|---|
-| Unused | Slate `#475569` |
-| Power / Reset / Boot | Amber `#eab308` |
-| Assigned (valid) | Emerald `#10b981` |
-| Partial mode | Orange `#f97316` |
-| Conflict / error | Red `#ef4444` |
-| Remap / search highlight | Cyan `#38bdf8` |
-
-Typography: geometric sans for UI; `JetBrains Mono` / monospace for part
-numbers, coordinates, AF indices, and code previews.
-
-Required sections: minimal top nav with live catalog badge and theme toggle;
-split hero with fuzzy quick search (Ctrl+K) and an interactive live
-`STM32G431CBU6` chip preview; recent sessions and curated starter chips;
-four capability cards; tabbed export preview; technical footer with live
-`meta.json` provenance and upstream license credits.
+Pin-state colors live in the vendored daisyUI theme file and package renderers;
+no raw color literal is added to UI markup. Monospace styling is reserved for
+part numbers, coordinates, AF indices, and code previews. Provenance and license
+credits are owned by the About route and repository documentation.
 
 ### Workspace
 
@@ -483,7 +474,7 @@ implemented alongside STM32. Zero STM32 regressions remains mandatory.
   and the thirteen canonical source records
 - `ChipData.variants`, `pinouts`, and `capabilityEvidence` retain ATDF ordercode
   and capability metadata without adding shards
-- Legacy state without these fields defaults to `vendor: 'stm32'`
+- Chips without an explicit vendor are treated as STM32 for display and filtering
 
 ### Data adapters
 

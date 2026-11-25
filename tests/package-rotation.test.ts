@@ -20,6 +20,7 @@ import {
   type WorkspaceState,
 } from '../src/core/types';
 import { decodeWorkspaceState, encodeWorkspaceState } from '../src/core/url-state';
+import { stubCatalogChips } from './helpers/catalog-stub';
 
 const chip: ChipData = {
   id: 'STM32G431CBU6',
@@ -54,8 +55,8 @@ describe('package rotation normalization', () => {
     for (const value of PACKAGE_ROTATIONS) expect(normalizePackageRotation(value)).toBe(value);
   });
 
-  it('normalizes the legacy counter-clockwise value to 270', () => {
-    expect(normalizePackageRotation(-90)).toBe(270);
+  it('rejects the former counter-clockwise value', () => {
+    expect(normalizePackageRotation(-90)).toBe(0);
   });
 
   it('normalizes absent and untrusted values to zero', () => {
@@ -63,6 +64,7 @@ describe('package rotation normalization', () => {
       undefined,
       null,
       -1,
+      -90,
       -180,
       45,
       360,
@@ -151,7 +153,7 @@ describe('package rotation in pure persistence paths', () => {
     }
   });
 
-  it('round-trips every rotation through history including the legacy value', () => {
+  it('round-trips every rotation through history', () => {
     for (const rotation of PACKAGE_ROTATIONS) {
       const history = createWorkspaceHistory(createEmptyWorkspace(chip.id));
       expect(history.push(rotatedState(rotation))).toBe(rotation !== 0);
@@ -163,9 +165,9 @@ describe('package rotation in pure persistence paths', () => {
     }
     const legacy = createWorkspaceHistory(createEmptyWorkspace(chip.id));
     expect(legacy.push({ ...createEmptyWorkspace(chip.id), packageRotation: -90 as never })).toBe(
-      true,
+      false,
     );
-    expect(legacy.current.packageRotation).toBe(270);
+    expect(legacy.current.packageRotation).toBeUndefined();
   });
 
   it('round-trips every rotation through a share link without changing absent payloads', () => {
@@ -181,7 +183,7 @@ describe('package rotation in pure persistence paths', () => {
       encodeWorkspaceState({ ...createEmptyWorkspace(chip.id), packageRotation: -90 as never }),
     );
     expect(legacy.ok).toBe(true);
-    if (legacy.ok) expect(legacy.state.packageRotation).toBe(270);
+    if (legacy.ok) expect(legacy.state.packageRotation).toBeUndefined();
 
     const absentDecoded = decodeWorkspaceState(encodeWorkspaceState(createEmptyWorkspace(chip.id)));
     expect(absentDecoded.ok).toBe(true);
@@ -200,10 +202,10 @@ describe('package rotation in pure persistence paths', () => {
       ...createEmptyWorkspace(chip.id),
       packageRotation: -90 as never,
     });
-    expect(legacyRaw).toContain('"packageRotation": 270');
+    expect(legacyRaw).not.toContain('packageRotation');
     const legacyParsed = parsePinoutJson(legacyRaw);
     expect(legacyParsed.ok).toBe(true);
-    if (legacyParsed.ok) expect(legacyParsed.state.packageRotation).toBe(270);
+    if (legacyParsed.ok) expect(legacyParsed.state.packageRotation).toBeUndefined();
 
     const absentRaw = exportPinoutJson(createEmptyWorkspace(chip.id));
     expect(absentRaw).not.toContain('packageRotation');
@@ -260,7 +262,7 @@ describe('workspace rotation control', () => {
     vi.resetModules();
     const { workspaceStore } = await import('../src/state/workspace.svelte.ts');
     const { catalogStore } = await import('../src/state/catalog.svelte.ts');
-    catalogStore.primeChip(chip);
+    stubCatalogChips(catalogStore, chip);
     await workspaceStore.openMcu(chip.id);
 
     expect(workspaceStore.rotation).toBe(0);

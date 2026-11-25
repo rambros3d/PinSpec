@@ -1036,7 +1036,7 @@ export function allocatePeripheralMode(
         options.push({
           pin,
           sig: match,
-          score: computePinScarcityScore(pin, chip, next, signalCountsOrMap(signalPinCounts), peripheralName),
+          score: computePinScarcityScore(pin, chip, next, signalPinCounts, peripheralName),
         });
       }
       options.sort((a, b) => a.score - b.score);
@@ -1087,10 +1087,6 @@ export function allocatePeripheralMode(
   }
 
   return { state: next, allocated, unallocated, suggestions };
-}
-
-function signalCountsOrMap(m: Map<string, number>): Map<string, number> {
-  return m;
 }
 
 export function togglePeripheralSignal(
@@ -1349,8 +1345,6 @@ export function reallocateMatrixPlacement(
     };
   }
 
-  // Validation is read-only; the workspace report surfaces its diagnostics.
-  void validateMatrixPlan(chip, next);
   return next;
 }
 

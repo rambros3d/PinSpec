@@ -174,14 +174,14 @@ export interface VendorTab {
 }
 
 /**
- * Build vendor tabs with live counts from `meta.json.sources` and a fallback
- * count from the compact index when a vendor is missing from metadata.
+ * Build vendor tabs with per-vendor counts from `meta.json.sources`, falling
+ * back to the compact index, and the total from the index itself.
  */
 export function buildVendorTabs(meta: CatalogMeta | null, index: CatalogIndexEntry[]): VendorTab[] {
   const vendors: VendorId[] = ['stm32', 'ch32', 'rp', 'esp32', 'microchip', 'nordic'];
   const allLabel = 'All';
   return [
-    { id: 'all', label: allLabel, count: meta?.chipCount ?? index.length },
+    { id: 'all', label: allLabel, count: index.length },
     ...vendors.map((vendor) => ({
       id: vendor,
       label: vendor.toUpperCase(),

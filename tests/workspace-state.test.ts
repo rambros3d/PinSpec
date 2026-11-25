@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { decodeWorkspaceState } from '../src/core/url-state';
 import type { ChipData, WorkspaceState } from '../src/core/types';
+import { stubCatalogChips } from './helpers/catalog-stub';
 
 /** Fresh store instances keep each test's history and recent sessions isolated. */
 async function freshWorkspace() {
@@ -87,7 +88,7 @@ const rp: ChipData = {
 describe('workspace store multi-vendor state', () => {
   it('commits, persists, undoes and redoes an active remap selection', async () => {
     const { workspaceStore, catalogStore } = await freshWorkspace();
-    catalogStore.primeChip(ch32);
+    stubCatalogChips(catalogStore, ch32);
     await workspaceStore.openMcu(ch32.id);
 
     workspaceStore.assignPin('1', { peripheral: 'USART1', signal: 'TX', af: null });
@@ -116,7 +117,7 @@ describe('workspace store multi-vendor state', () => {
 
   it('round-trips PIO bindings through a share link and recent sessions', async () => {
     const { workspaceStore, catalogStore } = await freshWorkspace();
-    catalogStore.primeChip(rp);
+    stubCatalogChips(catalogStore, rp);
     await workspaceStore.openMcu(rp.id);
     workspaceStore.assignPin('2', { peripheral: 'SPI0', signal: 'SCK', af: 1 });
 
@@ -145,7 +146,7 @@ describe('workspace store multi-vendor state', () => {
 
   it('hydrates remaps and PIO bindings from a recent session', async () => {
     const { workspaceStore, catalogStore } = await freshWorkspace();
-    catalogStore.primeChip(ch32);
+    stubCatalogChips(catalogStore, ch32);
     const restored: WorkspaceState = {
       mcuId: ch32.id,
       assignments: { '3': { peripheral: 'USART1', signal: 'TX', af: null, remapId: 1 } },

@@ -104,11 +104,6 @@ export class ThemeStore {
     const index = THEME_MODES.indexOf(this.mode);
     this.set(THEME_MODES[(index + 1) % THEME_MODES.length]);
   }
-
-  /** Alias retained for callers that used the previous toggle API. */
-  toggle(): void {
-    this.cycle();
-  }
 }
 
 export const themeStore = new ThemeStore();

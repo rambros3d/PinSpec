@@ -11,6 +11,7 @@ import {
 import { createEmptyWorkspace } from '../src/core/solver';
 import type { ChipData, WorkspaceState } from '../src/core/types';
 import { decodeWorkspaceState, encodeWorkspaceState } from '../src/core/url-state';
+import { stubCatalogChips } from './helpers/catalog-stub';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -192,7 +193,7 @@ describe('workspace store naming', () => {
   it('generates a name only for a fresh MCU session', async () => {
     installStorage();
     const { workspaceStore, catalogStore } = await freshWorkspace();
-    catalogStore.primeChip(chip);
+    stubCatalogChips(catalogStore, chip);
     const random = vi.spyOn(Math, 'random');
     random.mockReturnValueOnce(0).mockReturnValueOnce(1 / PROJECT_NAME_WORDS.length);
 
@@ -205,7 +206,7 @@ describe('workspace store naming', () => {
   it('reuses stored names from recent sessions, handoffs, share links and files', async () => {
     installStorage();
     const { workspaceStore, catalogStore } = await freshWorkspace();
-    catalogStore.primeChip(chip);
+    stubCatalogChips(catalogStore, chip);
     const saved: WorkspaceState = {
       ...createEmptyWorkspace(chip.id),
       projectName: 'saved-quartz-stm32g4',
@@ -228,7 +229,7 @@ describe('workspace store naming', () => {
       ]),
     });
     const reopened = await freshWorkspace();
-    reopened.catalogStore.primeChip(chip);
+    stubCatalogChips(reopened.catalogStore, chip);
     await reopened.workspaceStore.openMcu(chip.id);
     expect(reopened.workspaceStore.state.projectName).toBe('saved-quartz-stm32g4');
 
@@ -237,7 +238,7 @@ describe('workspace store naming', () => {
     expect(decoded.ok).toBe(true);
     if (decoded.ok) {
       const shared = await freshWorkspace();
-      shared.catalogStore.primeChip(chip);
+      stubCatalogChips(shared.catalogStore, chip);
       await shared.workspaceStore.openMcu(chip.id, decoded.state);
       expect(shared.workspaceStore.state.projectName).toBe('saved-quartz-stm32g4');
     }
@@ -246,7 +247,7 @@ describe('workspace store naming', () => {
     expect(imported.ok).toBe(true);
     if (imported.ok) {
       const fromFile = await freshWorkspace();
-      fromFile.catalogStore.primeChip(chip);
+      stubCatalogChips(fromFile.catalogStore, chip);
       await fromFile.workspaceStore.openMcu(chip.id, imported.state);
       expect(fromFile.workspaceStore.state.projectName).toBe('saved-quartz-stm32g4');
     }
@@ -256,7 +257,7 @@ describe('workspace store naming', () => {
   it('commits active renames through history and sanitizes the value', async () => {
     installStorage();
     const { workspaceStore, catalogStore } = await freshWorkspace();
-    catalogStore.primeChip(chip);
+    stubCatalogChips(catalogStore, chip);
     await workspaceStore.openMcu(chip.id);
     const generatedName = workspaceStore.state.projectName;
 
@@ -278,8 +279,8 @@ describe('workspace store naming', () => {
     installStorage();
     const { workspaceStore, catalogStore } = await freshWorkspace();
     const other = makeChip('OTHERMCU', 'OTHERFAMILY');
-    catalogStore.primeChip(chip);
-    catalogStore.primeChip(other);
+    stubCatalogChips(catalogStore, chip);
+    stubCatalogChips(catalogStore, other);
     await workspaceStore.openMcu(chip.id);
     const originalName = workspaceStore.state.projectName;
 

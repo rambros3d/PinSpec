@@ -192,14 +192,6 @@ export class HistoryStack<T = WorkspaceState> {
     return this.future.length > 0;
   }
 
-  get undoCount(): number {
-    return this.past.length;
-  }
-
-  get redoCount(): number {
-    return this.future.length;
-  }
-
   push(next: T): boolean {
     if (this.equalsFn(this.present, next)) {
       return false;

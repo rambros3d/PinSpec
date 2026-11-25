@@ -153,7 +153,6 @@
   }
 
   onMount(() => {
-    topBarUI.workspaceMode = true;
     const onKeyDown = (e: KeyboardEvent) => {
       if (document.querySelector('dialog[open]')) return;
       const target = e.target as HTMLElement | null;
@@ -207,7 +206,7 @@
       <div class="flex items-center gap-2">
         <button
           type="button"
-          onclick={() => router.navigateHome()}
+          onclick={() => router.navigateCatalog()}
           class="btn btn-link btn-sm font-medium"
         >
           Browse Catalog

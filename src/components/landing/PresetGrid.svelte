@@ -171,7 +171,7 @@
           Cross-Vendor Starter Chips
         </h2>
         <p class="text-sm text-base-content/60">
-          Jump straight into STM32, CH32 and RP parts across SOP, QFN, LQFP and matrix BGA packages.
+          Jump straight into STM32, CH32, RP, ESP32, Microchip SAM, and Nordic parts across SOP, QFN, LQFP and matrix BGA packages.
         </p>
       </div>
     </div>

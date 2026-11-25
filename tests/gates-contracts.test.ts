@@ -314,9 +314,9 @@ describe('provenance and warning contracts', () => {
     const registry = buildSourceRegistry(sources);
     const vendorSources = buildVendorSourcesMeta(DEFAULT_ADAPTERS, sources, results);
     const meta = buildMetaDocument('2026-01-01T00:00:00.000Z', {
-      stm32DataCommit: 'abc1234', openPinDataCommit: 'abc1234', chipCount: 0,
-      matchRate: 100, families: [],
-    }, { ...vendorSources, ...registry });
+      ...vendorSources,
+      ...registry,
+    });
     const base = ctx([], { meta, warningDoc: buildWarningsDocument('2026-01-01T00:00:00.000Z', [], {
       totalVariants: 0, matchedVariants: 0, matchRate: 100,
     }) });

@@ -109,3 +109,13 @@ describe('two-word generator independence', () => {
     expect(generateProjectName({ id: 'RP2040', family: '' }, freshRng())).toBe('amber-quartz');
   });
 });
+
+describe('workspace error banner navigation', () => {
+  it('routes the Browse Catalog action to the catalog, not home', () => {
+    const page = read('src/pages/WorkspacePage.svelte');
+    const banner = page.slice(page.indexOf('workspace-banner'), page.indexOf('<!-- Three-Pane Workspace Body -->'));
+    expect(banner).toContain('Browse Catalog');
+    expect(banner).toContain('router.navigateCatalog()');
+    expect(banner).not.toContain('router.navigateHome()');
+  });
+});

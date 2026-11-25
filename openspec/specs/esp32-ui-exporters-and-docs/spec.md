@@ -77,26 +77,24 @@ macros. CSV, JSON, and share-link output SHALL remain vendor-neutral.
 - **WHEN** an ESP32 workspace is exported to CSV, JSON, or a share link
 - **THEN** the existing vendor, mux, and version-2 schemas are used with no new field
 
-### Requirement: Provenance attribution covers eleven sources
+### Requirement: Provenance attribution covers thirteen sources
 
-The start screen footer, document metadata, and repository documentation SHALL
-credit the eleven canonical sources and list all four vendors with live counts
-and source revisions from generated metadata.
+The About provenance table, document metadata, and repository documentation SHALL credit the thirteen canonical sources and list all six vendors with live counts and source revisions from generated metadata. No start-screen footer SHALL be rendered or required.
 
 #### Scenario: Footer lists all sources
 
 - **WHEN** generated metadata is available
-- **THEN** the footer lists the seven existing sources and the four ESP32 sources with their licenses, revisions, and per-vendor counts
+- **THEN** the About table lists the nine pre-ESP32 sources and the four ESP32 sources with their licenses, revisions, and per-vendor counts
 
 #### Scenario: ESP32 vendor entry
 
 - **WHEN** the provenance vendor summary is rendered
-- **THEN** it includes `esp32` alongside STM32, CH32, and RP and reads its count from the generated metadata
+- **THEN** it includes `esp32` alongside STM32, CH32, RP, Microchip SAM, and Nordic and reads its count from the generated metadata
 
 #### Scenario: Documentation and metadata agree
 
 - **WHEN** the repository documentation and document metadata are inspected
-- **THEN** they describe four vendors and eleven sources and contain no STM32-only coverage claim
+- **THEN** they describe six vendors and thirteen sources and contain no STM32-only coverage claim or landing-footer requirement
 
 ### Requirement: Existing vendors keep their behavior
 

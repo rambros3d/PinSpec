@@ -48,6 +48,7 @@ import {
   type WorkspaceState,
 } from '../src/core/types';
 import { decodeWorkspaceState, encodeWorkspaceState } from '../src/core/url-state';
+import { stubCatalogChips } from './helpers/catalog-stub';
 
 const ROOT = process.cwd();
 
@@ -366,7 +367,7 @@ describe('placement-driven reallocation', () => {
     vi.resetModules();
     const { workspaceStore } = await import('../src/state/workspace.svelte.ts');
     const { catalogStore } = await import('../src/state/catalog.svelte.ts');
-    catalogStore.primeChip(chip);
+    stubCatalogChips(catalogStore, chip);
     await workspaceStore.openMcu(chip.id);
     workspaceStore.assignPin('2', { peripheral: 'SPI1', signal: 'SCK', af: 5 });
     workspaceStore.assignPin('6', { peripheral: 'SPI1', signal: 'MISO', af: 5 });
@@ -460,7 +461,7 @@ describe('placement persistence', () => {
     expect(parsePinoutJson(exportPinoutJson(empty))).toEqual({ ok: true, state: empty });
   });
 
-  it('ignores the legacy overlay flag from earlier version-2 payloads', () => {
+  it('keeps view-only keys out of decoded state', () => {
     const raw = JSON.stringify({
       v: 2,
       m: chip.id,
@@ -526,7 +527,7 @@ describe('placement persistence', () => {
     const { workspaceStore } = await import('../src/state/workspace.svelte.ts');
     const { catalogStore } = await import('../src/state/catalog.svelte.ts');
     const { viewPreferences } = await import('../src/state/workspace-preferences.svelte.ts');
-    catalogStore.primeChip(chip);
+    stubCatalogChips(catalogStore, chip);
     await workspaceStore.openMcu(chip.id);
     workspaceStore.setPlacement('SPI1', { angle: 123.5, ring: 'high', enabled: true });
     workspaceStore.setPlacementOverlayVisible(true);
@@ -792,7 +793,7 @@ describe('placement overlay interaction refresh', () => {
     vi.resetModules();
     const { workspaceStore } = await import('../src/state/workspace.svelte.ts');
     const { catalogStore } = await import('../src/state/catalog.svelte.ts');
-    catalogStore.primeChip(chip);
+    stubCatalogChips(catalogStore, chip);
     await workspaceStore.openMcu(chip.id);
 
     workspaceStore.setPlacement('SPI1', { angle: 10, ring: 'high', enabled: true });
@@ -872,34 +873,28 @@ describe('priority ring identifiers', () => {
     expect(panel).toContain("ring: 'low', enabled: true");
   });
 
-  it('normalizes legacy spatial ring names through every parse surface', () => {
-    expect(normalizePlacementRing('inner')).toBe('high');
-    expect(normalizePlacementRing('middle')).toBe('medium');
-    expect(normalizePlacementRing('outer')).toBe('low');
-    expect(normalizePlacementRing('other')).toBeNull();
-    expect(parsePinPlacementPreference({ angle: 45, ring: 'inner', enabled: true })).toEqual({
-      angle: 45,
-      ring: 'high',
-      enabled: true,
-    });
+  it('rejects spatial ring names through every parse surface', () => {
+    for (const value of ['inner', 'middle', 'outer', 'other', 1, null]) {
+      expect(normalizePlacementRing(value)).toBeNull();
+      expect(parsePinPlacementPreference({ angle: 45, ring: value, enabled: true })).toBeNull();
+    }
     expect(
       canonicalPinPlacementPreference({
         angle: 45,
-        ring: 'middle',
+        ring: 'inner',
         enabled: true,
       } as unknown as PinPlacementPreference),
-    ).toEqual({ angle: 45, ring: 'medium', enabled: true });
+    ).toEqual({ angle: 45, ring: 'low', enabled: true });
     expect(
       normalizePlacement({
         placement: {
           SPI1: { angle: 90, ring: 'outer', enabled: true },
         },
-      } as unknown as Pick<WorkspaceState, 'placement'>).preferences
-        .SPI1,
-    ).toEqual({ angle: 90, ring: 'low', enabled: true });
+      } as unknown as Pick<WorkspaceState, 'placement'>).preferences,
+    ).toEqual({});
   });
 
-  it('normalizes legacy rings from share links and project files', () => {
+  it('rejects spatial rings from share links and project files', () => {
     const raw = JSON.stringify({
       v: 2,
       m: chip.id,
@@ -908,12 +903,7 @@ describe('priority ring identifiers', () => {
     const encoded = Buffer.from(deflateSync(strToU8(raw), { level: 9 })).toString('base64url');
     const decoded = decodeWorkspaceState(encoded);
     expect(decoded.ok).toBe(true);
-    if (decoded.ok) {
-      expect(decoded.state.placement).toEqual({
-        SPI1: { angle: 123.5, ring: 'high', enabled: true },
-        USART1: { angle: 300, ring: 'medium', enabled: false },
-      });
-    }
+    if (decoded.ok) expect(decoded.state.placement).toBeUndefined();
 
     const parsed = parsePinoutJson(
       JSON.stringify({
@@ -928,12 +918,7 @@ describe('priority ring identifiers', () => {
       }),
     );
     expect(parsed.ok).toBe(true);
-    if (parsed.ok) {
-      expect(parsed.state.placement).toEqual({
-        SPI1: { angle: 10, ring: 'medium', enabled: true },
-        USART1: { angle: 20, ring: 'low', enabled: false },
-      });
-    }
+    if (parsed.ok) expect(parsed.state.placement).toBeUndefined();
   });
 
   it('round-trips current ring names through both codecs', () => {
@@ -1283,7 +1268,7 @@ describe('matrix placement store dispatch', () => {
       '6': { peripheral: 'SPI2', signal: 'MOSI', af: null },
       '7': { peripheral: 'SPI2', signal: 'MISO', af: null },
     };
-    catalogStore.primeChip(c);
+    stubCatalogChips(catalogStore, c);
     await workspaceStore.openMcu(c.id, initial);
     const preference: PinPlacementPreference = { angle: 90, ring: 'high', enabled: true };
 

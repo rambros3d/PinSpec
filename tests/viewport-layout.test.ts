@@ -13,6 +13,7 @@ import {
   type WorkspaceState,
 } from '../src/core/types';
 import { decodeWorkspaceState, encodeWorkspaceState } from '../src/core/url-state';
+import { stubCatalogChips } from './helpers/catalog-stub';
 
 const ROOT = process.cwd();
 const readSource = (rel: string): string => fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -522,7 +523,7 @@ describe('dock tab persistence', () => {
     if (parsed.ok) expect(parsed.state).toEqual(pinConfigState);
   });
 
-  it('ignores legacy dock values while preserving pin configuration', () => {
+  it('keeps view-only dock keys out of decoded state', () => {
     const legacyUrl = decodeWorkspaceState(
       encodeLegacyUrlPayload({
         v: 2,
@@ -576,7 +577,7 @@ describe('dock tab persistence', () => {
       const { viewPreferences, VIEW_PREFERENCES_STORAGE_KEY } = await import(
         '../src/state/workspace-preferences.svelte.ts'
       );
-      catalogStore.primeChip(chip);
+      stubCatalogChips(catalogStore, chip);
       await workspaceStore.openMcu(chip.id);
       workspaceStore.assignPin('15', { peripheral: 'SPI1', signal: 'SCK', af: 5 });
       workspaceStore.toggleLock('15');

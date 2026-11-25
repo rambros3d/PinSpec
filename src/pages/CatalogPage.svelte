@@ -133,7 +133,7 @@
   <main class="max-w-7xl w-full mx-auto px-6 py-8 space-y-6 flex-1">
     <p class="text-[11px] text-base-content/60 font-mono-tabular">
       {#if catalogStore.meta}
-        {catalogStore.meta.chipCount.toLocaleString()} parts indexed
+        {catalogStore.index.length.toLocaleString()} parts indexed
       {:else}
         Loading generated catalog
       {/if}

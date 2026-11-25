@@ -10,13 +10,9 @@
   } from '../../data/provenance';
   import type { CatalogSourceId, VendorId } from '../../core/types';
   import { catalogStore } from '../../state/catalog.svelte';
-  import type { AboutTab } from '../../state/shell-preferences.svelte';
 
-  interface Props {
-    tab: AboutTab;
-  }
-
-  let { tab }: Props = $props();
+  /** Family count comes from the generated index, not a duplicated meta field. */
+  const familyCount = $derived(new Set(catalogStore.index.map((entry) => entry.family)).size);
 
   /** Static attribution grouping; no hardware fact is inferred from it. */
   const SOURCE_GROUPS: Partial<Record<VendorId, readonly CatalogSourceId[]>> = {
@@ -47,7 +43,7 @@
     <h2 id="catalog-sources-title" class="text-sm font-semibold text-foreground">Catalog sources</h2>
     <span class="font-mono-tabular text-[11px] text-base-content/60">
       {#if catalogStore.meta}
-        {catalogStore.meta.chipCount.toLocaleString()} parts indexed · {catalogStore.meta.families.length} families · Synced {formatSyncDate(catalogStore.meta.generatedAt)}
+        {catalogStore.index.length.toLocaleString()} parts indexed · {familyCount} families · Synced {formatSyncDate(catalogStore.meta.generatedAt)}
       {:else}
         Catalog statistics unavailable
       {/if}
@@ -126,6 +122,4 @@
       Loading catalog statistics...
     </p>
   {/if}
-
-  <span class="sr-only">{tab} tab</span>
 </section>

@@ -70,7 +70,7 @@ Total generated JSON under `public/data/` MUST stay below 150 MB uncompressed an
 #### Scenario: Metadata is complete
 
 - **WHEN** generation succeeds for all six vendors
-- **THEN** `meta.json` contains all thirteen source SHAs and per-vendor counts and ratios, and the landing footer can render them
+- **THEN** `meta.json` contains all thirteen source SHAs and per-vendor counts and ratios, and the About provenance table can render them
 
 #### Scenario: Source SHA missing
 
@@ -140,32 +140,32 @@ Every runtime asset and data fetch MUST resolve relative to `import.meta.env.BAS
 
 ### Requirement: Multi-vendor documentation and attribution
 
-`README.md` and `AGENTS.md` MUST document multi-vendor data generation, the gate commands, and the verification sequence, and the landing technical footer MUST list all thirteen upstream sources with their licenses and render the SHAs and counts from `meta.json`. Documentation MUST cover STM32, CH32, RP, ESP32, SAM, and Nordic generation.
+`README.md` and `AGENTS.md` MUST document multi-vendor data generation, the gate commands, and the verification sequence. About owns the provenance reference: it MUST list all thirteen upstream sources with their licenses and render SHAs and counts from `meta.json`. Documentation MUST cover STM32, CH32, RP, ESP32, SAM, and Nordic generation and MUST NOT claim a landing technical footer.
 
 #### Scenario: Documentation reflects shipped behavior
 
 - **WHEN** the change is complete
-- **THEN** README and AGENTS.md describe STM32, CH32, RP, ESP32, SAM, and Nordic generation and the footer lists all thirteen sources with licenses and live metadata
+- **THEN** README and AGENTS.md describe STM32, CH32, RP, ESP32, SAM, and Nordic generation, the About table lists all thirteen sources with licenses and live metadata, and no landing footer is claimed
 
 #### Scenario: Footer omits a license
 
-- **WHEN** any of the thirteen upstream licenses is missing from the footer or documentation
+- **WHEN** any of the thirteen upstream licenses is missing from About or documentation
 - **THEN** the documentation verification check fails
 
 #### Scenario: ESP32 attribution data available
 
 - **WHEN** `meta.json` is generated with the ESP32 adapter registered
-- **THEN** the four added ESP32 sources carry license and SHA values that the footer and documentation checks can render
+- **THEN** the four added ESP32 sources carry license and SHA values that the About table and documentation checks can render
 
 #### Scenario: SAM attribution data available
 
 - **WHEN** `meta.json` is generated with the SAM adapter registered
-- **THEN** the Microchip ATDF source carries an Apache-2.0 license and a SHA value that the footer and documentation checks can render
+- **THEN** the Microchip ATDF source carries an Apache-2.0 license and a SHA value that the About table and documentation checks can render
 
 #### Scenario: Nordic attribution data available
 
 - **WHEN** `meta.json` is generated with the Nordic adapter registered
-- **THEN** the nrf-pacs source, the Nordic Zephyr and KiCad evidence records, and the `nordic` vendor summary carry license and SHA values that the footer and documentation checks can render
+- **THEN** the nrf-pacs source, the Nordic Zephyr and KiCad evidence records, and the `nordic` vendor summary carry license and SHA values that the About table and documentation checks can render
 
 ### Requirement: No emojis and no stray color literals
 Delivered files MUST NOT contain emoji characters and MUST NOT introduce raw color literals outside `src/themes/daisyui.css`; new UI MUST use existing semantic tokens from `src/app.css`.

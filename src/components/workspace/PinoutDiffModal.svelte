@@ -313,7 +313,7 @@
           Before
           <input
             type="file"
-            accept=".json,.ioc,application/json"
+            accept=".json,application/json"
             class="file-input file-input-xs min-w-0 flex-1 text-[11px]"
             onchange={(e) => {
               const file = (e.currentTarget as HTMLInputElement).files?.[0];
@@ -342,7 +342,7 @@
           After
           <input
             type="file"
-            accept=".json,.ioc,application/json"
+            accept=".json,application/json"
             class="file-input file-input-xs min-w-0 flex-1 text-[11px]"
             onchange={(e) => {
               const file = (e.currentTarget as HTMLInputElement).files?.[0];

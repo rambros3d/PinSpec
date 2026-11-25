@@ -32,7 +32,7 @@
   import { router } from '../state/router.svelte';
   import { workspaceStore } from '../state/workspace.svelte';
 
-  // Starter-chip tags come from generated catalog data, not a curated list.
+  // Starter-chip tags and family counts come from generated catalog data.
   const moduleIds = $derived(
     new Set(
       catalogStore.index
@@ -40,6 +40,7 @@
         .map((entry) => entry.id.toUpperCase()),
     ),
   );
+  const familyCount = $derived(new Set(catalogStore.index.map((entry) => entry.family)).size);
 
   let searchRef = $state<{ focusInput: () => void } | undefined>(undefined);
   let presetsRef = $state<HTMLElement | null>(null);
@@ -213,7 +214,7 @@
       <div class="px-1 pb-2">
         <h1 class="text-xl font-semibold tracking-tight text-foreground">Start a pinout</h1>
         <p class="text-xs text-base-content/60 mt-1">
-          Pin allocation for STM32, CH32 and RP parts in the browser.
+          Pin allocation for STM32, CH32, RP, ESP32, Microchip SAM, and Nordic parts in the browser.
         </p>
         <a href="#presets" class="link link-hover text-xs mt-1 inline-block">Starter chips</a>
       </div>
@@ -327,12 +328,12 @@
         <div class="flex flex-wrap items-center gap-2 text-xs font-mono-tabular text-base-content/60">
           <span>
             {#if catalogStore.meta}
-              {catalogStore.meta.chipCount.toLocaleString()} parts indexed · {catalogStore.meta.families.length} families
+              {catalogStore.index.length.toLocaleString()} parts indexed · {familyCount} families
             {:else}
-              STM32, CH32 and RP pinout planning
+              STM32, CH32, RP, ESP32, Microchip SAM, and Nordic pinout planning
             {/if}
           </span>
-          <span class="badge badge-sm badge-accent">Static / offline-ready</span>
+          <span class="badge badge-sm badge-accent">Static / no backend</span>
           <span class="badge badge-sm badge-secondary">Open datasets</span>
         </div>
 

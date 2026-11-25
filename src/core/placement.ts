@@ -2,7 +2,6 @@ import {
   PLACEMENT_RINGS,
   PLACEMENT_RING_RANK,
   type ChipData,
-  type LegacyPlacementRing,
   type AlternatePinCandidate,
   type PackageInfo,
   type PeripheralStatus,
@@ -28,21 +27,10 @@ export interface PlacementIndicator {
   claimed: string[];
 }
 
-/** Legacy spatial names mapped onto the current priority ring identifiers. */
-const LEGACY_RING_MAP: Record<LegacyPlacementRing, PlacementRing> = {
-  inner: 'high',
-  middle: 'medium',
-  outer: 'low',
-};
-
-/** Normalize a persisted ring name, accepting legacy spatial identifiers. */
+/** Normalize a persisted ring name to the current priority identifiers. */
 export function normalizePlacementRing(value: unknown): PlacementRing | null {
   if (typeof value !== 'string') return null;
-  if ((PLACEMENT_RINGS as readonly string[]).includes(value)) return value as PlacementRing;
-  if (Object.prototype.hasOwnProperty.call(LEGACY_RING_MAP, value)) {
-    return LEGACY_RING_MAP[value as LegacyPlacementRing];
-  }
-  return null;
+  return (PLACEMENT_RINGS as readonly string[]).includes(value) ? (value as PlacementRing) : null;
 }
 
 /** Derive an angle from a peripheral preference, wrapping into [0, 360). */
@@ -57,7 +45,7 @@ export function angularGap(a: number, b: number): number {
   return Math.min(diff, 360 - diff);
 }
 
-/** Validate one untrusted persisted placement preference, normalizing legacy rings. */
+/** Validate one untrusted persisted placement preference against current rings. */
 export function parsePinPlacementPreference(value: unknown): PinPlacementPreference | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   const rec = value as Record<string, unknown>;

@@ -139,6 +139,8 @@ describe('diff modal source contract', () => {
     const modal = source('src/components/workspace/PinoutDiffModal.svelte');
     expect(modal).toContain('type="file"');
     expect(modal.match(/type="file"/g)?.length).toBe(2);
+    expect(modal.match(/accept="\.json,application\/json"/g)?.length).toBe(2);
+    expect(modal).not.toContain('accept=".json,.ioc,application/json"');
     expect(modal).toContain("'idle'");
     expect(modal).toContain("'loading'");
     expect(modal).toContain("'ready'");

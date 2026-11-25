@@ -329,27 +329,26 @@ right-click, and hover on package pins keep working while the overlay is shown.
 - **WHEN** the placement overlay is visible and the user clicks a package pin that lies under a ring
 - **THEN** the normal pin popover or context menu opens instead of the ring capturing the click
 
-### Requirement: Persisted ring values normalize legacy names
+### Requirement: Persisted ring values use the current three names
 
 Persisted placement ring values SHALL use the identifiers high, medium, and
-low, with display labels High, Medium, and Low. When version-2 share URLs or
-project JSON contain the legacy ring values inner, middle, or outer, the system
-SHALL accept them and normalize them to high, medium, and low respectively
-before use, so existing preferences are not silently dropped.
+low, with display labels High, Medium, and Low. The former spatial values inner,
+middle, and outer SHALL be rejected by every decode boundary rather than mapped
+onto current rings.
 
-#### Scenario: Legacy share link ring values normalize
+#### Scenario: Former spatial share link ring values are rejected
 
 - **WHEN** a version-2 share URL contains a placement preference with ring `inner`
-- **THEN** decoding stores that preference with ring `high` and preserved angle and enabled flag
+- **THEN** decoding stores no placement preference for that peripheral
 
-#### Scenario: Legacy project file ring values normalize
+#### Scenario: Former spatial project file ring values are rejected
 
 - **WHEN** a project JSON file contains placement preferences with rings `middle` and `outer`
-- **THEN** parsing stores them with rings `medium` and `low`
+- **THEN** parsing stores no placement preferences for those peripherals
 
-#### Scenario: Allocation rank follows normalized ring names
+#### Scenario: Allocation rank follows the current ring names
 
-- **WHEN** a legacy preference has been normalized to a new ring name
+- **WHEN** preferences use the current ring names
 - **THEN** allocation ranks high first, then medium, then low
 
 ### Requirement: No floating placement properties panel on the canvas

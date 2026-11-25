@@ -19,10 +19,9 @@ describe('catalog error state and retry', () => {
   it('retries a failed catalog load and clears the error on success', async () => {
     const meta = {
       generatedAt: '2026-01-01T00:00:00.000Z',
-      stm32DataCommit: 'test',
-      openPinDataCommit: 'test',
-      chipCount: 1,
-      families: ['STM32G4'],
+      sources: {
+        stm32: { chipCount: 1, commit: 'test', license: 'BSD-3-Clause' },
+      },
     };
     const entry = {
       id: 'STM32G431CBU6',

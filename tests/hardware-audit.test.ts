@@ -17,6 +17,7 @@ import {
   type WorkspaceState,
 } from '../src/core/types';
 import { decodeWorkspaceState, encodeWorkspaceState } from '../src/core/url-state';
+import { stubCatalogChips } from './helpers/catalog-stub';
 
 const ROOT = process.cwd();
 const readSource = (rel: string): string => fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -363,7 +364,7 @@ describe('workspace UI and dock integration', () => {
     try {
       const { workspaceStore } = await import('../src/state/workspace.svelte.ts');
       const { catalogStore } = await import('../src/state/catalog.svelte.ts');
-      catalogStore.primeChip(stm32Chip);
+      stubCatalogChips(catalogStore, stm32Chip);
       await workspaceStore.openMcu(stm32Chip.id);
       workspaceStore.setDockTab('audit');
       expect(workspaceStore.dockTab).toBe('audit');

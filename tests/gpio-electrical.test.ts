@@ -7,6 +7,7 @@ import { exportPinoutJson, parsePinoutJson } from '../src/core/exporters/json';
 import { cloneWorkspaceState, createWorkspaceHistory, statesEqual } from '../src/core/history';
 import type { ChipData, GpioConfig, WorkspaceState } from '../src/core/types';
 import { decodeWorkspaceState, encodeWorkspaceState } from '../src/core/url-state';
+import { stubCatalogChips } from './helpers/catalog-stub';
 
 const chip: ChipData = {
   id: 'STM32G431CBU6',
@@ -160,7 +161,7 @@ describe('GPIO electrical settings in workspace store', () => {
     vi.resetModules();
     const { workspaceStore } = await import('../src/state/workspace.svelte.ts');
     const { catalogStore } = await import('../src/state/catalog.svelte.ts');
-    catalogStore.primeChip(chip);
+    stubCatalogChips(catalogStore, chip);
     await workspaceStore.openMcu(chip.id);
     workspaceStore.assignPin('15', { peripheral: 'SPI1', signal: 'SCK', af: 5 });
 
@@ -189,7 +190,7 @@ describe('GPIO electrical settings in workspace store', () => {
     vi.resetModules();
     const { workspaceStore } = await import('../src/state/workspace.svelte.ts');
     const { catalogStore } = await import('../src/state/catalog.svelte.ts');
-    catalogStore.primeChip(chip);
+    stubCatalogChips(catalogStore, chip);
     await workspaceStore.openMcu(chip.id);
     workspaceStore.setGpioConfig('15', config);
     const sessions = JSON.parse(storage.get('pincraft:recent_sessions_v1') ?? '[]') as Array<{

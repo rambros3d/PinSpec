@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SHELL_PREFERENCES_STORAGE_KEY } from '../src/state/shell-preferences.svelte';
 import { VIEW_PREFERENCES_STORAGE_KEY } from '../src/state/workspace-preferences.svelte';
+import { stubCatalogChips } from './helpers/catalog-stub';
 
 function installStorage(): Map<string, string> {
   const storage = new Map<string, string>();
@@ -102,7 +103,7 @@ describe('localStorage-only view preferences', () => {
     vi.resetModules();
     const { workspaceStore } = await import('../src/state/workspace.svelte.ts');
     const { catalogStore } = await import('../src/state/catalog.svelte.ts');
-    catalogStore.primeChip({
+    stubCatalogChips(catalogStore, {
       id: 'STM32G431CBU6',
       family: 'STM32G4',
       muxModel: 'af',

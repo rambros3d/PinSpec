@@ -5,6 +5,7 @@ import type {
   CatalogIndexEntry,
   CatalogMeta,
   CatalogMetaSources,
+  CatalogSourceId,
   CatalogSourceRecord,
   CatalogVendorSource,
   ChipData,
@@ -51,7 +52,7 @@ export function buildWarningsDocument(
  * Maps the adapter/declared source ids onto the thirteen canonical provenance ids.
  * KiCad symbols and footprints collapse to `kicad`, except the Espressif
  * library, which keeps its own id and SHA for separate license attribution.
- * picotool and pico-sdk collapse to `pico-sdk`, matching the README and footer.
+ * picotool and pico-sdk collapse to `pico-sdk`, matching the README and About table.
  */
 export function canonicalSourceId(sourceId: string): string {
   if (sourceId === 'stm32-open-pin-data') return 'st-open-pin-data';
@@ -75,7 +76,7 @@ export function canonicalSourceId(sourceId: string): string {
 /** Builds the thirteen-source provenance map from resolved upstream sources. */
 export function buildSourceRegistry(
   sources: ResolvedSource[],
-): Partial<Record<string, CatalogSourceRecord>> {
+): Partial<Record<CatalogSourceId, CatalogSourceRecord>> {
   const registry: Partial<Record<string, CatalogSourceRecord>> = {};
   for (const source of sources) {
     const id = canonicalSourceId(source.id);
@@ -83,32 +84,21 @@ export function buildSourceRegistry(
     // collapse to one canonical id; SHAs of the others remain in the
     // per-vendor `repositories` arrays.
     if (registry[id]) continue;
-    registry[id] = { sha: source.commit || 'unknown', url: source.url, license: source.license };
+    registry[id as CatalogSourceId] = {
+      sha: source.commit || 'unknown',
+      url: source.url,
+      license: source.license,
+    };
   }
   return registry;
 }
 
-/** Builds `meta.json`, retaining the legacy STM32 top-level fields. */
+/** Builds `meta.json` from the generated timestamp and the sources map. */
 export function buildMetaDocument(
   generatedAt: string,
-  legacy: {
-    stm32DataCommit: string;
-    openPinDataCommit: string;
-    chipCount: number;
-    matchRate: number;
-    families: string[];
-  },
   sources: CatalogMetaSources,
 ): CatalogMeta {
-  return {
-    generatedAt,
-    stm32DataCommit: legacy.stm32DataCommit,
-    openPinDataCommit: legacy.openPinDataCommit,
-    chipCount: legacy.chipCount,
-    matchRate: Number(legacy.matchRate.toFixed(2)),
-    families: legacy.families,
-    sources,
-  };
+  return { generatedAt, sources };
 }
 
 /** Serialized shard payloads and their uncompressed byte totals. */

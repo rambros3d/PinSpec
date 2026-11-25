@@ -248,30 +248,18 @@ describe('metadata and warnings', () => {
     },
   ];
 
-  it('emits per-vendor sources while retaining legacy meta fields', () => {
+  it('emits per-vendor sources without legacy meta fields', () => {
     const entries = buildVendorSourcesMeta([stm32Adapter], sources, results);
     expect(entries.stm32?.commit).toBe('5de055b');
     expect(entries.stm32?.openPinDataCommit).toBe('45c0459');
     expect(entries.stm32?.license).toContain(LICENSE_OPEN_PIN_DATA);
     expect(entries.stm32?.license).toContain(LICENSE_EMBASSY_STM32);
     expect(entries.stm32?.repositories?.map((r) => r.commit)).toEqual(['45c0459', '5de055b']);
-    const meta = buildMetaDocument(
-      '2026-01-01T00:00:00.000Z',
-      {
-        stm32DataCommit: '5de055b',
-        openPinDataCommit: '45c0459',
-        chipCount: 2699,
-        matchRate: 97.9,
-        families: ['STM32G4'],
-      },
-      entries,
-    );
-    expect(meta.stm32DataCommit).toBe('5de055b');
-    expect(meta.openPinDataCommit).toBe('45c0459');
-    expect(meta.chipCount).toBe(2699);
-    expect(meta.matchRate).toBe(97.9);
-    expect(meta.families).toEqual(['STM32G4']);
+    const meta = buildMetaDocument('2026-01-01T00:00:00.000Z', entries);
     expect(meta.sources?.stm32?.chipCount).toBe(0);
+    for (const legacy of ['stm32DataCommit', 'openPinDataCommit', 'chipCount', 'matchRate', 'families']) {
+      expect(Object.keys(meta)).not.toContain(legacy);
+    }
   });
 
   it('records unknown revisions without crashing', () => {
@@ -327,17 +315,15 @@ describe('metadata and warnings', () => {
       0,
     );
     expect(doc.warningsByVendor.stm32).toBe(doc.warningCount - otherWarnings);
-    expect(meta.sources.stm32.chipCount).toBeLessThanOrEqual(meta.chipCount);
-    expect(meta.sources.ch32?.chipCount ?? 0).toBe(
-      meta.chipCount -
-        meta.sources.stm32.chipCount -
-        (meta.sources.rp?.chipCount ?? 0) -
-        (meta.sources.esp32?.chipCount ?? 0) -
-        (meta.sources.microchip?.chipCount ?? 0) -
-        (meta.sources.nordic?.chipCount ?? 0),
+    const vendorIds = ['stm32', 'ch32', 'rp', 'esp32', 'microchip', 'nordic'];
+    const totalChips = vendorIds.reduce(
+      (sum, vendor) => sum + (meta.sources[vendor]?.chipCount ?? 0),
+      0,
     );
-    expect(meta.sources.stm32.commit).toBe(meta.stm32DataCommit);
-    expect(meta.sources.stm32.openPinDataCommit).toBe(meta.openPinDataCommit);
+    const index = JSON.parse(fs.readFileSync(path.join(ROOT, 'public', 'data', 'index.json'), 'utf8'));
+    expect(totalChips).toBe(index.length);
+    expect(meta.sources.stm32.commit).toBeTruthy();
+    expect(meta.sources.stm32.openPinDataCommit).toBeTruthy();
   });
 });
 
@@ -444,8 +430,15 @@ describe('generated artifacts after gen-data', () => {
     if (!fs.existsSync(metaPath) || !fs.existsSync(indexPath)) return;
     const meta = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
     const index = JSON.parse(fs.readFileSync(indexPath, 'utf8'));
-    expect(meta.chipCount).toBeGreaterThanOrEqual(1000);
-    expect(index.length).toBe(meta.chipCount);
+    const vendorChips = ['stm32', 'ch32', 'rp', 'esp32', 'microchip', 'nordic'].reduce(
+      (sum, vendor) => sum + (meta.sources[vendor]?.chipCount ?? 0),
+      0,
+    );
+    expect(vendorChips).toBeGreaterThanOrEqual(1000);
+    expect(index.length).toBe(vendorChips);
+    for (const legacy of ['stm32DataCommit', 'openPinDataCommit', 'chipCount', 'matchRate', 'families']) {
+      expect(Object.keys(meta)).not.toContain(legacy);
+    }
     expect(fs.existsSync(path.join(ROOT, 'public', 'data', 'build-warnings.json'))).toBe(true);
   });
 });

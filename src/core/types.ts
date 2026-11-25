@@ -253,21 +253,35 @@ export interface CatalogSourceRecord {
 }
 
 /**
- * `meta.json.sources` holds both per-vendor summaries (legacy consumers) and
- * the thirteen canonical source records keyed by `CatalogSourceId`. The key sets
- * are disjoint, so both views coexist without ambiguity.
+ * `meta.json.sources` holds one per-vendor summary for every emitted vendor and
+ * the thirteen canonical source records. Keys are declared explicitly so a
+ * lookup by vendor id or source id resolves to one known record type.
  */
-export type CatalogMetaSources = Partial<Record<VendorId, CatalogVendorSource>> &
-  Partial<Record<CatalogSourceId, CatalogSourceRecord>>;
+export interface CatalogMetaSources {
+  stm32?: CatalogVendorSource;
+  ch32?: CatalogVendorSource;
+  rp?: CatalogVendorSource;
+  esp32?: CatalogVendorSource;
+  microchip?: CatalogVendorSource;
+  nordic?: CatalogVendorSource;
+  'st-open-pin-data'?: CatalogSourceRecord;
+  'stm32-data-generated'?: CatalogSourceRecord;
+  'ch32-device-data'?: CatalogSourceRecord;
+  kicad?: CatalogSourceRecord;
+  'pico-sdk'?: CatalogSourceRecord;
+  zephyr?: CatalogSourceRecord;
+  'raspberry-pi-docs'?: CatalogSourceRecord;
+  'esp-gpio-tool'?: CatalogSourceRecord;
+  'esp-hal-metadata'?: CatalogSourceRecord;
+  'espressif-kicad'?: CatalogSourceRecord;
+  'esp-idf'?: CatalogSourceRecord;
+  'microchip-atdf'?: CatalogSourceRecord;
+  'nrf-pacs'?: CatalogSourceRecord;
+}
 
+/** Generated catalog metadata; all counts and ratios live under `sources`. */
 export interface CatalogMeta {
   generatedAt: string;
-  stm32DataCommit: string;
-  openPinDataCommit: string;
-  chipCount: number;
-  matchRate?: number;
-  families: string[];
-  /** Vendors actually emitted in this build plus the thirteen source records. */
   sources?: CatalogMetaSources;
 }
 
@@ -406,11 +420,10 @@ export type PackageRotation = 0 | 90 | 180 | 270;
 
 /**
  * Normalize an untrusted persisted rotation to the four-value clockwise domain.
- * The legacy counter-clockwise value -90 maps to 270 so earlier persisted and
- * shared states keep their visual orientation.
+ * Values outside that domain, including the former counter-clockwise value -90,
+ * resolve to the default zero rotation.
  */
 export function normalizePackageRotation(value: unknown): PackageRotation {
-  if (value === -90) return 270;
   return value === 0 || value === 90 || value === 180 || value === 270 ? value : 0;
 }
 
@@ -431,13 +444,6 @@ export const PLACEMENT_RING_RANK: Record<PlacementRing, number> = {
   medium: 1,
   low: 2,
 };
-
-/**
- * Spatial ring names used by earlier version-2 payloads. Decode paths map these
- * onto the priority names above so existing links and project files stay valid.
- */
-export const LEGACY_PLACEMENT_RINGS = ['inner', 'middle', 'outer'] as const;
-export type LegacyPlacementRing = (typeof LEGACY_PLACEMENT_RINGS)[number];
 
 /**
  * Opt-in placement preference for one peripheral. Storage is additive and

@@ -85,7 +85,6 @@ describe('global top bar', () => {
     }
     const state = read('src/state/top-bar-ui.svelte.ts');
     for (const field of [
-      'workspaceMode',
       'switcherOpen',
       'exportOpen',
       'finderOpen',
@@ -385,7 +384,6 @@ describe('projects route', () => {
     const state = createEmptyWorkspace('STM32G431CBU6');
     const project = exportPinoutJson(state);
     expect(project).not.toContain('sidebarExpanded');
-    expect(project).not.toContain('aboutTab');
     expect(encodeWorkspaceState(state)).not.toContain('shell');
   });
 });
@@ -398,8 +396,8 @@ describe('about route', () => {
     expect(page).toContain('<ProvenancePanel');
     expect(page).not.toContain('Catalog summary');
     expect(panel).toContain('Catalog sources');
-    expect(panel).toContain('catalogStore.meta.chipCount.toLocaleString()');
-    expect(panel).toContain('catalogStore.meta.families.length');
+    expect(panel).toContain('catalogStore.index.length.toLocaleString()');
+    expect(panel).toContain('familyCount');
     expect(panel).toContain('PROVENANCE_SOURCES');
     expect(panel).toContain('PROVENANCE_VENDORS');
     expect(panel).toContain('catalogStore.meta.sources?.[vendor.id]');
@@ -408,19 +406,18 @@ describe('about route', () => {
     expect(panel).not.toContain('Upstream data sources and licenses');
   });
 
-  it('persists the sources tab through the shell preference store', () => {
-    expect(page).toContain('shellPreferences.aboutTab');
-    expect(page).toContain('ABOUT_TABS');
-    expect(page).toContain('aria-selected={shellPreferences.aboutTab === tab}');
+  it('renders one static provenance surface with no tab preference', () => {
+    expect(page).not.toContain('shellPreferences');
+    expect(page).not.toContain('ABOUT_TABS');
+    expect(page).not.toContain('role="tablist"');
+    expect(page).not.toContain('aria-selected');
     expect(page).not.toContain('Shortcuts');
+    expect(panel).not.toContain('AboutTab');
+    expect(panel).not.toContain('sr-only');
     expect(read('src/state/shell-preferences.svelte.ts')).toContain(
       "'pincraft:shell_preferences_v1'",
     );
-    expect(read('src/state/shell-preferences.svelte.ts')).toContain(
-      "ABOUT_TABS = ['sources']",
-    );
-    expect(page).toContain('class="tabs tabs-box w-fit"');
-    expect(page).not.toContain('tabs-boxed');
+    expect(read('src/state/shell-preferences.svelte.ts')).not.toContain('aboutTab');
   });
 
   it('keeps loading and retry states on the merged surface', () => {

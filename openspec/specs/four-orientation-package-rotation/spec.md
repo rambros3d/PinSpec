@@ -78,28 +78,28 @@ At 90 and 270 degrees the package SVG SHALL declare width and height swapped rel
 - **WHEN** the user manually zooms and pans a rectangular package at 90 or 270 degrees
 - **THEN** the full package body and all pin bounds stay within the declared SVG extents
 
-### Requirement: Legacy rotation values normalize to the four-value domain
+### Requirement: Rotation values outside the four-value domain normalize to zero
 
-Every decode boundary SHALL accept rotation values 0, 90, 180, and 270 and SHALL map a legacy value of -90 to 270 so prior persisted and shared states keep their visual orientation. Any other value SHALL normalize to 0. An absent rotation field SHALL remain absent on encode and behave as 0.
+Every decode boundary SHALL accept rotation values 0, 90, 180, and 270. The former counter-clockwise value -90 and every other value SHALL normalize to 0. An absent rotation field SHALL remain absent on encode and behave as 0.
 
-#### Scenario: Legacy share link rotates to 270
+#### Scenario: Former counter-clockwise share link normalizes to zero
 
 - **WHEN** a share link carries a rotation value of -90
-- **THEN** the loaded workspace uses 270 degrees and displays the same orientation as before this capability
+- **THEN** the loaded workspace uses the default 0 degrees and displays the unrotated package
 
-#### Scenario: Legacy project file rotates to 270
+#### Scenario: Former counter-clockwise project file normalizes to zero
 
 - **WHEN** a version-2 project file carries a rotation value of -90
-- **THEN** the imported workspace uses 270 degrees and its pin configuration is unchanged
+- **THEN** the imported workspace uses 0 degrees and its pin configuration is unchanged
 
-#### Scenario: Legacy session and history values rotate to 270
+#### Scenario: Former counter-clockwise session and history values normalize to zero
 
 - **WHEN** a recent session or a history snapshot carries a rotation value of -90
-- **THEN** the effective rotation is 270 degrees and undo and redo compare the normalized value
+- **THEN** the effective rotation is 0 and undo and redo compare the normalized value
 
 #### Scenario: Unrecognized values normalize to zero
 
-- **WHEN** any decode surface carries a rotation value other than 0, 90, 180, 270, or legacy -90
+- **WHEN** any decode surface carries a rotation value other than 0, 90, 180, or 270
 - **THEN** the effective rotation is 0 and the rest of the state still loads
 
 #### Scenario: Absent rotation remains absent

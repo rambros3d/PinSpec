@@ -128,9 +128,21 @@ describe('multi-vendor documentation and attribution', () => {
       expect(readme, route).toContain(route);
     }
     expect(readme).toContain('pincraft:shell_preferences_v1');
+    expect(readme).toContain('About provenance table');
+    expect(readme).toContain('Nine reactive Svelte 5 runes stores');
+    expect(readme).toContain('TypeScript strict validation (tsc --noEmit)');
     expect(readme).toContain('[Solar Icons](https://github.com/saoudi-h/solar-icons)');
     expect(readme).toContain('MIT licensed');
     expect(readme).toContain('CC BY 4.0 by 480 Design');
+    for (const stale of [
+      'landing footer',
+      'svelte-check',
+      'workspace mode',
+      'interactive `STM32G431CBU6` preview',
+      'lucide-svelte',
+    ]) {
+      expect(readme, stale).not.toContain(stale);
+    }
   });
 
   it('documents the single icon dependency without a retired library', () => {
@@ -152,7 +164,20 @@ describe('multi-vendor documentation and attribution', () => {
       expect(agents, route).toContain(route);
     }
     expect(agents).toContain('pincraft:shell_preferences_v1');
+    expect(agents).toContain('Solar Svelte');
+    expect(agents).toContain('Nine Svelte 5 runes stores');
+    expect(agents).toContain('{stm32,ch32,rp,esp32,sam,nordic}');
+    expect(agents).toContain('Locked,Level,Drive,Pull,Speed');
     expect(agents).not.toContain('## Multi-vendor expansion (roadmap)');
+    for (const stale of [
+      'lucide-svelte',
+      'hero-chip.json',
+      'landing footer',
+      'About tab are UI preferences',
+      'legacy STM32 top-level fields',
+    ]) {
+      expect(agents, stale).not.toContain(stale);
+    }
   });
 
   it('renders all thirteen sources, licenses, and live metadata in About', () => {

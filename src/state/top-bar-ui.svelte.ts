@@ -7,9 +7,6 @@
  * `workspaceStore.state` and its history stack.
  */
 class TopBarUIState {
-  /** True only while a workspace or shared route is mounted. */
-  workspaceMode = $state(false);
-
   /** Dialog-open flags owned by the bar and consumed by the workspace page. */
   switcherOpen = $state(false);
   exportOpen = $state(false);
@@ -22,9 +19,8 @@ class TopBarUIState {
   /** Registered by the package canvas so the workspace Ctrl+F handler can select its query. */
   focusSearch: (() => void) | null = null;
 
-  /** Leave no stale dialog or mode behind when the workspace is unmounted. */
+  /** Leave no stale dialog behind when the workspace is unmounted. */
   reset(): void {
-    this.workspaceMode = false;
     this.switcherOpen = false;
     this.exportOpen = false;
     this.finderOpen = false;

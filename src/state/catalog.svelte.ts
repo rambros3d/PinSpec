@@ -150,10 +150,6 @@ class CatalogStore {
     return this.ensureLoaded();
   }
 
-  primeChip(chip: ChipData): void {
-    this.chipCache.set(chip.id.toUpperCase(), chip);
-  }
-
   async loadChip(mcuId: string): Promise<ChipData> {
     const key = mcuId.trim().toUpperCase();
     const cached = this.chipCache.get(key);

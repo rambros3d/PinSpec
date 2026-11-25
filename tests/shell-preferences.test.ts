@@ -22,44 +22,35 @@ afterEach(() => {
 });
 
 describe('localStorage-only shell preferences', () => {
-  it('uses documented defaults for absent values', async () => {
+  it('uses a collapsed sidebar when no value is stored', async () => {
     installStorage();
     const { ShellPreferencesStore, SHELL_PREFERENCES_STORAGE_KEY } = await freshShellPreferences();
     expect(SHELL_PREFERENCES_STORAGE_KEY).toBe('pincraft:shell_preferences_v1');
     const preferences = new ShellPreferencesStore();
     expect(preferences.sidebarExpanded).toBe(false);
-    expect(preferences.aboutTab).toBe('sources');
   });
 
-  it('normalizes a stale shortcuts tab to sources and restores values after reload', async () => {
+  it('restores the sidebar state after reload and writes one namespaced field', async () => {
     const storage = installStorage();
     const first = await freshShellPreferences();
     const preferences = new first.ShellPreferencesStore();
-    expect(first.ABOUT_TABS).toEqual(['sources']);
     preferences.sidebarExpanded = true;
-    preferences.aboutTab = 'shortcuts' as typeof preferences.aboutTab;
     expect(JSON.parse(storage.get('pincraft:shell_preferences_v1') ?? '{}')).toEqual({
       sidebarExpanded: true,
-      aboutTab: 'sources',
     });
 
     vi.resetModules();
     const second = await import('../src/state/shell-preferences.svelte.ts');
     const reloaded = new second.ShellPreferencesStore();
     expect(reloaded.sidebarExpanded).toBe(true);
-    expect(reloaded.aboutTab).toBe('sources');
   });
 
-  it('normalizes unknown values to collapsed and the first tab', async () => {
+  it('normalizes unknown sidebar values to collapsed', async () => {
     const storage = installStorage();
-    storage.set('pincraft:shell_preferences_v1', JSON.stringify({
-      sidebarExpanded: 'yes',
-      aboutTab: 'unknown',
-    }));
+    storage.set('pincraft:shell_preferences_v1', JSON.stringify({ sidebarExpanded: 'yes' }));
     const { ShellPreferencesStore } = await freshShellPreferences();
     const preferences = new ShellPreferencesStore();
     expect(preferences.sidebarExpanded).toBe(false);
-    expect(preferences.aboutTab).toBe('sources');
   });
 
   it('keeps values in memory when localStorage is unavailable', async () => {
@@ -73,10 +64,8 @@ describe('localStorage-only shell preferences', () => {
     expect(preferences.sidebarExpanded).toBe(false);
     expect(() => {
       preferences.sidebarExpanded = true;
-      preferences.aboutTab = 'shortcuts' as typeof preferences.aboutTab;
     }).not.toThrow();
     expect(preferences.sidebarExpanded).toBe(true);
-    expect(preferences.aboutTab).toBe('sources');
   });
 
   it('never writes shell fields to share links or project files', async () => {
@@ -84,7 +73,6 @@ describe('localStorage-only shell preferences', () => {
     const { ShellPreferencesStore } = await freshShellPreferences();
     const preferences = new ShellPreferencesStore();
     preferences.sidebarExpanded = true;
-    preferences.aboutTab = 'shortcuts' as typeof preferences.aboutTab;
     const { encodeWorkspaceState, decodeWorkspaceState } = await import('../src/core/url-state');
     const { exportPinoutJson } = await import('../src/core/exporters/json');
     const { createEmptyWorkspace } = await import('../src/core/solver');
@@ -94,8 +82,6 @@ describe('localStorage-only shell preferences', () => {
     expect(decodeWorkspaceState(encoded).ok).toBe(true);
     const project = exportPinoutJson(state);
     expect(project).not.toContain('sidebarExpanded');
-    expect(project).not.toContain('aboutTab');
     expect(Object.keys(state)).not.toContain('sidebarExpanded');
-    expect(Object.keys(state)).not.toContain('aboutTab');
   });
 });

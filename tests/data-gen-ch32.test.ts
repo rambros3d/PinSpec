@@ -615,7 +615,6 @@ describe('CH32 deferral, gates, provenance, and registration', () => {
         sha256: sha256Hex(fs.readFileSync(path.join(sourceDir, 'evidence', 'pins.csv'))),
         license: 'MIT',
       });
-      expect(meta.chipCount).toBe(4);
       const index = JSON.parse(fs.readFileSync(path.join(root, 'public', 'data', 'index.json'), 'utf8'));
       expect(index).toHaveLength(4);
       expect(index.every((e: { vendor: string }) => e.vendor === 'ch32')).toBe(true);

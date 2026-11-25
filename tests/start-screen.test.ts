@@ -69,6 +69,20 @@ describe('start screen layout', () => {
   });
 });
 
+describe('start screen vendor copy', () => {
+  it('names all six vendors and avoids an offline-font claim', () => {
+    const preset = read('src/components/landing/PresetGrid.svelte');
+    for (const source of [page, preset]) {
+      expect(source).toContain('ESP32');
+      expect(source).toContain('Microchip SAM');
+      expect(source).toContain('Nordic');
+      expect(source).not.toContain('STM32, CH32 and RP');
+    }
+    expect(page).toContain('Static / no backend');
+    expect(page).not.toContain('offline-ready');
+  });
+});
+
 describe('start screen icon provenance', () => {
   it('uses Solar bold duotone icons on the landing and discovery surfaces', () => {
     for (const rel of [
@@ -162,8 +176,8 @@ describe('catalog rail', () => {
   });
 
   it('keeps the index count in discovery only and leaves shortcuts to the shared dialog', () => {
-    expect(discovery).toContain('catalogStore.meta.chipCount.toLocaleString()');
-    expect(discovery).toContain('catalogStore.meta.families.length');
+    expect(discovery).toContain('catalogStore.index.length.toLocaleString()');
+    expect(discovery).toContain('familyCount');
     expect(discovery.match(/parts indexed/g)?.length).toBe(1);
     expect(rail).not.toContain('parts indexed');
     expect(rail).not.toContain('families');

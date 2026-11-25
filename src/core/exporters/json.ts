@@ -278,9 +278,6 @@ export function parsePinoutJson(raw: string): JsonImportResult {
       }
     }
 
-    // Legacy `placementOverlayVisible` and `dockTab` values are ignored so
-    // older project files keep pin configuration without importing local view
-    // preferences.
     const rotation = normalizePackageRotation(obj.packageRotation);
     if (rotation !== 0) state.packageRotation = rotation;
     if (typeof obj.placementOverlayRotation === 'number') {

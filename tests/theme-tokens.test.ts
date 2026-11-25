@@ -102,7 +102,8 @@ describe('daisyUI token integration', () => {
   it('uses daisyUI component classes on the audited status and pending surfaces', () => {
     const read = (rel: string): string => fs.readFileSync(path.join(ROOT, rel), 'utf8');
     const about = read('src/pages/AboutPage.svelte');
-    expect(about).toContain('tabs tabs-box w-fit');
+    expect(about).toContain('<ProvenancePanel />');
+    expect(about).not.toContain('role="tablist"');
     expect(about).not.toContain('tabs-boxed');
 
     for (const rel of [

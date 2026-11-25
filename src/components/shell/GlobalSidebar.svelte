@@ -93,19 +93,6 @@
   class={`shell-panel fixed bottom-0 left-0 top-12 z-40 flex flex-col border-r border-base-300 bg-base-100 ${expanded ? 'w-72' : 'shell-rail w-12'}`}
   aria-label="Application navigation"
 >
-  <div
-    class={`flex h-12 shrink-0 items-center border-b border-base-300 ${expanded ? 'px-3' : 'justify-center'}`}
-  >
-    {#if expanded}
-      <img
-        src={`${import.meta.env.BASE_URL}radiokit-logo.svg`}
-        alt=""
-        class="size-5 shrink-0"
-      />
-      <span class="truncate text-sm font-semibold text-foreground">PinCraft</span>
-    {/if}
-  </div>
-
   <nav class="shrink-0 space-y-1 py-2" aria-label="Sections">
     {#each TOP_SECTIONS as section (section.id)}
       {@const Icon = section.icon}

@@ -82,12 +82,11 @@ the same fixed overlay and backdrop behavior as before.
 
 ### Requirement: The global bar composes route context and shared controls
 
-The bar SHALL show a route title, section links for Home, Catalog, and Projects,
-the theme control, and the shortcuts control. On workspace and shared routes it
-SHALL also show the merged workspace actions in place of the former toolbar.
-The shortcuts control SHALL open the shared help dialog whose backdrop is a
-direct child of the dialog element and outside `.modal-box`, without changing
-focus or dismissal behavior.
+The bar SHALL show route context, section links, theme, and shortcuts controls.
+On workspace and shared routes its left edge SHALL show the RadioKit app icon
+resolved through `import.meta.env.BASE_URL` before the editable project-name
+control. Non-workspace controls and the shared shortcut dialog SHALL be
+unchanged.
 
 #### Scenario: Route context on shell pages
 
@@ -112,12 +111,22 @@ focus or dismissal behavior.
 #### Scenario: Workspace title is the project name
 
 - **WHEN** a workspace or shared route is opened with a named project
-- **THEN** the left-edge title shows the project name and no chip-id `routeTitle` is rendered there
+- **THEN** the left-edge title shows the app icon followed by the project name and no chip-id `routeTitle` is rendered there
 
 #### Scenario: Shell route titles are unchanged
 
 - **WHEN** the home, catalog, projects, or about route is opened
 - **THEN** its original title, wordmark, and section links remain unchanged
+
+#### Scenario: Workspace title leads with the app icon
+
+- **WHEN** a workspace or shared route is opened
+- **THEN** the global bar renders `radiokit-logo.svg` from the configured base URL immediately before the editable project-name control
+
+#### Scenario: Renaming still works from the title row
+
+- **WHEN** the user activates the project-name control and enters a new name
+- **THEN** the rename commits through the existing workspace store action while the icon remains at the left edge
 
 ### Requirement: Workspace actions are merged into the global bar
 

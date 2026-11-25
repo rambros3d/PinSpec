@@ -120,40 +120,47 @@
     {/if}
 
     {#if isWorkspace}
-      {#if editingName}
-        <input
-          bind:this={nameInputRef}
-          bind:value={nameDraft}
-          onkeydown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              commitName();
-            } else if (e.key === 'Escape') {
-              e.preventDefault();
-              e.stopPropagation();
-              cancelNameEdit();
-            }
-          }}
-          onblur={commitName}
-          type="text"
-          maxlength="48"
-          aria-label="Project name"
-          class="input input-xs w-40 shrink-0 font-mono"
+      <div class="flex shrink-0 items-center gap-1.5">
+        <img
+          src={`${import.meta.env.BASE_URL}radiokit-logo.svg`}
+          alt=""
+          class="size-5 shrink-0"
         />
-      {:else}
-        <button
-          type="button"
-          onclick={() => void beginNameEdit()}
-          class="btn btn-ghost btn-xs shrink-0 gap-1 font-mono text-xs text-foreground"
-          title="Rename project"
-          aria-label="Rename project"
-        >
-          <span class="max-w-[16rem] truncate">
-            {workspaceStore.state.projectName ?? 'Unnamed project'}
-          </span>
-          <Pencil class="size-3 shrink-0" />
-        </button>
-      {/if}
+        {#if editingName}
+          <input
+            bind:this={nameInputRef}
+            bind:value={nameDraft}
+            onkeydown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                commitName();
+              } else if (e.key === 'Escape') {
+                e.preventDefault();
+                e.stopPropagation();
+                cancelNameEdit();
+              }
+            }}
+            onblur={commitName}
+            type="text"
+            maxlength="48"
+            aria-label="Project name"
+            class="input input-xs w-40 shrink-0 font-mono"
+          />
+        {:else}
+          <button
+            type="button"
+            onclick={() => void beginNameEdit()}
+            class="btn btn-ghost btn-xs shrink-0 gap-1 font-mono text-xs text-foreground"
+            title="Rename project"
+            aria-label="Rename project"
+          >
+            <span class="max-w-[16rem] truncate">
+              {workspaceStore.state.projectName ?? 'Unnamed project'}
+            </span>
+            <Pencil class="size-3 shrink-0" />
+          </button>
+        {/if}
+      </div>
     {:else}
       <span class="shrink-0 whitespace-nowrap font-mono text-xs font-semibold text-base-content/70">
         {routeTitle}

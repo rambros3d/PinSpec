@@ -86,9 +86,9 @@ describe('project title placement', () => {
 });
 
 describe('pure project-name generation', () => {
-  it('composes two curated words and a lowercase family suffix', () => {
+  it('composes exactly two curated words without a family suffix', () => {
     expect(generateProjectName(makeChip('STM32H503CBT6', 'STM32H5'), amberQuartzRng())).toBe(
-      'amber-quartz-stm32h5',
+      'amber-quartz',
     );
   });
 
@@ -99,10 +99,8 @@ describe('pure project-name generation', () => {
     );
   });
 
-  it('falls back to the MCU identifier when no family is present', () => {
-    expect(generateProjectName(makeChip('RP2040'), amberQuartzRng())).toBe(
-      'amber-quartz-rp2040',
-    );
+  it('does not read the MCU identifier when no family is present', () => {
+    expect(generateProjectName(makeChip('RP2040'), amberQuartzRng())).toBe('amber-quartz');
   });
 
   it('bounds characters and length for odd identifiers', () => {
@@ -112,6 +110,20 @@ describe('pure project-name generation', () => {
     expect(name.length).toBeLessThanOrEqual(48);
     expect(name).not.toContain('_');
     expect(name).not.toContain(' ');
+  });
+
+  it('ignores chip family and MCU identifiers for every vendor', () => {
+    const chips = [
+      makeChip('STM32G431CBU6', 'STM32G4'),
+      makeChip('CH32V003F4P6', 'CH32V003'),
+      makeChip('RP2040', ''),
+      makeChip('ESP32-C3FH4', 'ESP32-C3'),
+      makeChip('ATSAMD21G18A', 'SAM D21'),
+      makeChip('nRF52840-QIAA', 'nRF52'),
+    ];
+    for (const chip of chips) {
+      expect(generateProjectName(chip, amberQuartzRng())).toBe('amber-quartz');
+    }
   });
 
   it('normalizes raw names without throwing', () => {
@@ -185,7 +197,7 @@ describe('workspace store naming', () => {
     random.mockReturnValueOnce(0).mockReturnValueOnce(1 / PROJECT_NAME_WORDS.length);
 
     await workspaceStore.openMcu(chip.id);
-    expect(workspaceStore.state.projectName).toBe('amber-quartz-stm32g4');
+    expect(workspaceStore.state.projectName).toBe('amber-quartz');
     expect(workspaceStore.canUndo).toBe(false);
     expect(random).toHaveBeenCalledTimes(2);
   });

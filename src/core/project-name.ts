@@ -1,10 +1,9 @@
 /**
  * Pure helpers for the optional, shareable workspace project name.
  *
- * The word list is UI vocabulary, not MCU data. Family and MCU identifiers come
- * only from generated chip metadata supplied by the caller. No host-level
- * random source is used here: the caller injects the RNG so generation is
- * deterministic under test.
+ * The word list is UI vocabulary, not MCU data. Generated names are independent
+ * of chip metadata so no MCU fact is read here. No host-level random source is
+ * used: the caller injects the RNG so generation is deterministic under test.
  */
 
 import type { ChipData } from './types';
@@ -53,13 +52,14 @@ function pickWord(rng: () => number): string {
 }
 
 /**
- * Compose `word-word-family`. The suffix is read from the generated chip's
- * family identifier, falling back to its MCU identifier; no part table is used.
+ * Compose `word-word` from the curated vocabulary. The chip argument is kept
+ * for call-site stability but is deliberately not read: saved names are reused
+ * unchanged by the workspace store, so generation never renames an existing
+ * session or consults a part table.
  */
 export function generateProjectName(
-  chip: Pick<ChipData, 'family' | 'id'>,
+  _chip: Pick<ChipData, 'family' | 'id'>,
   rng: () => number,
 ): string {
-  const suffix = normalizeProjectName(chip.family) ?? normalizeProjectName(chip.id) ?? 'project';
-  return normalizeProjectName(`${pickWord(rng)}-${pickWord(rng)}-${suffix}`) ?? suffix;
+  return normalizeProjectName(`${pickWord(rng)}-${pickWord(rng)}`) ?? PROJECT_NAME_WORDS[0];
 }

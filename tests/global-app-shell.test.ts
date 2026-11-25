@@ -455,10 +455,12 @@ describe('shell documentation', () => {
     expect(readme).toContain('pincraft:discovery_preferences_v1');
     expect(readme).toContain('Catalog and quick-search discovery filters');
     expect(readme).toContain('absent from share URLs, version-2 project files');
+    expect(readme).toContain('two curated words');
+    expect(readme).not.toContain('word-word-family');
     expect(readme).toContain('Home, Workspace, and Projects form the top group');
     expect(readme).toContain('Workspace appears next to Home');
     expect(readme).toContain('most recent local session');
-    expect(readme).toContain('word-word-family');
+    expect(readme).toContain('word-word');
     expect(readme).toContain('shareable pin-planning metadata');
     expect(readme).toContain('version-2 share URLs');
     expect(readme).toContain('inline editing mode itself is component-local');

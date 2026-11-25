@@ -292,7 +292,7 @@
           onclick={toggleRightDrawer}
           title={rightCollapsed ? 'Show Summary Drawer' : 'Hide Summary Drawer'}
           data-placement-furniture
-          class="btn btn-ghost btn-sm btn-square workspace-landscape-only hidden lg:flex absolute top-14 right-3 z-20 shadow-xs"
+          class="btn btn-ghost btn-sm btn-square workspace-landscape-only hidden lg:flex absolute bottom-3 right-3 z-20 shadow-xs"
         >
           <PanelRight class="size-3.5" />
         </button>

@@ -334,9 +334,18 @@
       resetPinch();
       return;
     }
-    // Allow left-drag on background or middle-mouse drag anywhere
-    const isPinTarget = (e.target as HTMLElement | null)?.closest('[data-pin-pos]');
-    if (e.button === 1 || (e.button === 0 && !isPinTarget)) {
+    /*
+     * Pan belongs to the package surface only. Pointer capture on the stage
+     * retargets the following pointerup and click to the stage, so capturing on
+     * a DOM overlay would make every HUD, popover, and context-menu control
+     * inert. Pins keep their own click handler for assignment and remap.
+     */
+    const target = e.target;
+    const isPinTarget = target instanceof Element && target.closest('[data-pin-pos]') !== null;
+    const isStageOrSvg =
+      target === stageEl || (target instanceof Node && contentEl?.contains(target) === true);
+    const isPanButton = e.button === 0 || e.button === 1;
+    if (isPanButton && isStageOrSvg && !isPinTarget) {
       dragging = true;
       dragStartX = e.clientX;
       dragStartY = e.clientY;
@@ -650,7 +659,7 @@
 
   <!-- Top-centre remap banner -->
   {#if remapSourcePos}
-    <div role="status" data-placement-furniture class="alert alert-info absolute top-3 left-1/2 -translate-x-1/2 z-20 pointer-events-auto flex flex-row items-center gap-3 px-3.5 py-2 text-xs shadow-lg">
+    <div role="status" data-placement-furniture class="alert alert-info absolute top-28 left-1/2 -translate-x-1/2 z-20 pointer-events-auto flex flex-row items-center gap-3 px-3.5 py-2 text-xs shadow-lg max-w-[calc(100%-1.5rem)]">
       <span class="font-mono font-medium">
         Remap Mode: click any pulsing cyan pin to move {remapSourceLabel}
       </span>

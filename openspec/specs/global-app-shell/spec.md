@@ -8,12 +8,11 @@ Defines the global application shell: a collapsible sidebar available on every r
 
 ### Requirement: A collapsible sidebar is present on every route
 
-The shell SHALL render a left sidebar on the home, catalog, projects, about,
-workspace, and shared routes. Its collapsed state SHALL be a narrow 3rem icon
-rail that remains visible in reserved horizontal space so it never covers route
-content. The expand/collapse control SHALL live in the global top bar. Expanding
-the sidebar SHALL overlay page content with a backdrop without shifting,
-resizing, or reflowing the canvas or any other content.
+The shell SHALL render a left sidebar on all six routes with a collapsed 3rem
+rail in reserved space and a top-bar expand/collapse control. Expansion SHALL
+overlay content without reflow. The sidebar SHALL NOT render a separate brand
+header with an app logo or PinCraft label; section navigation SHALL be its
+first visible content.
 
 #### Scenario: Collapsed rail stays visible on every route
 
@@ -44,6 +43,11 @@ resizing, or reflowing the canvas or any other content.
 
 - **WHEN** the user looks for the sidebar control on any route
 - **THEN** the control is the leftmost control of the global top bar and is not present in the rail header
+
+#### Scenario: Navigation starts at the top
+
+- **WHEN** the sidebar is opened on any supported route
+- **THEN** the first visible block inside the panel is the section navigation and no separate logo or PinCraft label appears above it
 
 ### Requirement: The sidebar provides four section entries
 

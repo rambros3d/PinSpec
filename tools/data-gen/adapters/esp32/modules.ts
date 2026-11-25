@@ -23,7 +23,8 @@ export function buildEspModules(
 ): EspModule[] {
   const modules: EspModule[] = [];
   for (const symbol of symbols.values()) {
-    if (!/(WROOM|MINI|DevKit)/.test(symbol.name)) continue;
+    // DevKit symbols describe boards, not MCU ICs; only chip modules belong in the catalog.
+    if (!/(WROOM|MINI)/.test(symbol.name)) continue;
     let baseFamily = '';
     for (const family of targets.keys()) {
       if (symbol.name.startsWith(`${displayFamily(family)}-`) || symbol.name === displayFamily(family)) {

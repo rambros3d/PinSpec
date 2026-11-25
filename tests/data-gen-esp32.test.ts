@@ -211,9 +211,9 @@ describe('ESP32 join and module emission', () => {
     expect(wroom?.baseFamily).toBe('esp32');
     expect(wroom?.flashKb).toBeNull();
     expect(wroom?.flashEvidence).toBe('none');
-    const devkit = modules.find((module) => module.id === 'ESP32-C3-DevKitC-02');
-    expect(devkit?.flashKb).toBe(4096);
-    expect(devkit?.flashEvidence).toBe('kicad-symbol-description');
+    expect(modules.some((module) => module.id.includes('DevKit'))).toBe(false);
+    const mini = modules.find((module) => module.id === 'ESP32-C3-MINI-1');
+    expect(mini).toBeDefined();
   });
 
   it('emits twelve families, bare dies, MPNs, and attributed warnings', () => {

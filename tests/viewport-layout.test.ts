@@ -102,6 +102,21 @@ describe('document viewport lock', () => {
     expect(page).not.toContain('Data provenance');
     expect(readSource('src/pages/AboutPage.svelte')).toContain('<ProvenancePanel');
     expect(readSource('src/components/landing/PresetGrid.svelte')).toContain('id="presets"');
+
+    // Compact three-zone framing: tighter grid spacing, one divided action
+    // surface, a primary discovery column and a tertiary rail.
+    const grid = page.match(/class="start-grid[^"]*"/)?.[0] ?? '';
+    expect(grid).toContain('max-w-7xl');
+    expect(grid).toContain('lg:grid-cols-12');
+    expect(grid).toContain('gap-4');
+    expect(grid).toContain('py-6');
+    expect(grid).not.toContain('gap-8');
+    expect(page).toContain('divide-y divide-base-300');
+    expect(page).toContain('class="start-discovery lg:col-span-6 min-w-0 space-y-4"');
+    expect(page).toContain('class="start-rail lg:col-span-3 space-y-2"');
+    const rail = page.slice(page.indexOf('data-zone="rail"'));
+    expect(rail).not.toContain('<kbd');
+    expect(rail).not.toContain('ratios.');
   });
 
   it('keeps shell routes scrollable inside the document lock', () => {

@@ -238,6 +238,19 @@ describe('vendor-aware discovery and presets', () => {
     expect(catalog).toContain('filters.reset()');
   });
 
+  it('keeps the landing rail compact with one label and chip count per vendor', () => {
+    const landing = readSource('src/pages/LandingPage.svelte');
+    expect(landing).toContain('PROVENANCE_VENDORS');
+    expect(landing).toContain('{vendor.label}');
+    expect(landing).toContain('{vendorSource.chipCount.toLocaleString()} chips');
+    expect(landing).toContain('Synced {formatSyncDate(catalogStore.meta.generatedAt)}');
+    expect(landing).not.toContain('ratios.');
+    expect(landing).not.toContain('SHORTCUTS');
+    const rail = landing.slice(landing.indexOf('data-zone="rail"'));
+    expect(rail).not.toContain('catalogStore.meta.chipCount');
+    expect(rail).not.toContain('<kbd');
+  });
+
   it('uses cross-vendor presets', () => {
     const source = readSource('src/components/landing/PresetGrid.svelte');
     for (const id of [

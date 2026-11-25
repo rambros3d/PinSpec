@@ -12,11 +12,12 @@ local-only presentation state.
 ### Requirement: The landing route is a three-zone start screen
 
 The `#/` route SHALL render an application start screen inside one
-`.landing-shell` container with three zones: a left action column for starting
-and importing work, a central discovery column for MCU search, recent sessions,
-and starter chips, and a right rail for catalog facts, provenance summary, and
-shortcuts. The shell SHALL remain contained in the visible viewport and SHALL
-scroll its own content.
+`.landing-shell` container with three zones: a left action column, a central
+discovery column for search, recent sessions, and starter chips, and a right
+rail with a compact vendor list and sync date. The shell SHALL remain in the
+visible viewport and scroll its own content. Spacing SHALL read as
+a focused application start screen, and the pass SHALL change presentation only
+with no new route, feature, or shareable field.
 
 #### Scenario: Opening the start screen
 
@@ -32,6 +33,11 @@ scroll its own content.
 
 - **WHEN** the start screen renders before catalog data has loaded
 - **THEN** no control on the start screen is disabled by or bound to a hero chip load
+
+#### Scenario: Focused hierarchy is applied across all zones
+
+- **WHEN** the reworked start screen renders at a supported desktop width
+- **THEN** the action, discovery, and rail zones use consistent spacing and card density and no zone uses promotional language
 
 ### Requirement: The sticky header keeps navigation and theme
 
@@ -103,7 +109,8 @@ tabs, family and package filters, and its catalog error and retry row. Query and
 filters SHALL be restored from localStorage. The error and pending rows SHALL
 use daisyUI component classes. The column SHALL keep recent local sessions and the
 cross-vendor starter chips with their current part identifiers and section
-anchor.
+anchor. The discovery header SHALL be the only location of the parts-indexed
+and families count.
 
 #### Scenario: Quick search opens a part
 
@@ -130,19 +137,25 @@ anchor.
 - **WHEN** the starter chip section is rendered
 - **THEN** it contains the existing STM32, CH32, and RP part identifiers and the Cross-Vendor Starter Chips heading
 
+#### Scenario: Index count appears only in the discovery header
+
+- **WHEN** `meta.json` has loaded and the start screen is rendered
+- **THEN** the parts-indexed and families count appears in the discovery header with its two badges and is absent from the right rail
+
 ### Requirement: The right rail shows live catalog facts and shortcuts
 
-The right rail SHALL show the indexed chip count, per-vendor counts and match or
-coverage ratios from `meta.json` when available, a compact provenance summary,
-and a text list of the keyboard shortcuts available in the application and
-workspace. Its catalog statistics error SHALL use `alert alert-soft alert-error`
-and its pending message SHALL include an extra-small daisyUI loading indicator.
-It SHALL NOT contain pin assignments or other shareable pin configuration.
+The right rail SHALL show a compact catalog card with vendor label and chip
+count rows plus the sync date from `meta.json` when available. It SHALL NOT show
+a total, match or coverage ratios, or shortcuts; the Shortcuts card SHALL be
+removed. Statistics errors SHALL use `alert alert-soft alert-error` and pending
+text SHALL use `loading loading-spinner loading-xs`. It SHALL NOT contain pin
+assignments or shareable configuration. The sidebar Hotkeys dialog SHALL be the
+only shortcut reference.
 
 #### Scenario: Catalog metadata is available
 
 - **WHEN** `meta.json` has loaded
-- **THEN** the rail shows the indexed chip count and the per-vendor counts and ratios from that metadata
+- **THEN** the rail lists each available vendor label with its chip count and the sync date, and shows no total count and no match or coverage ratio
 
 #### Scenario: Catalog metadata is unavailable
 
@@ -161,8 +174,18 @@ It SHALL NOT contain pin assignments or other shareable pin configuration.
 
 #### Scenario: Shortcut reference is textual
 
-- **WHEN** the rail is rendered
-- **THEN** it lists `Ctrl+K`, `Ctrl+F`, `Ctrl+Click`, `Ctrl+Z`, `Ctrl+Y`, `0`, and `Escape` as text
+- **WHEN** the shared shortcut reference is rendered in the shortcut help dialog
+- **THEN** it lists `Ctrl+K`, `Ctrl+F`, `Ctrl+Click`, `Ctrl+Z`, `Ctrl+Y`, `0`, and `Escape` as text and the right rail contains no shortcut card
+
+#### Scenario: Rail carries no shortcut reference
+
+- **WHEN** the right rail is rendered in any metadata state
+- **THEN** it contains no shortcut keys, no shortcut action list, and no Shortcuts card
+
+#### Scenario: Rail omits derived ratios and totals
+
+- **WHEN** a vendor row is rendered in the rail
+- **THEN** the row text contains only the vendor label and chip count, with no match percentage, coverage percentage, or indexed total
 
 ### Requirement: The hero preview and landing export preview are removed
 

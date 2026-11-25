@@ -120,25 +120,40 @@ describe('start screen actions', () => {
 });
 
 describe('catalog rail', () => {
-  it('reads live metadata for counts, ratios and provenance', () => {
+  const discoveryStart = page.indexOf('data-zone="discovery"');
+  const railStart = page.indexOf('data-zone="rail"');
+  const discovery = page.slice(discoveryStart, railStart);
+  const rail = page.slice(railStart);
+
+  it('reads live metadata for compact vendor counts and the sync date', () => {
     expect(page).toContain('catalogStore.meta');
-    expect(page).toContain('catalogStore.meta.chipCount.toLocaleString()');
-    expect(page).toContain('vendorSource.ratios.match.toFixed(1)');
-    expect(page).toContain('vendorSource.ratios.coverage.toFixed(1)');
-    expect(page).toContain('formatSyncDate(');
+    expect(page).toContain('PROVENANCE_VENDORS');
+    expect(page).toContain('{vendor.label}');
+    expect(page).toContain('{vendorSource.chipCount.toLocaleString()} chips');
+    expect(page).toContain('Synced {formatSyncDate(catalogStore.meta.generatedAt)}');
+    expect(page).not.toContain('ratios.');
+    expect(page).not.toContain('match {');
+    expect(page).not.toContain('coverage {');
+    expect(rail).not.toContain('catalogStore.meta.chipCount.toLocaleString()');
     expect(page).not.toContain('PROVENANCE_SOURCES.length');
     expect(page).toContain('Catalog statistics unavailable.');
     expect(fs.existsSync(path.join(ROOT, 'public', 'data', 'meta.json'))).toBe(true);
   });
 
-  it('lists every documented shortcut as text from the shared reference', () => {
+  it('keeps the index count in discovery only and leaves shortcuts to the shared dialog', () => {
+    expect(discovery).toContain('catalogStore.meta.chipCount.toLocaleString()');
+    expect(discovery).toContain('catalogStore.meta.families.length');
+    expect(discovery.match(/parts indexed/g)?.length).toBe(1);
+    expect(rail).not.toContain('parts indexed');
+    expect(rail).not.toContain('families');
+    expect(page).not.toContain('SHORTCUTS');
+    expect(page).not.toContain('Shortcuts');
+    expect(page).not.toContain('<kbd');
     const reference = read('src/data/provenance.ts');
     for (const token of ['Ctrl+K', 'Ctrl+F', 'Ctrl+Click', 'Ctrl+Z', 'Ctrl+Y', '0', 'Escape']) {
       expect(reference, token).toContain(token);
     }
     expect(reference).toContain('const SHORTCUTS');
-    expect(page).toContain('SHORTCUTS');
-    expect(page).not.toContain('PROVENANCE_SOURCES.length');
     expect(read('src/pages/AboutPage.svelte')).toContain('<ProvenancePanel');
   });
 });

@@ -231,6 +231,14 @@ describe('shortcut help', () => {
     for (const token of ['Ctrl+K', 'Ctrl+F', 'Ctrl+Click', 'Ctrl+Z', 'Ctrl+Y', '0', 'Escape']) {
       expect(reference, token).toContain(token);
     }
+    for (const file of ['src/pages/LandingPage.svelte', 'src/pages/AboutPage.svelte']) {
+      const source = readSource(file);
+      expect(source, file).not.toContain('SHORTCUTS');
+      expect(source, file).not.toContain('const shortcuts = [');
+      expect(source, file).not.toContain('<kbd');
+    }
+    expect(readSource('src/pages/LandingPage.svelte')).not.toContain('Shortcuts');
+    expect(readSource('src/components/shell/AppShell.svelte').match(/<ShortcutHelpDialog/g)?.length).toBe(1);
   });
 
   it('opens the same global-bar dialog from the keyboard and the shortcuts control', () => {

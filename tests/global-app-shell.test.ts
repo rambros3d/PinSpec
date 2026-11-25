@@ -395,4 +395,20 @@ describe('start screen redirect', () => {
     expect(page).toContain('<PinoutDiffModal');
     expect(page).not.toContain('id="provenance"');
   });
+
+  it('leaves the shared Hotkeys dialog as the only shortcut reference', () => {
+    const page = read('src/pages/LandingPage.svelte');
+    expect(page).not.toContain('SHORTCUTS');
+    expect(page).not.toContain('Shortcuts');
+    expect(page).not.toContain('<kbd');
+    expect(page).not.toContain('ratios.');
+    expect(page).toContain('PROVENANCE_VENDORS');
+    expect(page).toContain('Synced {formatSyncDate(catalogStore.meta.generatedAt)}');
+    const shell = read('src/components/shell/AppShell.svelte');
+    expect(shell.match(/<ShortcutHelpDialog/g)?.length).toBe(1);
+    expect(read('src/pages/AboutPage.svelte')).not.toContain('SHORTCUTS');
+    const sidebar = read('src/components/shell/GlobalSidebar.svelte');
+    expect(sidebar).toContain('>Hotkeys<');
+    expect(sidebar).toContain('topBarUI.shortcutHelpOpen = true');
+  });
 });

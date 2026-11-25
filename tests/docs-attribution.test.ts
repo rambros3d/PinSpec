@@ -167,6 +167,11 @@ describe('multi-vendor documentation and attribution', () => {
     expect(landing).not.toContain('id="provenance"');
     expect(landing).not.toContain('Data provenance');
     expect(landing).not.toContain('PROVENANCE_SOURCES');
+    expect(landing).not.toContain('SHORTCUTS');
+    expect(landing).not.toContain('Shortcuts');
+    expect(landing).not.toContain('ratios.');
+    expect(landing).toContain('PROVENANCE_VENDORS');
+    expect(landing).toContain('formatSyncDate(');
   });
 
   it('advertises all six vendors in the document metadata', () => {

@@ -7,7 +7,6 @@
     FileUp,
     FolderOpen,
     GitCompare,
-    Keyboard,
     Plus,
     RefreshCw,
     Upload,
@@ -24,10 +23,7 @@
     prepareIocImport,
     type IocRawRecord,
   } from '../core/importers/ioc';
-  import {
-    PROVENANCE_VENDORS,
-    SHORTCUTS,
-  } from '../data/provenance';
+  import { PROVENANCE_VENDORS } from '../data/provenance';
   import {
     BOARD_PRESETS,
     buildBoardPresetState,
@@ -214,10 +210,10 @@
 
 <div class="landing-shell flex flex-col bg-base-200 text-foreground">
   <!-- Start screen: actions, discovery, and catalog facts share one scroll shell. -->
-  <main class="start-grid max-w-7xl w-full mx-auto px-6 py-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-    <!-- Left action column -->
-    <section data-zone="actions" class="start-actions lg:col-span-3 space-y-3" aria-label="Start a pinout">
-      <div class="px-1 pb-1">
+  <main class="start-grid max-w-7xl w-full mx-auto px-6 py-6 lg:py-8 grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-start">
+    <!-- Left action column: one compact divided surface of entry points. -->
+    <section data-zone="actions" class="start-actions lg:col-span-3" aria-label="Start a pinout">
+      <div class="px-1 pb-2">
         <h1 class="text-xl font-semibold tracking-tight text-foreground">Start a pinout</h1>
         <p class="text-xs text-base-content/60 mt-1">
           Pin allocation for STM32, CH32 and RP parts in the browser.
@@ -225,54 +221,80 @@
         <a href="#presets" class="link link-hover text-xs mt-1 inline-block">Starter chips</a>
       </div>
 
-      <button
-        type="button"
-        onclick={() => router.navigateCatalog()}
-        class="card card-border w-full bg-base-100 p-3.5 flex items-center gap-3 text-left hover:border-info transition-colors"
-      >
-        <Plus class="size-4 text-info shrink-0" />
-        <span class="min-w-0 flex-1">
-          <span class="block text-sm font-semibold text-foreground">New pinout MCU/Board</span>
-          <span class="block text-xs text-base-content/60 mt-0.5">Open the catalog to choose a part, family or package.</span>
-        </span>
-        <ArrowRight class="size-3.5 text-base-content/60 shrink-0" />
-      </button>
-      <button
-        type="button"
-        onclick={() => (showBoardSelector = true)}
-        title="Start from an official board preset"
-        aria-label="Open board preset selector"
-        class="btn btn-sm btn-outline w-full gap-2 text-xs font-medium"
-      >
-        <CircuitBoard class="size-3.5" />
-        <span>Choose a board preset</span>
-      </button>
+      <div class="card card-border bg-base-100 divide-y divide-base-300 overflow-hidden">
+        <button
+          type="button"
+          onclick={() => router.navigateCatalog()}
+          class="w-full flex items-center gap-3 px-3.5 py-2.5 text-left hover:bg-base-200 transition-colors"
+        >
+          <Plus class="size-4 text-info shrink-0" />
+          <span class="min-w-0 flex-1">
+            <span class="block text-sm font-medium text-foreground">New pinout MCU/Board</span>
+            <span class="block text-xs text-base-content/60">Open the catalog to choose a part, family or package.</span>
+          </span>
+          <ArrowRight class="size-3.5 text-base-content/60 shrink-0" />
+        </button>
+        <button
+          type="button"
+          onclick={() => (showBoardSelector = true)}
+          title="Start from an official board preset"
+          aria-label="Open board preset selector"
+          class="w-full flex items-center gap-3 px-3.5 py-2.5 text-left hover:bg-base-200 transition-colors"
+        >
+          <CircuitBoard class="size-4 text-info shrink-0" />
+          <span class="min-w-0 flex-1 text-sm font-medium text-foreground">Choose a board preset</span>
+          <ArrowRight class="size-3.5 text-base-content/60 shrink-0" />
+        </button>
+        <button
+          type="button"
+          onclick={revealRecentSessions}
+          class="w-full flex items-center gap-3 px-3.5 py-2.5 text-left hover:bg-base-200 transition-colors"
+        >
+          <FolderOpen class="size-4 text-info shrink-0" />
+          <span class="min-w-0 flex-1">
+            <span class="block text-sm font-medium text-foreground">Open project</span>
+            <span class="block text-xs text-base-content/60">Reopen a recent local session.</span>
+          </span>
+          <ArrowRight class="size-3.5 text-base-content/60 shrink-0" />
+        </button>
+        <button
+          type="button"
+          onclick={() => iocFileInput?.click()}
+          class="w-full flex items-center gap-3 px-3.5 py-2.5 text-left hover:bg-base-200 transition-colors"
+        >
+          <FileUp class="size-4 text-info shrink-0" />
+          <span class="min-w-0 flex-1">
+            <span class="block text-sm font-medium text-foreground">Import .ioc</span>
+            <span class="block text-xs text-base-content/60">Read assignments from an STM32CubeIDE file.</span>
+          </span>
+          <ArrowRight class="size-3.5 text-base-content/60 shrink-0" />
+        </button>
+        <button
+          type="button"
+          onclick={() => jsonFileInput?.click()}
+          class="w-full flex items-center gap-3 px-3.5 py-2.5 text-left hover:bg-base-200 transition-colors"
+        >
+          <Upload class="size-4 text-info shrink-0" />
+          <span class="min-w-0 flex-1">
+            <span class="block text-sm font-medium text-foreground">Import pinout.json</span>
+            <span class="block text-xs text-base-content/60">Load a version-2 project file.</span>
+          </span>
+          <ArrowRight class="size-3.5 text-base-content/60 shrink-0" />
+        </button>
+        <button
+          type="button"
+          onclick={() => (showDiff = true)}
+          class="w-full flex items-center gap-3 px-3.5 py-2.5 text-left hover:bg-base-200 transition-colors"
+        >
+          <GitCompare class="size-4 text-info shrink-0" />
+          <span class="min-w-0 flex-1">
+            <span class="block text-sm font-medium text-foreground">Compare</span>
+            <span class="block text-xs text-base-content/60">Diff two project files without editing.</span>
+          </span>
+          <ArrowRight class="size-3.5 text-base-content/60 shrink-0" />
+        </button>
+      </div>
 
-      <button
-        type="button"
-        onclick={revealRecentSessions}
-        class="card card-border w-full bg-base-100 p-3.5 flex items-center gap-3 text-left hover:border-info transition-colors"
-      >
-        <FolderOpen class="size-4 text-info shrink-0" />
-        <span class="min-w-0 flex-1">
-          <span class="block text-sm font-semibold text-foreground">Open project</span>
-          <span class="block text-xs text-base-content/60 mt-0.5">Reopen a recent local session.</span>
-        </span>
-        <ArrowRight class="size-3.5 text-base-content/60 shrink-0" />
-      </button>
-
-      <button
-        type="button"
-        onclick={() => iocFileInput?.click()}
-        class="card card-border w-full bg-base-100 p-3.5 flex items-center gap-3 text-left hover:border-info transition-colors"
-      >
-        <FileUp class="size-4 text-info shrink-0" />
-        <span class="min-w-0 flex-1">
-          <span class="block text-sm font-semibold text-foreground">Import .ioc</span>
-          <span class="block text-xs text-base-content/60 mt-0.5">Read assignments from an STM32CubeIDE file.</span>
-        </span>
-        <ArrowRight class="size-3.5 text-base-content/60 shrink-0" />
-      </button>
       <input
         bind:this={iocFileInput}
         type="file"
@@ -285,19 +307,6 @@
           (e.currentTarget as HTMLInputElement).value = '';
         }}
       />
-
-      <button
-        type="button"
-        onclick={() => jsonFileInput?.click()}
-        class="card card-border w-full bg-base-100 p-3.5 flex items-center gap-3 text-left hover:border-info transition-colors"
-      >
-        <Upload class="size-4 text-info shrink-0" />
-        <span class="min-w-0 flex-1">
-          <span class="block text-sm font-semibold text-foreground">Import pinout.json</span>
-          <span class="block text-xs text-base-content/60 mt-0.5">Load a version-2 project file.</span>
-        </span>
-        <ArrowRight class="size-3.5 text-base-content/60 shrink-0" />
-      </button>
       <input
         bind:this={jsonFileInput}
         type="file"
@@ -306,19 +315,6 @@
         aria-label="Import pinout JSON project file"
         onchange={handleJsonImport}
       />
-
-      <button
-        type="button"
-        onclick={() => (showDiff = true)}
-        class="card card-border w-full bg-base-100 p-3.5 flex items-center gap-3 text-left hover:border-info transition-colors"
-      >
-        <GitCompare class="size-4 text-info shrink-0" />
-        <span class="min-w-0 flex-1">
-          <span class="block text-sm font-semibold text-foreground">Compare</span>
-          <span class="block text-xs text-base-content/60 mt-0.5">Diff two project files without editing.</span>
-        </span>
-        <ArrowRight class="size-3.5 text-base-content/60 shrink-0" />
-      </button>
 
       {#if importError}
         <p role="alert" class="alert alert-soft alert-error text-xs flex items-start gap-2">
@@ -329,8 +325,8 @@
     </section>
 
     <!-- Central discovery column -->
-    <div data-zone="discovery" class="start-discovery lg:col-span-6 min-w-0 space-y-8">
-      <section class="bg-dot-grid border border-base-300 rounded-box p-5 space-y-4">
+    <div data-zone="discovery" class="start-discovery lg:col-span-6 min-w-0 space-y-4">
+      <section class="bg-dot-grid border border-base-300 rounded-box p-4 space-y-3">
         <div class="flex flex-wrap items-center gap-2 text-xs font-mono-tabular text-base-content/60">
           <span>
             {#if catalogStore.meta}
@@ -356,28 +352,25 @@
       </div>
     </div>
 
-    <!-- Right rail: generated catalog facts, provenance summary and shortcuts. -->
-    <aside data-zone="rail" class="start-rail lg:col-span-3 space-y-3" aria-label="Catalog information">
-      <section class="card card-border bg-base-100 p-4 space-y-3">
+    <!-- Right rail: compact generated catalog facts. -->
+    <aside data-zone="rail" class="start-rail lg:col-span-3 space-y-2" aria-label="Catalog information">
+      <section class="card card-border bg-base-100 p-3 space-y-2">
         <div class="flex items-center gap-2">
           <Database class="size-4 text-info" />
           <h2 class="text-sm font-semibold text-foreground">Catalog</h2>
         </div>
         {#if catalogStore.meta}
           <p class="text-xs text-base-content/60 font-mono-tabular">
-            {catalogStore.meta.chipCount.toLocaleString()} parts indexed · Synced {formatSyncDate(catalogStore.meta.generatedAt)}
+            Synced {formatSyncDate(catalogStore.meta.generatedAt)}
           </p>
-          <div class="space-y-2">
+          <div class="space-y-1.5">
             {#each PROVENANCE_VENDORS as vendor (vendor.id)}
               {@const vendorSource = catalogStore.meta.sources?.[vendor.id]}
               {#if vendorSource}
                 <div class="flex items-center justify-between gap-2 text-xs">
-                  <span class="font-mono font-semibold text-foreground">{vendor.label}</span>
+                  <span class="font-mono text-foreground">{vendor.label}</span>
                   <span class="font-mono-tabular text-base-content/60 text-right">
                     {vendorSource.chipCount.toLocaleString()} chips
-                    {#if vendorSource.ratios}
-                      · match {vendorSource.ratios.match.toFixed(1)}% · coverage {vendorSource.ratios.coverage.toFixed(1)}%
-                    {/if}
                   </span>
                 </div>
               {/if}
@@ -393,21 +386,6 @@
             Loading catalog statistics...
           </p>
         {/if}
-      </section>
-
-      <section class="card card-border bg-base-100 p-4 space-y-2">
-        <div class="flex items-center gap-2">
-          <Keyboard class="size-4 text-info" />
-          <h2 class="text-sm font-semibold text-foreground">Shortcuts</h2>
-        </div>
-        <ul class="space-y-1.5 text-xs">
-          {#each SHORTCUTS as shortcut (shortcut.keys)}
-            <li class="flex items-center justify-between gap-3">
-              <kbd class="kbd kbd-sm font-mono text-[11px] whitespace-nowrap">{shortcut.keys}</kbd>
-              <span class="text-base-content/60 text-right">{shortcut.action}</span>
-            </li>
-          {/each}
-        </ul>
       </section>
     </aside>
   </main>

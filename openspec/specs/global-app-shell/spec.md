@@ -224,7 +224,8 @@ revisions, licenses, and the indexed total in one grouped Catalog sources
 table. It SHALL read live values from `meta.json`, SHALL keep loading and retry
 states on that merged surface, SHALL NOT contain a separate summary card or any
 keyboard shortcut reference, and SHALL NOT contain pin configuration or
-shareable fields.
+shareable fields. The sidebar Hotkeys dialog SHALL be the only keyboard shortcut
+reference.
 
 #### Scenario: About reports provenance
 
@@ -250,6 +251,11 @@ shareable fields.
 
 - **WHEN** the About tab strip is rendered
 - **THEN** only non-shortcut tabs are offered and the Sources tab remains available
+
+#### Scenario: Hotkeys dialog is the only shortcut reference
+
+- **WHEN** the user looks for keyboard shortcuts from any shell route or the start screen
+- **THEN** the sidebar Hotkeys entry opens the shared dialog as the only shortcut reference, and neither the start screen nor About repeats the shortcut list
 
 ### Requirement: Shell preferences stay in localStorage
 
@@ -292,7 +298,9 @@ Adding the global top bar and the reserved rail SHALL NOT change workspace or
 shared-link behavior, the start screen's three zones and quick actions,
 hash-based routing under a GitHub Pages subpath, or data fetches through
 `dataUrl()`. Pin configuration SHALL remain shareable and presentation
-preferences SHALL remain in localStorage only.
+preferences SHALL remain in localStorage only. A presentation-only start-screen
+rework SHALL add no route, feature, or shareable field and SHALL keep one top bar
+and `.landing-shell`.
 
 #### Scenario: Workspace routes remain unchanged
 
@@ -313,6 +321,11 @@ preferences SHALL remain in localStorage only.
 
 - **WHEN** the user navigates through the global bar or toggles the sidebar
 - **THEN** no presentation field enters a share URL or project file and all pin configuration is preserved
+
+#### Scenario: Landing presentation pass preserves shell contracts
+
+- **WHEN** the start screen zones are reworked for density and hierarchy
+- **THEN** the three zones, quick actions, single global top bar, hash routing, and `dataUrl()` fetches remain unchanged and no new shareable state is introduced
 
 ### Requirement: Shell surfaces meet source and verification constraints
 

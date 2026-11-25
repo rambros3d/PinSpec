@@ -136,6 +136,15 @@ describe('daisyUI token integration', () => {
     expect(summary).not.toMatch(/class=\{`[^`]*card card-border[^`]*alert[^`]*\}/);
   });
 
+  it('keeps the reworked landing zones on theme tokens', () => {
+    const landing = fs.readFileSync(path.join(ROOT, 'src', 'pages', 'LandingPage.svelte'), 'utf8');
+    expect(landing).not.toMatch(/#[0-9a-fA-F]{3,8}\b|\brgba?\(|\bhsla?\(|\boklch\(/);
+    expect(landing).not.toMatch(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]/u);
+    for (const token of ['bg-base-100', 'bg-base-200', 'divide-base-300', 'text-base-content/60', 'text-foreground']) {
+      expect(landing, token).toContain(token);
+    }
+  });
+
   it('keeps the changed sidebar and shortcut dialog on theme tokens', () => {
     for (const rel of [
       'src/components/shell/GlobalSidebar.svelte',

@@ -259,8 +259,8 @@ describe('theme control and persistence boundaries', () => {
     expect(picker).toContain('title={`Appearance: ${label}`}');
     expect(picker).toContain('aria-label={`Appearance: ${label}`}');
     expect(picker).not.toMatch(/dropdown|menu|aria-expanded|\bCheck\b/);
-    expect(source('src/pages/LandingPage.svelte')).toContain('<ThemePicker />');
-    expect(source('src/components/workspace/TopToolbar.svelte')).toContain(
+    expect(source('src/pages/LandingPage.svelte')).not.toContain('<ThemePicker');
+    expect(source('src/components/shell/GlobalTopBar.svelte')).toContain(
       '<ThemePicker compact={true} />',
     );
   });

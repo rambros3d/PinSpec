@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { thumbnailGeometryFromChip } from '../src/core/package-thumbnail';
 import { formatMuxLabel } from '../src/core/types';
 import {
   buildVendorTabs,
@@ -108,6 +109,25 @@ describe('multi-vendor package rendering', () => {
     expect(readChip('STM32G431CBU6').package.sides).toEqual([12, 12, 12, 12]);
     expect(readChip('STM32H743XIH6').package.kind).toBe('grid');
     expect(readChip('RP2350B').package.hasExposedPad).toBe(true);
+  });
+
+  it('refines thumbnails from generated two-sided, grid and exposed-pad geometry', () => {
+    const catalog = readSource('src/pages/CatalogPage.svelte');
+    expect(catalog).toContain('thumbnailGeometryFromChip(');
+    expect(catalog).toContain('catalogStore.loadChip(');
+    const thumbnail = readSource('src/components/catalog/PackageThumbnail.svelte');
+    expect(thumbnail).toContain('data-fidelity={geometry.fidelity}');
+    expect(thumbnail).not.toContain('onclick=');
+
+    for (const id of ['CH32V003J4M6', 'STM32H743XIH6', 'RP2350B']) {
+      const chip = readChip(id);
+      const geometry = thumbnailGeometryFromChip(chip);
+      expect(geometry.kind).toBe(chip.package.kind);
+      expect(geometry.fidelity).toBe('exact');
+      expect(geometry.hasExposedPad).toBe(chip.package.hasExposedPad === true);
+    }
+    expect(readSource('src/components/workspace/PerimeterPackage.svelte')).toContain('twoSidedPackage');
+    expect(readSource('src/components/workspace/GridPackage.svelte')).toContain('data-pin-pos=');
   });
 });
 
@@ -286,6 +306,15 @@ describe('generated module identity and discovery tags', () => {
     expect(readSource('src/components/landing/QuickSearchBar.svelte')).toContain('buildVendorTabs');
     expect(readSource('src/components/workspace/McuSwitcherModal.svelte')).toContain('vendorFilter');
   });
+
+  it('keeps the vendor-filtered MCU switcher reachable from the global bar', () => {
+    const bar = readSource('src/components/shell/GlobalTopBar.svelte');
+    expect(bar).toContain('topBarUI.switcherOpen = true');
+    expect(bar).toContain('workspaceStore.chip.id');
+    const workspace = readSource('src/pages/WorkspacePage.svelte');
+    expect(workspace).toContain('<McuSwitcherModal');
+    expect(workspace).toContain('topBarUI.switcherOpen');
+  });
 });
 
 describe('workspace exports and provenance copy', () => {
@@ -312,7 +341,7 @@ describe('workspace exports and provenance copy', () => {
     for (const site of [
       'src/pages/LandingPage.svelte',
       'src/pages/WorkspacePage.svelte',
-      'src/components/workspace/TopToolbar.svelte',
+      'src/components/shell/GlobalTopBar.svelte',
       'src/components/workspace/McuSwitcherModal.svelte',
       'src/components/workspace/ExportModal.svelte',
       'src/components/landing/PresetGrid.svelte',
@@ -339,7 +368,7 @@ describe('workspace exports and provenance copy', () => {
       expect(provenance, source).toContain(source);
     }
     expect(readSource('src/components/about/ProvenancePanel.svelte')).toContain(
-      'Per-vendor chip counts and source revisions',
+      'Catalog sources',
     );
     expect(readSource('src/pages/LandingPage.svelte')).not.toContain('id="provenance"');
     expect(meta.sources?.stm32).toBeDefined();

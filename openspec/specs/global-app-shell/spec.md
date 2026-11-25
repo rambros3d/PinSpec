@@ -9,9 +9,11 @@ Defines the global application shell: a collapsible sidebar available on every r
 ### Requirement: A collapsible sidebar is present on every route
 
 The shell SHALL render a left sidebar on the home, catalog, projects, about,
-workspace, and shared routes. Its collapsed state SHALL be a narrow icon rail
-that remains visible. Expanding the sidebar SHALL overlay page content without
-shifting, resizing, or reflowing the canvas or any other content.
+workspace, and shared routes. Its collapsed state SHALL be a narrow 3rem icon
+rail that remains visible in reserved horizontal space so it never covers route
+content. The expand/collapse control SHALL live in the global top bar. Expanding
+the sidebar SHALL overlay page content with a backdrop without shifting,
+resizing, or reflowing the canvas or any other content.
 
 #### Scenario: Collapsed rail stays visible on every route
 
@@ -33,12 +35,24 @@ shifting, resizing, or reflowing the canvas or any other content.
 - **WHEN** the user navigates to another route through the sidebar
 - **THEN** the sidebar keeps its expanded or collapsed state and the new route renders with that state
 
+#### Scenario: Collapsed rail reserves its width
+
+- **WHEN** the user opens any supported route with the sidebar collapsed
+- **THEN** the route content begins after the reserved 3rem rail and no content is covered by the rail
+
+#### Scenario: Toggle is in the global bar
+
+- **WHEN** the user looks for the sidebar control on any route
+- **THEN** the control is the leftmost control of the global top bar and is not present in the rail header
+
 ### Requirement: The sidebar provides four section entries
 
-The sidebar SHALL provide entries for Home screen, Catalog screen, Projects
-screen, and About, targeting `#/`, `#/catalog`, `#/projects`, and `#/about`.
-It SHALL indicate the active destination and SHALL remain usable while a
-workspace or shared pinout is open.
+The sidebar SHALL provide entries for Home, Catalog, Projects, and About,
+targeting `#/`, `#/catalog`, `#/projects`, and `#/about`, with no word "screen" in
+any navigation label. Home and Projects SHALL appear at the top followed by the
+recent-projects list. Catalog and About SHALL appear at the bottom after a visual
+separator. The sidebar SHALL indicate the active destination and SHALL remain
+usable while a workspace or shared pinout is open.
 
 #### Scenario: Section entries navigate to their routes
 
@@ -49,6 +63,16 @@ workspace or shared pinout is open.
 
 - **WHEN** the user activates a section entry from a workspace or shared pinout
 - **THEN** the destination opens without changing the saved pin configuration of that session
+
+#### Scenario: Navigation labels drop the word screen
+
+- **WHEN** the sidebar section entries are rendered
+- **THEN** the labels are Home, Catalog, Projects, and About without the word "screen"
+
+#### Scenario: Bottom group is separated
+
+- **WHEN** the sidebar is viewed in either rail or expanded state
+- **THEN** Home and Projects sit above the recent-projects list and Catalog and About form a bottom group preceded by a visual separator
 
 ### Requirement: Recent projects are listed in the sidebar
 
@@ -123,15 +147,18 @@ comparison action SHALL remain available.
 
 ### Requirement: The projects route manages recent sessions
 
-The `#/projects` route SHALL list recent sessions with open and delete controls
-and SHALL provide import and export actions using the existing version-2
-project parser and exporter. An empty list SHALL show guidance and a link to
-the catalog or home screen.
+The `#/projects` route SHALL render recent sessions as cards with open and
+delete controls, not as table rows. Each card SHALL show a package thumbnail
+derived from the saved package name and pin count, the MCU ID, package name,
+assigned/total pins, and relative time. The route SHALL keep import and
+export actions from the version-2 project parser and exporter and SHALL NOT
+fetch shards for thumbnails. An empty list SHALL show guidance
+and a link to the catalog or home screen.
 
 #### Scenario: Projects route lists sessions
 
 - **WHEN** recent sessions exist and the user opens `#/projects`
-- **THEN** the route lists them with their MCU identifiers and open and delete controls
+- **THEN** the route shows one card per session with its MCU identifier, package thumbnail, and open and delete controls
 
 #### Scenario: Projects route opens and deletes sessions
 
@@ -153,32 +180,44 @@ the catalog or home screen.
 - **WHEN** no recent sessions exist
 - **THEN** the route shows a short hint and a link to the catalog or home screen
 
+#### Scenario: Session cards show package details without shard fetches
+
+- **WHEN** the projects route renders stored sessions
+- **THEN** each card shows package name, assigned/total pins, and relative time alongside its thumbnail and no chip shard request is made
+
 ### Requirement: About presents provenance and shortcuts
 
-The `#/about` destination SHALL present the catalog statistics, upstream source
-revisions, licenses, and keyboard shortcut reference previously held by the
-start-screen footer. It SHALL read live values from `meta.json` and SHALL NOT
-contain pin configuration or shareable fields.
+The `#/about` destination SHALL present catalog statistics, upstream source
+revisions, licenses, and the indexed total in one grouped Catalog sources
+table. It SHALL read live values from `meta.json`, SHALL keep loading and retry
+states on that merged surface, SHALL NOT contain a separate summary card or any
+keyboard shortcut reference, and SHALL NOT contain pin configuration or
+shareable fields.
 
 #### Scenario: About reports provenance
 
 - **WHEN** generated metadata is available and the user opens About
-- **THEN** the panel shows per-vendor counts, source revisions, licenses, and the indexed chip count
+- **THEN** the merged table shows per-vendor counts, match and coverage ratios, sync time, nested source ids, revisions, licenses, links, and the indexed total in its header
 
 #### Scenario: About lists shortcuts
 
-- **WHEN** the About panel is rendered
-- **THEN** it lists `Ctrl+K`, `Ctrl+F`, `Ctrl+Click`, `Ctrl+Z`, `Ctrl+Y`, `0`, and `Escape` as text
+- **WHEN** the About panel is rendered in any tab or metadata state
+- **THEN** it lists no shortcut key, shortcut action, inline shortcut summary, or Shortcuts tab
 
 #### Scenario: About tolerates missing metadata
 
 - **WHEN** `meta.json` has not loaded or cannot be loaded
-- **THEN** About shows a loading or unavailable state while the shortcut reference remains visible
+- **THEN** About shows a loading or unavailable state with a retry control on the merged table and no shortcut reference as a fallback
 
 #### Scenario: About carries no pin configuration
 
 - **WHEN** About is rendered or left
 - **THEN** no assignment, label, lock, mode, remap, or PIO field is written to a share URL or project file
+
+#### Scenario: About keeps non-shortcut tabs
+
+- **WHEN** the About tab strip is rendered
+- **THEN** only non-shortcut tabs are offered and the Sources tab remains available
 
 ### Requirement: Shell preferences stay in localStorage
 
@@ -204,9 +243,11 @@ state, or undo history.
 
 ### Requirement: Existing routes and data loading remain stable
 
-Adding the shell and new routes SHALL NOT change workspace or shared-link
-behavior, the start screen's three zones and quick actions, hash-based routing
-under a GitHub Pages subpath, or data fetches through `dataUrl()`.
+Adding the global top bar and the reserved rail SHALL NOT change workspace or
+shared-link behavior, the start screen's three zones and quick actions,
+hash-based routing under a GitHub Pages subpath, or data fetches through
+`dataUrl()`. Pin configuration SHALL remain shareable and presentation
+preferences SHALL remain in localStorage only.
 
 #### Scenario: Workspace routes remain unchanged
 
@@ -223,11 +264,18 @@ under a GitHub Pages subpath, or data fetches through `dataUrl()`.
 - **WHEN** the built app is served under `/pincraft/` and a shell route is opened
 - **THEN** the route resolves from the hash and data requests resolve relative to `import.meta.env.BASE_URL`
 
+#### Scenario: Global bar preserves persistence
+
+- **WHEN** the user navigates through the global bar or toggles the sidebar
+- **THEN** no presentation field enters a share URL or project file and all pin configuration is preserved
+
 ### Requirement: Shell surfaces meet source and verification constraints
 
 Shell surfaces SHALL use existing theme tokens and monochrome vector icons,
 SHALL add no npm dependency, SHALL contain no emoji, and SHALL keep raw color
-literals in the vendored theme file. `npm test`, `npm run check`, and
+literals in the vendored theme file. Catalog and projects thumbnails SHALL be
+static inline SVG with no interaction handler, no raw color literal, and no
+texture primitive. `npm test`, `npm run check`, and
 `BASE_PATH="/pincraft/" npm run build` SHALL exit zero with no build warnings.
 
 #### Scenario: Theme tokens cover the shell
@@ -244,3 +292,27 @@ literals in the vendored theme file. `npm test`, `npm run check`, and
 
 - **WHEN** changed source files are scanned
 - **THEN** no color literal appears outside `src/themes/daisyui.css` and no emoji character appears
+
+#### Scenario: Texture effects stay in the two package renderers
+
+- **WHEN** all Svelte sources are scanned for texture primitives
+- **THEN** only `PerimeterPackage.svelte` and `GridPackage.svelte` contain `feTurbulence` and no thumbnail component adds one
+
+### Requirement: Catalog result rows lead with a package thumbnail
+
+The catalog result table SHALL add a leading 40-48px package thumbnail column while keeping its dense layout, ranking, 500-result cap, filters, load states, and Open handoff. A silhouette derived from index data SHALL appear immediately; exact geometry SHALL refine only visible rows with at most four shard loads in flight and a fixed per-pass cap through the catalog store. The thumbnail SHALL be decorative and SHALL NOT navigate.
+
+#### Scenario: Every result row has a leading thumbnail
+
+- **WHEN** catalog results are rendered
+- **THEN** each row begins with a 40-48px decorative package thumbnail and the existing Part, Vendor, Family, Package, Pins, Flash / RAM, and Open cells follow it
+
+#### Scenario: Thumbnail refinement stays bounded
+
+- **WHEN** the result set contains more parts than are visible
+- **THEN** only visible rows are refined from shards, with at most four loads in flight and a fixed per-pass cap, and the 500-result cap and filter behavior are unchanged
+
+#### Scenario: Thumbnail is not a navigation control
+
+- **WHEN** the user clicks a thumbnail in a result row
+- **THEN** no route changes and only the existing Open control opens the workspace

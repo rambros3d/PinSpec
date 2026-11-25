@@ -1,15 +1,8 @@
 <script lang="ts">
-  import {
-    FolderOpen,
-    Home,
-    Info,
-    LayoutGrid,
-    PanelLeftClose,
-    PanelLeftOpen,
-    Trash2,
-  } from 'lucide-svelte';
+  import { FolderOpen, Home, Info, Keyboard, LayoutGrid, Trash2 } from 'lucide-svelte';
   import { router } from '../../state/router.svelte';
   import { shellPreferences } from '../../state/shell-preferences.svelte';
+  import { topBarUI } from '../../state/top-bar-ui.svelte';
   import { workspaceStore } from '../../state/workspace.svelte';
 
   interface Section {
@@ -20,11 +13,14 @@
   }
 
   const SECTIONS: readonly Section[] = [
-    { id: 'home', label: 'Home screen', hash: '#/', icon: Home },
-    { id: 'catalog', label: 'Catalog screen', hash: '#/catalog', icon: LayoutGrid },
-    { id: 'projects', label: 'Projects screen', hash: '#/projects', icon: FolderOpen },
+    { id: 'home', label: 'Home', hash: '#/', icon: Home },
+    { id: 'catalog', label: 'Catalog', hash: '#/catalog', icon: LayoutGrid },
+    { id: 'projects', label: 'Projects', hash: '#/projects', icon: FolderOpen },
     { id: 'about', label: 'About', hash: '#/about', icon: Info },
   ];
+
+  const TOP_SECTIONS = SECTIONS.filter((s) => s.id === 'home' || s.id === 'projects');
+  const BOTTOM_SECTIONS = SECTIONS.filter((s) => s.id === 'catalog' || s.id === 'about');
 
   const expanded = $derived(shellPreferences.sidebarExpanded);
   const activeSection = $derived(
@@ -37,6 +33,12 @@
     else if (section.id === 'catalog') router.navigateCatalog();
     else if (section.id === 'projects') router.navigateProjects();
     else router.navigateAbout();
+  }
+
+  function sectionClass(section: Section): string {
+    return `flex items-center rounded-box py-2 text-base-content/70 transition-colors ${
+      expanded ? 'gap-3 px-3' : 'justify-center px-0'
+    } ${activeSection === section.id ? 'bg-info/15 font-semibold text-info' : 'hover:bg-base-300'}`;
   }
 
   function openRecent(mcuId: string): void {
@@ -60,32 +62,19 @@
 {/if}
 
 <aside
-  class={`shell-panel fixed inset-y-0 left-0 z-40 flex flex-col border-r border-base-300 bg-base-100 ${expanded ? 'w-72' : 'shell-rail w-12'}`}
+  class={`shell-panel fixed bottom-0 left-0 top-12 z-40 flex flex-col border-r border-base-300 bg-base-100 ${expanded ? 'w-72' : 'shell-rail w-12'}`}
   aria-label="Application navigation"
 >
   <div
-    class={`flex h-14 shrink-0 items-center border-b border-base-300 ${expanded ? 'justify-between gap-2 px-3' : 'justify-center'}`}
+    class={`flex h-12 shrink-0 items-center border-b border-base-300 ${expanded ? 'px-3' : 'justify-center'}`}
   >
     {#if expanded}
       <span class="truncate text-sm font-semibold text-foreground">PinCraft</span>
     {/if}
-    <button
-      type="button"
-      onclick={() => (shellPreferences.sidebarExpanded = !expanded)}
-      class="btn btn-ghost btn-sm btn-square shrink-0"
-      aria-label={expanded ? 'Collapse navigation' : 'Expand navigation'}
-      title={expanded ? 'Collapse navigation' : 'Expand navigation'}
-    >
-      {#if expanded}
-        <PanelLeftClose class="size-4" />
-      {:else}
-        <PanelLeftOpen class="size-4" />
-      {/if}
-    </button>
   </div>
 
   <nav class="shrink-0 space-y-1 py-2" aria-label="Sections">
-    {#each SECTIONS as section (section.id)}
+    {#each TOP_SECTIONS as section (section.id)}
       {@const Icon = section.icon}
       <a
         href={section.hash}
@@ -95,9 +84,7 @@
         }}
         aria-current={activeSection === section.id ? 'page' : undefined}
         title={section.label}
-        class={`flex items-center rounded-box py-2 text-base-content/70 transition-colors ${
-          expanded ? 'gap-3 px-3' : 'justify-center px-0'
-        } ${activeSection === section.id ? 'bg-info/15 font-semibold text-info' : 'hover:bg-base-300'}`}
+        class={sectionClass(section)}
       >
         <Icon class="size-4 shrink-0" />
         {#if expanded}
@@ -144,4 +131,44 @@
       {/if}
     </div>
   {/if}
+
+  <div class="mx-2 border-t border-base-300" role="separator" aria-orientation="horizontal"></div>
+
+  <nav class="shrink-0 space-y-1 py-2" aria-label="More sections">
+    {#each BOTTOM_SECTIONS as section (section.id)}
+      {@const Icon = section.icon}
+      {#if section.id === 'about'}
+        <!-- Transient dialog flag; the entry has no hash target and no persisted state. -->
+        <button
+          type="button"
+          onclick={() => (topBarUI.shortcutHelpOpen = true)}
+          class={`flex w-full items-center rounded-box py-2 text-base-content/70 transition-colors ${
+            expanded ? 'gap-3 px-3' : 'justify-center px-0'
+          } hover:bg-base-300`}
+          title="Hotkeys"
+          aria-label="Hotkeys"
+        >
+          <Keyboard class="size-4 shrink-0" />
+          {#if expanded}
+            <span class="truncate text-xs">Hotkeys</span>
+          {/if}
+        </button>
+      {/if}
+      <a
+        href={section.hash}
+        onclick={(e) => {
+          e.preventDefault();
+          navigate(section);
+        }}
+        aria-current={activeSection === section.id ? 'page' : undefined}
+        title={section.label}
+        class={sectionClass(section)}
+      >
+        <Icon class="size-4 shrink-0" />
+        {#if expanded}
+          <span class="truncate text-xs">{section.label}</span>
+        {/if}
+      </a>
+    {/each}
+  </nav>
 </aside>

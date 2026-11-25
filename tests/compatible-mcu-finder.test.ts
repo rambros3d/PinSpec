@@ -225,14 +225,13 @@ describe('bounded shard loading', () => {
 });
 
 describe('finder wiring', () => {
-  it('opens from the toolbar and caps its dialog to the viewport', () => {
-    const toolbar = readSource('src/components/workspace/TopToolbar.svelte');
-    expect(toolbar).toContain('onOpenFinder');
-    expect(toolbar).toContain('Find MCU alternatives');
+  it('opens from the global bar and caps its dialog to the viewport', () => {
+    const bar = readSource('src/components/shell/GlobalTopBar.svelte');
+    expect(bar).toContain('topBarUI.finderOpen = true');
+    expect(bar).toContain('Find MCU alternatives');
     const page = readSource('src/pages/WorkspacePage.svelte');
     expect(page).toContain('CompatibleMcuFinder');
-    expect(page).toContain('showFinder');
-    expect(page).toContain('onOpenFinder={() => (showFinder = true)}');
+    expect(page).toContain('topBarUI.finderOpen');
     const finder = readSource('src/components/workspace/CompatibleMcuFinder.svelte');
     expect(finder).toContain('MAX_COMPATIBILITY_RESULTS');
     expect(finder).toContain('MAX_CONCURRENT_SHARD_LOADS');
@@ -248,9 +247,9 @@ describe('finder wiring', () => {
     expect(finder).not.toContain('workspaceStore');
   });
 
-  it('is reachable in portrait through the scrollable toolbar', () => {
-    const toolbar = readSource('src/components/workspace/TopToolbar.svelte');
-    expect(toolbar).toContain('overflow-x-auto');
+  it('is reachable in portrait through the scrollable global bar', () => {
+    const bar = readSource('src/components/shell/GlobalTopBar.svelte');
+    expect(bar).toContain('overflow-x-auto');
     const css = readSource('src/app.css');
     expect(css).toContain('grid-template-areas:');
     expect(readSource('src/components/workspace/CompatibleMcuFinder.svelte')).toContain('max-h-[92dvh]');

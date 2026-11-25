@@ -9,11 +9,11 @@
 
 export const SHELL_PREFERENCES_STORAGE_KEY = 'pincraft:shell_preferences_v1';
 
-export const ABOUT_TABS = ['sources', 'shortcuts'] as const;
+export const ABOUT_TABS = ['sources'] as const;
 export type AboutTab = (typeof ABOUT_TABS)[number];
 export const DEFAULT_ABOUT_TAB: AboutTab = 'sources';
 
-/** Absent or unrecognized tab values resolve to the first tab. */
+/** Absent, stale `shortcuts`, or unrecognized tab values resolve to `sources`. */
 export function normalizeAboutTab(value: unknown): AboutTab {
   return typeof value === 'string' && (ABOUT_TABS as readonly string[]).includes(value)
     ? (value as AboutTab)

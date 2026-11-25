@@ -31,22 +31,23 @@ describe('localStorage-only shell preferences', () => {
     expect(preferences.aboutTab).toBe('sources');
   });
 
-  it('restores values from a fresh instance after a simulated reload', async () => {
+  it('normalizes a stale shortcuts tab to sources and restores values after reload', async () => {
     const storage = installStorage();
     const first = await freshShellPreferences();
     const preferences = new first.ShellPreferencesStore();
+    expect(first.ABOUT_TABS).toEqual(['sources']);
     preferences.sidebarExpanded = true;
-    preferences.aboutTab = 'shortcuts';
+    preferences.aboutTab = 'shortcuts' as typeof preferences.aboutTab;
     expect(JSON.parse(storage.get('pincraft:shell_preferences_v1') ?? '{}')).toEqual({
       sidebarExpanded: true,
-      aboutTab: 'shortcuts',
+      aboutTab: 'sources',
     });
 
     vi.resetModules();
     const second = await import('../src/state/shell-preferences.svelte.ts');
     const reloaded = new second.ShellPreferencesStore();
     expect(reloaded.sidebarExpanded).toBe(true);
-    expect(reloaded.aboutTab).toBe('shortcuts');
+    expect(reloaded.aboutTab).toBe('sources');
   });
 
   it('normalizes unknown values to collapsed and the first tab', async () => {
@@ -72,10 +73,10 @@ describe('localStorage-only shell preferences', () => {
     expect(preferences.sidebarExpanded).toBe(false);
     expect(() => {
       preferences.sidebarExpanded = true;
-      preferences.aboutTab = 'shortcuts';
+      preferences.aboutTab = 'shortcuts' as typeof preferences.aboutTab;
     }).not.toThrow();
     expect(preferences.sidebarExpanded).toBe(true);
-    expect(preferences.aboutTab).toBe('shortcuts');
+    expect(preferences.aboutTab).toBe('sources');
   });
 
   it('never writes shell fields to share links or project files', async () => {
@@ -83,7 +84,7 @@ describe('localStorage-only shell preferences', () => {
     const { ShellPreferencesStore } = await freshShellPreferences();
     const preferences = new ShellPreferencesStore();
     preferences.sidebarExpanded = true;
-    preferences.aboutTab = 'shortcuts';
+    preferences.aboutTab = 'shortcuts' as typeof preferences.aboutTab;
     const { encodeWorkspaceState, decodeWorkspaceState } = await import('../src/core/url-state');
     const { exportPinoutJson } = await import('../src/core/exporters/json');
     const { createEmptyWorkspace } = await import('../src/core/solver');

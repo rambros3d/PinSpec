@@ -1,6 +1,7 @@
 <script lang="ts">
   import { X } from 'lucide-svelte';
   import { onMount } from 'svelte';
+  import { SHORTCUTS } from '../../data/provenance';
   import { openDialogWithFocus } from '../../state/dialog-focus';
 
   interface Props {
@@ -11,18 +12,6 @@
 
   let dialogEl = $state<HTMLDialogElement | null>(null);
   let closeButtonEl = $state<HTMLButtonElement | null>(null);
-
-  /** Shortcuts are listed in README.md; no additional bindings are invented. */
-  const shortcuts = [
-    { keys: 'Ctrl+K', action: 'Open the landing quick search' },
-    { keys: 'Ctrl+F', action: 'Focus the workspace pin and signal search' },
-    { keys: 'Ctrl+Click', action: 'Enter remap mode on an assigned pin' },
-    { keys: 'Ctrl+Z', action: 'Undo the last change' },
-    { keys: 'Ctrl+Y', action: 'Redo the last undone change' },
-    { keys: '0', action: 'Fit the package in the canvas' },
-    { keys: 'Escape', action: 'Cancel remap mode or dismiss a dialog' },
-    { keys: '?', action: 'Open this shortcut list' },
-  ];
 
   function closeDialog(): void {
     dialogEl?.close();
@@ -64,7 +53,7 @@
     </div>
     <div class="px-5 py-4 min-h-0 overflow-y-auto">
       <dl class="space-y-2 text-xs">
-        {#each shortcuts as shortcut (shortcut.keys)}
+        {#each SHORTCUTS as shortcut (shortcut.keys)}
           <div class="flex items-center justify-between gap-4">
             <dt class="font-mono font-medium text-foreground">{shortcut.keys}</dt>
             <dd class="text-right text-base-content/60">{shortcut.action}</dd>

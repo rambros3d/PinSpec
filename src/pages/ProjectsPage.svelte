@@ -1,6 +1,8 @@
 <script lang="ts">
   import { AlertCircle, Clock, FileUp, FolderOpen, Trash2 } from 'lucide-svelte';
+  import PackageThumbnail from '../components/catalog/PackageThumbnail.svelte';
   import { exportPinoutJson, parsePinoutJson } from '../core/exporters/json';
+  import { approximateThumbnailGeometry } from '../core/package-thumbnail';
   import { router } from '../state/router.svelte';
   import { workspaceStore } from '../state/workspace.svelte';
 
@@ -58,12 +60,9 @@
 </script>
 
 <div class="shell-route flex flex-col bg-base-200 text-foreground">
-  <header class="navbar shrink-0 border-b border-base-300 bg-base-100/95 backdrop-blur-xs">
-    <div class="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between gap-4 w-full">
-      <div class="min-w-0">
-        <h1 class="text-base font-semibold tracking-tight text-foreground">Projects</h1>
-        <p class="text-[11px] text-base-content/60">Recent pinouts stored in this browser.</p>
-      </div>
+  <main class="max-w-7xl w-full mx-auto px-6 py-8 space-y-4 flex-1">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <p class="text-xs text-base-content/60">Recent pinouts stored in this browser.</p>
       <div class="flex items-center gap-2">
         <button type="button" onclick={() => fileInput?.click()} class="btn btn-sm btn-outline gap-2">
           <FileUp class="size-3.5" />
@@ -80,9 +79,7 @@
         onchange={handleImport}
       />
     </div>
-  </header>
 
-  <main class="max-w-7xl w-full mx-auto px-6 py-8 space-y-4 flex-1">
     {#if importError}
       <p role="alert" class="alert alert-error text-xs flex items-start gap-2">
         <AlertCircle class="size-4 shrink-0" />
@@ -100,50 +97,42 @@
         <a href="#/catalog" class="btn btn-sm btn-primary">Browse the catalog</a>
       </section>
     {:else}
-      <section class="card card-border bg-base-100 overflow-hidden">
-        <div class="overflow-x-auto">
-          <table class="table table-sm w-full text-left text-xs">
-            <thead class="bg-base-200 text-[11px] text-base-content/60 uppercase tracking-wide">
-              <tr>
-                <th class="px-4 py-2 font-medium">MCU</th>
-                <th class="px-2 py-2 font-medium">Package</th>
-                <th class="px-2 py-2 font-medium">Assignments</th>
-                <th class="px-2 py-2 font-medium">Updated</th>
-                <th class="px-2 py-2"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {#each sessions as session (session.mcuId)}
-                <tr class="border-t border-base-300">
-                  <td class="px-4 py-2 font-mono font-semibold text-foreground">{session.mcuId}</td>
-                  <td class="px-2 py-2 font-mono text-base-content/60">{session.packageName}</td>
-                  <td class="px-2 py-2 font-mono-tabular text-base-content/60">
-                    {session.assignedCount}/{session.pinCount}
-                  </td>
-                  <td class="px-2 py-2 font-mono-tabular text-base-content/60">
-                    <span class="inline-flex items-center gap-1">
-                      <Clock class="size-3" />
-                      {formatRelativeTime(session.updatedAt)}
-                    </span>
-                  </td>
-                  <td class="px-2 py-2 text-right space-x-1 whitespace-nowrap">
-                    <button type="button" onclick={() => openSession(session.mcuId)} class="btn btn-xs btn-outline">Open</button>
-                    <button type="button" onclick={() => exportSession(session.mcuId)} class="btn btn-xs btn-ghost">Export</button>
-                    <button
-                      type="button"
-                      onclick={() => deleteSession(session.mcuId)}
-                      class="btn btn-xs btn-ghost btn-square text-base-content/40 hover:text-error"
-                      aria-label={`Delete ${session.mcuId}`}
-                      title="Delete session"
-                    >
-                      <Trash2 class="size-3.5" />
-                    </button>
-                  </td>
-                </tr>
-              {/each}
-            </tbody>
-          </table>
-        </div>
+      <!-- Cards derive outlines from stored session fields; no shard fetch here. -->
+      <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {#each sessions as session (session.mcuId)}
+          <article class="card card-border bg-base-100 p-4 flex flex-col gap-3">
+            <div class="flex items-start gap-3">
+              <PackageThumbnail
+                geometry={approximateThumbnailGeometry(session.packageName, session.pinCount)}
+                size={44}
+              />
+              <div class="min-w-0">
+                <p class="font-mono text-sm font-semibold text-foreground truncate">{session.mcuId}</p>
+                <p class="font-mono text-[11px] text-base-content/60 truncate">{session.packageName}</p>
+              </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono-tabular text-[11px] text-base-content/60">
+              <span>{session.assignedCount}/{session.pinCount} pins assigned</span>
+              <span class="inline-flex items-center gap-1">
+                <Clock class="size-3" />
+                {formatRelativeTime(session.updatedAt)}
+              </span>
+            </div>
+            <div class="mt-auto flex items-center gap-1.5">
+              <button type="button" onclick={() => openSession(session.mcuId)} class="btn btn-xs btn-outline">Open</button>
+              <button type="button" onclick={() => exportSession(session.mcuId)} class="btn btn-xs btn-ghost">Export</button>
+              <button
+                type="button"
+                onclick={() => deleteSession(session.mcuId)}
+                class="btn btn-xs btn-ghost btn-square text-base-content/40 hover:text-error"
+                aria-label={`Delete ${session.mcuId}`}
+                title="Delete session"
+              >
+                <Trash2 class="size-3.5" />
+              </button>
+            </div>
+          </article>
+        {/each}
       </section>
     {/if}
   </main>

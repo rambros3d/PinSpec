@@ -14,7 +14,6 @@
     X,
   } from 'lucide-svelte';
   import { onMount } from 'svelte';
-  import ThemePicker from '../components/ThemePicker.svelte';
   import PresetGrid from '../components/landing/PresetGrid.svelte';
   import QuickSearchBar from '../components/landing/QuickSearchBar.svelte';
   import BoardSelectorModal from '../components/workspace/BoardSelectorModal.svelte';
@@ -215,40 +214,6 @@
 </script>
 
 <div class="landing-shell flex flex-col bg-base-200 text-foreground">
-  <!-- Sticky navigation: discovery anchors and theme control stay available. -->
-  <header class="navbar sticky top-0 z-30 border-b border-base-300 bg-base-100/95 backdrop-blur-xs">
-    <div class="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between gap-8">
-      <a
-        href="#/"
-        class="flex items-center gap-2 text-base font-bold tracking-tight text-foreground whitespace-nowrap shrink-0"
-      >
-        <svg class="size-5 text-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-          <rect x="6" y="6" width="12" height="12" rx="2" />
-          <rect x="9.5" y="9.5" width="5" height="5" rx="0.5" />
-          <path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4" />
-        </svg>
-        <span>PinCraft</span>
-      </a>
-
-      <nav class="hidden md:flex items-center gap-6 text-sm font-medium text-base-content/60">
-        <a href="#presets" class="link link-hover transition-colors whitespace-nowrap shrink-0">
-          Starter Chips
-        </a>
-        <a
-          href="#/about"
-          title="Data sources and licenses"
-          class="link link-hover transition-colors whitespace-nowrap shrink-0"
-        >
-          About
-        </a>
-      </nav>
-
-      <div class="flex items-center gap-2.5 shrink-0">
-        <ThemePicker />
-      </div>
-    </div>
-  </header>
-
   <!-- Start screen: actions, discovery, and catalog facts share one scroll shell. -->
   <main class="start-grid max-w-7xl w-full mx-auto px-6 py-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
     <!-- Left action column -->
@@ -258,6 +223,7 @@
         <p class="text-xs text-base-content/60 mt-1">
           Pin allocation for STM32, CH32 and RP parts in the browser.
         </p>
+        <a href="#presets" class="link link-hover text-xs mt-1 inline-block">Starter chips</a>
       </div>
 
       <button

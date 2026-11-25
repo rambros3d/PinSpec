@@ -1,14 +1,22 @@
 <script lang="ts">
   import { Cpu, Search, X } from 'lucide-svelte';
-  import { onMount } from 'svelte';
-  import { catalogStore, searchCatalogEntries } from '../state/catalog.svelte';
+  import { onDestroy, onMount } from 'svelte';
+  import PackageThumbnail from '../components/catalog/PackageThumbnail.svelte';
+  import { mapWithConcurrency, MAX_CONCURRENT_SHARD_LOADS } from '../core/compatibility';
+  import {
+    approximateThumbnailFromIndex,
+    MAX_THUMBNAIL_REFINEMENTS,
+    thumbnailGeometryFromChip,
+    type ThumbnailGeometry,
+  } from '../core/package-thumbnail';
   import {
     buildVendorTabs,
     catalogFamilies,
     catalogPackageKinds,
   } from '../core/vendor-view';
-  import type { VendorId } from '../core/types';
+  import { catalogStore, searchCatalogEntries } from '../state/catalog.svelte';
   import { router } from '../state/router.svelte';
+  import type { CatalogIndexEntry, VendorId } from '../core/types';
 
   let query = $state('');
   let vendorFilter = $state<VendorId | 'all'>('all');
@@ -30,6 +38,11 @@
     query.trim().length > 0 || vendorFilter !== 'all' || familyFilter !== '' || packageFilter !== '',
   );
 
+  /* Component-local view state: no thumbnail field is persisted or shared. */
+  let visibleIds = $state<string[]>([]);
+  let exactGeometry = $state<Record<string, ThumbnailGeometry>>({});
+  let generation = 0;
+
   function resetFilters(): void {
     query = '';
     vendorFilter = 'all';
@@ -37,29 +50,93 @@
     packageFilter = '';
   }
 
+  /** Observe only rendered rows; without IntersectionObserver outlines stay approximate. */
+  function observeRow(node: HTMLElement, id: string): { destroy(): void } {
+    const key = id.toUpperCase();
+    if (typeof IntersectionObserver === 'undefined') return { destroy: () => undefined };
+    const setVisible = (visible: boolean): void => {
+      visibleIds = visible
+        ? visibleIds.includes(key)
+          ? visibleIds
+          : [...visibleIds, key]
+        : visibleIds.filter((item) => item !== key);
+    };
+    const observer = new IntersectionObserver((entries) => {
+      for (const entry of entries) setVisible(entry.isIntersecting);
+    });
+    observer.observe(node);
+    return {
+      destroy() {
+        observer.disconnect();
+        visibleIds = visibleIds.filter((item) => item !== key);
+      },
+    };
+  }
+
+  function geometryFor(id: string, entry: CatalogIndexEntry): ThumbnailGeometry {
+    return exactGeometry[id.toUpperCase()] ?? approximateThumbnailFromIndex(entry);
+  }
+
+  async function refineVisible(ids: string[], token: number): Promise<void> {
+    const pending = ids.filter((id) => !exactGeometry[id]).slice(0, MAX_THUMBNAIL_REFINEMENTS);
+    if (pending.length === 0) return;
+    const outcomes = await mapWithConcurrency(
+      pending,
+      MAX_CONCURRENT_SHARD_LOADS,
+      async (id) => {
+        try {
+          const chip = await catalogStore.loadChip(id);
+          return { id, geometry: thumbnailGeometryFromChip(chip) };
+        } catch {
+          // A missing shard keeps the approximate silhouette without an error banner.
+          return null;
+        }
+      },
+      () => token !== generation,
+    );
+    if (token !== generation) return;
+    const next = { ...exactGeometry };
+    for (const outcome of outcomes) {
+      if (outcome) next[outcome.id] = outcome.geometry;
+    }
+    exactGeometry = next;
+  }
+
+  // A new result set invalidates in-flight refinements and clears visibility.
+  $effect(() => {
+    const signature = results.map((entry) => entry.id.toUpperCase()).join('|');
+    void signature;
+    generation += 1;
+    visibleIds = [];
+  });
+
+  // Only visible rows are eligible for refinement, under a bounded pass.
+  $effect(() => {
+    const ids = visibleIds.filter((id) =>
+      results.some((entry) => entry.id.toUpperCase() === id),
+    );
+    const token = generation;
+    void refineVisible(ids, token);
+  });
+
   onMount(() => {
     catalogStore.ensureLoaded();
+  });
+
+  onDestroy(() => {
+    generation += 1;
   });
 </script>
 
 <div class="shell-route flex flex-col bg-base-200 text-foreground">
-  <header class="navbar shrink-0 border-b border-base-300 bg-base-100/95 backdrop-blur-xs">
-    <div class="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between gap-4 w-full">
-      <div class="min-w-0">
-        <h1 class="text-base font-semibold tracking-tight text-foreground">Catalog</h1>
-        <p class="text-[11px] text-base-content/60 font-mono-tabular">
-          {#if catalogStore.meta}
-            {catalogStore.meta.chipCount.toLocaleString()} parts indexed
-          {:else}
-            Loading generated catalog
-          {/if}
-        </p>
-      </div>
-      <a href="#/" class="btn btn-ghost btn-sm">Start screen</a>
-    </div>
-  </header>
-
   <main class="max-w-7xl w-full mx-auto px-6 py-8 space-y-6 flex-1">
+    <p class="text-[11px] text-base-content/60 font-mono-tabular">
+      {#if catalogStore.meta}
+        {catalogStore.meta.chipCount.toLocaleString()} parts indexed
+      {:else}
+        Loading generated catalog
+      {/if}
+    </p>
     <section class="card card-border bg-base-100 p-5 space-y-4">
       <div class="flex items-center gap-2.5">
         <Search class="size-4 text-base-content/40 shrink-0" />
@@ -125,6 +202,7 @@
           <table class="table table-sm w-full text-left text-xs">
             <thead class="bg-base-200 text-[11px] text-base-content/60 uppercase tracking-wide">
               <tr>
+                <th class="w-12 px-2 py-2 font-medium">Outline</th>
                 <th class="px-4 py-2 font-medium">Part</th>
                 <th class="px-2 py-2 font-medium">Vendor</th>
                 <th class="px-2 py-2 font-medium">Family</th>
@@ -136,7 +214,10 @@
             </thead>
             <tbody>
               {#each results as entry (entry.id)}
-                <tr class="border-t border-base-300">
+                <tr class="border-t border-base-300" use:observeRow={entry.id}>
+                  <td class="w-12 px-2 py-2">
+                    <PackageThumbnail geometry={geometryFor(entry.id, entry)} size={44} />
+                  </td>
                   <td class="px-4 py-2">
                     <span class="flex items-center gap-2 font-mono font-semibold text-foreground">
                       <Cpu class="size-3.5 text-base-content/40 shrink-0" />

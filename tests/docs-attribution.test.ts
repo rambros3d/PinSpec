@@ -19,8 +19,13 @@ const TOUCHED_FILES = [
   'src/state/catalog.svelte.ts',
   'src/state/shell-preferences.svelte.ts',
   'src/data/provenance.ts',
+  'src/components/catalog/PackageThumbnail.svelte',
+  'src/core/package-thumbnail.ts',
   'src/components/shell/AppShell.svelte',
   'src/components/shell/GlobalSidebar.svelte',
+  'src/components/shell/GlobalTopBar.svelte',
+  'src/state/top-bar-ui.svelte.ts',
+  'src/pages/WorkspacePage.svelte',
   'src/components/about/ProvenancePanel.svelte',
   'src/pages/LandingPage.svelte',
   'src/pages/AboutPage.svelte',
@@ -60,6 +65,7 @@ const TOUCHED_FILES = [
   'tests/data-gen-sam.test.ts',
   'tests/data-gen-nordic.test.ts',
   'tests/gates-contracts.test.ts',
+  'tests/package-thumbnails.test.ts',
   'tests/subpath-contracts.test.ts',
   'tests/docs-attribution.test.ts',
   'src/core/hardware-audit.ts',
@@ -148,14 +154,15 @@ describe('multi-vendor documentation and attribution', () => {
     expect(constants).toContain('microchip-atdf');
     expect(constants).toContain('nrf-pacs');
     const panel = read('src/components/about/ProvenancePanel.svelte');
-    expect(panel).toContain('Upstream data sources and licenses');
-    expect(panel).toContain('Per-vendor chip counts and source revisions');
+    expect(panel).toContain('Catalog sources');
+    expect(panel).toContain('PROVENANCE_SOURCES');
+    expect(panel).toContain('PROVENANCE_VENDORS');
     expect(panel).toContain('catalogStore.meta');
     expect(panel).toContain('sources');
     expect(panel).toContain('Retry catalog load');
     const about = read('src/pages/AboutPage.svelte');
     expect(about).toContain('<ProvenancePanel');
-    expect(about).toContain('catalogStore.meta.chipCount');
+    expect(about).not.toContain('SHORTCUTS');
     const landing = read('src/pages/LandingPage.svelte');
     expect(landing).not.toContain('id="provenance"');
     expect(landing).toContain('href="#/about"');

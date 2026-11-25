@@ -19,7 +19,10 @@ describe('global shell mount and routes', () => {
       expect(app, page).toContain(`<${page}`);
     }
     expect(app.match(/<WorkspacePage\b/g)?.length).toBe(2);
-    expect(read('src/components/shell/AppShell.svelte')).toContain('<GlobalSidebar />');
+    const shell = read('src/components/shell/AppShell.svelte');
+    expect(shell).toContain('<GlobalSidebar />');
+    expect(shell.match(/<GlobalTopBar\s*\/>/g)?.length).toBe(1);
+    expect(shell).toContain('<ShortcutHelpDialog');
   });
 
   it('resolves every hash route and keeps unknown hashes on home', () => {
@@ -37,6 +40,76 @@ describe('global shell mount and routes', () => {
   });
 });
 
+describe('global top bar', () => {
+  const bar = read('src/components/shell/GlobalTopBar.svelte');
+  const shell = read('src/components/shell/AppShell.svelte');
+
+  it('is the only navigation and action bar on every route', () => {
+    expect(bar).toContain('class="global-top-bar h-12 shrink-0');
+    expect(shell).toContain('<GlobalTopBar />');
+    for (const file of [
+      'src/pages/LandingPage.svelte',
+      'src/pages/CatalogPage.svelte',
+      'src/pages/ProjectsPage.svelte',
+      'src/pages/AboutPage.svelte',
+      'src/pages/WorkspacePage.svelte',
+    ]) {
+      expect(read(file), file).not.toContain('class="navbar');
+    }
+    expect(read('src/pages/WorkspacePage.svelte')).not.toContain('TopToolbar');
+    expect(fs.existsSync(path.join(ROOT, 'src/components/workspace/TopToolbar.svelte'))).toBe(false);
+  });
+
+  it('shows the wordmark on shell routes and merges workspace actions', () => {
+    expect(bar).toContain('{#if !isWorkspace}');
+    expect(bar).toContain('PinCraft');
+    for (const token of [
+      'shellPreferences.sidebarExpanded = !expanded',
+      'router.navigateCatalog()',
+      'router.navigateProjects()',
+      '<ThemePicker compact={true} />',
+      'topBarUI.shortcutHelpOpen = true',
+      'topBarUI.switcherOpen = true',
+      'workspaceStore.globalSearch',
+      'workspaceStore.undo()',
+      'workspaceStore.redo()',
+      'workspaceStore.clearAll()',
+      'workspaceStore.toggleRotation()',
+      'topBarUI.finderOpen = true',
+      'topBarUI.diffOpen = true',
+      'handleShare()',
+      'topBarUI.exportOpen = true',
+    ]) {
+      expect(bar, token).toContain(token);
+    }
+    expect(bar).toContain('topBarUI.focusSearch = () =>');
+    expect(bar).toContain('searchInputRef?.select()');
+    for (const token of ['overflow-x-auto', 'min-w-0', 'shouldShowScrollAffordance']) {
+      expect(bar, token).toContain(token);
+    }
+    const state = read('src/state/top-bar-ui.svelte.ts');
+    for (const field of [
+      'workspaceMode',
+      'switcherOpen',
+      'exportOpen',
+      'finderOpen',
+      'diffOpen',
+      'shortcutHelpOpen',
+      'focusSearch',
+    ]) {
+      expect(state, field).toContain(field);
+    }
+    expect(state).toContain('Nothing here is persisted');
+  });
+
+  it('opens the same help dialog on every route through the shared flag', () => {
+    expect(bar).toContain('topBarUI.shortcutHelpOpen = true');
+    expect(shell).toContain('topBarUI.shortcutHelpOpen');
+    expect(shell).toContain('ShortcutHelpDialog');
+    expect(bar).not.toContain("'#/about'");
+  });
+});
+
 describe('collapsible sidebar overlay', () => {
   const sidebar = read('src/components/shell/GlobalSidebar.svelte');
 
@@ -44,13 +117,18 @@ describe('collapsible sidebar overlay', () => {
     expect(sidebar).toContain('shell-rail w-12');
     expect(sidebar).toContain('w-72');
     expect(sidebar).toContain('class="shell-backdrop fixed inset-0 z-30');
-    expect(sidebar).toContain('shell-panel fixed inset-y-0 left-0 z-40');
-    expect(sidebar).toContain('shellPreferences.sidebarExpanded = !expanded');
+    expect(sidebar).toContain('shell-panel fixed bottom-0 left-0 top-12 z-40');
     expect(sidebar).toContain('shellPreferences.sidebarExpanded = false');
+    expect(sidebar).not.toContain('PanelLeftClose');
+    expect(sidebar).not.toContain('PanelLeftOpen');
+    expect(sidebar).not.toContain('shellPreferences.sidebarExpanded = !expanded');
     const css = read('src/app.css');
     expect(css).toContain('--shell-panel-z: 40');
     expect(css).toContain('--shell-backdrop-z: 30');
     expect(css).toContain('z-index: var(--shell-panel-z)');
+    expect(css).toContain('top: 3rem;');
+    const contentBlock = css.match(/\.app-shell-content\s*\{[\s\S]*?\}/)?.[0] ?? '';
+    expect(contentBlock).toContain('padding-left: 3rem');
   });
 
   it('offers four section entries with active-route indication', () => {
@@ -59,17 +137,31 @@ describe('collapsible sidebar overlay', () => {
       "hash: '#/catalog'",
       "hash: '#/projects'",
       "hash: '#/about'",
-      "label: 'Home screen'",
-      "label: 'Catalog screen'",
-      "label: 'Projects screen'",
+      "label: 'Home'",
+      "label: 'Catalog'",
+      "label: 'Projects'",
       "label: 'About'",
     ]) {
       expect(sidebar, entry).toContain(entry);
     }
+    expect(sidebar).not.toMatch(/label: '[^']*screen/i);
     expect(sidebar).toContain('aria-current={activeSection === section.id ? \'page\' : undefined}');
     expect(sidebar).toContain('router.navigateCatalog()');
     expect(sidebar).toContain('router.navigateProjects()');
     expect(sidebar).toContain('router.navigateAbout()');
+  });
+
+  it('keeps recent sessions between the top and bottom groups', () => {
+    expect(sidebar).toContain('const TOP_SECTIONS = SECTIONS.filter');
+    expect(sidebar).toContain('const BOTTOM_SECTIONS = SECTIONS.filter');
+    expect(sidebar).toContain('role="separator"');
+    const top = sidebar.indexOf('{#each TOP_SECTIONS');
+    const recent = sidebar.indexOf('Recent projects');
+    const separator = sidebar.indexOf('role="separator"');
+    const bottom = sidebar.indexOf('{#each BOTTOM_SECTIONS');
+    expect(top).toBeLessThan(recent);
+    expect(recent).toBeLessThan(separator);
+    expect(separator).toBeLessThan(bottom);
   });
 
   it('lists ten recent sessions with open and delete wiring', () => {
@@ -113,17 +205,30 @@ describe('catalog route', () => {
     expect(page).toContain('MODULE');
     expect(page).not.toContain('ESP32-WROOM-E');
   });
+
+  it('leads each dense result row with a decorative package thumbnail', () => {
+    expect(page).toContain('<PackageThumbnail');
+    expect(page).toContain('size={44}');
+    expect(page).toContain('Outline');
+    expect(page).toContain('MAX_THUMBNAIL_REFINEMENTS');
+    expect(page).toContain('use:observeRow={entry.id}');
+    expect(page).toContain('searchCatalogEntries(');
+    expect(page).toContain('500,');
+  });
 });
 
 describe('projects route', () => {
   const page = read('src/pages/ProjectsPage.svelte');
 
-  it('lists recent sessions with open, delete and an empty-state link', () => {
+  it('lists recent sessions as cards with a thumbnail and open, export and delete actions', () => {
     expect(page).toContain('workspaceStore.recentSessions.slice(0, 10)');
     expect(page).toContain('workspaceStore.openMcu(mcuId)');
     expect(page).toContain('workspaceStore.deleteRecentSession(mcuId)');
+    expect(page).toContain('exportSession(session.mcuId)');
+    expect(page).toContain('approximateThumbnailGeometry(session.packageName, session.pinCount)');
     expect(page).toContain('No recent projects');
     expect(page).toContain('href="#/catalog"');
+    expect(page).not.toContain('<table');
   });
 
   it('imports and exports version-2 project files only', () => {
@@ -142,34 +247,56 @@ describe('projects route', () => {
 
 describe('about route', () => {
   const page = read('src/pages/AboutPage.svelte');
+  const panel = read('src/components/about/ProvenancePanel.svelte');
 
-  it('presents catalog statistics, provenance and the shortcut reference', () => {
-    expect(page).toContain('catalogStore.meta.chipCount');
-    expect(page).toContain('catalogStore.meta.families.length');
+  it('presents one grouped Catalog sources table with totals in its header', () => {
     expect(page).toContain('<ProvenancePanel');
-    const panel = read('src/components/about/ProvenancePanel.svelte');
+    expect(page).not.toContain('Catalog summary');
+    expect(panel).toContain('Catalog sources');
+    expect(panel).toContain('catalogStore.meta.chipCount.toLocaleString()');
+    expect(panel).toContain('catalogStore.meta.families.length');
     expect(panel).toContain('PROVENANCE_SOURCES');
     expect(panel).toContain('PROVENANCE_VENDORS');
-    expect(panel).toContain('SHORTCUTS');
-    expect(panel).toContain('catalogStore.meta');
+    expect(panel).toContain('catalogStore.meta.sources?.[vendor.id]');
+    expect(panel).toContain('catalogStore.meta.sources?.[sourceId]');
+    expect(panel).not.toContain('Per-vendor chip counts and source revisions');
+    expect(panel).not.toContain('Upstream data sources and licenses');
   });
 
-  it('persists the selected tab through the shell preference store', () => {
+  it('persists the sources tab through the shell preference store', () => {
     expect(page).toContain('shellPreferences.aboutTab');
     expect(page).toContain('ABOUT_TABS');
     expect(page).toContain('aria-selected={shellPreferences.aboutTab === tab}');
+    expect(page).not.toContain('Shortcuts');
     expect(read('src/state/shell-preferences.svelte.ts')).toContain(
       "'pincraft:shell_preferences_v1'",
     );
+    expect(read('src/state/shell-preferences.svelte.ts')).toContain(
+      "ABOUT_TABS = ['sources']",
+    );
   });
 
-  it('tolerates missing metadata without dropping the shortcut reference', () => {
-    expect(page).toContain('catalogStore.indexError');
-    expect(page).toContain('catalogStore.retry()');
-    expect(page).toContain('Loading catalog statistics...');
-    const panel = read('src/components/about/ProvenancePanel.svelte');
+  it('keeps loading and retry states on the merged surface', () => {
+    expect(page).toContain('catalogStore.ensureLoaded()');
+    expect(panel).toContain('catalogStore.indexError');
+    expect(panel).toContain('catalogStore.retry()');
+    expect(panel).toContain('Retry catalog load');
+    expect(panel).toContain('Loading catalog statistics...');
     expect(panel).toContain('Catalog statistics unavailable');
-    expect(panel).toContain('SHORTCUTS');
+    expect(panel).not.toContain('SHORTCUTS');
+  });
+
+  it('offers a Hotkeys entry immediately above About without a route', () => {
+    const sidebar = read('src/components/shell/GlobalSidebar.svelte');
+    expect(sidebar).toContain('Keyboard');
+    expect(sidebar).toContain('>Hotkeys<');
+    expect(sidebar).toContain("section.id === 'about'");
+    expect(sidebar).toContain('topBarUI.shortcutHelpOpen = true');
+    expect(sidebar).not.toContain("'#/hotkeys'");
+    const hotkeys = sidebar.indexOf('>Hotkeys<');
+    const about = sidebar.indexOf('{section.label}', hotkeys);
+    expect(hotkeys).toBeGreaterThan(-1);
+    expect(about).toBeGreaterThan(hotkeys);
   });
 });
 

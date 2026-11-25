@@ -99,6 +99,18 @@ describe('daisyUI token integration', () => {
     expect(offenders).toEqual([]);
   });
 
+  it('keeps the changed sidebar and shortcut dialog on theme tokens', () => {
+    for (const rel of [
+      'src/components/shell/GlobalSidebar.svelte',
+      'src/components/workspace/ShortcutHelpDialog.svelte',
+    ]) {
+      const source = fs.readFileSync(path.join(ROOT, rel), 'utf8');
+      expect(source, rel).not.toMatch(/#[0-9a-fA-F]{3,8}\b|\brgba?\(|\bhsla?\(|\boklch\(/);
+      expect(source, rel).not.toMatch(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]/u);
+      expect(source, rel).toContain('text-base-content');
+    }
+  });
+
   it('scopes texture effects to the two package renderers', () => {
     const files = sourceFiles().filter((file) => /\.svelte$/.test(file));
     const textured = files.filter((file) => /feTurbulence/.test(fs.readFileSync(file, 'utf8')));

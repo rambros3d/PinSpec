@@ -92,23 +92,34 @@ body {
 
 /* Landing content scrolls inside its own container; the document stays locked. */
 .landing-shell {
-  height: 100dvh;
+  height: 100%;
   overflow-y: auto;
   overscroll-behavior: contain;
   scroll-padding-top: 3.5rem;
 }
 
 /*
- * One shell is mounted outside the route switch. Its wrappers never add
- * padding, margins or width rules: the expanded sidebar is a fixed overlay,
- * so the canvas keeps the same bounding rectangle before and after expansion.
+ * One shell is mounted outside the route switch. Its wrappers never change
+ * width when the sidebar expands: the rail is reserved below and the expanded
+ * panel is a fixed overlay, so the canvas keeps the same bounding rectangle.
  */
-.app-shell,
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  min-height: 0;
+  min-width: 0;
+}
+
 .app-shell-content {
   height: 100%;
   width: 100%;
   min-height: 0;
   min-width: 0;
+  flex: 1 1 auto;
+  /* Reserve the collapsed rail's 3rem; box sizing comes from Tailwind preflight. */
+  padding-left: 3rem;
 }
 
 .shell-rail {
@@ -116,7 +127,7 @@ body {
 }
 
 .shell-route {
-  height: 100dvh;
+  height: 100%;
   width: 100%;
   min-height: 0;
   min-width: 0;
@@ -127,7 +138,9 @@ body {
 
 .shell-panel {
   position: fixed;
-  inset: 0 auto 0 0;
+  top: 3rem;
+  bottom: 0;
+  left: 0;
   z-index: var(--shell-panel-z);
 }
 
@@ -147,12 +160,11 @@ body {
 .workspace-root {
   display: grid;
   grid-template-areas:
-    'toolbar toolbar toolbar toolbar toolbar'
     'banner banner banner banner banner'
     'peripherals leftresizer canvas rightresizer summary';
   grid-template-columns: minmax(400px, var(--left-pane-width, 440px)) 4px minmax(0, 1fr) 4px minmax(260px, var(--right-pane-width, 330px));
-  grid-template-rows: 3rem auto minmax(0, 1fr);
-  height: 100dvh;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100%;
   width: 100%;
   min-height: 0;
   min-width: 0;
@@ -160,15 +172,9 @@ body {
   overscroll-behavior: none;
 }
 
-.workspace-toolbar {
-  grid-area: toolbar;
-  min-width: 0;
-  min-height: 0;
-}
-
 .workspace-banner {
   grid-column: 1 / -1;
-  grid-row: 2;
+  grid-row: 1;
   min-width: 0;
 }
 
@@ -242,13 +248,12 @@ body {
 @media (orientation: portrait) {
   .workspace-root {
     grid-template-areas:
-      'toolbar'
       'banner'
       'canvas'
       'dock-tabs'
       'dock';
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: 3rem auto minmax(0, 1fr) auto 43dvh;
+    grid-template-rows: auto minmax(0, 1fr) auto 43dvh;
   }
 
   .workspace-resizer-left,

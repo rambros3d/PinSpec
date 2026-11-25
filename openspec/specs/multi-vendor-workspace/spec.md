@@ -22,7 +22,7 @@ All pin views SHALL present mux labels using the shared mux-label helper and the
 - **THEN** the tooltip shows that display label and no `AF` or `F` index fallback
 
 ### Requirement: Package renderers handle two-sided, exposed-pad, and bonded pins
-Package rendering SHALL recognize two-sided packages including `SOP`, draw an exposed thermal pad when the package declares one, and display bonded pin names on pins with multiple internal pads; four-sided and grid layouts SHALL remain unchanged.
+Package rendering SHALL recognize two-sided packages including `SOP`, draw an exposed thermal pad when the package declares one, and display bonded pin names on pins with multiple internal pads; four-sided and grid layouts SHALL remain unchanged. The same generated package geometry SHALL also drive non-interactive catalog and projects thumbnails after shard refinement, without changing pin placement, mux labels, bonded labels, or interaction behavior in the workspace renderers.
 
 #### Scenario: SOP8 package
 - **WHEN** an 8-pin SOP package is opened
@@ -35,6 +35,16 @@ Package rendering SHALL recognize two-sided packages including `SOP`, draw an ex
 #### Scenario: Bonded CH32 pin
 - **WHEN** a CH32 pin carries multiple bonded names
 - **THEN** its label includes the bonded names and carries the bonded visual treatment
+
+#### Scenario: Refined thumbnail uses generated geometry
+
+- **WHEN** a visible catalog row for a two-sided package, an exposed-pad QFN, or a grid part is refined from its shard
+- **THEN** the thumbnail uses that shard's package kind, side counts, grid rows and columns, and exposed-pad declaration and agrees with the workspace renderer's geometry classification
+
+#### Scenario: Thumbnail does not duplicate interactive rendering
+
+- **WHEN** a package thumbnail is drawn in a catalog row or session card
+- **THEN** it contains no pin hit target, pointer handler, texture filter, mux label, or bonded-name text and the two interactive package renderers remain unchanged
 
 ### Requirement: Peripheral tree offers a remap selector
 For a chip whose peripherals declare remap options, the peripheral tree SHALL expose a remap dropdown that lists each option's name and register note, reflects the active selection, and commits a change through workspace history; chips without remaps SHALL NOT display the dropdown.
@@ -59,23 +69,39 @@ For RP chips the workspace SHALL provide a PIO allocation panel that lists each 
 - **THEN** the panel flags that binding and the workspace shows a GPIOBASE diagnostic
 
 ### Requirement: Catalog discovery is vendor aware
-Quick search and the MCU switcher SHALL expose vendor filter tabs and vendor-aware family/package filters, and SHALL restrict results and the MCU list to the selected vendor and filters. The vendor set SHALL include `esp32` in addition to the existing three vendors, and the compatible-MCU finder SHALL offer the same vendor filter options.
+
+Quick search and the MCU switcher SHALL expose vendor filter tabs and
+vendor-aware family/package filters, and SHALL restrict results and the MCU list
+to the selected vendor and filters. The vendor set SHALL include `esp32` in
+addition to the existing three vendors, and the compatible-MCU finder SHALL
+offer the same vendor filter options. The MCU switcher SHALL remain available
+from the global top bar on workspace and shared routes with that same vendor
+filter behavior.
 
 #### Scenario: Filter to RP parts
+
 - **WHEN** a user selects the RP vendor tab and searches by family or package
 - **THEN** only RP chips matching the family/package filters are listed
 
 #### Scenario: Clear vendor filter
+
 - **WHEN** the user clears the vendor tab
 - **THEN** chips from all vendors are listed again
 
 #### Scenario: Filter to ESP32 parts
+
 - **WHEN** a user selects the ESP32 vendor tab and searches by family or package
 - **THEN** only ESP32 chips matching the family/package filters are listed
 
 #### Scenario: Compatible-MCU vendor options
+
 - **WHEN** the compatible-MCU finder vendor filter is opened
 - **THEN** it offers STM32, CH32, RP, and ESP32 and can restrict candidates to ESP32
+
+#### Scenario: MCU switcher from the global bar
+
+- **WHEN** a workspace or shared route is opened and the user activates the MCU switcher in the global bar
+- **THEN** the same vendor-filtered MCU list opens as from the previous workspace toolbar
 
 ### Requirement: Export previews and provenance reflect all vendors
 The export modal SHALL present tabs that invoke the vendor-aware exporters and show copy/download controls for each format, and the landing footer and workspace copy SHALL describe multi-vendor coverage and credit the STM32, CH32, RP, and ESP32 upstream data sources without STM32-only claims. The Rust tab label SHALL name the crate used by the chip vendor.

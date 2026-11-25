@@ -12,12 +12,16 @@ const workspace = read('src/pages/WorkspacePage.svelte');
 describe('start screen layout', () => {
   it('renders three zones inside one scrollable landing shell', () => {
     expect(page).toContain('class="landing-shell flex flex-col bg-base-200 text-foreground"');
-    expect(page).toContain('navbar sticky top-0');
+    expect(page).not.toContain('class="navbar');
     expect(page).toContain('data-zone="actions"');
     expect(page).toContain('data-zone="discovery"');
     expect(page).toContain('data-zone="rail"');
     expect(page).not.toContain('min-h-screen');
-    expect(page).toContain('<ThemePicker />');
+    const bar = read('src/components/shell/GlobalTopBar.svelte');
+    expect(bar).toContain('<ThemePicker compact={true} />');
+    expect(bar).toContain("label: 'Home'");
+    expect(bar).toContain("label: 'Catalog'");
+    expect(bar).toContain("label: 'Projects'");
     expect(page).toContain('href="#presets"');
     expect(page).toContain('href="#/about"');
     expect(page).not.toContain('href="#provenance"');

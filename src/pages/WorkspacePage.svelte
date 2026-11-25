@@ -7,12 +7,11 @@
   import McuSwitcherModal from '../components/workspace/McuSwitcherModal.svelte';
   import PackageCanvas from '../components/workspace/PackageCanvas.svelte';
   import PinoutDiffModal from '../components/workspace/PinoutDiffModal.svelte';
-  import ShortcutHelpDialog from '../components/workspace/ShortcutHelpDialog.svelte';
   import SummaryDrawer from '../components/workspace/SummaryDrawer.svelte';
-  import TopToolbar from '../components/workspace/TopToolbar.svelte';
   import { DOCK_TABS, type DockTab, type SummaryTab, type WorkspaceState } from '../core/types';
   import { catalogStore } from '../state/catalog.svelte';
   import { router } from '../state/router.svelte';
+  import { topBarUI } from '../state/top-bar-ui.svelte';
   import { viewPreferences } from '../state/workspace-preferences.svelte';
   import { workspaceStore } from '../state/workspace.svelte';
 
@@ -38,14 +37,8 @@
   let rightWidth = $state(330);
   let leftCollapsed = $state(false);
   let rightCollapsed = $state(false);
-  let showSwitcher = $state(false);
-  let showFinder = $state(false);
-  let showDiff = $state(false);
-  let showExport = $state(false);
-  let showShortcutHelp = $state(false);
 
   let canvasRef = $state<{ fitView: () => void } | null>(null);
-  let searchInputRef = $state<HTMLInputElement | null>(null);
   let summaryTab = $state<SummaryTab>(viewPreferences.summaryTab);
 
   /** Select a portrait dock tab; non-tree tabs drive the shared summary pane. */
@@ -136,16 +129,6 @@
     window.addEventListener('pointerup', onUp);
   }
 
-  async function handleShare(): Promise<void> {
-    const url = workspaceStore.buildShareUrl();
-    try {
-      await navigator.clipboard.writeText(url);
-      workspaceStore.showToast('Share link copied to clipboard.', 'success');
-    } catch {
-      showExport = true;
-    }
-  }
-
   function handleImportState(imported: WorkspaceState): void {
     workspaceStore.setPendingHandoff(imported);
     if (workspaceStore.chip && imported.mcuId.toUpperCase() === workspaceStore.chip.id.toUpperCase()) {
@@ -157,6 +140,7 @@
   }
 
   onMount(() => {
+    topBarUI.workspaceMode = true;
     const onKeyDown = (e: KeyboardEvent) => {
       if (document.querySelector('dialog[open]')) return;
       const target = e.target as HTMLElement | null;
@@ -165,11 +149,10 @@
 
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
         e.preventDefault();
-        searchInputRef?.focus();
-        searchInputRef?.select();
+        topBarUI.focusSearch?.();
       } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
-        showSwitcher = true;
+        topBarUI.switcherOpen = true;
       } else if ((e.ctrlKey || e.metaKey) && !inInput && e.key.toLowerCase() === 'z') {
         e.preventDefault();
         if (e.shiftKey) {
@@ -182,44 +165,22 @@
         workspaceStore.redo();
       } else if (e.key === '?' && !inInput) {
         e.preventDefault();
-        showShortcutHelp = true;
+        topBarUI.shortcutHelpOpen = true;
       }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => {
       window.removeEventListener('keydown', onKeyDown);
+      topBarUI.reset();
     };
   });
 </script>
 
 <div
-  class="workspace-root h-[100dvh] w-full overflow-hidden overscroll-none bg-base-200 text-foreground"
+  class="workspace-root h-full w-full overflow-hidden overscroll-none bg-base-200 text-foreground"
   data-dock-tab={workspaceStore.dockTab}
   style={`--left-pane-width: ${leftWidth}px; --right-pane-width: ${rightWidth}px;`}
 >
-  <div class="workspace-toolbar min-w-0 min-h-0">
-    <TopToolbar
-      chip={workspaceStore.chip}
-      globalSearch={workspaceStore.globalSearch}
-      searchMatchCount={workspaceStore.searchMatchingPins.length}
-      canUndo={workspaceStore.canUndo}
-      canRedo={workspaceStore.canRedo}
-      rotation={workspaceStore.rotation}
-      bind:searchInputRef
-      onHome={() => router.navigateHome()}
-      onOpenSwitcher={() => (showSwitcher = true)}
-      onSearchChange={(val) => (workspaceStore.globalSearch = val)}
-      onUndo={() => workspaceStore.undo()}
-      onRedo={() => workspaceStore.redo()}
-      onRotate={() => workspaceStore.toggleRotation()}
-      onClearAll={() => workspaceStore.clearAll()}
-      onShare={handleShare}
-      onOpenExport={() => (showExport = true)}
-      onOpenFinder={() => (showFinder = true)}
-      onOpenDiff={() => (showDiff = true)}
-    />
-  </div>
-
   <!-- Dismissible Error Banner (e.g. malformed #/s/... link) -->
   {#if workspaceStore.bannerError}
     <div role="alert" class="workspace-banner alert alert-error flex items-center justify-between gap-3 px-4 py-2 border-b text-xs shrink-0">
@@ -274,7 +235,7 @@
           </button>
           <button
             type="button"
-            onclick={() => (showSwitcher = true)}
+            onclick={() => (topBarUI.switcherOpen = true)}
             class="btn btn-sm btn-primary text-xs font-semibold"
           >
             Choose Another MCU
@@ -432,38 +393,34 @@
     </div>
   {/if}
 
-  <!-- Modals -->
-  {#if showDiff}
-    <PinoutDiffModal onClose={() => (showDiff = false)} />
+  <!-- Modals; dialog flags live in transient top-bar UI state. -->
+  {#if topBarUI.diffOpen}
+    <PinoutDiffModal onClose={() => (topBarUI.diffOpen = false)} />
   {/if}
 
-  {#if showFinder}
+  {#if topBarUI.finderOpen}
     <CompatibleMcuFinder
       chip={workspaceStore.chip}
       workspaceState={workspaceStore.state}
-      onClose={() => (showFinder = false)}
+      onClose={() => (topBarUI.finderOpen = false)}
     />
   {/if}
 
-  {#if showSwitcher}
+  {#if topBarUI.switcherOpen}
     <McuSwitcherModal
       activeMcuId={workspaceStore.chip?.id ?? ''}
       onSelect={(id) => router.navigateMcu(id)}
-      onClose={() => (showSwitcher = false)}
+      onClose={() => (topBarUI.switcherOpen = false)}
     />
   {/if}
 
-  {#if showExport && workspaceStore.chip}
+  {#if topBarUI.exportOpen && workspaceStore.chip}
     <ExportModal
       chip={workspaceStore.chip}
       state={workspaceStore.state}
       shareUrl={workspaceStore.buildShareUrl()}
       onImportState={handleImportState}
-      onClose={() => (showExport = false)}
+      onClose={() => (topBarUI.exportOpen = false)}
     />
-  {/if}
-
-  {#if showShortcutHelp}
-    <ShortcutHelpDialog onClose={() => (showShortcutHelp = false)} />
   {/if}
 </div>

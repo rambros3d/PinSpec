@@ -125,15 +125,14 @@ describe('diff modal source contract', () => {
   const source = (rel: string): string =>
     fs.readFileSync(path.join(process.cwd(), rel), 'utf8');
 
-  it('wires the toolbar and page without writing to the workspace store', () => {
-    const toolbar = source('src/components/workspace/TopToolbar.svelte');
-    expect(toolbar).toContain('onOpenDiff');
-    expect(toolbar).toContain('Compare project pinouts');
+  it('wires the global bar and page without writing to the workspace store', () => {
+    const bar = source('src/components/shell/GlobalTopBar.svelte');
+    expect(bar).toContain('topBarUI.diffOpen = true');
+    expect(bar).toContain('Compare project pinouts');
     const page = source('src/pages/WorkspacePage.svelte');
     expect(page).toContain('PinoutDiffModal');
-    expect(page).toContain('showDiff');
-    expect(page).toContain('onOpenDiff={() => (showDiff = true)}');
-    expect(page).toContain('<PinoutDiffModal onClose={() => (showDiff = false)} />');
+    expect(page).toContain('topBarUI.diffOpen');
+    expect(page).toContain('<PinoutDiffModal onClose={() => (topBarUI.diffOpen = false)} />');
   });
 
   it('uses two independent file slots with no workspace writes or KiCad output', () => {

@@ -174,15 +174,22 @@ Hash routing only, so deep links never trigger Pages 404s under a subpath:
 - `#/` - Landing page
 - `#/catalog` - Full-screen catalog browser with query, vendor, family, and package filters
 - `#/projects` - Recent sessions with open, delete, import, and project export actions
-- `#/about` - Catalog statistics, upstream provenance, licenses, and shortcuts
+- `#/about` - Catalog statistics and the grouped upstream provenance table
 - `#/mcu/<PART_NUMBER>` - Workspace, lazy-fetches `data/chips/<PART_NUMBER>.json`
 - `#/s/<COMPRESSED_PAYLOAD>` - Shared pinout; decompresses state, loads chip,
   hydrates workspace
 
-One global shell wraps every route. Its collapsed sidebar is a narrow icon rail;
-expansion is a fixed overlay that never reflows the workspace canvas. Sidebar
-expansion and the About tab are UI preferences in `localStorage` under
-`pincraft:shell_preferences_v1`; they never enter share URLs or project files.
+One global shell wraps every route. A single h-12 global top bar supplies
+navigation on every route and the pin-planning actions on workspace and shared
+routes; no page or workspace renders a second bar. Its leftmost control toggles
+a narrow 3rem icon rail whose width is reserved so it never covers content;
+expansion is a fixed overlay with a backdrop that never reflows the workspace
+canvas. The sidebar also offers a Hotkeys entry above About that opens the shared
+shortcut dialog over the current route; the keyboard reference is not repeated
+on About. Sidebar expansion and the About tab are UI preferences in `localStorage`
+under `pincraft:shell_preferences_v1`; the bar's mode, dialog flags, and search
+focus callback are transient view state in `src/state/top-bar-ui.svelte.ts`.
+Neither category enters share URLs or project files.
 
 `vite.config.ts` sets `base: process.env.BASE_PATH ?? '/'`. All runtime data
 fetches resolve relative to `import.meta.env.BASE_URL`, e.g.
@@ -215,9 +222,10 @@ PinCraft/
 |   |   +-- catalog.svelte.ts
 |   |   +-- workspace.svelte.ts
 |   |   +-- theme.svelte.ts
-|   +-- pages/{LandingPage,WorkspacePage}.svelte
-|   +-- components/landing/{HeroChipPreview,PresetGrid,QuickSearchBar}.svelte
-|   +-- components/workspace/{TopToolbar,PeripheralTree,PackageCanvas,
+|   +-- pages/{LandingPage,CatalogPage,ProjectsPage,AboutPage,WorkspacePage}.svelte
+|   +-- components/shell/{AppShell,GlobalSidebar,GlobalTopBar}.svelte
+|   +-- components/landing/{PresetGrid,QuickSearchBar}.svelte
+|   +-- components/workspace/{PeripheralTree,PackageCanvas,
 |   |   PerimeterPackage,GridPackage,PinPopover,PinContextMenu,
 |   |   SummaryDrawer,McuSwitcherModal,ExportModal}.svelte
 |   +-- data/hero-chip.json    # Checked-in STM32G431CBU6 snapshot
@@ -434,8 +442,10 @@ four capability cards; tabbed export preview; technical footer with live
 
 Three-pane IDE:
 
-- **Top toolbar (48px):** MCU switcher, global pin/signal search (Ctrl+F),
-  undo/redo, clear all, fit view, rotate, share link, export modal.
+- **Global top bar (48px):** Sidebar toggle, route context and section links on
+  every route. On workspace and shared routes it also hosts the MCU switcher,
+  global pin/signal search (Ctrl+F), undo/redo, clear all, rotate, alternatives,
+  compare, share link, and export modal.
 - **Left pane (~280px):** categorized peripheral tree with status dots, mode
   selector, per-signal toggles with assigned pin badges.
 - **Center pane:** custom pointer-event pan and cursor-centered zoom

@@ -74,18 +74,18 @@ order before uploading an artifact.
 
 ## Application Shell and Routes
 
-The application mounts one global shell on every route. Its collapsed sidebar is a narrow icon rail; expanding it overlays the page without resizing the pin canvas, toolbars, or panes. The sidebar provides Home, Catalog, Projects, and About entries, plus up to ten recent local sessions with open and delete controls. Navigation stays hash-only under the GitHub Pages subpath.
+The application mounts one global shell on every route. A single h-12 global top bar supplies navigation and, on workspace and shared routes, all pin-planning actions; no page or workspace renders a second bar. Its leftmost control toggles a narrow 3rem icon rail whose width is reserved on every route, so the rail never covers content. Expanding the sidebar overlays the page with a backdrop without resizing the pin canvas or any pane. The sidebar provides Home, Catalog, Projects, Hotkeys, and About entries, with Catalog, Hotkeys, and About below a separator, plus up to ten recent local sessions with open and delete controls. Hotkeys opens the shared shortcut dialog over the current route without adding a route or persisted state. Navigation stays hash-only under the GitHub Pages subpath.
 
 | Route | View |
 | :--- | :--- |
 | `#/` | Start screen with quick search, board presets, imports, comparison, and starter chips |
-| `#/catalog` | Full-screen catalog browser with query, vendor, family, and package filters |
-| `#/projects` | Recent sessions with open, delete, import, and version-2 export actions |
-| `#/about` | Catalog statistics, upstream source revisions and licenses, and keyboard shortcuts |
+| `#/catalog` | Full-screen catalog browser with leading package outlines, query, vendor, family, and package filters |
+| `#/projects` | Recent-session cards with package outlines, open, delete, import, and version-2 export actions |
+| `#/about` | One grouped Catalog sources table with counts, revisions, licenses, and load states |
 | `#/mcu/<PART_NUMBER>` | Three-pane pinout workspace |
 | `#/s/<COMPRESSED_PAYLOAD>` | Shared pinout hydrated in the workspace |
 
-The start screen's New pinout MCU/Board action opens `#/catalog`; its inline search and other quick actions remain available. About owns the full provenance reference that was previously in the start-screen footer. Sidebar expansion and the selected About tab are UI preferences stored only in `localStorage` under `pincraft:shell_preferences_v1`. They are never written to share URLs, project JSON, recent sessions, or undo history. Pin configuration remains shareable through version-2 URLs and project files.
+The start screen's New pinout MCU/Board action opens `#/catalog`; its inline search and other quick actions remain available. Catalog rows lead with a 44px package outline derived from index data. Only rows currently visible are refined from generated shards, with at most four loads in flight and a 40-part cap per pass; a failed shard keeps its approximate outline. No thumbnail state is persisted or shared. The projects route shows recent sessions as cards with outlines derived from saved package name and pin count, without shard fetches. About owns the full provenance reference that was previously in the start-screen footer, presented in one grouped Catalog sources table; the keyboard reference is owned by the shared dialog and the start-screen rail, not About. Sidebar expansion and the selected About tab are UI preferences stored only in `localStorage` under `pincraft:shell_preferences_v1`. The global bar's dialog flags, workspace mode, and registered search-focus callback are transient view state in `src/state/top-bar-ui.svelte.ts`; none is persisted. They are never written to share URLs, project JSON, recent sessions, or undo history. Pin configuration remains shareable through version-2 URLs and project files.
 
 ## Architecture Overview
 
@@ -135,8 +135,8 @@ PinCraft uses two vendored [daisyUI](https://github.com/saadeghi/daisyui) theme
 variable blocks (`src/themes/daisyui.css`): `fantasy` for light mode and
 `halloween` for dark mode. daisyUI is licensed under MIT
 (https://github.com/saadeghi/daisyui/blob/master/LICENSE); its component layer
-is registered as a build-time plugin. The theme button in the landing nav and
-workspace toolbar cycles through System, Light, and Dark, and writes the chosen
+is registered as a build-time plugin. The theme button in the global top bar
+cycles through System, Light, and Dark, and writes the chosen
 mode to `localStorage` under `pincraft:theme`. System mode reads the operating
 system color scheme once at load; no live change listener is registered. With no
 saved mode and no OS preference, light mode is the baseline. Saved values outside

@@ -137,7 +137,7 @@ describe('toast placement and dismissal', () => {
     };
     expect(token('--toast-z')).toBeGreaterThan(token('--shell-panel-z'));
     expect(css).toContain('z-index: var(--toast-z)');
-    expect(readSource('src/components/shell/GlobalSidebar.svelte')).toContain('shell-panel fixed inset-y-0 left-0 z-40');
+    expect(readSource('src/components/shell/GlobalSidebar.svelte')).toContain('shell-panel fixed bottom-0 left-0 top-12 z-40');
   });
 });
 
@@ -187,28 +187,35 @@ describe('dialog focus management', () => {
 });
 
 describe('shortcut help', () => {
-  it('lists only documented shortcuts and opens on ? outside text fields', () => {
+  it('renders the shared SHORTCUTS reference without a local shortcut array', () => {
     const help = readSource('src/components/workspace/ShortcutHelpDialog.svelte');
-    for (const token of [
-      'Ctrl+K',
-      'Ctrl+F',
-      'Ctrl+Click',
-      'Ctrl+Z',
-      'Ctrl+Y',
-      '0',
-      'Escape',
-      '?',
-    ]) {
-      expect(help, token).toContain(token);
+    expect(help).toContain("import { SHORTCUTS } from '../../data/provenance'");
+    expect(help).toContain('{#each SHORTCUTS as shortcut (shortcut.keys)}');
+    expect(help).not.toContain('const shortcuts = [');
+    expect(help).not.toContain("{ keys: '?', action:");
+    const reference = readSource('src/data/provenance.ts');
+    for (const token of ['Ctrl+K', 'Ctrl+F', 'Ctrl+Click', 'Ctrl+Z', 'Ctrl+Y', '0', 'Escape']) {
+      expect(reference, token).toContain(token);
     }
+  });
+
+  it('opens the same global-bar dialog from the keyboard and the shortcuts control', () => {
+    const bar = readSource('src/components/shell/GlobalTopBar.svelte');
+    expect(bar).toContain('topBarUI.shortcutHelpOpen = true');
+    expect(bar).toContain('aria-label="Keyboard shortcuts"');
+    const shell = readSource('src/components/shell/AppShell.svelte');
+    expect(shell).toContain('topBarUI.shortcutHelpOpen');
+    expect(shell).toContain('ShortcutHelpDialog');
     const page = readSource('src/pages/WorkspacePage.svelte');
     expect(page).toContain("e.key === '?' && !inInput");
-    expect(page).toContain('showShortcutHelp = true');
-    expect(page).toContain('<ShortcutHelpDialog');
+    expect(page).toContain('topBarUI.shortcutHelpOpen = true');
+    expect(page).not.toContain('<ShortcutHelpDialog');
     const handler =
       page.match(/const onKeyDown = \(e: KeyboardEvent\) => \{[\s\S]*?\n    \};/)?.[0] ?? '';
-    expect(handler).toContain('searchInputRef?.focus()');
-    expect(handler).toContain('searchInputRef?.select()');
+    expect(handler).toContain('topBarUI.focusSearch?.()');
+    expect(readSource('src/components/shell/GlobalTopBar.svelte')).toContain(
+      'searchInputRef?.select()',
+    );
   });
 });
 
@@ -304,9 +311,9 @@ describe('portrait dock and toolbar affordance', () => {
     expect(shouldShowScrollAffordance(Number.NaN, 400, 600)).toBe(false);
     expect(shouldShowScrollAffordance(0, 0, 600)).toBe(false);
 
-    const toolbar = readSource('src/components/workspace/TopToolbar.svelte');
+    const bar = readSource('src/components/shell/GlobalTopBar.svelte');
     for (const token of [
-      'h-12 shrink-0',
+      'global-top-bar h-12 shrink-0',
       'overflow-x-auto',
       'min-w-0',
       'truncate max-w-[11rem]',
@@ -314,7 +321,7 @@ describe('portrait dock and toolbar affordance', () => {
       'shouldShowScrollAffordance',
       'onscroll={updateScrollHint}',
     ]) {
-      expect(toolbar, token).toContain(token);
+      expect(bar, token).toContain(token);
     }
   });
 });

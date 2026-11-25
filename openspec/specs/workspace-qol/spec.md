@@ -196,9 +196,9 @@ single-layout behavior and persisted active tab.
 
 ### Requirement: Toolbar overflow has a scroll affordance
 
-The horizontally scrollable toolbar SHALL indicate when its control row has
-more content to the right and SHALL keep the existing internal horizontal
-scrolling behavior and toolbar height.
+The horizontally scrollable global top bar SHALL indicate when its control row
+has more content to the right and SHALL keep the existing internal horizontal
+scrolling behavior and h-12 bar height.
 
 #### Scenario: Scrollable toolbar shows an affordance
 
@@ -209,6 +209,11 @@ scrolling behavior and toolbar height.
 
 - **WHEN** all toolbar controls fit within the available width
 - **THEN** no scroll affordance is shown and the control row remains unchanged
+
+#### Scenario: Global bar overflow affordance
+
+- **WHEN** the global bar control row overflows on any route
+- **THEN** the affordance indicates additional controls and scrolling reveals them without widening the document
 
 ### Requirement: First-time recent-sessions hint is derived from existing state
 
@@ -229,10 +234,11 @@ SHALL be required for the hint.
 
 ### Requirement: Shortcut help is available on demand
 
-A help dialog SHALL be openable with the `?` key and SHALL list the keyboard
-shortcuts available in the workspace. It SHALL follow the same focus, Escape,
-and close behavior as the other workspace dialogs and SHALL NOT appear while
-the user is typing in a text field.
+A help dialog SHALL be openable with the `?` key and from the shortcuts control
+in the global top bar, and SHALL list the keyboard shortcuts available in the
+workspace. It SHALL follow the same focus, Escape, and close behavior as the
+other workspace dialogs and SHALL NOT appear while the user is typing in a text
+field.
 
 #### Scenario: Help opens from the keyboard
 
@@ -243,3 +249,8 @@ the user is typing in a text field.
 
 - **WHEN** the user types `?` inside a text field
 - **THEN** the help dialog does not open and the character is entered normally
+
+#### Scenario: Help opens from the global bar
+
+- **WHEN** the user activates the shortcuts control in the global top bar
+- **THEN** the same help dialog opens with focus inside and the same close behavior as the `?` shortcut

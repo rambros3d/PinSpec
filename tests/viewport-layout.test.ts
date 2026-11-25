@@ -82,7 +82,7 @@ describe('document viewport lock', () => {
     const css = readSource('src/app.css');
     const block = css.match(/\.landing-shell\s*\{[\s\S]*?\}/)?.[0] ?? '';
     for (const declaration of [
-      'height: 100dvh',
+      'height: 100%',
       'overflow-y: auto',
       'overscroll-behavior: contain',
       'scroll-padding-top: 3.5rem',
@@ -92,7 +92,8 @@ describe('document viewport lock', () => {
     const page = readSource('src/pages/LandingPage.svelte');
     expect(page).toContain('class="landing-shell flex flex-col bg-base-200 text-foreground"');
     expect(page).not.toContain('min-h-screen');
-    expect(page).toContain('navbar sticky top-0');
+    expect(page).not.toContain('class="navbar');
+    expect(readSource('src/components/shell/AppShell.svelte')).toContain('<GlobalTopBar />');
     expect(page).toContain('href="#presets"');
     expect(page).not.toContain('href="#export-preview"');
     expect(page).not.toContain('id="export-preview"');
@@ -106,7 +107,7 @@ describe('document viewport lock', () => {
     const css = readSource('src/app.css');
     const block = css.match(/\.shell-route\s*\{[\s\S]*?\}/)?.[0] ?? '';
     for (const declaration of [
-      'height: 100dvh',
+      'height: 100%',
       'width: 100%',
       'min-height: 0',
       'min-width: 0',
@@ -115,16 +116,18 @@ describe('document viewport lock', () => {
     ]) {
       expect(block, declaration).toContain(declaration);
     }
-    const shellBlock = css.match(/\.app-shell,\s*\.app-shell-content\s*\{[\s\S]*?\}/)?.[0] ?? '';
+    const shellBlock = css.match(/\.app-shell\s*\{[\s\S]*?\}/)?.[0] ?? '';
     expect(shellBlock).toContain('height: 100%');
     expect(shellBlock).not.toContain('padding');
     expect(shellBlock).not.toContain('margin');
+    const contentBlock = css.match(/\.app-shell-content\s*\{[\s\S]*?\}/)?.[0] ?? '';
+    expect(contentBlock).toContain('padding-left: 3rem');
   });
 
   it('overlays the expanded sidebar without reflowing the workspace', () => {
     const sidebar = readSource('src/components/shell/GlobalSidebar.svelte');
     expect(sidebar).toContain('class="shell-backdrop fixed inset-0 z-30');
-    expect(sidebar).toContain('shell-panel fixed inset-y-0 left-0 z-40');
+    expect(sidebar).toContain('shell-panel fixed bottom-0 left-0 top-12 z-40');
     expect(sidebar).toContain('shell-rail w-12');
     expect(sidebar).toContain('w-72');
     const css = readSource('src/app.css');
@@ -136,14 +139,18 @@ describe('document viewport lock', () => {
     expect(root).toContain('grid-template-columns:');
   });
 
-  it('sizes the workspace root to dvh without viewport-unit legacy classes', () => {
+  it('sizes the workspace root to the bar-free content box', () => {
     const page = readSource('src/pages/WorkspacePage.svelte');
-    expect(page).toContain('h-[100dvh]');
-    expect(page).toContain('w-full');
+    expect(page).toContain('workspace-root h-full w-full');
+    expect(page).not.toContain('h-[100dvh]');
+    expect(page).not.toContain('workspace-toolbar');
     expect(page).not.toContain('h-screen');
     expect(page).not.toContain('w-screen');
     const css = readSource('src/app.css');
-    expect(css.match(/\.workspace-root\s*\{[\s\S]*?\}/)?.[0]).toContain('height: 100dvh');
+    const root = css.match(/\.workspace-root\s*\{[\s\S]*?\}/)?.[0] ?? '';
+    expect(root).toContain('height: 100%');
+    expect(root).not.toContain('100dvh');
+    expect(css).not.toContain('.workspace-toolbar');
   });
 });
 
@@ -151,9 +158,10 @@ describe('orientation-driven grid layout', () => {
   it('uses one grid with named areas and a single portrait media query', () => {
     const css = readSource('src/app.css');
     const rootBlock = css.match(/\.workspace-root\s*\{[\s\S]*?\}/)?.[0] ?? '';
-    for (const area of ['toolbar', 'banner', 'peripherals', 'leftresizer', 'canvas', 'rightresizer', 'summary']) {
+    for (const area of ['banner', 'peripherals', 'leftresizer', 'canvas', 'rightresizer', 'summary']) {
       expect(rootBlock, area).toContain(area);
     }
+    expect(rootBlock).not.toContain('toolbar');
     expect(css.match(/@media \(orientation: portrait\)/g)?.length).toBe(1);
     expect(css.match(/grid-template-areas:/g)?.length).toBe(2);
     expect(css).toContain("'dock-tabs'");
@@ -220,10 +228,10 @@ describe('orientation-driven grid layout', () => {
   });
 });
 
-describe('toolbar and modal viewport fit', () => {
-  it('keeps the toolbar to one internally scrollable row', () => {
-    const source = readSource('src/components/workspace/TopToolbar.svelte');
-    expect(source).toContain('h-12 shrink-0');
+describe('global bar and modal viewport fit', () => {
+  it('keeps the global bar to one internally scrollable row', () => {
+    const source = readSource('src/components/shell/GlobalTopBar.svelte');
+    expect(source).toContain('global-top-bar h-12 shrink-0');
     expect(source).toContain('overflow-x-auto');
     expect(source).toContain('min-w-0');
     expect(source).toContain('truncate max-w-[11rem]');
@@ -363,14 +371,16 @@ describe('canvas gesture and rotation input', () => {
     }
   });
 
-  it('exposes clockwise rotate controls with orientation labels on toolbar and canvas', () => {
-    for (const file of ['TopToolbar.svelte', 'PackageCanvas.svelte']) {
-      const source = readSource(`src/components/workspace/${file}`);
-      expect(source, file).toContain('onRotate');
-      expect(source, file).toContain('Rotate package clockwise, now ${rotation} degrees');
-      expect(source, file).not.toContain('counter-clockwise');
-      expect(source, file).not.toContain('Restore package orientation');
-    }
+  it('exposes clockwise rotate controls with orientation labels on the bar and canvas', () => {
+    const bar = readSource('src/components/shell/GlobalTopBar.svelte');
+    expect(bar).toContain('workspaceStore.toggleRotation()');
+    expect(bar).toContain('Rotate package clockwise, now ${workspaceStore.rotation} degrees');
+    expect(bar).not.toContain('counter-clockwise');
+    const canvas = readSource('src/components/workspace/PackageCanvas.svelte');
+    expect(canvas).toContain('onRotate');
+    expect(canvas).toContain('Rotate package clockwise, now ${rotation} degrees');
+    expect(canvas).not.toContain('counter-clockwise');
+    expect(canvas).not.toContain('Restore package orientation');
   });
 
   it('fits a rotated non-square package from the declared extents exactly once', () => {

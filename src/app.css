@@ -4,6 +4,35 @@
   themes: false;
   logs: false;
   exclude: rootcolor, rootscrolllock, rootscrollgutter;
+  include:
+    alert,
+    badge,
+    button,
+    card,
+    checkbox,
+    diff,
+    dock,
+    drawer,
+    fieldset,
+    fileinput,
+    filter,
+    footer,
+    indicator,
+    input,
+    kbd,
+    label,
+    link,
+    list,
+    loading,
+    menu,
+    modal,
+    select,
+    status,
+    swap,
+    tab,
+    table,
+    toggle,
+    tooltip;
 }
 
 /*

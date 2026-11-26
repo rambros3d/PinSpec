@@ -74,13 +74,15 @@ describe('daisyUI token integration', () => {
     }
   });
 
-  it('registers all daisyUI families without built-in themes or startup logs', () => {
+  it('restricts daisyUI to used families without built-in themes or startup logs', () => {
     const css = fs.readFileSync(path.join(ROOT, 'src', 'app.css'), 'utf8');
-    const plugin = css.match(/@plugin "daisyui" \{[\s\S]*?\}/)?.[0] ?? '';
+    const plugin = css.match(/@plugin "daisyui" \{[\s\S]*?\n\}/)?.[0] ?? '';
     expect(plugin).toContain('themes: false');
     expect(plugin).toContain('logs: false');
     expect(plugin).toContain('rootcolor, rootscrolllock, rootscrollgutter');
-    expect(plugin).not.toContain('include:');
+    expect(plugin).toContain('include:');
+    expect(plugin).toContain('button,');
+    expect(plugin).toContain('modal,');
   });
 
   it('keeps raw color literals confined to the vendored theme file', () => {

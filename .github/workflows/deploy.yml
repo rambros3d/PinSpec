@@ -68,20 +68,21 @@ jobs:
       - name: Verify subpath runtime fetches
         run: |
           set -euo pipefail
+          SITE_NAME="${{ github.event.repository.name }}"
           rm -rf /tmp/pinspec-site
-          mkdir -p /tmp/pinspec-site/pinspec
-          cp -r dist/. /tmp/pinspec-site/pinspec/
+          mkdir -p "/tmp/pinspec-site/$SITE_NAME"
+          cp -r dist/. "/tmp/pinspec-site/$SITE_NAME/"
           python3 -m http.server 8099 --directory /tmp/pinspec-site >/tmp/pinspec-http.log 2>&1 &
           SERVER_PID=$!
           trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
           for _ in $(seq 1 30); do
-            if curl -fsS http://127.0.0.1:8099/pinspec/index.html -o /dev/null; then break; fi
+            if curl -fsS "http://127.0.0.1:8099/$SITE_NAME/index.html" -o /dev/null; then break; fi
             sleep 1
           done
-          curl -fsS http://127.0.0.1:8099/pinspec/index.html -o /dev/null
-          curl -fsS http://127.0.0.1:8099/pinspec/data/index.json -o /dev/null
+          curl -fsS "http://127.0.0.1:8099/$SITE_NAME/index.html" -o /dev/null
+          curl -fsS "http://127.0.0.1:8099/$SITE_NAME/data/index.json" -o /dev/null
           SAMPLE=$(node -e "const fs=require('fs'); const i=JSON.parse(fs.readFileSync('dist/data/index.json','utf8')); process.stdout.write(i[0].id)")
-          curl -fsS "http://127.0.0.1:8099/pinspec/data/chips/${SAMPLE}.json" -o /dev/null
+          curl -fsS "http://127.0.0.1:8099/$SITE_NAME/data/chips/${SAMPLE}.json" -o /dev/null
           if grep -Eq '(src|href)="/(data|assets)/' dist/index.html; then
             echo "Subpath check failed: root-absolute data or asset URL in dist/index.html" >&2
             exit 1

@@ -405,7 +405,10 @@ describe('canvas gesture and rotation input', () => {
 
   it('renders four clockwise orientations in SVG without a CSS wrapper', () => {
     const canvas = readSource('src/components/workspace/PackageCanvas.svelte');
-    expect(canvas).toContain('rotation === 90 || rotation === 270');
+    const view = readSource('src/core/canvas-view.ts');
+    expect(view).toContain('input.rotation === 90 || input.rotation === 270');
+    expect(view).toContain('viewBox[2]');
+    expect(view).toContain('viewBox[3]');
     expect(canvas).not.toContain('rotation === -90');
     expect(canvas).not.toContain('transform: rotate(${rotation}deg)');
     expect(canvas).toContain('{rotation}');
@@ -441,9 +444,11 @@ describe('canvas gesture and rotation input', () => {
     expect(fit).toContain("svg.getAttribute('width')");
     expect(fit).toContain("svg.getAttribute('height')");
     expect(fit).toContain("svg.getAttribute('viewBox')");
-    expect(fit).not.toContain('effW = isRotated ? sh : sw');
-    expect(fit).toContain('panX = (rect.width - effW * zoom) / 2');
-    expect(fit).toContain('panY = (rect.height - effH * zoom) / 2');
+    expect(fit).toContain('fitViewTransform(');
+    expect(fit).toContain('rotation,');
+    const view = readSource('src/core/canvas-view.ts');
+    expect(view).toContain('panX: (input.stageWidth - effW * zoom) / 2');
+    expect(view).toContain('panY: (input.stageHeight - effH * zoom) / 2');
   });
 });
 

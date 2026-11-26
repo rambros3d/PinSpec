@@ -9,6 +9,12 @@
   import X from '@solar-icons/svelte/bold-duotone/close';
   import { onMount } from 'svelte';
   import {
+    fitViewTransform,
+    pointerMetrics,
+    wheelZoomFactor,
+    zoomAtPoint,
+  } from '../../core/canvas-view';
+  import {
     configuredPeripheralNames,
     measuredSafeRadius,
     normalizeAngle,
@@ -245,25 +251,21 @@
     if (!svg) return;
     const sw = Number(svg.getAttribute('width')) || 700;
     const sh = Number(svg.getAttribute('height')) || 700;
-    // Quarter-turn renderers declare the swapped extents in both width/height
-    // and viewBox. Read those declared extents once so the 90/270 case is not
-    // compensated a second time here.
-    const quarterTurn = rotation === 90 || rotation === 270;
     const viewBoxDims = (svg.getAttribute('viewBox') ?? '').trim().split(/\s+/).map(Number);
-    const effW = quarterTurn ? viewBoxDims[2] || sh : sw;
-    const effH = quarterTurn ? viewBoxDims[3] || sw : sh;
-
     const rect = stageEl.getBoundingClientRect();
     if (rect.width <= 0 || rect.height <= 0) return;
 
-    const pad = 48;
-    const scaleX = (rect.width - pad) / effW;
-    const scaleY = (rect.height - pad) / effH;
-    const nextZoom = Math.max(0.4, Math.min(1.6, Math.min(scaleX, scaleY)));
-
-    zoom = Number(nextZoom.toFixed(3));
-    panX = (rect.width - effW * zoom) / 2;
-    panY = (rect.height - effH * zoom) / 2;
+    const view = fitViewTransform({
+      declaredWidth: sw,
+      declaredHeight: sh,
+      viewBox: viewBoxDims,
+      stageWidth: rect.width,
+      stageHeight: rect.height,
+      rotation,
+    });
+    zoom = view.zoom;
+    panX = view.panX;
+    panY = view.panY;
   }
 
   function zoomBy(factor: number, clientX?: number, clientY?: number): void {
@@ -272,25 +274,16 @@
     const cx = clientX !== undefined ? clientX - rect.left : rect.width / 2;
     const cy = clientY !== undefined ? clientY - rect.top : rect.height / 2;
 
-    const prevZoom = zoom;
-    const nextZoom = Math.max(0.4, Math.min(4.5, prevZoom * factor));
-    const ratio = nextZoom / prevZoom;
-
-    panX = cx - (cx - panX) * ratio;
-    panY = cy - (cy - panY) * ratio;
-    zoom = Number(nextZoom.toFixed(3));
+    const view = zoomAtPoint({ zoom, panX, panY }, factor, cx, cy);
+    panX = view.panX;
+    panY = view.panY;
+    zoom = view.zoom;
   }
 
   /** Wheel input: discrete step for a mouse wheel, fine step for trackpad pinch. */
   function handleWheel(e: WheelEvent): void {
     e.preventDefault();
-    if (e.ctrlKey || e.metaKey) {
-      const delta = Math.max(-60, Math.min(60, e.deltaY));
-      zoomBy(Math.exp(-delta * 0.004), e.clientX, e.clientY);
-    } else {
-      const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
-      zoomBy(factor, e.clientX, e.clientY);
-    }
+    zoomBy(wheelZoomFactor(e.deltaY, e.ctrlKey || e.metaKey), e.clientX, e.clientY);
   }
 
   /** Re-baseline the pinch from the first two active pointers. */
@@ -300,8 +293,7 @@
       pinchDistance = 0;
       return;
     }
-    const [a, b] = points;
-    pinchDistance = Math.hypot(b.x - a.x, b.y - a.y);
+    pinchDistance = pointerMetrics(points).distance;
   }
 
   interface CanvasGestureEvent extends Event {
@@ -361,10 +353,7 @@
     }
     if (activePointers.size >= 2) {
       const points = Array.from(activePointers.values());
-      const [a, b] = points;
-      const distance = Math.hypot(b.x - a.x, b.y - a.y);
-      const midX = (a.x + b.x) / 2;
-      const midY = (a.y + b.y) / 2;
+      const { distance, midX, midY } = pointerMetrics(points);
       if (pinchDistance > 0 && distance > 0) {
         zoomBy(distance / pinchDistance, midX, midY);
       }

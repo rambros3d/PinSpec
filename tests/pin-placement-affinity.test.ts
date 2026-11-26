@@ -605,7 +605,9 @@ describe('placement overlay wiring', () => {
     );
     expect(canvas).toContain('rotation: PackageRotation');
     expect(canvas).toContain('{rotation}');
-    expect(canvas).toContain('rotation === 90 || rotation === 270');
+    expect(canvas).toContain('fitViewTransform(');
+    const view = fs.readFileSync(path.join(ROOT, 'src/core/canvas-view.ts'), 'utf8');
+    expect(view).toContain('input.rotation === 90 || input.rotation === 270');
     const store = fs.readFileSync(
       path.join(ROOT, 'src/state/workspace.svelte.ts'),
       'utf8',

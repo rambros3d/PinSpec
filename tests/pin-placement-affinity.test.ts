@@ -698,17 +698,19 @@ describe('placement overlay interaction refresh', () => {
     const canvas = readCanvas();
     expect(canvas).toContain("querySelector('[data-ic-body]')");
     expect(canvas).toContain('bodyHalfDiagonal = Math.hypot(bodyRect.width, bodyRect.height) / 2');
-    expect(canvas).toContain('placementRingRadii(bodyHalfDiagonal, safeRadius)');
+    expect(canvas).toContain('placementRingRadii(bodyHalfDiagonal)');
     expect(canvas).toContain('centerX={bodyCenterX}');
     expect(canvas).toContain('centerY={bodyCenterY}');
     expect(canvas).toContain('radii={ringRadii}');
-    expect(canvas).toMatch(/measuredSafeRadius\([\s\S]{0,80}bodyCenterX,[\s\S]{0,40}bodyCenterY,/);
+    expect(canvas).not.toContain('safeRadius');
+    expect(canvas).not.toContain('measuredSafeRadius');
+    expect(canvas).not.toContain("querySelectorAll('[data-placement-furniture]')");
   });
 
   it('re-measures ring geometry when the body pans', () => {
     const canvas = readCanvas();
     const effect =
-      canvas.match(/\$effect\(\(\) => \{\n    void stageWidth;[\s\S]*?queueMicrotask\(measureSafeRadiusFromDom\);\n  \}\);/)?.[0] ?? '';
+      canvas.match(/\$effect\(\(\) => \{\n    void stageWidth;[\s\S]*?queueMicrotask\(measureBodyFromDom\);\n  \}\);/)?.[0] ?? '';
     expect(effect).toContain('void panX;');
     expect(effect).toContain('void panY;');
     expect(effect).toContain('void zoom;');
@@ -716,25 +718,36 @@ describe('placement overlay interaction refresh', () => {
     expect(effect).toContain('void rotation;');
   });
 
-  it('auto-fits only on overlay enable, chip or rotation change, and resize', () => {
+  it('auto-fits only on the overlay-enable transition', () => {
     const canvas = readCanvas();
     const autoFit =
       canvas.match(/async function autoFitPlacement\(\): Promise<void> \{[\s\S]*?\n  \}/)?.[0] ?? '';
     expect(autoFit).toContain('await tick()');
+    expect(autoFit).toContain('const halfExtent = Math.min(stageRect.width, stageRect.height) / 2;');
     expect(autoFit).toContain('placementZoomLimit(');
     expect(autoFit).toContain('zoom > limit + PLACEMENT_ZOOM_EPSILON');
     expect(autoFit).toContain('zoomAtPoint({ zoom, panX, panY }, limit / zoom, bodyCenterX, bodyCenterY)');
 
     const resize =
       canvas.match(/const handleResize = \(\): void => \{[\s\S]*?\n    \};/)?.[0] ?? '';
-    expect(resize).toContain('void autoFitPlacement()');
-    expect(canvas).toContain('if (visible && !wasOverlayVisible) void autoFitPlacement();');
+    expect(resize).toContain('measureBodyFromDom()');
+    expect(resize).not.toContain('autoFitPlacement');
 
-    const pointerMove =
-      canvas.match(/function handlePointerMove\(e: PointerEvent\): void \{[\s\S]*?\n  \}/)?.[0] ?? '';
-    expect(pointerMove).not.toContain('autoFitPlacement');
-    const zoomBy = canvas.match(/function zoomBy\([\s\S]*?\n  \}/)?.[0] ?? '';
-    expect(zoomBy).not.toContain('autoFitPlacement');
+    const chipOrRotation = canvas.match(/let lastFittedKey = '';[\s\S]*?\n  \}\);/)?.[0] ?? '';
+    expect(chipOrRotation).toContain('queueMicrotask(fitView)');
+    expect(chipOrRotation).not.toContain('autoFitPlacement');
+
+    expect(canvas).toContain('if (visible && !wasOverlayVisible) void autoFitPlacement();');
+    expect(canvas.match(/void autoFitPlacement\(\)/g)).toHaveLength(1);
+
+    for (const pattern of [
+      /function handlePointerMove\(e: PointerEvent\): void \{[\s\S]*?\n  \}/,
+      /function zoomBy\([\s\S]*?\n  \}/,
+      /function handleWheel\(e: WheelEvent\): void \{[\s\S]*?\n  \}/,
+      /function handleGestureChange\(e: Event\): void \{[\s\S]*?\n  \}/,
+    ]) {
+      expect(canvas.match(pattern)?.[0] ?? '').not.toContain('autoFitPlacement');
+    }
   });
 
   it('keeps keyboard angle steps and adds clamped ring stepping', () => {
@@ -875,7 +888,8 @@ describe('placement overlay interaction refresh', () => {
     const canvas = readCanvas();
     expect(canvas).toContain('configuredPeripheralNames');
     expect(canvas).toContain('.filter((name) => placementSettings.preferences[name]?.enabled)');
-    expect(canvas).toContain('measuredSafeRadius');
+    expect(canvas).toContain('measureBodyFromDom()');
+    expect(canvas).not.toContain('safeRadius');
     expect(canvas).toContain('data-placement-furniture');
     const panel = fs.readFileSync(
       path.join(ROOT, 'src/components/workspace/PlacementPanel.svelte'),

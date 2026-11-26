@@ -584,7 +584,7 @@ describe('placement persistence', () => {
     if (decoded.ok) expect(decoded.state.placement).toBeUndefined();
   });
 
-  it('persists placement bubbles but keeps the overlay toggle out of sessions', async () => {
+  it('persists enabled bubbles but no overlay visibility preference', async () => {
     const storage = new Map<string, string>();
     vi.stubGlobal('window', {
       localStorage: {
@@ -595,17 +595,16 @@ describe('placement persistence', () => {
     vi.resetModules();
     const { workspaceStore } = await import('../src/state/workspace.svelte.ts');
     const { catalogStore } = await import('../src/state/catalog.svelte.ts');
-    const { viewPreferences } = await import('../src/state/workspace-preferences.svelte.ts');
     stubCatalogChips(catalogStore, chip);
     await workspaceStore.openMcu(chip.id);
     workspaceStore.setPlacement('SPI1', { angle: 123.5, ring: 'high', enabled: true });
-    workspaceStore.setPlacementOverlayVisible(true);
+    workspaceStore.setDockTab('placement');
 
-    expect(viewPreferences.placementOverlayVisible).toBe(true);
     const preferences = JSON.parse(
       storage.get('pinspec:workspace_view_preferences_v1') ?? '{}',
     ) as Record<string, unknown>;
-    expect(preferences.placementOverlayVisible).toBe(true);
+    expect(preferences.dockTab).toBe('placement');
+    expect(preferences).not.toHaveProperty('placementOverlayVisible');
     const sessions = JSON.parse(storage.get('pinspec:recent_sessions_v1') ?? '[]') as Array<{
       state: WorkspaceState;
     }>;
@@ -616,13 +615,14 @@ describe('placement persistence', () => {
 });
 
 describe('placement overlay wiring', () => {
-  it('renders a toggleable overlay that feeds the existing highlight set', () => {
+  it('renders a bubble-driven overlay that feeds the existing highlight set', () => {
     const canvas = fs.readFileSync(
       path.join(ROOT, 'src/components/workspace/PackageCanvas.svelte'),
       'utf8',
     );
     expect(canvas).toContain('PlacementOverlay');
-    expect(canvas).toContain('setPlacementOverlayVisible');
+    expect(canvas).not.toContain('setPlacementOverlayVisible');
+    expect(canvas).toContain('Object.values(preferences).some((p) => p?.enabled)');
     expect(canvas).toContain('set.add(pos)');
     expect(canvas).toContain('previewPlacement');
     expect(canvas).toContain('commitPlacement');
@@ -646,12 +646,19 @@ describe('placement overlay wiring', () => {
     expect(overlay).not.toContain('onRing');
     expect(overlay).not.toContain('type="number"');
     expect(overlay).not.toContain('pointer-events-auto absolute top-16');
-    expect(canvas).toContain('setPlacementOverlayRotation(overlayRotation + 90)');
-    expect(canvas).toContain('Rotate placement Rings');
-    expect(canvas).toContain('<Orbit class="size-3.5" />');
     expect(canvas).not.toContain('handlePlacementRing');
-    expect(canvas).toContain('onPlacementToggle?: (visible: boolean) => void;');
-    expect(canvas).toContain('onPlacementToggle?.(next);');
+    expect(canvas).not.toContain('onPlacementToggle');
+    expect(canvas).not.toContain('Rotate placement Rings');
+    expect(canvas).not.toContain('<Orbit');
+
+    const panel = fs.readFileSync(
+      path.join(ROOT, 'src/components/workspace/PlacementPanel.svelte'),
+      'utf8',
+    );
+    expect(panel).toContain('Rotate placements');
+    expect(panel).toContain('setPlacementOverlayRotation(overlayRotation + 90)');
+    expect(panel).toContain('disabled={!rotationEnabled}');
+    expect(panel).toContain('relative to the IC');
   });
 
   it('draws fine dotted rings with unchanged handles and pin input passthrough', () => {
@@ -712,43 +719,42 @@ describe('placement tab activation', () => {
   );
   const store = fs.readFileSync(path.join(ROOT, 'src/state/workspace.svelte.ts'), 'utf8');
 
-  it('opens the overlay from the drawer or dock tab and deactivates on leaving', () => {
-    expect(page).toContain("tab === 'placement'");
-    expect(page).toContain("previousSummaryTab === 'placement'");
-    expect(page).toContain('workspaceStore.setPlacementOverlayVisible(true)');
-    expect(page).toContain('workspaceStore.setPlacementOverlayVisible(false)');
+  it('keeps drawer and dock tab selection independent of ring visibility', () => {
+    expect(page).toContain('workspaceStore.setDockTab(tab)');
     expect(page).toContain('function toggleRightDrawer(): void');
-    expect(page).toContain('workspaceStore.setPlacementOverlayVisible(!rightCollapsed)');
-    expect(drawer).toContain("<PlacementPanel");
+    expect(page).not.toContain('setPlacementOverlayVisible');
+    expect(drawer).toContain('<PlacementPanel');
     expect(drawer).toContain("activeTab === 'placement'");
   });
 
-  it('reveals the Placement panel when the canvas toggle turns on', () => {
-    expect(page).toContain('function handlePlacementToggle(visible: boolean): void');
-    const handler = page.match(/function handlePlacementToggle[\s\S]*?\n  }/)?.[0] ?? '';
-    expect(handler).toContain('if (!visible) return;');
-    expect(handler).toContain("summaryTab = 'placement'");
-    expect(handler).toContain("workspaceStore.setDockTab('placement')");
-    expect(handler).toContain('rightCollapsed = false;');
-    expect(handler).not.toContain('setPlacementOverlayVisible');
-    expect(handler).not.toContain('setPlacement(');
-    expect(page).toContain('onPlacementToggle={handlePlacementToggle}');
-  });
-
-  it('keeps the canvas toggle as the only overlay ON/OFF control', () => {
+  it('removes the canvas placement toggle and its page callback', () => {
+    expect(page).not.toContain('handlePlacementToggle');
+    expect(page).not.toContain('onPlacementToggle');
     const canvas = fs.readFileSync(
       path.join(ROOT, 'src/components/workspace/PackageCanvas.svelte'),
       'utf8',
     );
-    expect(canvas).toContain('setPlacementOverlayVisible(next)');
-    expect(canvas).toContain('viewPreferences.placementOverlayVisible');
+    expect(canvas).not.toContain('onPlacementToggle');
+    expect(canvas).not.toContain('aria-pressed={placementSettings.overlayVisible}');
+    expect(canvas).not.toContain('absolute top-14 left-3 z-20 pointer-events-none');
+  });
+
+  it('derives rings from bubbles and keeps rotation in the panel', () => {
+    const canvas = fs.readFileSync(
+      path.join(ROOT, 'src/components/workspace/PackageCanvas.svelte'),
+      'utf8',
+    );
+    expect(canvas).not.toContain('setPlacementOverlayVisible');
+    expect(canvas).not.toContain('viewPreferences.placementOverlayVisible');
+    expect(canvas).toContain('Object.values(preferences).some((p) => p?.enabled)');
     expect(drawer).not.toContain('setPlacementOverlayVisible');
     const panel = fs.readFileSync(
       path.join(ROOT, 'src/components/workspace/PlacementPanel.svelte'),
       'utf8',
     );
     expect(panel).not.toContain('setPlacementOverlayVisible');
-    expect(store).toContain('viewPreferences.placementOverlayVisible = visible');
+    expect(panel).toContain('setPlacementOverlayRotation(overlayRotation + 90)');
+    expect(store).not.toContain('setPlacementOverlayVisible');
     expect(store).not.toContain('next.placementOverlayVisible');
   });
 });
@@ -847,15 +853,27 @@ describe('placement overlay interaction refresh', () => {
     expect(overlay).toContain('ringFromEvent(event)');
   });
 
-  it('keeps the top-left toggle clear of the top-left import buttons and top-right HUD', () => {
+  it('places the find bar top-left and reserves the HUD for zoom and package rotation', () => {
     const canvas = readCanvas();
-    expect(canvas).toContain('absolute top-14 left-3 z-20 pointer-events-none');
-    expect(canvas).toContain('card card-border pointer-events-auto flex flex-row items-center gap-1.5');
-    expect(canvas).toContain('aria-pressed={placementSettings.overlayVisible}');
-    expect(canvas).toContain('setPlacementOverlayVisible(next)');
-    const hud = canvas.match(/Top-Right Canvas HUD Controls[\s\S]*?<!-- Bottom-Left/)?.[0] ?? '';
-    expect(hud).toContain('flex flex-row items-center gap-1');
-    expect(hud).not.toContain('Placement');
+    expect(canvas).toContain(
+      'card card-border absolute top-14 left-3 z-20 flex flex-row items-center gap-1',
+    );
+    expect(canvas).not.toContain('absolute top-14 right-3');
+    expect(canvas).not.toContain('absolute top-14 left-3 z-20 pointer-events-none');
+    expect(canvas).not.toContain('aria-pressed={placementSettings.overlayVisible}');
+    expect(canvas).not.toContain('setPlacementOverlayVisible(next)');
+    for (const token of [
+      'aria-label="Find pin or signal"',
+      'workspaceStore.searchMatchingPins.length',
+      'aria-label="Clear search"',
+      'topBarUI.focusSearch = () =>',
+    ]) {
+      expect(canvas, token).toContain(token);
+    }
+    const hud = canvas.match(/Top-Right Canvas HUD Controls[\s\S]*?<!-- Pin and signal find/)?.[0] ?? '';
+    expect(hud).toContain('onclick={onRotate}');
+    expect(hud).toContain('Rotate package clockwise');
+    expect(hud).not.toContain('Rotate placements');
     expect(readOverlay()).toContain('class="absolute inset-0 z-10 pointer-events-none"');
   });
 
@@ -973,7 +991,9 @@ describe('placement overlay interaction refresh', () => {
     const canvas = readCanvas();
     expect(canvas).toContain('configuredPeripheralNames');
     expect(canvas).toContain('eligiblePlacementNames');
-    expect(canvas).toContain('.filter((name) => placementSettings.preferences[name]?.enabled)');
+    expect(canvas).toContain('.filter((name) => preferences[name]?.enabled)');
+    expect(canvas).toContain('Object.values(preferences).some((p) => p?.enabled)');
+    expect(canvas).toContain('placementSelection.select(null)');
     expect(canvas).toContain('measureBodyFromDom()');
     expect(canvas).not.toContain('safeRadius');
     expect(canvas).toContain('data-placement-furniture');

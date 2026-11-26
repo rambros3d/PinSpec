@@ -71,7 +71,7 @@ export function canonicalPinPlacementPreference(
 /**
  * Supply disabled defaults for missing placement data. All codecs and the UI
  * read this normalizer so version-2 payloads without placement remain valid.
- * Overlay visibility is a local view preference and is deliberately omitted.
+ * Ring visibility is derived from enabled bubbles and is deliberately omitted.
  */
 export function normalizePlacement(
   state: Pick<WorkspaceState, 'placement'>,

@@ -2,10 +2,10 @@
  * Browser-local view preferences for the workspace.
  *
  * These values are presentation state only: the selected peripheral, the tree
- * filter, category expansion, the overlay toggle and the active summary/dock
- * tabs stay in localStorage and are never serialized into share URLs or
- * project files. Pin configuration, including placement bubbles, continues to
- * live in `workspaceStore.state`.
+ * filter, category expansion, and the active summary/dock tabs stay in
+ * localStorage and are never serialized into share URLs or project files. Pin
+ * configuration, including placement bubbles, continues to live in
+ * `workspaceStore.state`. Placement ring visibility is derived from bubbles.
  */
 
 import { normalizeDockTab, normalizeSummaryTab, type DockTab, type SummaryTab } from '../core/types';
@@ -41,11 +41,6 @@ function validateCategoryExpansion(value: unknown): Record<string, boolean> {
   return result;
 }
 
-/** Only the literal boolean true enables the overlay; all other values default off. */
-function normalizeOverlayVisible(value: unknown): boolean {
-  return value === true;
-}
-
 /**
  * Runes-backed helper for view preferences. Each preference loads its field
  * from the shared namespaced record on construction and writes through on
@@ -69,12 +64,6 @@ export class WorkspacePreferencesStore {
     DEFAULT_CATEGORY_EXPANSION,
     validateCategoryExpansion,
     'openCategories',
-  );
-  private readonly overlayPreference = createPersistedPreference<boolean>(
-    VIEW_PREFERENCES_STORAGE_KEY,
-    false,
-    normalizeOverlayVisible,
-    'placementOverlayVisible',
   );
   private readonly summaryPreference = createPersistedPreference<SummaryTab>(
     VIEW_PREFERENCES_STORAGE_KEY,
@@ -118,15 +107,6 @@ export class WorkspacePreferencesStore {
   setCategoryOpen(id: string, isOpen: boolean): void {
     if (this.categoriesPreference.value[id] === isOpen) return;
     this.categoriesPreference.set({ ...this.categoriesPreference.value, [id]: isOpen });
-  }
-
-  /** Canvas placement overlay visibility; localStorage only, never shareable. */
-  get placementOverlayVisible(): boolean {
-    return this.overlayPreference.value;
-  }
-
-  set placementOverlayVisible(value: boolean) {
-    this.overlayPreference.set(value);
   }
 
   get summaryTab(): SummaryTab {

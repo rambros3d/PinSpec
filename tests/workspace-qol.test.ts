@@ -349,8 +349,11 @@ describe('workspace icon provenance', () => {
       expect(source, rel).not.toContain('lucide-svelte');
       expect(source, rel).toContain('@solar-icons/svelte/bold-duotone/');
     }
-    expect(readSource('src/components/workspace/PackageCanvas.svelte')).toContain(
+    expect(readSource('src/components/workspace/PackageCanvas.svelte')).not.toContain(
       '@solar-icons/svelte/bold-duotone/target',
+    );
+    expect(readSource('src/components/workspace/PlacementPanel.svelte')).toContain(
+      '@solar-icons/svelte/bold-duotone/rotate-clockwise',
     );
     expect(readSource('src/components/workspace/SummaryDrawer.svelte')).toContain('text-info');
     expect(readSource('src/pages/WorkspacePage.svelte')).not.toContain('lucide-svelte');
@@ -390,6 +393,9 @@ describe('placement overlay Escape and keyboard focus', () => {
     expect(panel).not.toContain('type="number"');
     expect(panel).not.toContain('setPlacementOverlayVisible');
     expect(panel).not.toContain('Claimed:');
+    expect(panel).toContain('Rotate placements');
+    expect(panel).toContain('disabled={!rotationEnabled}');
+    expect(panel).toContain('setPlacementOverlayRotation(overlayRotation + 90)');
   });
 });
 

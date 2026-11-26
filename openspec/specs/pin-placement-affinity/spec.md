@@ -153,29 +153,6 @@ reallocation, and their assignments SHALL remain unchanged throughout the drag.
 - **WHEN** the user drags a peripheral indicator on a matrix-mux chip past pins that the user has locked
 - **THEN** reallocation treats those locked pins as fixed satisfied signals, excludes them from the candidate set, and never moves or clears them
 
-### Requirement: Placement toggle is an independent top-centre control
-
-The placement overlay toggle SHALL be an independent top-left canvas control,
-separate from the remap banner and the top-right view HUD. The top-right view
-HUD SHALL retain only view controls. Neither the right-drawer Placement tab nor
-any left sidebar section SHALL contain a placement ON/OFF toggle. Opening the
-Placement tab SHALL activate the overlay without adding a second ON/OFF control.
-
-#### Scenario: Toggle is separate from the view HUD
-
-- **WHEN** the user locates the placement toggle on the canvas
-- **THEN** the control is at the top left, the top-right view HUD contains no placement control, and neither the Placement tab nor the left sidebar contains a placement ON/OFF toggle
-
-#### Scenario: Tab activation does not add a toggle
-
-- **WHEN** the user activates the overlay through the Placement tab
-- **THEN** the canvas toggle remains the only explicit ON/OFF control and the tab exposes only configured-peripheral bubble toggles
-
-#### Scenario: Canvas activation does not add a toggle
-
-- **WHEN** the user activates the overlay through the canvas toggle
-- **THEN** the Placement panel opens without a second ON/OFF control appearing in the panel or the left sidebar
-
 ### Requirement: Placement indicators require explicit opt-in
 
 Placement affinity SHALL remain opt-in per peripheral. A peripheral SHALL

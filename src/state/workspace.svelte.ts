@@ -490,15 +490,6 @@ class WorkspaceStore {
     this.commit(next);
   }
 
-  /**
-   * Toggle the canvas placement overlay. This is presentation state, so the
-   * setter delegates to localStorage-backed view preferences and never enters
-   * undo history, share URLs, or project files.
-   */
-  setPlacementOverlayVisible(visible: boolean): void {
-    viewPreferences.placementOverlayVisible = visible;
-  }
-
   enterRemapMode(pos: string): void {
     if (!this.chip) return;
     const asgn = this.state.assignments[pos];

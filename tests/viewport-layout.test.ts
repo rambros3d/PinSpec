@@ -225,17 +225,16 @@ describe('orientation-driven grid layout', () => {
     expect(css).toMatch(/\.workspace-summary \.summary-tab-strip \{\s*display: none/);
   });
 
-  it('reveals the Placement panel from the canvas toggle in both orientations', () => {
+  it('selects the Placement dock tab without a canvas overlay toggle', () => {
     const page = readSource('src/pages/WorkspacePage.svelte');
-    const handler = page.match(/function handlePlacementToggle[\s\S]*?\n  }/)?.[0] ?? '';
-    expect(handler).toContain('if (!visible) return;');
-    expect(handler).toContain("summaryTab = 'placement'");
-    expect(handler).toContain("workspaceStore.setDockTab('placement')");
-    expect(handler).toContain('rightCollapsed = false;');
-    expect(handler).not.toContain('setPlacementOverlayVisible');
-    expect(page).toContain('onPlacementToggle={handlePlacementToggle}');
+    expect(page).toContain('workspaceStore.setDockTab(tab)');
+    expect(page).not.toContain('handlePlacementToggle');
+    expect(page).not.toContain('onPlacementToggle');
+    expect(page).not.toContain('setPlacementOverlayVisible');
     const canvas = readSource('src/components/workspace/PackageCanvas.svelte');
-    expect(canvas).toContain('onPlacementToggle?.(next)');
+    expect(canvas).not.toContain('onPlacementToggle');
+    expect(canvas).not.toContain('Placement</span>');
+    expect(canvas).toContain('Object.values(preferences).some((p) => p?.enabled)');
   });
 
   it('keeps the combined sidebar side by side in both orientations', () => {

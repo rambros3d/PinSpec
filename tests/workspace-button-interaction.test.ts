@@ -33,8 +33,8 @@ describe('canvas pan gesture ownership', () => {
       'onclick={() => zoomBy(1.2)}',
       'onclick={fitView}',
       'onclick={onRotate}',
-      'onPlacementToggle?.(next)',
       'aria-label="Clear search"',
+      'card card-border absolute top-14 left-3 z-20',
       'onclick={onCancelRemap}',
       'absolute top-28 left-1/2 -translate-x-1/2',
       'max-w-[calc(100%-1.5rem)]',
@@ -42,6 +42,8 @@ describe('canvas pan gesture ownership', () => {
       expect(canvas, token).toContain(token);
     }
     expect(canvas).not.toContain('absolute top-3 left-1/2 -translate-x-1/2');
+    expect(canvas).not.toContain('onPlacementToggle');
+    expect(canvas).not.toContain('absolute top-14 right-3');
     const popover = read('src/components/workspace/PinPopover.svelte');
     expect(popover).toContain("onAssign({ peripheral: 'GPIO', signal: mode, af: null })");
     expect(popover).toContain('onToggleLock');

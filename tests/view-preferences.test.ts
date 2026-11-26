@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { VIEW_PREFERENCES_STORAGE_KEY } from '../src/state/workspace-preferences.svelte';
 import { stubCatalogChips } from './helpers/catalog-stub';
@@ -30,7 +32,6 @@ describe('localStorage-only view preferences', () => {
     const preferences = new WorkspacePreferencesStore();
     expect(preferences.selectedPeripheral).toBeNull();
     expect(preferences.filterText).toBe('');
-    expect(preferences.placementOverlayVisible).toBe(false);
     expect(preferences.summaryTab).toBe('pins');
     expect(preferences.dockTab).toBe('peripherals');
     expect(preferences.isCategoryOpen('system')).toBe(true);
@@ -45,7 +46,6 @@ describe('localStorage-only view preferences', () => {
     first.filterText = 'SPI';
     first.setCategoryOpen('analog', true);
     first.setCategoryOpen('system', false);
-    first.placementOverlayVisible = true;
     first.summaryTab = 'placement';
     first.dockTab = 'placement';
 
@@ -56,10 +56,10 @@ describe('localStorage-only view preferences', () => {
       'dockTab',
       'filterText',
       'openCategories',
-      'placementOverlayVisible',
       'selectedPeripheral',
       'summaryTab',
     ]);
+    expect(saved).not.toHaveProperty('placementOverlayVisible');
 
     const second = new WorkspacePreferencesStore();
     expect(second.selectedPeripheral).toBe('SPI1');
@@ -67,7 +67,6 @@ describe('localStorage-only view preferences', () => {
     expect(second.isCategoryOpen('analog')).toBe(true);
     expect(second.isCategoryOpen('system')).toBe(false);
     expect(second.isCategoryOpen('other')).toBe(false);
-    expect(second.placementOverlayVisible).toBe(true);
     expect(second.summaryTab).toBe('placement');
     expect(second.dockTab).toBe('placement');
   });
@@ -80,7 +79,6 @@ describe('localStorage-only view preferences', () => {
         selectedPeripheral: 42,
         filterText: null,
         openCategories: { other: 'yes', timers: false },
-        placementOverlayVisible: 'yes',
         summaryTab: 'missing',
         dockTab: 'unknown',
         sidebarSection: 'place',
@@ -90,7 +88,6 @@ describe('localStorage-only view preferences', () => {
     const preferences = new WorkspacePreferencesStore();
     expect(preferences.selectedPeripheral).toBeNull();
     expect(preferences.filterText).toBe('');
-    expect(preferences.placementOverlayVisible).toBe(false);
     expect(preferences.isCategoryOpen('other')).toBe(false);
     expect(preferences.isCategoryOpen('timers')).toBe(false);
     expect(preferences.summaryTab).toBe('pins');
@@ -145,15 +142,21 @@ describe('localStorage-only view preferences', () => {
     const { WorkspacePreferencesStore: OfflineStore } = await freshPreferences();
     const offline = new OfflineStore();
     expect(offline.dockTab).toBe('peripherals');
-    expect(offline.placementOverlayVisible).toBe(false);
     expect(() => {
       offline.selectedPeripheral = 'SPI1';
       offline.filterText = 'SPI';
       offline.dockTab = 'dma';
-      offline.placementOverlayVisible = true;
     }).not.toThrow();
     expect(offline.selectedPeripheral).toBe('SPI1');
     expect(offline.dockTab).toBe('dma');
-    expect(offline.placementOverlayVisible).toBe(true);
+  });
+
+  it('retires the overlay visibility key from the preference store', async () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'src/state/workspace-preferences.svelte.ts'),
+      'utf8',
+    );
+    expect(source).not.toContain('placementOverlayVisible');
+    expect(source).not.toContain('normalizeOverlayVisible');
   });
 });

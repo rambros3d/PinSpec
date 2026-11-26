@@ -71,6 +71,22 @@ describe('retired shell preference contract', () => {
     expect(Object.keys(state)).not.toContain('sidebarExpanded');
   });
 
+  it('retires overlay visibility from localStorage view preferences', async () => {
+    installStorage();
+    vi.resetModules();
+    const { WorkspacePreferencesStore, VIEW_PREFERENCES_STORAGE_KEY } = await import(
+      '../src/state/workspace-preferences.svelte.ts'
+    );
+    const preferences = new WorkspacePreferencesStore();
+    preferences.dockTab = 'placement';
+    const raw = window.localStorage.getItem(VIEW_PREFERENCES_STORAGE_KEY) ?? '{}';
+    expect(raw).not.toContain('placementOverlayVisible');
+    expect(raw).toContain('dockTab');
+    expect(read('src/state/workspace-preferences.svelte.ts')).not.toContain(
+      'placementOverlayVisible',
+    );
+  });
+
   it('keeps recent sessions free of navigation fields', async () => {
     installStorage();
     vi.resetModules();

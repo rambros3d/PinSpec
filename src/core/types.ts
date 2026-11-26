@@ -476,8 +476,8 @@ export interface WorkspaceState {
   placement?: Record<string, PinPlacementPreference>; // peripheral -> placement preference
   /**
    * Additive view rotation; absent means the default 0-degree orientation.
-   * The placement overlay toggle is presentation state and lives only in
-   * browser localStorage, never in this shareable state.
+   * Ring visibility is derived from enabled bubbles, so no visibility field
+   * exists in this shareable state or in browser localStorage.
    */
   packageRotation?: PackageRotation;
   /**

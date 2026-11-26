@@ -43,11 +43,8 @@
 
   /** Select a portrait dock tab; non-tree tabs drive the shared summary pane. */
   function selectDockTab(tab: DockTab): void {
-    const previous = workspaceStore.dockTab;
     workspaceStore.setDockTab(tab);
     if (tab !== 'peripherals') summaryTab = tab;
-    if (tab === 'placement') workspaceStore.setPlacementOverlayVisible(true);
-    else if (previous === 'placement') workspaceStore.setPlacementOverlayVisible(false);
   }
 
   /**
@@ -59,40 +56,15 @@
     viewPreferences.selectedPeripheral = name;
   }
 
-  /**
-   * Keep the drawer's own tab clicks in localStorage view preferences. Opening
-   * Placement activates the overlay; leaving it deactivates an overlay that
-   * was activated by the tab. A canvas toggle remains the explicit override.
-   */
-  let previousSummaryTab = $state<SummaryTab>(viewPreferences.summaryTab);
+  /** Keep the drawer's own tab clicks in localStorage view preferences. */
   $effect(() => {
     const tab = summaryTab;
     if (viewPreferences.summaryTab !== tab) viewPreferences.summaryTab = tab;
-    if (tab !== previousSummaryTab) {
-      if (tab === 'placement') workspaceStore.setPlacementOverlayVisible(true);
-      else if (previousSummaryTab === 'placement') workspaceStore.setPlacementOverlayVisible(false);
-      previousSummaryTab = tab;
-    }
   });
 
-  /**
-   * Reveal the Placement panel when the canvas toggle turns the overlay on.
-   * Turning it off leaves the active tab and every bubble preference alone;
-   * the tab state and overlay flag stay in localStorage-only view preferences.
-   */
-  function handlePlacementToggle(visible: boolean): void {
-    if (!visible) return;
-    summaryTab = 'placement';
-    workspaceStore.setDockTab('placement');
-    rightCollapsed = false;
-  }
-
-  /** Collapsing the drawer hides an overlay opened by its Placement tab. */
+  /** Collapse or show the summary drawer; placement rings follow bubbles, not the drawer. */
   function toggleRightDrawer(): void {
     rightCollapsed = !rightCollapsed;
-    if (summaryTab === 'placement') {
-      workspaceStore.setPlacementOverlayVisible(!rightCollapsed);
-    }
   }
 
   // Hydrate MCU or shared payload when props change
@@ -315,7 +287,6 @@
           onCompleteRemap={(targetPos) => workspaceStore.completeRemap(targetPos)}
           onCancelRemap={() => workspaceStore.cancelRemapMode()}
           onRotate={() => workspaceStore.toggleRotation()}
-          onPlacementToggle={handlePlacementToggle}
         />
       </div>
 

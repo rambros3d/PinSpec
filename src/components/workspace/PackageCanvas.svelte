@@ -1,8 +1,6 @@
 <script lang="ts">
-  import Crosshair from '@solar-icons/svelte/bold-duotone/target';
   import Maximize2 from '@solar-icons/svelte/bold-duotone/maximize-square';
   import Minus from '@solar-icons/svelte/bold-duotone/minus';
-  import Orbit from '@solar-icons/svelte/bold-duotone/planet';
   import Plus from '@solar-icons/svelte/bold-duotone/add';
   import RotateCw from '@solar-icons/svelte/bold-duotone/rotate-clockwise';
   import Search from '@solar-icons/svelte/bold-duotone/magnifier';
@@ -42,7 +40,6 @@
   } from '../../core/types';
   import { placementSelection } from '../../state/placement-selection.svelte';
   import { topBarUI } from '../../state/top-bar-ui.svelte';
-  import { viewPreferences } from '../../state/workspace-preferences.svelte';
   import { workspaceStore } from '../../state/workspace.svelte';
   import GridPackage from './GridPackage.svelte';
   import PerimeterPackage from './PerimeterPackage.svelte';
@@ -70,8 +67,6 @@
     onCompleteRemap: (targetPos: string) => boolean;
     onCancelRemap: () => void;
     onRotate: () => void;
-    /** Page-owned callback that reveals the Placement panel when the overlay is toggled. */
-    onPlacementToggle?: (visible: boolean) => void;
   }
 
   let {
@@ -93,7 +88,6 @@
     onCompleteRemap,
     onCancelRemap,
     onRotate,
-    onPlacementToggle,
   }: Props = $props();
 
   let stageEl = $state<HTMLDivElement | null>(null);
@@ -129,14 +123,10 @@
 
   const muxModel = $derived(getChipMuxModel(chip));
 
-  /**
-   * Overlay visibility is a localStorage view preference; the bubble
-   * preferences themselves remain shareable workspace state.
-   */
-  const placementSettings = $derived({
-    overlayVisible: viewPreferences.placementOverlayVisible,
-    preferences: normalizePlacement(workspaceStore.state).preferences,
-  });
+  /** Bubble preferences are shareable workspace state; rings follow them. */
+  const preferences = $derived(normalizePlacement(workspaceStore.state).preferences);
+  /** Rings appear exactly while at least one placement bubble is enabled. */
+  const overlayVisible = $derived(Object.values(preferences).some((p) => p?.enabled));
   const overlayRotation = $derived(
     normalizeAngle(workspaceStore.state.placementOverlayRotation ?? 0),
   );
@@ -159,10 +149,10 @@
 
   const placementIndicators = $derived.by<PlacementIndicator[]>(() =>
     placementOptions
-      .filter((name) => placementSettings.preferences[name]?.enabled)
+      .filter((name) => preferences[name]?.enabled)
       .map((name) => ({
         name,
-        preference: placementSettings.preferences[name] ?? null,
+        preference: preferences[name] ?? null,
         claimed: Object.entries(assignments)
           .filter(([, asgn]) => asgn.peripheral === name)
           .map(([pos]) => pos),
@@ -172,7 +162,7 @@
   // Reuse the established highlight plumbing for the selected peripheral.
   const highlightSet = $derived.by(() => {
     const set = new Set<string>(highlightedPins);
-    if (placementSettings.overlayVisible && placementSelection.selected) {
+    if (overlayVisible && placementSelection.selected) {
       const indicator = placementIndicators.find(
         (item) => item.name === placementSelection.selected,
       );
@@ -236,7 +226,7 @@
    */
   async function autoFitPlacement(): Promise<void> {
     await tick();
-    if (!placementSettings.overlayVisible || !stageEl || !contentEl) return;
+    if (!overlayVisible || !stageEl || !contentEl) return;
     measureBodyFromDom();
     if (pinRadius <= 0) return;
     const stageRect = stageEl.getBoundingClientRect();
@@ -261,23 +251,24 @@
     void panY;
     void chip.id;
     void rotation;
-    void placementSettings.overlayVisible;
+    void overlayVisible;
     void remapSourcePos;
     queueMicrotask(measureBodyFromDom);
   });
 
-  // Enabling the overlay from the canvas, drawer, or dock tab fits the low
-  // ring once; disabling and ordinary pointer input do not.
+  // Enabling the first bubble fits the low ring once; disabling the last bubble
+  // clears its selection and ordinary pointer input do neither.
   let wasOverlayVisible = false;
   $effect(() => {
-    const visible = placementSettings.overlayVisible;
+    const visible = overlayVisible;
     if (visible && !wasOverlayVisible) void autoFitPlacement();
+    else if (!visible && placementSelection.selected) placementSelection.select(null);
     wasOverlayVisible = visible;
   });
 
   function placementPreference(name: string): PinPlacementPreference {
     return (
-      placementSettings.preferences[name] ?? {
+      preferences[name] ?? {
         angle: 0,
         ring: 'low',
         enabled: true,
@@ -663,8 +654,8 @@
     {/if}
   </div>
 
-  <!-- Toggleable pin-placement affinity overlay -->
-  {#if placementSettings.overlayVisible}
+  <!-- Pin-placement affinity overlay; visible while any bubble is enabled -->
+  {#if overlayVisible}
     <PlacementOverlay
       {stageEl}
       centerX={bodyCenterX}
@@ -677,42 +668,6 @@
       onAngle={handlePlacementAngle}
     />
   {/if}
-
-  <!-- Top-left placement toggle and canvas-only display rotation -->
-  <div class="absolute top-14 left-3 z-20 pointer-events-none">
-    <div
-      class="card card-border pointer-events-auto flex flex-row items-center gap-1.5 px-2.5 py-1 bg-base-100/95 text-xs shadow-sm"
-      data-placement-furniture
-    >
-      <button
-        type="button"
-        onclick={() => {
-          const next = !placementSettings.overlayVisible;
-          if (!next) placementSelection.select(null);
-          workspaceStore.setPlacementOverlayVisible(next);
-          onPlacementToggle?.(next);
-        }}
-        title={placementSettings.overlayVisible ? 'Hide placement overlay' : 'Show placement overlay'}
-        aria-pressed={placementSettings.overlayVisible}
-        class="btn btn-ghost btn-sm gap-1.5"
-      >
-        <Crosshair class="size-3.5" />
-        <span class="font-medium">Placement</span>
-      </button>
-      {#if placementSettings.overlayVisible}
-        <button
-          type="button"
-          onclick={() => workspaceStore.setPlacementOverlayRotation(overlayRotation + 90)}
-          title="Rotate placement Rings"
-          aria-label="Rotate placement Rings"
-          class="btn btn-ghost btn-sm gap-1"
-        >
-          <Orbit class="size-3.5" />
-          <span class="hidden xl:inline">Rings</span>
-        </button>
-      {/if}
-    </div>
-  </div>
 
   <!-- Top-centre remap banner -->
   {#if remapSourcePos}
@@ -774,7 +729,7 @@
   </div>
 
   <!-- Pin and signal find; owned by the canvas so Ctrl+F selects its query. -->
-  <div data-placement-furniture class="card card-border absolute top-14 right-3 z-20 flex flex-row items-center gap-1 p-1 bg-base-100/95 shadow-sm text-xs">
+  <div data-placement-furniture class="card card-border absolute top-14 left-3 z-20 flex flex-row items-center gap-1 p-1 bg-base-100/95 shadow-sm text-xs">
     <div class="min-w-[9rem] max-w-xs relative flex flex-row items-center">
       <Search class="size-3.5 text-base-content/40 absolute left-2.5 pointer-events-none" />
       <input

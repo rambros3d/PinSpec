@@ -2,11 +2,13 @@
   /**
    * Placement tab body in the right summary drawer and portrait dock. Lists
    * only configured peripherals and toggles their placement bubble. Angle and
-   * ring are adjusted by dragging bubbles on the canvas rings, so this panel
-   * has no numeric or ring controls and no overlay ON/OFF control.
+   * ring are adjusted by dragging bubbles on the canvas rings; the header
+   * rotates those bubbles relative to the IC without rotating the package.
    */
+  import RotateCw from '@solar-icons/svelte/bold-duotone/rotate-clockwise';
   import {
     configuredPeripheralNames,
+    normalizeAngle,
     normalizePlacement,
   } from '../../core/placement';
   import { classifyPlacementEligibility } from '../../core/placement-eligibility';
@@ -39,6 +41,12 @@
       configuredPeripheralNames(chip, peripheralStatus, peripheralModes, assignments),
     ).filter((row) => row.status !== 'ineligible'),
   );
+  const overlayRotation = $derived(
+    normalizeAngle(workspaceStore.state.placementOverlayRotation ?? 0),
+  );
+  const rotationEnabled = $derived(
+    eligibleRows.some((row) => Boolean(preferences[row.name]?.enabled)),
+  );
 
   function toggleBubble(name: string, enabled: boolean): void {
     workspaceStore.setPlacement(
@@ -50,6 +58,22 @@
 </script>
 
 <div class="flex-1 min-h-0 overflow-y-auto p-2.5 space-y-2 text-xs">
+  <div class="flex items-center justify-between gap-2">
+    <span class="font-medium text-foreground">Placement bubbles</span>
+    <button
+      type="button"
+      onclick={() => workspaceStore.setPlacementOverlayRotation(overlayRotation + 90)}
+      disabled={!rotationEnabled}
+      title={rotationEnabled
+        ? 'Rotate placement bubbles 90 degrees relative to the IC; the package rotation is unchanged'
+        : 'Enable a placement bubble to rotate bubbles relative to the IC'}
+      aria-label="Rotate placements 90 degrees relative to the IC; the package rotation is unchanged"
+      class="btn btn-ghost btn-sm gap-1"
+    >
+      <RotateCw class="size-3.5" />
+      <span>Rotate placements</span>
+    </button>
+  </div>
   <p class="text-[11px] text-base-content/60 leading-relaxed">
     Enable a bubble to give this peripheral a preferred pin region. Drag the bubble on the canvas
     rings to change its angle and priority; locked pins keep their assignments.

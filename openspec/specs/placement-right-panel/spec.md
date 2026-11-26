@@ -31,38 +31,6 @@ column, with no Detail/Place section switcher and no Place section.
 - **WHEN** the workspace switches between landscape and portrait
 - **THEN** one placement list is mounted from the drawer or dock and the left sidebar never mounts a second placement panel
 
-### Requirement: Opening the Placement tab activates the overlay
-
-Selecting the Placement tab in either orientation SHALL set the placement
-overlay to visible without requiring the canvas toggle. The canvas top-left
-toggle SHALL remain available for quick access and SHALL continue to show and
-hide the overlay.
-
-#### Scenario: Opening the tab shows the rings
-
-- **WHEN** the user selects the Placement tab while the placement overlay is hidden
-- **THEN** the overlay becomes visible and the priority rings and enabled bubbles are drawn on the package canvas
-
-#### Scenario: Canvas toggle remains available
-
-- **WHEN** the user clicks the canvas top-left placement toggle
-- **THEN** the overlay hides or shows without changing any bubble preference, and showing the overlay also selects the Placement tab in the right drawer or portrait dock
-
-#### Scenario: Leaving the Placement tab hides the overlay
-
-- **WHEN** the user moves away from the Placement tab to another drawer or dock tab, or closes the drawer while that tab is active
-- **THEN** the overlay is hidden unless the user explicitly re-enabled it with the canvas toggle, and no bubble preference is changed
-
-#### Scenario: Overlay visibility is a local preference
-
-- **WHEN** the overlay is activated by the Placement tab and the workspace is reloaded in the same browser
-- **THEN** the overlay visibility is restored from localStorage and is absent from share URLs and project JSON
-
-#### Scenario: Canvas toggle activation is local only
-
-- **WHEN** the canvas toggle selects the Placement tab and the workspace is reloaded in the same browser
-- **THEN** the tab and overlay are restored from localStorage and no tab or overlay field appears in a share URL or project file
-
 ### Requirement: Placement tab lists configured peripherals with toggles
 
 The Placement tab SHALL show a simple list of every configured peripheral,
@@ -127,29 +95,6 @@ locked pins, and SHALL keep every previewed assignment set legal.
 
 - **WHEN** a bubble is dragged on a matrix-mux chip toward pins that cannot legally host the signal
 - **THEN** every previewed assignment set is electrically legal and no illegal plan is rendered
-
-### Requirement: Persistence split for placement controls
-
-Bubble enable/disable SHALL be stored in the shareable version-2 workspace
-placement field and round-trip through history, sessions, share URLs, and
-project JSON. The active drawer tab, active dock tab, and overlay visibility
-SHALL be stored only in browser localStorage and SHALL NOT appear in share URLs
-or project JSON.
-
-#### Scenario: Bubble state survives every persistence surface
-
-- **WHEN** a workspace with enabled and disabled bubbles is exported to a share URL, a project JSON file, and a localStorage session and then reloaded from each
-- **THEN** every stored angle, ring, and enabled flag is restored and undo and redo reproduce and revert bubble changes
-
-#### Scenario: Tab and visibility are not shared or exported
-
-- **WHEN** a workspace with the Placement tab active and the overlay visible is shared or exported to project JSON
-- **THEN** neither the share URL payload nor the project JSON contains a drawer tab, dock tab, sidebar section, or overlay visibility field
-
-#### Scenario: Local preferences survive reload
-
-- **WHEN** the same browser reloads a workspace after selecting the Placement tab and showing the overlay
-- **THEN** the Placement tab is active again and the overlay is shown again from localStorage
 
 ### Requirement: Placement relocation preserves existing behavior
 

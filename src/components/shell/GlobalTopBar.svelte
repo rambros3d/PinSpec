@@ -193,7 +193,8 @@
           type="button"
           onclick={() => (topBarUI.switcherOpen = true)}
           class="btn btn-sm btn-outline gap-2 min-w-0 whitespace-nowrap"
-          title="Switch MCU"
+          title="Switch MCU (Ctrl+K)"
+          aria-keyshortcuts="Control+K Meta+K"
         >
           <span class="font-mono font-semibold text-xs text-foreground truncate max-w-[11rem]">
             {workspaceStore.chip.id}
@@ -212,6 +213,7 @@
           disabled={!workspaceStore.canUndo}
           title="Undo (Ctrl+Z)"
           aria-label="Undo"
+          aria-keyshortcuts="Control+Z Meta+Z"
           class="btn btn-ghost btn-sm btn-square"
         >
           <Undo2 class="size-4" />
@@ -222,6 +224,7 @@
           disabled={!workspaceStore.canRedo}
           title="Redo (Ctrl+Y)"
           aria-label="Redo"
+          aria-keyshortcuts="Control+Y Meta+Y Control+Shift+Z"
           class="btn btn-ghost btn-sm btn-square"
         >
           <Redo2 class="size-4" />
@@ -240,12 +243,12 @@
         <button
           type="button"
           onclick={() => (topBarUI.finderOpen = true)}
-          title="Find pinout-compatible MCU alternatives"
-          aria-label="Find MCU alternatives"
+          title="Find pinout-compatible MCUs"
+          aria-label="Compatible MCUs"
           class="btn btn-sm btn-outline gap-1.5 text-xs font-medium whitespace-nowrap"
         >
           <SearchCheck class="size-3.5" />
-          <span class="hidden lg:inline">Alternatives</span>
+          <span class="hidden lg:inline">Compatible MCUs</span>
         </button>
         <button
           type="button"
@@ -284,8 +287,9 @@
           type="button"
           onclick={() => (topBarUI.shortcutHelpOpen = true)}
           class="btn btn-ghost btn-sm btn-square shrink-0"
-          title="Keyboard shortcuts"
+          title="Keyboard shortcuts (?)"
           aria-label="Keyboard shortcuts"
+          aria-keyshortcuts="Shift+Slash"
         >
           <Keyboard class="size-4" />
         </button>
@@ -294,10 +298,10 @@
   </div>
 
   {#if confirmClear}
-    <div class="card card-border fixed right-3 top-12 z-50 w-56 bg-base-100 shadow-xl p-3 text-xs">
-      <p class="text-foreground font-medium">Clear all pin assignments?</p>
+    <div class="card card-border fixed right-3 top-12 z-50 w-64 bg-base-100 shadow-xl p-3 text-xs">
+      <p class="text-foreground font-medium">Reset the full pin plan?</p>
       <p class="mt-1 text-[11px] text-base-content/60">
-        You can undo this action with Ctrl+Z.
+        Assignments, labels, locks, modes, remaps, and PIO bindings are cleared. You can undo with Ctrl+Z.
       </p>
       <div class="mt-2.5 flex justify-end gap-1.5">
         <button type="button" onclick={() => (confirmClear = false)} class="btn btn-sm btn-ghost">

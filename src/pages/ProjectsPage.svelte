@@ -4,11 +4,14 @@
   import FileUp from '@solar-icons/svelte/bold-duotone/import';
   import FolderOpen from '@solar-icons/svelte/bold-duotone/folder-open';
   import Pencil from '@solar-icons/svelte/bold-duotone/pen';
+  import Search from '@solar-icons/svelte/bold-duotone/magnifier';
   import Trash2 from '@solar-icons/svelte/bold-duotone/trash-bin-trash';
   import { tick } from 'svelte';
   import PackageThumbnail from '../components/catalog/PackageThumbnail.svelte';
   import { exportPinoutJson, parsePinoutJson } from '../core/exporters/json';
   import { thumbnailGeometryFromSaved } from '../core/package-thumbnail';
+  import { projectFileName, withProjectName } from '../core/project-copy';
+  import type { WorkspaceState } from '../core/types';
   import { router } from '../state/router.svelte';
   import { workspaceStore } from '../state/workspace.svelte';
 
@@ -17,8 +20,22 @@
   let editingMcuId = $state<string | null>(null);
   let nameDraft = $state('');
   let nameInputRef = $state<HTMLInputElement | null>(null);
+  let searchQuery = $state('');
+  let pendingDelete = $state<string | null>(null);
+  let saveAsMcuId = $state<string | null>(null);
+  let saveAsDraft = $state('');
+  let saveAsInputRef = $state<HTMLInputElement | null>(null);
 
   const sessions = $derived(workspaceStore.recentSessions.slice(0, 10));
+  const filteredSessions = $derived.by(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return sessions;
+    return sessions.filter((session) =>
+      [session.mcuId, session.state.projectName ?? '', session.packageName].some((value) =>
+        value.toLowerCase().includes(query),
+      ),
+    );
+  });
 
   /** Inline name editing is component-local; only the committed name is stored. */
   async function beginRename(mcuId: string, currentName?: string): Promise<void> {
@@ -50,16 +67,46 @@
     workspaceStore.deleteRecentSession(mcuId);
   }
 
-  function exportSession(mcuId: string): void {
-    const session = workspaceStore.recentSessions.find((item) => item.mcuId === mcuId);
-    if (!session) return;
-    const blob = new Blob([exportPinoutJson(session.state)], { type: 'application/json' });
+  function downloadProject(state: WorkspaceState, fileName: string): void {
+    const blob = new Blob([exportPinoutJson(state)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
     anchor.href = url;
-    anchor.download = `${mcuId}-pinout.json`;
+    anchor.download = fileName;
     anchor.click();
     URL.revokeObjectURL(url);
+  }
+
+  function exportSession(mcuId: string): void {
+    const session = workspaceStore.recentSessions.find((item) => item.mcuId === mcuId);
+    if (!session) return;
+    downloadProject(session.state, `${mcuId.toLowerCase()}-pinout.json`);
+  }
+
+  /** Save as downloads a named copy; the stored session keeps its own name. */
+  async function beginSaveAs(mcuId: string, currentName?: string): Promise<void> {
+    pendingDelete = null;
+    saveAsMcuId = mcuId;
+    saveAsDraft = currentName ?? '';
+    await tick();
+    saveAsInputRef?.focus();
+    saveAsInputRef?.select();
+  }
+
+  function cancelSaveAs(): void {
+    saveAsMcuId = null;
+    saveAsDraft = '';
+  }
+
+  function commitSaveAs(): void {
+    if (!saveAsMcuId) return;
+    const mcuId = saveAsMcuId;
+    const session = workspaceStore.recentSessions.find((item) => item.mcuId === mcuId);
+    saveAsMcuId = null;
+    if (!session) return;
+    const name = saveAsDraft.trim() || mcuId;
+    saveAsDraft = '';
+    downloadProject(withProjectName(session.state, name), projectFileName(name, mcuId));
   }
 
   async function handleImport(e: Event): Promise<void> {
@@ -117,6 +164,17 @@
       </p>
     {/if}
 
+    <div class="flex items-center gap-2.5">
+      <Search class="size-4 text-base-content/40 shrink-0" />
+      <input
+        bind:value={searchQuery}
+        type="text"
+        class="input input-sm w-full font-mono"
+        placeholder="Search recent projects by part, name, or package"
+        aria-label="Search recent projects"
+      />
+    </div>
+
     {#if sessions.length === 0}
       <section class="card card-border bg-base-100 p-10 text-center space-y-3">
         <FolderOpen class="size-6 mx-auto text-base-content/40" />
@@ -126,10 +184,16 @@
         </p>
         <a href="#/catalog" class="btn btn-sm btn-primary">Browse the catalog</a>
       </section>
+    {:else if filteredSessions.length === 0}
+      <section class="card card-border bg-base-100 p-10 text-center space-y-3">
+        <Search class="size-6 mx-auto text-base-content/40" />
+        <p class="text-sm text-foreground">No matching projects</p>
+        <p class="text-xs text-base-content/60">No recent project matches “{searchQuery}”.</p>
+      </section>
     {:else}
       <!-- Cards derive outlines from stored session fields; no shard fetch here. -->
       <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {#each sessions as session (session.mcuId)}
+        {#each filteredSessions as session (session.mcuId)}
           <article class="card card-border bg-base-100 p-4 flex flex-col gap-3">
             <div class="flex items-start gap-3">
               <PackageThumbnail
@@ -189,14 +253,73 @@
               <button type="button" onclick={() => exportSession(session.mcuId)} class="btn btn-xs btn-ghost">Export</button>
               <button
                 type="button"
-                onclick={() => deleteSession(session.mcuId)}
-                class="btn btn-xs btn-ghost btn-square text-base-content/40 hover:text-error"
-                aria-label={`Delete ${session.mcuId}`}
-                title="Delete session"
+                onclick={() => void beginSaveAs(session.mcuId, session.state.projectName)}
+                class="btn btn-xs btn-ghost"
+                aria-label={`Save ${session.mcuId} as`}
+                title="Save a renamed copy"
               >
-                <Trash2 class="size-3.5" />
+                Save as
               </button>
+              {#if pendingDelete === session.mcuId}
+                <button
+                  type="button"
+                  onclick={() => {
+                    deleteSession(session.mcuId);
+                    pendingDelete = null;
+                  }}
+                  class="btn btn-xs btn-error"
+                  aria-label={`Confirm delete ${session.mcuId}`}
+                >
+                  Delete
+                </button>
+                <button
+                  type="button"
+                  onclick={() => (pendingDelete = null)}
+                  class="btn btn-xs btn-ghost"
+                  aria-label={`Cancel delete ${session.mcuId}`}
+                >
+                  Cancel
+                </button>
+              {:else}
+                <button
+                  type="button"
+                  onclick={() => {
+                    pendingDelete = session.mcuId;
+                    saveAsMcuId = null;
+                  }}
+                  class="btn btn-xs btn-ghost btn-square text-base-content/40 hover:text-error"
+                  aria-label={`Delete ${session.mcuId}`}
+                  title="Delete session"
+                >
+                  <Trash2 class="size-3.5" />
+                </button>
+              {/if}
             </div>
+            {#if saveAsMcuId === session.mcuId}
+              <div class="flex items-center gap-1.5">
+                <input
+                  bind:this={saveAsInputRef}
+                  bind:value={saveAsDraft}
+                  onkeydown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      commitSaveAs();
+                    } else if (e.key === 'Escape') {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      cancelSaveAs();
+                    }
+                  }}
+                  type="text"
+                  maxlength="48"
+                  placeholder="Name for the copy"
+                  aria-label={`Name for the ${session.mcuId} copy`}
+                  class="input input-xs w-full font-mono"
+                />
+                <button type="button" onclick={commitSaveAs} class="btn btn-xs btn-primary">Save</button>
+                <button type="button" onclick={cancelSaveAs} class="btn btn-xs btn-ghost">Cancel</button>
+              </div>
+            {/if}
           </article>
         {/each}
       </section>

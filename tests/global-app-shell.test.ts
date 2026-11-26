@@ -117,7 +117,7 @@ describe('global top bar', () => {
     const routeTitle = bar.match(/const routeTitle = \$derived\([\s\S]*?\n  \);/)?.[0] ?? '';
     expect(routeTitle).not.toContain('workspaceStore.chip?.id');
     const title = bar.indexOf('workspaceStore.state.projectName ?? \'Unnamed project\'');
-    const mcu = bar.indexOf('title="Switch MCU"');
+    const mcu = bar.indexOf('title="Switch MCU (Ctrl+K)"');
     const undo = bar.indexOf('aria-label="Undo"');
     expect(title).toBeGreaterThan(-1);
     expect(title).toBeLessThan(mcu);

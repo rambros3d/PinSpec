@@ -727,6 +727,7 @@
         type="text"
         placeholder="Find pin or signal..."
         aria-label="Find pin or signal"
+        aria-keyshortcuts="Control+F Meta+F"
         class="input input-xs w-full pl-8 pr-14 font-mono"
       />
       {#if workspaceStore.globalSearch}

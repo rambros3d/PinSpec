@@ -10,6 +10,7 @@
 </script>
 
 <script lang="ts">
+  import { pinKeyboardClick } from '../../state/pin-keyboard';
   import { isQuarterTurn, localLabelAngle } from '../../core/package-rotation';
   import { pinStatusTokens } from '../../core/pin-view';
   import {
@@ -234,6 +235,14 @@
   }
 
   /** Full SVG tooltip text: bonded pads, tags and the vendor-correct mux. */
+  /** Keyboard activation follows the same pin-click path as pointer input. */
+  function activatePinWithKeyboard(pin: PinInfo, e: KeyboardEvent): void {
+    if (pin.type !== 'io') return;
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    e.preventDefault();
+    onPinClick?.(pin, pinKeyboardClick(e.currentTarget as Element | null));
+  }
+
   function pinTitle(pin: PinInfo): string {
     const parts = [`${pin.name} (pos ${pin.pos})`];
     if (pin.bondedNames?.length) parts.push(`Bonded pads: ${pin.bondedNames.join(' / ')}`);
@@ -462,15 +471,18 @@
     {@const cy = item.y + item.height / 2}
     {@const labelAngle = localLabelAngle(item.side, rotation)}
 
-    <!-- svelte-ignore a11y_click_events_have_key_events -->
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
     <g
       data-pin-pos={item.pin.pos}
+      role="button"
+      tabindex={isInteractive ? 0 : -1}
+      aria-label={pinTitle(item.pin)}
+      aria-disabled={!isInteractive}
       class={isInteractive ? 'cursor-pointer' : 'cursor-default'}
       onclick={(e) => {
         e.stopPropagation();
         onPinClick?.(item.pin, e);
       }}
+      onkeydown={(e) => activatePinWithKeyboard(item.pin, e)}
       oncontextmenu={(e) => {
         e.preventDefault();
         e.stopPropagation();

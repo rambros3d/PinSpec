@@ -148,8 +148,9 @@
 
 <Dialog
   bind:this={dialogRef}
-  ariaLabel="Find compatible MCUs"
+  ariaLabel="Compatible MCUs"
   boxClass="w-full max-w-3xl max-h-[92dvh] min-h-0 flex flex-col p-0 shadow-2xl overflow-hidden"
+  backdropLabel="Close compatible MCUs"
   onClose={handleClose}
 >
   <div class="contents">
@@ -164,7 +165,7 @@
         type="button"
         onclick={close}
         class="btn btn-ghost btn-sm btn-square shrink-0"
-        aria-label="Close compatible MCU finder"
+        aria-label="Close compatible MCUs"
         title="Close finder"
       >
         <X class="size-4" />

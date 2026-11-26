@@ -228,7 +228,8 @@ describe('finder wiring', () => {
   it('opens from the global bar and caps its dialog to the viewport', () => {
     const bar = readSource('src/components/shell/GlobalTopBar.svelte');
     expect(bar).toContain('topBarUI.finderOpen = true');
-    expect(bar).toContain('Find MCU alternatives');
+    expect(bar).toContain('aria-label="Compatible MCUs"');
+    expect(bar).toContain('>Compatible MCUs<');
     const page = readSource('src/pages/WorkspacePage.svelte');
     expect(page).toContain('CompatibleMcuFinder');
     expect(page).toContain('topBarUI.finderOpen');

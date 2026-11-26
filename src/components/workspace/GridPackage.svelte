@@ -10,6 +10,7 @@
 </script>
 
 <script lang="ts">
+  import { pinKeyboardClick } from '../../state/pin-keyboard';
   import { isQuarterTurn, localLabelAngle } from '../../core/package-rotation';
   import { pinStatusTokens } from '../../core/pin-view';
   import {
@@ -132,6 +133,14 @@
   function compactLabel(text: string, maxLen: number): string {
     return text.length > maxLen ? text.slice(0, maxLen) : text;
   }
+
+  /** Keyboard activation follows the same ball-click path as pointer input. */
+  function activateBallWithKeyboard(pin: PinInfo, e: KeyboardEvent): void {
+    if (pin.type !== 'io') return;
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    e.preventDefault();
+    onPinClick?.(pin, pinKeyboardClick(e.currentTarget as Element | null));
+  }
 </script>
 
 <svg
@@ -253,15 +262,19 @@
     {@const isLocked = Boolean(locked[ball.pin.pos])}
     {@const r = layout.cellSize * 0.43}
 
-    <!-- svelte-ignore a11y_click_events_have_key_events -->
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    {@const isInteractive = ball.pin.type === 'io'}
     <g
       data-pin-pos={ball.pin.pos}
-      class={ball.pin.type === 'io' ? 'cursor-pointer' : 'cursor-default'}
+      role="button"
+      tabindex={isInteractive ? 0 : -1}
+      aria-label={`${ball.pin.name} (pos ${ball.pin.pos})`}
+      aria-disabled={!isInteractive}
+      class={isInteractive ? 'cursor-pointer' : 'cursor-default'}
       onclick={(e) => {
         e.stopPropagation();
         onPinClick?.(ball.pin, e);
       }}
+      onkeydown={(e) => activateBallWithKeyboard(ball.pin, e)}
       oncontextmenu={(e) => {
         e.preventDefault();
         e.stopPropagation();

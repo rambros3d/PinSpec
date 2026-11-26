@@ -351,7 +351,7 @@ describe('generated module identity and discovery tags', () => {
     const routeTitle = bar.match(/const routeTitle = \$derived\([\s\S]*?\n  \);/)?.[0] ?? '';
     expect(routeTitle).not.toContain('workspaceStore.chip?.id');
     const title = bar.indexOf("workspaceStore.state.projectName ?? 'Unnamed project'");
-    const switcher = bar.indexOf('title="Switch MCU"');
+    const switcher = bar.indexOf('title="Switch MCU (Ctrl+K)"');
     const undo = bar.indexOf('aria-label="Undo"');
     expect(title).toBeGreaterThan(-1);
     expect(title).toBeLessThan(switcher);

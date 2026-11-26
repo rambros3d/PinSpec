@@ -309,6 +309,13 @@ body {
     display: none;
   }
 
+  /* Narrow portrait screens keep more width for tables and the pin canvas. */
+  .landing-shell > main,
+  .shell-route > main {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
   .workspace-toast {
     bottom: calc(43dvh + 0.75rem);
   }

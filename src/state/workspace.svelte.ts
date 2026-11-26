@@ -562,14 +562,14 @@ class WorkspaceStore {
     this.focusPinRequest = { pos, nonce: Date.now() };
   }
 
+  /** Explicit reset of the entire pin plan; undo still restores the previous state. */
   clearAll(): void {
     if (!this.chip) return;
     const next = createEmptyWorkspace(this.chip.id);
-    // Preserve locked pins if any exist? Clear All resets full board cleanly
     this.remapSourcePos = null;
     this.highlightedPins = [];
     this.commit(next);
-    this.showToast('Cleared all pin assignments.', 'info');
+    this.showToast('Cleared assignments, labels, locks, modes, remaps, and PIO bindings.', 'info');
   }
 
   undo(): void {

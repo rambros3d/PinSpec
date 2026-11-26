@@ -4,6 +4,7 @@
   import X from '@solar-icons/svelte/bold-duotone/close';
   import { onMount } from 'svelte';
   import PackageThumbnail from '../components/catalog/PackageThumbnail.svelte';
+  import { sortCatalogEntries, type CatalogSortField } from '../core/catalog-sort';
   import { thumbnailGeometryFromIndex } from '../core/package-thumbnail';
   import {
     buildVendorTabs,
@@ -16,6 +17,8 @@
 
   /* Discovery filters are localStorage-only preferences, never shareable. */
   const filters = discoveryPreferences.catalog;
+  /* Sort order is transient view state; it never enters any persisted schema. */
+  let sortBy = $state<CatalogSortField>('part');
 
   const vendorTabs = $derived(buildVendorTabs(catalogStore.meta, catalogStore.index));
   const familyOptions = $derived(catalogFamilies(catalogStore.index));
@@ -28,6 +31,7 @@
       500,
     ),
   );
+  const sortedResults = $derived(sortCatalogEntries(results, sortBy));
   const hasFilters = $derived(
     filters.query.trim().length > 0 ||
       filters.vendor !== 'all' ||
@@ -98,6 +102,15 @@
             {/each}
           </select>
         </label>
+        <label class="inline-flex items-center gap-1 text-base-content/60">
+          Sort
+          <select bind:value={sortBy} class="select select-sm" aria-label="Sort catalog results">
+            <option value="part">Part</option>
+            <option value="pins">Pins</option>
+            <option value="flash">Flash</option>
+            <option value="ram">RAM</option>
+          </select>
+        </label>
       </div>
     </section>
 
@@ -127,31 +140,35 @@
                 <th class="px-2 py-2 font-medium">Family</th>
                 <th class="px-2 py-2 font-medium">Package</th>
                 <th class="px-2 py-2 font-medium">Pins</th>
-                <th class="px-2 py-2 font-medium">Flash / RAM</th>
+                <th class="px-2 py-2 font-medium">Flash / RAM (KB)</th>
                 <th class="px-2 py-2"></th>
               </tr>
             </thead>
             <tbody>
-              {#each results as entry (entry.id)}
+              {#each sortedResults as entry (entry.id)}
                 <tr class="border-t border-base-300">
                   <td class="w-12 px-2 py-2">
                     <PackageThumbnail geometry={thumbnailGeometryFromIndex(entry)} size={44} />
                   </td>
                   <td class="px-4 py-2">
-                    <span class="flex items-center gap-2 font-mono font-semibold text-foreground">
+                    <a
+                      href={`#/mcu/${encodeURIComponent(entry.id)}`}
+                      class="flex items-center gap-2 font-mono font-semibold text-foreground hover:text-info"
+                      aria-label={`Open ${entry.id}`}
+                    >
                       <Cpu class="size-3.5 text-base-content/40 shrink-0" />
                       {entry.id}
                       {#if entry.module}
                         <span class="badge badge-xs badge-outline font-mono text-[9px] uppercase">MODULE</span>
                       {/if}
-                    </span>
+                    </a>
                   </td>
                   <td class="px-2 py-2 font-mono text-base-content/60">{entry.vendor}</td>
                   <td class="px-2 py-2 font-mono text-base-content/60">{entry.family}</td>
                   <td class="px-2 py-2 font-mono text-foreground">{entry.package}</td>
                   <td class="px-2 py-2 font-mono-tabular text-base-content/60">{entry.pinCount}</td>
                   <td class="px-2 py-2 font-mono-tabular text-base-content/60">
-                    {entry.flashKb ?? '—'} KB / {entry.ramKb} KB
+                    {entry.flashKb ?? '—'} / {entry.ramKb ?? '—'}
                   </td>
                   <td class="px-2 py-2 text-right">
                     <button

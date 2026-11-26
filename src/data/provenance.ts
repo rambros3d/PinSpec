@@ -116,11 +116,12 @@ export const PROVENANCE_VENDORS: readonly ProvenanceVendor[] = [
 
 /** Text-only keyboard reference, shared by the start screen and About. */
 export const SHORTCUTS: readonly ShortcutReference[] = [
-  { keys: 'Ctrl+K', action: 'Search parts' },
-  { keys: 'Ctrl+F', action: 'Search pins in a workspace' },
+  { keys: 'Ctrl+K', action: 'Open the MCU switcher' },
+  { keys: 'Ctrl+F', action: 'Find a pin or signal in the workspace' },
   { keys: 'Ctrl+Click', action: 'Open pin remap mode' },
   { keys: 'Ctrl+Z', action: 'Undo' },
   { keys: 'Ctrl+Y', action: 'Redo' },
   { keys: '0', action: 'Fit package in view' },
+  { keys: '?', action: 'Show keyboard shortcuts' },
   { keys: 'Escape', action: 'Cancel the current action' },
 ];

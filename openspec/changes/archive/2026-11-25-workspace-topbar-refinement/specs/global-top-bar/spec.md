@@ -97,7 +97,7 @@ mode remains transient view state.
 
 #### Scenario: Routes and subpaths are unchanged
 
-- **WHEN** a route or version-2 shared link is opened under `/pincraft/`
+- **WHEN** a route or version-2 shared link is opened under `/pinspec/`
 - **THEN** it resolves from the hash and data requests use `import.meta.env.BASE_URL`
 
 #### Scenario: Preferences stay local

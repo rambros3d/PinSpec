@@ -293,7 +293,7 @@ describe('theme control and persistence boundaries', () => {
       if (entry.endsWith('.ts')) ioFiles.push(`src/core/exporters/${entry}`);
     }
     for (const file of ioFiles) {
-      expect(file, source(file)).not.toMatch(/pincraft:theme|THEME_STORAGE_KEY|themeMode|themeId/);
+      expect(file, source(file)).not.toMatch(/pinspec:theme|THEME_STORAGE_KEY|themeMode|themeId/);
     }
   });
 

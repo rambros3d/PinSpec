@@ -32,5 +32,5 @@
 
 ## 6. Integration verification
 
-- [x] 6.1 Run `npm test`, `npm run check`, and `BASE_PATH="/pincraft/" npm run build` from a clean generated catalog; verify all three succeed with zero TypeScript or build warnings.
-- [x] 6.2 Confirm the production build fetches hero and catalog data through `import.meta.env.BASE_URL` with no absolute `/data` requests; verify by inspecting the built `dist` output and previewing under the `/pincraft/` subpath.
+- [x] 6.1 Run `npm test`, `npm run check`, and `BASE_PATH="/pinspec/" npm run build` from a clean generated catalog; verify all three succeed with zero TypeScript or build warnings.
+- [x] 6.2 Confirm the production build fetches hero and catalog data through `import.meta.env.BASE_URL` with no absolute `/data` requests; verify by inspecting the built `dist` output and previewing under the `/pinspec/` subpath.

@@ -58,7 +58,7 @@ See `proposal.md` for motivation. The current stylesheet imports Tailwind CSS v4
 4. Adopt daisyUI component classes across landing and workspace markup, including the toolbar, peripheral tree, summary drawer, and dock tabs; leave the two package renderers and overlay mechanics unchanged.
 5. Convert the six dialog surfaces to native modal dialogs and remove their duplicate Escape listeners.
 6. Update the token audit, token tests, static-string tests, and the README credit line.
-7. Run `npm test`, `npm run check`, and `BASE_PATH="/pincraft/" npm run build`; fix warnings before proceeding.
-8. Inspect the built CSS asset under `/pincraft/` for daisyUI component rules and the absence of retired utility definitions, then verify the GitHub Pages bundle path.
+7. Run `npm test`, `npm run check`, and `BASE_PATH="/pinspec/" npm run build`; fix warnings before proceeding.
+8. Inspect the built CSS asset under `/pinspec/` for daisyUI component rules and the absence of retired utility definitions, then verify the GitHub Pages bundle path.
 
 Rollback is a single change revert: no generated data, state schema, or upstream reference data is modified, so reverting the change restores the prior stylesheet and markup.

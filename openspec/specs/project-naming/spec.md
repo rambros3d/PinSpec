@@ -202,7 +202,7 @@ commands SHALL pass with zero warnings.
 
 #### Scenario: Verification sequence passes
 
-- **WHEN** `npm test`, `npm run check`, and `BASE_PATH="/pincraft/" npm run build` are run after implementation
+- **WHEN** `npm test`, `npm run check`, and `BASE_PATH="/pinspec/" npm run build` are run after implementation
 - **THEN** all three exit zero with no build warnings and STM32 share links and project files remain readable
 
 ### Requirement: Recent projects can be searched

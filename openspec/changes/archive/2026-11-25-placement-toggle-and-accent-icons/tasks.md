@@ -18,7 +18,7 @@
 
 - [x] 3.1 Run `npm test` and verify the full Vitest suite passes with no failures.
 - [x] 3.2 Run `npm run check` and verify strict TypeScript reports no errors.
-- [x] 3.3 Run `BASE_PATH="/pincraft/" npm run build` and verify a clean production build with zero Svelte warnings and subpath-relative asset resolution.
+- [x] 3.3 Run `BASE_PATH="/pinspec/" npm run build` and verify a clean production build with zero Svelte warnings and subpath-relative asset resolution.
 - [x] 3.4 Confirm the change scope introduces no `src/core/` edits, no share URL or project JSON schema change, and no new dependency; verify the diff contains only the workspace components, the sidebar component, and the named test files.
 
 ## Workflow follow-up

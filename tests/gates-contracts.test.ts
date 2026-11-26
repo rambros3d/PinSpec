@@ -559,8 +559,8 @@ describe('global gate suite and no partial catalog', () => {
   });
 
   it('throws before writing shards when an injected assertion fails', () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pincraft-gate-write-'));
-    const tmpSource = fs.mkdtempSync(path.join(os.tmpdir(), 'pincraft-gate-source-'));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pinspec-gate-write-'));
+    const tmpSource = fs.mkdtempSync(path.join(os.tmpdir(), 'pinspec-gate-source-'));
     const c = chip('TESTCHIP');
     const adapter: VendorAdapter = {
       vendor: 'ch32',

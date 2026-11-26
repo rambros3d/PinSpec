@@ -21,7 +21,7 @@ required for the split.
 
 #### Scenario: Production build has no warnings
 
-- **WHEN** `BASE_PATH="/pincraft/" npm run build` runs
+- **WHEN** `BASE_PATH="/pinspec/" npm run build` runs
 - **THEN** the build completes without chunk or dependency warnings and emits the declared vendor chunks alongside the application chunk
 
 ### Requirement: daisyUI generates only used component families

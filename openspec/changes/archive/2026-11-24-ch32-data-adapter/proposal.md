@@ -2,7 +2,7 @@
 
 ## Why
 
-PinCraft currently serves only STM32 parts, but the project roadmap adds WCH CH32 support and a machine-readable, daily-regenerated source now exists at `ch32-riscv-ug/ch32-device-data`. Adding a CH32 adapter turns its CSV parts, pins, and remap evidence into `ChipData` catalog entries without hand-maintained JSON.
+PinSpec currently serves only STM32 parts, but the project roadmap adds WCH CH32 support and a machine-readable, daily-regenerated source now exists at `ch32-riscv-ug/ch32-device-data`. Adding a CH32 adapter turns its CSV parts, pins, and remap evidence into `ChipData` catalog entries without hand-maintained JSON.
 
 ## What Changes
 

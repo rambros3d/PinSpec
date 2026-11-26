@@ -2,7 +2,7 @@
 
 ## Why
 
-PinCraft has no Nordic catalog data. nRF parts are described by machine-readable SVD, Zephyr device-tree/pinctrl, and KiCad symbol sources, but no generated JSON exists today. Without a build-time adapter and strict gates, Nordic parts cannot be planned in the workspace and no provenance-backed facts can be trusted.
+PinSpec has no Nordic catalog data. nRF parts are described by machine-readable SVD, Zephyr device-tree/pinctrl, and KiCad symbol sources, but no generated JSON exists today. Without a build-time adapter and strict gates, Nordic parts cannot be planned in the workspace and no provenance-backed facts can be trusted.
 
 ## What Changes
 

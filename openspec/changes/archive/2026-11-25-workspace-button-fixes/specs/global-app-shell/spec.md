@@ -11,7 +11,7 @@ Removes the duplicate brand header from the application sidebar.
 The shell SHALL render a left sidebar on all six routes with a collapsed 3rem
 rail in reserved space and a top-bar expand/collapse control. Expansion SHALL
 overlay content without reflow. The sidebar SHALL NOT render a separate brand
-header with an app logo or PinCraft label; section navigation SHALL be its
+header with an app logo or PinSpec label; section navigation SHALL be its
 first visible content.
 
 #### Scenario: Collapsed rail stays visible on every route
@@ -47,4 +47,4 @@ first visible content.
 #### Scenario: Navigation starts at the top
 
 - **WHEN** the sidebar is opened on any supported route
-- **THEN** the first visible block inside the panel is the section navigation and no separate logo or PinCraft label appears above it
+- **THEN** the first visible block inside the panel is the section navigation and no separate logo or PinSpec label appears above it

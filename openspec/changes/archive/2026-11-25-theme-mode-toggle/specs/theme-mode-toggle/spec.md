@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Defines the two-theme appearance modes of the PinCraft interface and the single control that cycles the system, light, and dark preferences, including load-time resolution, persistence, bootstrapping, and control labeling.
+Defines the two-theme appearance modes of the PinSpec interface and the single control that cycles the system, light, and dark preferences, including load-time resolution, persistence, bootstrapping, and control labeling.
 
 ## ADDED Requirements
 
@@ -89,7 +89,7 @@ Saved values from the previous four-theme picker SHALL NOT be honored or transla
 
 ### Requirement: Mode persists in localStorage only
 
-The selected mode SHALL be written under the existing `pincraft:theme` localStorage key as one of `system`, `light`, or `dark`. The mode and the resolved theme id SHALL NOT appear in share URLs, version-2 project JSON, or any exported artifact. No other storage key SHALL be used for this preference.
+The selected mode SHALL be written under the existing `pinspec:theme` localStorage key as one of `system`, `light`, or `dark`. The mode and the resolved theme id SHALL NOT appear in share URLs, version-2 project JSON, or any exported artifact. No other storage key SHALL be used for this preference.
 
 #### Scenario: Persist across reload
 
@@ -156,7 +156,7 @@ The theme control SHALL be a single button, not a dropdown, menu, or modal. The 
 
 ### Requirement: Theme change keeps source hygiene and verification green
 
-The change SHALL add no dependency, keep raw color literals confined to `src/themes/daisyui.css`, keep zero emoji characters, and keep strict TypeScript clean. The token audit SHALL still report 28 declared tokens with depth and noise inert. `npm test`, `npm run check`, and `BASE_PATH="/pincraft/" npm run build` SHALL exit zero with no build warnings.
+The change SHALL add no dependency, keep raw color literals confined to `src/themes/daisyui.css`, keep zero emoji characters, and keep strict TypeScript clean. The token audit SHALL still report 28 declared tokens with depth and noise inert. `npm test`, `npm run check`, and `BASE_PATH="/pinspec/" npm run build` SHALL exit zero with no build warnings.
 
 #### Scenario: Source hygiene scan
 

@@ -1,5 +1,5 @@
 import {
-  PINCRAFT_STATE_VERSION,
+  PINSPEC_STATE_VERSION,
   normalizePackageRotation,
   parseGpioConfig,
   type GpioConfig,
@@ -17,9 +17,9 @@ import {
 } from '../placement';
 import { normalizeProjectName } from '../project-name';
 
-/** The single PinCraft project-file schema (no legacy version shim). */
-export interface PinCraftProjectFile {
-  format: 'pincraft-pinout';
+/** The single PinSpec project-file schema (no legacy version shim). */
+export interface PinSpecProjectFile {
+  format: 'pinspec-pinout';
   version: 2;
   mcuId: string;
   vendor?: VendorId;
@@ -114,9 +114,9 @@ export function exportPinoutJson(state: WorkspaceState, vendor?: VendorId): stri
     .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 
   const projectName = normalizeProjectName(state.projectName);
-  const doc: PinCraftProjectFile = {
-    format: 'pincraft-pinout',
-    version: PINCRAFT_STATE_VERSION,
+  const doc: PinSpecProjectFile = {
+    format: 'pinspec-pinout',
+    version: PINSPEC_STATE_VERSION,
     mcuId: state.mcuId,
     ...(vendor ? { vendor } : {}),
     ...(projectName ? { projectName } : {}),
@@ -172,7 +172,7 @@ export function parsePinoutJson(raw: string): JsonImportResult {
     if (typeof obj.mcuId !== 'string' || obj.mcuId.trim().length === 0) {
       return { ok: false, error: 'Missing required "mcuId" string field in JSON project file.' };
     }
-    if (obj.version !== PINCRAFT_STATE_VERSION) {
+    if (obj.version !== PINSPEC_STATE_VERSION) {
       return {
         ok: false,
         error: `Unsupported project file version: ${String(obj.version)}.`,

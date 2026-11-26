@@ -36,7 +36,7 @@ See `proposal.md` - Why. `src/core/solver.ts` already implements `analyzeResourc
 1. Add the pure derivation helper and unit tests for same-index, distinct-index, and non-GPIO pins.
 2. Integrate derivation into `evaluateWorkspace()` before shared-resource conflict analysis.
 3. Add the `EXTI_LINE_CONFLICT` code and the UI display in the popover, context menu, and tooltip.
-4. Verify with `npm test`, `npm run check`, and `BASE_PATH="/pincraft/" npm run build`; confirm existing STM32 diagnostics are unchanged.
+4. Verify with `npm test`, `npm run check`, and `BASE_PATH="/pinspec/" npm run build`; confirm existing STM32 diagnostics are unchanged.
 
 ## Open Questions
 

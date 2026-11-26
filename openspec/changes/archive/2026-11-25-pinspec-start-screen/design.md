@@ -117,7 +117,7 @@ dependency, generated artifact, backend, raw color literal, or emoji is added.
 
 7. **Presentation state boundary is explicit.** Quick-search filters, action
    focus, and any rail expansion stay as component-local state. The theme mode
-   stays under the existing `pincraft:theme` localStorage key. No field is added
+   stays under the existing `pinspec:theme` localStorage key. No field is added
    to `WorkspaceState`, the compact share payload, or version-2 project JSON.
    The state handed to `setPendingHandoff()` remains pin configuration only.
 
@@ -152,10 +152,10 @@ dependency, generated artifact, backend, raw color literal, or emoji is added.
 4. Add the right rail and the start-screen contract test; review theme,
    attribution, and subpath tests.
 5. Run `npm test`, `npm run check`, and
-   `BASE_PATH="/pincraft/" npm run build`; fix warnings before closeout.
+   `BASE_PATH="/pinspec/" npm run build`; fix warnings before closeout.
 
 After implementation the owning agent runs
-`openspec archive pincraft-start-screen -y` and includes the synced delta specs
+`openspec archive pinspec-start-screen -y` and includes the synced delta specs
 and archived change files in the implementation commit. This planning task set
 stops before archive and makes no commit.
 

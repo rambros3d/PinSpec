@@ -27,7 +27,7 @@
 ## 5. Integration verification
 
 - [x] 5.1 Extend the static source-contract tests in `tests/viewport-layout.test.ts`, `tests/pin-placement-affinity.test.ts`, `tests/theme-tokens.test.ts`, and `tests/ui-multi-vendor.test.ts` with the new gesture, rotation, and counter-rotation assertions without deleting existing overflow, height, highlight-set, token, or mux-label strings; verify `npm test` passes with no failures.
-- [x] 5.2 Run `npm test`, `npm run check`, and `BASE_PATH="/pincraft/" npm run build`; verify zero warnings, no Svelte or DOM imports added under `src/core/`, no raw color literals or emojis in touched files, no new npm dependency, and no STM32 rendering or diagnostic regression.
+- [x] 5.2 Run `npm test`, `npm run check`, and `BASE_PATH="/pinspec/" npm run build`; verify zero warnings, no Svelte or DOM imports added under `src/core/`, no raw color literals or emojis in touched files, no new npm dependency, and no STM32 rendering or diagnostic regression.
 
 ## Workflow follow-up
 

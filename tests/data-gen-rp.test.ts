@@ -225,7 +225,7 @@ describe('RP source and variant normalization', () => {
     ])).toEqual({ ramKb: 520, gpioCount: 30 });
     expect(parseZephyrFacts(['DT_SIZE_K(264);\nngpios = <32>;\nngpios = <16>;']).gpioCount).toBe(48);
 
-    const root = tempRoot('pincraft-rp-variants-');
+    const root = tempRoot('pinspec-rp-variants-');
     writeVariantSources(root);
     const rp2040 = fs.readFileSync(path.join(root, '.cache', 'raspberrypi-documentation', DOC_DIR, 'rp2040.adoc'), 'utf8');
     const rp2350 = fs.readFileSync(path.join(root, '.cache', 'raspberrypi-documentation', DOC_DIR, 'rp2350.adoc'), 'utf8');
@@ -241,7 +241,7 @@ describe('RP source and variant normalization', () => {
 
 describe('RP generation from synthetic upstream fixtures', () => {
   it('emits five vendor-tagged chips with correct package, memory and PIO facts', () => {
-    const root = tempRoot('pincraft-rp-generate-');
+    const root = tempRoot('pinspec-rp-generate-');
     writeFixture(root);
     const result = generateRp({ paths: pathsFor(root), sources: sourceFor(root), warnings: createWarningCollector() });
     expect(Array.from(result.chips.keys())).toEqual(RP_PART_SPECS.map((s) => s.id));
@@ -280,7 +280,7 @@ describe('RP generation from synthetic upstream fixtures', () => {
   });
 
   it('joins FUNCSEL by GPIO number and derives PWM resource IDs from table cells', () => {
-    const root = tempRoot('pincraft-rp-funcsel-');
+    const root = tempRoot('pinspec-rp-funcsel-');
     writeFixture(root);
     const result = generateRp({ paths: pathsFor(root), sources: sourceFor(root), warnings: createWarningCollector() });
     const rp2040 = result.chips.get('RP2040')!;
@@ -326,7 +326,7 @@ describe('RP generation from synthetic upstream fixtures', () => {
   });
 
   it('falls back to pico-sdk tables when picotool is unavailable', () => {
-    const root = tempRoot('pincraft-rp-sdk-fallback-');
+    const root = tempRoot('pinspec-rp-sdk-fallback-');
     writeFixture(root);
     const mainCpp = path.join(root, '.cache', 'picotool', 'main.cpp');
     fs.writeFileSync(mainCpp, '// no FUNCSEL arrays here\n');
@@ -341,7 +341,7 @@ describe('RP generation from synthetic upstream fixtures', () => {
 
 describe('RP tags, defers, gates, provenance and registration', () => {
   it('warns and continues when a symbol file cannot be parsed', () => {
-    const root = tempRoot('pincraft-rp-defer-');
+    const root = tempRoot('pinspec-rp-defer-');
     writeFixture(root);
     fs.writeFileSync(
       path.join(root, '.cache', 'kicad-symbols', SYMBOL_DIR, 'RP2350B.kicad_sym'),
@@ -363,7 +363,7 @@ describe('RP tags, defers, gates, provenance and registration', () => {
   });
 
   it('passes all five reference assertions and names corrupted chips', () => {
-    const root = tempRoot('pincraft-rp-gates-');
+    const root = tempRoot('pinspec-rp-gates-');
     writeFixture(root);
     const result = generateRp({ paths: pathsFor(root), sources: sourceFor(root), warnings: createWarningCollector() });
     expect(rpReferenceGate.evaluate(gateCtx(result.chips)).errors).toEqual([]);
@@ -385,7 +385,7 @@ describe('RP tags, defers, gates, provenance and registration', () => {
   });
 
   it('writes RP shards, vendor-tagged index entries and provenance via the orchestrator', () => {
-    const root = tempRoot('pincraft-rp-pipeline-');
+    const root = tempRoot('pinspec-rp-pipeline-');
     writeFixture(root);
     const adapter: VendorAdapter = {
       ...rpAdapter,

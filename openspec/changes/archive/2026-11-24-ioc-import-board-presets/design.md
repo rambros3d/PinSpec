@@ -40,7 +40,7 @@ See `proposal.md` - Why. The repository already ships STM32, CH32, and RP catalo
 2. Implement part-ID expansion, canonicalization, and pin-name normalization with resolution tests.
 3. Add the checked-in board preset catalog keyed by MCU ID.
 4. Wire the drop zone, board selector modal, and ambiguous-part confirmation through the workspace store.
-5. Verify with `npm test`, `npm run check`, and `BASE_PATH="/pincraft/" npm run build`; confirm no STM32 regressions.
+5. Verify with `npm test`, `npm run check`, and `BASE_PATH="/pinspec/" npm run build`; confirm no STM32 regressions.
 
 ## Open Questions
 

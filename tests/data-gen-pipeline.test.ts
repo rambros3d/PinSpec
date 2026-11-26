@@ -330,7 +330,7 @@ describe('metadata and warnings', () => {
 
 describe('orchestrator with injected adapters', () => {
   function fakeAdapter(vendor: 'ch32' | 'stm32', strict: boolean): VendorAdapter {
-    const tmpSource = fs.mkdtempSync(path.join(os.tmpdir(), 'pincraft-adapter-'));
+    const tmpSource = fs.mkdtempSync(path.join(os.tmpdir(), 'pinspec-adapter-'));
     const chip = fakeChip(vendor === 'ch32' ? 'TESTCHIP' : 'TESTSTM', { vendor });
     return {
       vendor,
@@ -379,7 +379,7 @@ describe('orchestrator with injected adapters', () => {
   }
 
   it('warns and continues for non-STM32 shortfalls, with consistent logs', () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pincraft-gen-'));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pinspec-gen-'));
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     try {
       const summary = generateCatalog(root, [fakeAdapter('ch32', false)]);
@@ -402,7 +402,7 @@ describe('orchestrator with injected adapters', () => {
   });
 
   it('fails a strict vendor whose gate returns an error', () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pincraft-gen-strict-'));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pinspec-gen-strict-'));
     const adapter = fakeAdapter('stm32', true);
     adapter.gates = [
       {

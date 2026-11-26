@@ -8,7 +8,7 @@
 
 ## 2. Sidebar and local preferences
 
-- [x] 2.1 Create `src/state/shell-preferences.svelte.ts` with key `pincraft:shell_preferences_v1`, `sidebarExpanded`, `aboutTab`, defaults collapsed and first tab, unknown-value normalization, and guarded writes. Verify with a new dedicated test covering defaults, reload, unknown values, and missing localStorage without throwing.
+- [x] 2.1 Create `src/state/shell-preferences.svelte.ts` with key `pinspec:shell_preferences_v1`, `sidebarExpanded`, `aboutTab`, defaults collapsed and first tab, unknown-value normalization, and guarded writes. Verify with a new dedicated test covering defaults, reload, unknown values, and missing localStorage without throwing.
 - [x] 2.2 Build the global sidebar component with an always-visible collapsed icon rail, expand and collapse controls, a backdrop, the four section entries, active-route indication, and a fixed overlay that does not resize page content. Verify with a new shell test that the overlay is fixed-position, that the workspace root receives no width or padding rule from the shell, and that every route includes the component.
 - [x] 2.3 Wire the sidebar recent-projects area to `workspaceStore.recentSessions` with at most 10 entries, quick open, delete, and an empty state. Verify with a new shell test that open reuses `openMcu()` and delete reuses `deleteRecentSession()` and that no session payload gains a shell field.
 
@@ -44,7 +44,7 @@
 
 - [x] 8.1 Run `npm test` and resolve every failure or warning. Verify the command exits zero with the full suite green.
 - [x] 8.2 Run `npm run check` and resolve every type or Svelte diagnostic. Verify the command exits zero with no output warnings.
-- [x] 8.3 Run `BASE_PATH="/pincraft/" npm run build` and the subpath smoke checks. Verify the command exits zero, the built app loads under `/pincraft/`, and no built asset requests `/data/` or `/assets/` from the root.
+- [x] 8.3 Run `BASE_PATH="/pinspec/" npm run build` and the subpath smoke checks. Verify the command exits zero, the built app loads under `/pinspec/`, and no built asset requests `/data/` or `/assets/` from the root.
 
 ## Workflow follow-up
 

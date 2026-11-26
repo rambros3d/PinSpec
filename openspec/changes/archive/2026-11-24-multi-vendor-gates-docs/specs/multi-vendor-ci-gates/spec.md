@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Defines the acceptance gates and provenance, warning, CI, and documentation contracts that certify a releasable multi-vendor PinCraft catalog without regressing the STM32 baseline.
+Defines the acceptance gates and provenance, warning, CI, and documentation contracts that certify a releasable multi-vendor PinSpec catalog without regressing the STM32 baseline.
 
 ## ADDED Requirements
 
@@ -84,10 +84,10 @@ The deploy workflow MUST fetch all upstream sources used by the adapters, force-
 - **THEN** the workflow exits non-zero and does not upload or deploy an artifact
 
 ### Requirement: Subpath build and runtime fetch verification
-Every runtime asset and data fetch MUST resolve relative to `import.meta.env.BASE_URL`. Under `BASE_PATH="/pincraft/"`, verification MUST confirm that the built `index.html`, `data/index.json`, and a sample `data/chips/<MCU>.json` are reachable and that the build contains no root-absolute `/data/` or `/assets/` request.
+Every runtime asset and data fetch MUST resolve relative to `import.meta.env.BASE_URL`. Under `BASE_PATH="/pinspec/"`, verification MUST confirm that the built `index.html`, `data/index.json`, and a sample `data/chips/<MCU>.json` are reachable and that the build contains no root-absolute `/data/` or `/assets/` request.
 
 #### Scenario: Subpath build verified
-- **WHEN** the production build is served under `/pincraft/`
+- **WHEN** the production build is served under `/pinspec/`
 - **THEN** the page, catalog index, and a sample chip shard resolve with no broken subpath requests
 
 #### Scenario: Hardcoded absolute path

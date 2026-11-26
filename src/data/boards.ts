@@ -1,5 +1,5 @@
 /**
- * Curated official ST board presets for seeding a PinCraft workspace.
+ * Curated official ST board presets for seeding a PinSpec workspace.
  *
  * Source: STMicroelectronics/STM32_open_pin_data, `boards/*.ioc` (BSD-3-Clause).
  * Pin assignments, labels and lock flags below are transcribed from those

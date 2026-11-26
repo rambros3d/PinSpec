@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Defines the daisyUI component layer used across the PinCraft UI: plugin scope, token ownership, the foreground utility name, component-class adoption on non-SVG surfaces, native dialog behavior, and the audit and verification contract that keeps the vendored themes and pin semantics stable.
+Defines the daisyUI component layer used across the PinSpec UI: plugin scope, token ownership, the foreground utility name, component-class adoption on non-SVG surfaces, native dialog behavior, and the audit and verification contract that keeps the vendored themes and pin semantics stable.
 
 ## Requirements
 
@@ -125,10 +125,10 @@ The migration SHALL pass clean-install tests, strict type checking, and a zero-w
 
 #### Scenario: Verification sequence is green
 
-- **WHEN** `npm ci`, `npm test`, `npm run check`, and `BASE_PATH="/pincraft/" npm run build` are run
+- **WHEN** `npm ci`, `npm test`, `npm run check`, and `BASE_PATH="/pinspec/" npm run build` are run
 - **THEN** all commands exit zero and the build reports no Svelte warnings
 
 #### Scenario: Subpath CSS bundle is correct
 
-- **WHEN** the built CSS asset under `/pincraft/` is inspected
+- **WHEN** the built CSS asset under `/pinspec/` is inspected
 - **THEN** it contains daisyUI component selectors and no former custom foreground or retired shape utility definition

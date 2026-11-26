@@ -85,7 +85,7 @@ in the MCU switcher.
 Render `<img src={`${import.meta.env.BASE_URL}radiokit-logo.svg`}>` immediately
 before the inline name control inside the existing workspace branch of the
 global bar. The non-workspace wordmark branch is unchanged, so the existing
-"PinCraft" text assertion still holds.
+"PinSpec" text assertion still holds.
 
 ### Sidebar navigation start
 

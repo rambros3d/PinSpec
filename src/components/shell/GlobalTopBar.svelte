@@ -112,10 +112,10 @@
       <a href="#/" class="flex shrink-0 items-center gap-2 text-sm font-bold tracking-tight text-foreground">
         <img
           src={`${import.meta.env.BASE_URL}radiokit-logo.svg`}
-          alt="PinCraft"
+          alt="PinSpec"
           class="size-5 shrink-0"
         />
-        <span class="hidden sm:inline font-bold">PinCraft</span>
+        <span class="hidden sm:inline font-bold">PinSpec</span>
       </a>
     {/if}
 

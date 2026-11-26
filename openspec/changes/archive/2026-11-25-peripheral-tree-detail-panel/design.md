@@ -219,7 +219,7 @@ This is a static client-only change with no data migration step. The state
 version remains 2. Older share links and project files that carry a dock value
 continue to load because parsers ignore unknown UI-preference fields. Apply the
 edits in the task order, run `npm test`, `npm run check`, and
-`BASE_PATH="/pincraft/" npm run build`, then run
+`BASE_PATH="/pinspec/" npm run build`, then run
 `openspec validate peripheral-tree-detail-panel --strict` and archive the
 change. Rollback is a normal revert of the implementation commit; no stored
 pin configuration needs conversion.

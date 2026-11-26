@@ -31,8 +31,8 @@
 
 - [x] 6.1 Update `.github/workflows/deploy.yml` to fetch all seven reference sources, force-delete `.cache/` on the weekly cron before `npm run gen-data`, and preserve push/manual/weekly triggers plus `upload-pages-artifact@v5` and `deploy-pages@v4`; verify the YAML parses and a step-ordering check confirms generation precedes tests, check, and build
 - [x] 6.2 Add a unit test asserting runtime asset/data URLs are built from `import.meta.env.BASE_URL` with no root-absolute `/data/` or `/assets/` literal; verify `npm test` passes
-- [x] 6.3 Add a CI smoke step that serves `dist` mounted at `/pincraft/` and requests `index.html`, `data/index.json`, and one sample chip shard; verify a local reproduction returns 200 for all three and fails on an injected absolute path
-- [x] 6.4 Run `npm test`, `npm run check`, and `BASE_PATH="/pincraft/" npm run build`; verify all three pass with zero warnings
+- [x] 6.3 Add a CI smoke step that serves `dist` mounted at `/pinspec/` and requests `index.html`, `data/index.json`, and one sample chip shard; verify a local reproduction returns 200 for all three and fails on an injected absolute path
+- [x] 6.4 Run `npm test`, `npm run check`, and `BASE_PATH="/pinspec/" npm run build`; verify all three pass with zero warnings
 
 ## 7. Documentation and attribution
 
@@ -43,7 +43,7 @@
 
 ## 8. Final integration verification
 
-- [x] 8.1 Run the full sequence: `npm run gen-data` with all sources, `npm test`, `npm run check`, `BASE_PATH="/pincraft/" npm run build`, and the subpath smoke check; verify all pass, total generated JSON is under 150 MB, and no STM32 reference assertion regressed
+- [x] 8.1 Run the full sequence: `npm run gen-data` with all sources, `npm test`, `npm run check`, `BASE_PATH="/pinspec/" npm run build`, and the subpath smoke check; verify all pass, total generated JSON is under 150 MB, and no STM32 reference assertion regressed
 - [x] 8.2 Confirm scope isolation: verify `git status` shows edits only to this change directory and the documented files, with no other change directory or generated data committed
 
 ## Workflow follow-up

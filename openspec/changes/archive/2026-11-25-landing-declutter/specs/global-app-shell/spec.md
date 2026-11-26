@@ -64,7 +64,7 @@ and `.landing-shell`.
 
 #### Scenario: Shell routes work under a subpath
 
-- **WHEN** the built app is served under `/pincraft/` and a shell route is opened
+- **WHEN** the built app is served under `/pinspec/` and a shell route is opened
 - **THEN** the route resolves from the hash and data requests resolve relative to `import.meta.env.BASE_URL`
 
 #### Scenario: Global bar preserves persistence

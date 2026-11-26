@@ -214,7 +214,7 @@ rewritten to assert the preserved behavior instead.
 4. Update the static tests listed in `tasks.md`, then scan `src/` for any
    remaining `lucide-svelte` reference and for unverified Solar slugs.
 5. Run `npm test`, `npm run check`, and
-   `BASE_PATH="/pincraft/" npm run build`; fix warnings and regressions.
+   `BASE_PATH="/pinspec/" npm run build`; fix warnings and regressions.
 6. Run `openspec archive solar-icons-adoption -y` after all tasks pass and
    include archived artifacts in the implementation commit.
 

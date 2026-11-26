@@ -56,5 +56,5 @@ the history and solver modules, the affected runes stores and components,
 `tools/data-gen/{artifacts,gates,index}.ts`, four main spec files, and the static
 tests covering those surfaces. No pin-configuration behavior, STM32 shard bytes,
 exporter output, routing, or theme behavior changes. Verification is
-`npm ci`, `npm test`, `npm run check`, `BASE_PATH="/pincraft/" npm run build`,
+`npm ci`, `npm test`, `npm run check`, `BASE_PATH="/pinspec/" npm run build`,
 `npm run gen-data`, and `openspec validate --all --strict`.

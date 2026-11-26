@@ -24,5 +24,5 @@
 
 ## 5. Full verification and closeout
 
-- [x] 5.1 Run `npm test`, `npm run check`, and `BASE_PATH="/pincraft/" npm run build` with zero warnings; confirm no STM32, generated-data, theme-token, or share-schema regression and no new dependency
+- [x] 5.1 Run `npm test`, `npm run check`, and `BASE_PATH="/pinspec/" npm run build` with zero warnings; confirm no STM32, generated-data, theme-token, or share-schema regression and no new dependency
 - [x] 5.2 Run `openspec validate ux-completion --strict`, archive with `openspec archive ux-completion -y`, fix any archived spec purpose placeholder, run `openspec validate --all --strict`, confirm no active changes remain, and commit code, specs, and archive artifacts

@@ -553,7 +553,7 @@ describe('dock tab persistence', () => {
 
     const legacyJson = parsePinoutJson(
       JSON.stringify({
-        format: 'pincraft-pinout',
+        format: 'pinspec-pinout',
         version: 2,
         mcuId: chip.id,
         assignments: { '15': { peripheral: 'SPI1', signal: 'SCK', af: 5 } },
@@ -573,7 +573,7 @@ describe('dock tab persistence', () => {
   it('survives reload in localStorage without touching pin state or undo history', async () => {
     const storage = new Map<string, string>();
     vi.stubGlobal('window', {
-      location: { origin: 'https://example.test', pathname: '/pincraft/' },
+      location: { origin: 'https://example.test', pathname: '/pinspec/' },
       localStorage: {
         getItem: (key: string) => storage.get(key) ?? null,
         setItem: (key: string, value: string) => storage.set(key, value),
@@ -610,7 +610,7 @@ describe('dock tab persistence', () => {
       expect(preferences.dockTab).toBe('audit');
       expect(viewPreferences.dockTab).toBe('audit');
 
-      const sessions = JSON.parse(storage.get('pincraft:recent_sessions_v1') ?? '[]') as Array<{
+      const sessions = JSON.parse(storage.get('pinspec:recent_sessions_v1') ?? '[]') as Array<{
         state: WorkspaceState;
       }>;
       expect(sessions[0].state).toEqual(before);

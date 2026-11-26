@@ -40,7 +40,7 @@
 ## 6. Full verification
 
 - [x] 6.1 Run `npm test` and `npm run check` and verify zero failures and zero warnings.
-- [x] 6.2 Run `BASE_PATH="/pincraft/" npm run build` and verify the subpath checks in `tests/subpath-contracts.test.ts` pass with no broken asset or data request.
+- [x] 6.2 Run `BASE_PATH="/pinspec/" npm run build` and verify the subpath checks in `tests/subpath-contracts.test.ts` pass with no broken asset or data request.
 - [x] 6.3 Run `npm run gen-data` end to end and verify all per-vendor and global gates pass with consistent `index.json`, `meta.json`, and `build-warnings.json`.
 - [x] 6.4 Run `openspec validate nordic-data-adapter --strict` and verify no validation errors.
 

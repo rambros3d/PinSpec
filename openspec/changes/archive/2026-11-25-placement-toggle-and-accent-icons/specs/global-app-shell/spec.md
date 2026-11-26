@@ -4,7 +4,7 @@
 
 ### Requirement: Shell surfaces meet source and verification constraints
 
-Shell surfaces SHALL use existing theme tokens and bold duotone vector icons, SHALL add no npm dependency other than the single icon package, SHALL contain no emoji, and SHALL keep raw color literals in the vendored theme file. Catalog and projects thumbnails SHALL be static inline SVG with no interaction handler, no raw color literal, and no texture primitive. `npm test`, `npm run check`, and `BASE_PATH="/pincraft/" npm run build` SHALL exit zero with no build warnings.
+Shell surfaces SHALL use existing theme tokens and bold duotone vector icons, SHALL add no npm dependency other than the single icon package, SHALL contain no emoji, and SHALL keep raw color literals in the vendored theme file. Catalog and projects thumbnails SHALL be static inline SVG with no interaction handler, no raw color literal, and no texture primitive. `npm test`, `npm run check`, and `BASE_PATH="/pinspec/" npm run build` SHALL exit zero with no build warnings.
 
 #### Scenario: Theme tokens cover the shell
 
@@ -14,7 +14,7 @@ Shell surfaces SHALL use existing theme tokens and bold duotone vector icons, SH
 #### Scenario: Verification sequence passes
 
 - **WHEN** the three verification commands are run after implementation
-- **THEN** all three exit zero and the build resolves assets under `/pincraft/` without root-absolute data or asset paths
+- **THEN** all three exit zero and the build resolves assets under `/pinspec/` without root-absolute data or asset paths
 
 #### Scenario: No new raw colors or emoji
 

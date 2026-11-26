@@ -1,6 +1,6 @@
 import { deflateSync, inflateSync, strFromU8, strToU8 } from 'fflate';
 import {
-  PINCRAFT_STATE_VERSION,
+  PINSPEC_STATE_VERSION,
   normalizePackageRotation,
   parseGpioConfig,
   type GpioConfig,
@@ -102,7 +102,7 @@ function sortedKeys(record: Record<string, unknown>): string[] {
  */
 export function encodeWorkspaceState(state: WorkspaceState): string {
   const payload: CompactUrlPayload = {
-    v: PINCRAFT_STATE_VERSION,
+    v: PINSPEC_STATE_VERSION,
     m: state.mcuId,
   };
 
@@ -199,7 +199,7 @@ export function decodeWorkspaceState(encoded: string): DecodeResult {
       return { ok: false, error: 'Decoded share payload is not a valid object.' };
     }
     const obj = parsed as Record<string, unknown>;
-    if (obj.v !== PINCRAFT_STATE_VERSION) {
+    if (obj.v !== PINSPEC_STATE_VERSION) {
       return {
         ok: false,
         error: `Unsupported share link version: ${String(obj.v)}.`,

@@ -18,7 +18,7 @@
 ## 4. IC texture and warning-free renderers
 
 - [x] 4.1 Keep the depth gradient and noise filter rects unconditional in `GridPackage.svelte` and `PerimeterPackage.svelte`, with no `--depth`/`--noise` gating and no new texture in other components; verify a source scan finds the effects only in those two files and `PackageCanvas.svelte` still uses `bg-mcu-canvas`.
-- [x] 4.2 Replace the reactive `chip.id` read in each renderer's `surfaceId` initializer with a module-scoped counter helper producing unique ids per instance; verify `BASE_PATH="/pincraft/" npm run build` emits zero `state_referenced_locally` or other Svelte warnings.
+- [x] 4.2 Replace the reactive `chip.id` read in each renderer's `surfaceId` initializer with a module-scoped counter helper producing unique ids per instance; verify `BASE_PATH="/pinspec/" npm run build` emits zero `state_referenced_locally` or other Svelte warnings.
 
 ## 5. Token audit tooling
 
@@ -28,7 +28,7 @@
 ## 6. Integration verification
 
 - [x] 6.1 Run color-literal and emoji scans plus the token audit; verify color literals appear only in `src/themes/daisyui.css`, no emojis exist in delivered source, and all 11 actionable previously unused tokens are referenced while `--depth`/`--noise` remain intentionally inert.
-- [x] 6.2 Run `npm test`, `npm run check`, and `BASE_PATH="/pincraft/" npm run build`; verify all pass with zero warnings and record outputs for the change report.
+- [x] 6.2 Run `npm test`, `npm run check`, and `BASE_PATH="/pinspec/" npm run build`; verify all pass with zero warnings and record outputs for the change report.
 
 ## Workflow follow-up
 

@@ -3,7 +3,7 @@
  *
  * Vite injects the deploy subpath through `import.meta.env.BASE_URL`; building
  * every runtime fetch from that value keeps deep links working under
- * `/pincraft/` without a server rewrite. This module is pure TypeScript and is
+ * `/pinspec/` without a server rewrite. This module is pure TypeScript and is
  * deliberately free of DOM and Svelte imports so it can be unit tested on the
  * host.
  */

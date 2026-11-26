@@ -14,7 +14,7 @@
 ## 3. Persistence across all version-2 surfaces
 
 - [x] 3.1 Add placement fields to `cloneWorkspaceState()`, `statesEqual()`, and a shared normalizer that supplies disabled defaults when fields are absent; verify unit tests for clone, equality, and absent-field normalization pass with `npm test`
-- [x] 3.2 Add additive optional placement fields to `CompactUrlPayload`/`url-state.ts` and `PinCraftProjectFile`/`json.ts` without a version bump or v1 path; verify share-URL and project-JSON round-trip tests restore angle, ring, and enabled flag with `npm test`
+- [x] 3.2 Add additive optional placement fields to `CompactUrlPayload`/`url-state.ts` and `PinSpecProjectFile`/`json.ts` without a version bump or v1 path; verify share-URL and project-JSON round-trip tests restore angle, ring, and enabled flag with `npm test`
 - [x] 3.3 Persist placement preferences and the overlay toggle in `localStorage` sessions; verify a session save/load round-trip test restores all placement fields with `npm test`
 
 ## 4. Toggleable canvas overlay
@@ -26,7 +26,7 @@
 
 - [x] 5.1 Run `npm test` and confirm the full unit suite passes with no failures
 - [x] 5.2 Run `npm run check` and confirm strict type checking passes with zero warnings
-- [x] 5.3 Run `BASE_PATH="/pincraft/" npm run build` and confirm a clean production subpath build with no broken `/data/` or `/assets/` requests
+- [x] 5.3 Run `BASE_PATH="/pinspec/" npm run build` and confirm a clean production subpath build with no broken `/data/` or `/assets/` requests
 
 ## Workflow follow-up
 

@@ -3,12 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>PinCraft — STM32 / CH32 / RP / ESP32 / Microchip SAM / Nordic Pinout Configurator</title>
+    <title>PinSpec — STM32 / CH32 / RP / ESP32 / Microchip SAM / Nordic Pinout Configurator</title>
     <meta
       name="description"
       content="Fast, static CubeMX-style STM32 / CH32 / RP / ESP32 / Microchip SAM / Nordic pinout configurator with perimeter and BGA package renderers, conflict checking, remap discovery, URL sharing, and vendor-aware Rust / C / CSV / JSON exports."
     />
-    <meta property="og:title" content="PinCraft — STM32 / CH32 / RP / ESP32 / Microchip SAM / Nordic Pinout Configurator" />
+    <meta property="og:title" content="PinSpec — STM32 / CH32 / RP / ESP32 / Microchip SAM / Nordic Pinout Configurator" />
     <meta
       property="og:description"
       content="Fast, static CubeMX-style STM32 / CH32 / RP / ESP32 / Microchip SAM / Nordic pinout configurator with perimeter and BGA package renderers, conflict checking, remap discovery, URL sharing, and vendor-aware Rust / C / CSV / JSON exports."
@@ -28,7 +28,7 @@
         var modes = ['system', 'light', 'dark'];
         var mode = 'system';
         try {
-          var stored = localStorage.getItem('pincraft:theme');
+          var stored = localStorage.getItem('pinspec:theme');
           if (modes.indexOf(stored) !== -1) mode = stored;
         } catch (e) {
           // Storage unavailable: keep system mode.

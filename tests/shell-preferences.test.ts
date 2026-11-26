@@ -25,7 +25,7 @@ describe('localStorage-only shell preferences', () => {
   it('uses a collapsed sidebar when no value is stored', async () => {
     installStorage();
     const { ShellPreferencesStore, SHELL_PREFERENCES_STORAGE_KEY } = await freshShellPreferences();
-    expect(SHELL_PREFERENCES_STORAGE_KEY).toBe('pincraft:shell_preferences_v1');
+    expect(SHELL_PREFERENCES_STORAGE_KEY).toBe('pinspec:shell_preferences_v1');
     const preferences = new ShellPreferencesStore();
     expect(preferences.sidebarExpanded).toBe(false);
   });
@@ -35,7 +35,7 @@ describe('localStorage-only shell preferences', () => {
     const first = await freshShellPreferences();
     const preferences = new first.ShellPreferencesStore();
     preferences.sidebarExpanded = true;
-    expect(JSON.parse(storage.get('pincraft:shell_preferences_v1') ?? '{}')).toEqual({
+    expect(JSON.parse(storage.get('pinspec:shell_preferences_v1') ?? '{}')).toEqual({
       sidebarExpanded: true,
     });
 
@@ -47,7 +47,7 @@ describe('localStorage-only shell preferences', () => {
 
   it('normalizes unknown sidebar values to collapsed', async () => {
     const storage = installStorage();
-    storage.set('pincraft:shell_preferences_v1', JSON.stringify({ sidebarExpanded: 'yes' }));
+    storage.set('pinspec:shell_preferences_v1', JSON.stringify({ sidebarExpanded: 'yes' }));
     const { ShellPreferencesStore } = await freshShellPreferences();
     const preferences = new ShellPreferencesStore();
     expect(preferences.sidebarExpanded).toBe(false);

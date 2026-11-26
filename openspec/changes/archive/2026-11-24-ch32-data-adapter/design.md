@@ -43,4 +43,4 @@ See `proposal.md` for motivation and `specs/ch32-chip-data/spec.md` for the beha
 2. Add CH32 source acquisition to `sources.ts` with manifest verification and license metadata.
 3. Implement the adapter in small units: part/index parsing, pin geometry/bonding, signals/remaps, tags, warnings.
 4. Add tests for manifest failure, bonded pins, remap grouping, tags, deferral, and the four reference gates.
-5. Verify `npm test`, `npm run check`, and `BASE_PATH="/pincraft/" npm run build`; confirm STM32 golden hashes unchanged. Rollback is a git revert plus regenerating data; no committed generated artifacts exist.
+5. Verify `npm test`, `npm run check`, and `BASE_PATH="/pinspec/" npm run build`; confirm STM32 golden hashes unchanged. Rollback is a git revert plus regenerating data; no committed generated artifacts exist.

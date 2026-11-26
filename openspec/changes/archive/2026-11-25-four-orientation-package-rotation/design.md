@@ -58,7 +58,7 @@ The existing delta names in `openspec/specs/canvas-gesture-and-rotation/spec.md`
 2. Add the pure rotation helper and adopt it in both renderers.
 3. Swap extents, recenter geometry, and reconcile fit view.
 4. Relabel the rings control and update the five affected test files.
-5. Run `npm test`, `npm run check`, and `BASE_PATH="/pincraft/" npm run build`; fix warnings before closeout.
+5. Run `npm test`, `npm run check`, and `BASE_PATH="/pinspec/" npm run build`; fix warnings before closeout.
 
 After implementation the owning agent archives the change with `openspec archive four-orientation-package-rotation -y` and includes the synced spec plus archived change files in the implementation commit. This planning task set stops before archive and makes no commit.
 

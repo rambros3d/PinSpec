@@ -16,4 +16,4 @@
 
 ## 4. Integration verification
 
-- [x] 4.1 Run `npm test`, `npm run check`, and `BASE_PATH="/pincraft/" npm run build`; verify zero warnings, no Svelte or DOM imports under `src/core/`, and no STM32 diagnostic regressions.
+- [x] 4.1 Run `npm test`, `npm run check`, and `BASE_PATH="/pinspec/" npm run build`; verify zero warnings, no Svelte or DOM imports under `src/core/`, and no STM32 diagnostic regressions.

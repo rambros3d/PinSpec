@@ -10,11 +10,11 @@ const ROOT = process.cwd();
 describe('GitHub Pages-safe data URLs', () => {
   it('builds data URLs from BASE_URL for root and subpath deployments', () => {
     expect(dataUrl('/', 'index.json')).toBe('/data/index.json');
-    expect(dataUrl('/pincraft/', 'index.json')).toBe('/pincraft/data/index.json');
-    expect(dataUrl('/pincraft', 'chips/STM32G431CBU6.json')).toBe(
-      '/pincraft/data/chips/STM32G431CBU6.json',
+    expect(dataUrl('/pinspec/', 'index.json')).toBe('/pinspec/data/index.json');
+    expect(dataUrl('/pinspec', 'chips/STM32G431CBU6.json')).toBe(
+      '/pinspec/data/chips/STM32G431CBU6.json',
     );
-    expect(dataUrl('/pincraft/', '/meta.json')).toBe('/pincraft/data/meta.json');
+    expect(dataUrl('/pinspec/', '/meta.json')).toBe('/pinspec/data/meta.json');
   });
 
   it('contains no root-absolute data or asset literal in application source', () => {
@@ -143,26 +143,26 @@ describe('deploy workflow contract', () => {
     expect(at('Verify subpath runtime fetches')).toBeLessThan(at('Upload GitHub Pages artifact'));
   });
 
-  it('smoke-checks the page, index, and a chip shard under /pincraft/', () => {
-    expect(workflow).toContain('/pincraft/index.html');
-    expect(workflow).toContain('/pincraft/data/index.json');
-    expect(workflow).toContain('/pincraft/data/chips/');
+  it('smoke-checks the page, index, and a chip shard under /pinspec/', () => {
+    expect(workflow).toContain('/pinspec/index.html');
+    expect(workflow).toContain('/pinspec/data/index.json');
+    expect(workflow).toContain('/pinspec/data/chips/');
     expect(workflow).toContain('(src|href)="/(data|assets)/');
   });
 });
 
 describe('local subpath smoke reproduction', () => {
-  it('serves the built site under /pincraft/ and rejects root-absolute fetches', async () => {
+  it('serves the built site under /pinspec/ and rejects root-absolute fetches', async () => {
     const dist = path.join(ROOT, 'dist');
     if (!fs.existsSync(path.join(dist, 'index.html'))) return;
     const server = http.createServer((req, res) => {
       const requestPath = (req.url ?? '').split('?')[0];
-      if (!requestPath.startsWith('/pincraft/')) {
+      if (!requestPath.startsWith('/pinspec/')) {
         res.writeHead(404, { Connection: 'close' });
         res.end('not found');
         return;
       }
-      const rel = requestPath.slice('/pincraft/'.length) || 'index.html';
+      const rel = requestPath.slice('/pinspec/'.length) || 'index.html';
       const file = path.join(dist, rel);
       if (!file.startsWith(dist) || !fs.existsSync(file) || !fs.statSync(file).isFile()) {
         res.writeHead(404, { Connection: 'close' });
@@ -180,9 +180,9 @@ describe('local subpath smoke reproduction', () => {
         fs.readFileSync(path.join(dist, 'data', 'index.json'), 'utf8'),
       );
       for (const url of [
-        '/pincraft/index.html',
-        '/pincraft/data/index.json',
-        `/pincraft/data/chips/${index[0].id}.json`,
+        '/pinspec/index.html',
+        '/pinspec/data/index.json',
+        `/pinspec/data/chips/${index[0].id}.json`,
       ]) {
         const response = await fetch(`http://127.0.0.1:${port}${url}`);
         expect(response.status, url).toBe(200);

@@ -36,7 +36,7 @@
 
 - [x] 6.1 Run `npm test` and confirm the full Vitest suite passes with zero failures.
 - [x] 6.2 Run `npm run check` and confirm strict `tsc --noEmit` passes with zero errors.
-- [x] 6.3 Run `BASE_PATH="/pincraft/" npm run build` and confirm the production subpath build succeeds with zero warnings and no broken asset path.
+- [x] 6.3 Run `BASE_PATH="/pinspec/" npm run build` and confirm the production subpath build succeeds with zero warnings and no broken asset path.
 - [x] 6.4 Review the final diff for zero emojis, no marketing language, no hardcoded colors added outside vendored themes, no Svelte or DOM import in `src/core/`, and no generated data or upstream cache file changed. Verify by inspection of the changed file list and by a repository grep for rotation literals outside the expected sources.
 
 ## Workflow follow-up

@@ -35,4 +35,4 @@ See `proposal.md` for motivation. `src/core/types.ts` already declares `VendorId
 
 ## Migration Plan
 
-No data migration: the single version replaces v1 outright, catalog data is generated in CI, and nothing is committed under `public/data/`. Verify with `npm test`, `npm run check`, and `BASE_PATH="/pincraft/" npm run build`.
+No data migration: the single version replaces v1 outright, catalog data is generated in CI, and nothing is committed under `public/data/`. Verify with `npm test`, `npm run check`, and `BASE_PATH="/pinspec/" npm run build`.

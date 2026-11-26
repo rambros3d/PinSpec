@@ -31,5 +31,5 @@ Depends on `ci-native-data-generation` (orchestrator, `sources.ts`, warnings, an
 
 ## 6. Integration verification
 
-- [x] 6.1 Run `npm test`, `npm run check`, and `BASE_PATH="/pincraft/" npm run build` with all three catalogs generated; verify all succeed with zero warnings and no broken subpath data requests.
+- [x] 6.1 Run `npm test`, `npm run check`, and `BASE_PATH="/pinspec/" npm run build` with all three catalogs generated; verify all succeed with zero warnings and no broken subpath data requests.
 - [x] 6.2 Inspect emitted `index.json` and a sample CH32 shard to confirm `vendor`, `muxModel`, `remaps`, `tags`, and `bondedNames` fields are present and `af` is `null`; verify by reading generated JSON after `npm run gen-data`.

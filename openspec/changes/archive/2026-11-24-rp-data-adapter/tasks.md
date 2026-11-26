@@ -19,4 +19,4 @@
 
 ## 4. Integration verification
 
-- [x] 4.1 Run the full verification sequence `npm test`, `npm run check`, and `BASE_PATH="/pincraft/" npm run build`; verify zero warnings, no committed generated data (`git status` clean for `public/data/`, `.cache/`, `dist/`), and unchanged STM32 gate results.
+- [x] 4.1 Run the full verification sequence `npm test`, `npm run check`, and `BASE_PATH="/pinspec/" npm run build`; verify zero warnings, no committed generated data (`git status` clean for `public/data/`, `.cache/`, `dist/`), and unchanged STM32 gate results.

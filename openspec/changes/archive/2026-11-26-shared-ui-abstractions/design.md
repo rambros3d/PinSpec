@@ -2,7 +2,7 @@
 
 ## Context
 
-See `proposal.md` for motivation. PinCraft is a static Svelte 5 application.
+See `proposal.md` for motivation. PinSpec is a static Svelte 5 application.
 `src/core/` is pure TypeScript with no DOM or Svelte imports; runes live in
 `src/state/*.svelte.ts` and components. Four stores persist UI-only preferences
 under separate namespaced keys, the two SVG package renderers and two sidebar

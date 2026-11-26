@@ -110,7 +110,7 @@ behavior and generated output must remain stable.
 | Persistence split | `pin-placement-affinity.test.ts` (codec output), `view-preferences.test.ts` |
 | Portrait dock parity and persisted tab | `viewport-layout.test.ts`, `core-io.test.ts` tab normalization |
 | Theme tokens, no raw colors | `theme-tokens.test.ts`, `ui-multi-vendor.test.ts` |
-| Full verification | `npm test`, `npm run check`, `BASE_PATH="/pincraft/" npm run build` |
+| Full verification | `npm test`, `npm run check`, `BASE_PATH="/pinspec/" npm run build` |
 
 Static source-contract tests that assert `sidebarSection`, the Detail/Place
 switcher, or `doc.placementOverlayVisible` must be updated deliberately rather

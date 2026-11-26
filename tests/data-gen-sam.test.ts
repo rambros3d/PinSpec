@@ -302,7 +302,7 @@ describe('strict SAM gates', () => {
 
 describe('generated SAM catalog', () => {
   it('writes no partial catalog when a forced SAM gate error occurs', () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pincraft-sam-gate-'));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pinspec-sam-gate-'));
     const failing = {
       ...samAdapter,
       sourceSpecs: [],

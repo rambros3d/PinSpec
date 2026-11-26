@@ -27,4 +27,4 @@ When two GPIO pins are both assigned the `GPIO` / `EXTI` signal, they often shar
 - UI: `src/components/workspace/PinPopover.svelte` and `src/components/workspace/PinContextMenu.svelte` display the derived EXTI line.
 - Tests: `tests/core-solver.test.ts` gains EXTI scenarios; existing STM32 diagnostic fixtures are rerun as regression checks.
 - Data: no changes to generated shards, `public/data/`, `.cache/`, or the data generator. STM32 and CH32 catalog output is unchanged.
-- Verification: `npm test`, `npm run check`, and `BASE_PATH="/pincraft/" npm run build` must pass with no STM32 diagnostic regressions.
+- Verification: `npm test`, `npm run check`, and `BASE_PATH="/pinspec/" npm run build` must pass with no STM32 diagnostic regressions.

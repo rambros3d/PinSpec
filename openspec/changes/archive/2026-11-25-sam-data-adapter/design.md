@@ -59,7 +59,7 @@ Set the SAM adapter to strict. Assert the exact 39-part count, the four referenc
 
 ### Verification approach
 
-Per-group verification uses `npx vitest run tests/data-gen-sam.test.ts`, `npm run check`, and a focused `npm run gen-data` with gate output. Full verification requires `npm test`, `npm run check`, and `BASE_PATH="/pincraft/" npm run build`, followed by `openspec validate sam-data-adapter --strict` and `openspec archive sam-data-adapter -y` by the implementation agent after all tasks pass.
+Per-group verification uses `npx vitest run tests/data-gen-sam.test.ts`, `npm run check`, and a focused `npm run gen-data` with gate output. Full verification requires `npm test`, `npm run check`, and `BASE_PATH="/pinspec/" npm run build`, followed by `openspec validate sam-data-adapter --strict` and `openspec archive sam-data-adapter -y` by the implementation agent after all tasks pass.
 
 ## Risks / Trade-offs
 

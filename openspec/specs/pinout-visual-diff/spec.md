@@ -59,7 +59,7 @@ The diff workflow SHALL validate each selected file with the current project-fil
 - **THEN** the modal shows an error naming the unsupported version
 
 ### Requirement: The diff modal accepts two project files
-The workspace SHALL provide a dedicated modal with two independent file inputs, one per snapshot, and SHALL display per-file load and error states. Both inputs SHALL accept PinCraft version 2 project files. `.ioc` input SHALL be supported only when a compatible importer is registered and SHALL NOT be required for this capability.
+The workspace SHALL provide a dedicated modal with two independent file inputs, one per snapshot, and SHALL display per-file load and error states. Both inputs SHALL accept PinSpec version 2 project files. `.ioc` input SHALL be supported only when a compatible importer is registered and SHALL NOT be required for this capability.
 
 #### Scenario: Two valid files selected
 - **WHEN** the user selects two valid project files

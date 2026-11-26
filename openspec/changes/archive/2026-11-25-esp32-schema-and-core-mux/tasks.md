@@ -57,7 +57,7 @@
   are unchanged; verify with `tests/core-io.test.ts`,
   `tests/workspace-state.test.ts`, and a version-2 round-trip test.
 - [x] 5.2 Run `npm test`, `npm run check`, and
-  `BASE_PATH="/pincraft/" npm run build`; verify all three pass with zero
+  `BASE_PATH="/pinspec/" npm run build`; verify all three pass with zero
   warnings and no broken subpath requests.
 
 ## Workflow follow-up

@@ -13,7 +13,7 @@ The UI currently re-implements common controls with custom `@utility` definition
 - Migrate ExportModal, McuSwitcherModal, BoardSelectorModal, CompatibleMcuFinder, PinoutDiffModal, and the ambiguous-import dialog in WorkspacePage to native `<dialog class="modal">` elements. Use Svelte 5 `bind:this`, `showModal()`, `close()`, `onclose`/`oncancel`, and backdrop-target close; preserve all data contracts and internal scrolling; remove duplicate window-level Escape listeners.
 - Update `tools/theme-token-audit.ts`, `tests/theme-tokens.test.ts`, and all static-string tests that pin renamed classes, `92dvh`, `h-12 shrink-0`, `overflow-x-auto`, `min-h-0 overflow-y-auto`, `data-dock-tab`, utility names, or texture scope. Preserve each test's behavioral assertion.
 - Add a factual MIT license credit line for daisyUI in `README.md`. No other dependency is added; `vite.config.ts` and `svelte.config.js` are unchanged.
-- Verify with `npm ci`, `npm test`, `npm run check`, `BASE_PATH="/pincraft/" npm run build` with zero warnings, and a GitHub Pages CSS bundle check that the built stylesheet under `/pincraft/` contains the daisyUI component rules and no renamed custom utility.
+- Verify with `npm ci`, `npm test`, `npm run check`, `BASE_PATH="/pinspec/" npm run build` with zero warnings, and a GitHub Pages CSS bundle check that the built stylesheet under `/pinspec/` contains the daisyUI component rules and no renamed custom utility.
 
 ## Capabilities
 
@@ -30,4 +30,4 @@ None. The vendored themes, viewport-locked layout behavior, pin-state semantics,
 - Dependencies and build: `package.json`, `package-lock.json`, `src/app.css`, `README.md`.
 - Markup: `src/pages/LandingPage.svelte`, `src/pages/WorkspacePage.svelte`, all files under `src/components/landing/` and `src/components/workspace/` that use renamed utilities or modal markup. `PerimeterPackage.svelte` and `GridPackage.svelte` retain custom SVG geometry and texture.
 - Tooling and tests: `tools/theme-token-audit.ts`, `tests/theme-tokens.test.ts`, `tests/viewport-layout.test.ts`, `tests/compatible-mcu-finder.test.ts`, and any other test with literal strings affected by the rename or dialog migration.
-- Runtime: GitHub Pages static CSS bundle under the `/pincraft/` subpath. No backend, no new asset paths, no state schema changes.
+- Runtime: GitHub Pages static CSS bundle under the `/pinspec/` subpath. No backend, no new asset paths, no state schema changes.

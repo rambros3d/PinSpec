@@ -217,7 +217,7 @@ describe('workspace store naming', () => {
     expect(workspaceStore.state.projectName).toBe('saved-quartz-stm32g4');
 
     const storage = installStorage({
-      'pincraft:recent_sessions_v1': JSON.stringify([
+      'pinspec:recent_sessions_v1': JSON.stringify([
         {
           mcuId: chip.id,
           packageName: chip.package.name,
@@ -251,7 +251,7 @@ describe('workspace store naming', () => {
       await fromFile.workspaceStore.openMcu(chip.id, imported.state);
       expect(fromFile.workspaceStore.state.projectName).toBe('saved-quartz-stm32g4');
     }
-    expect(storage.has('pincraft:recent_sessions_v1')).toBe(true);
+    expect(storage.has('pinspec:recent_sessions_v1')).toBe(true);
   });
 
   it('commits active renames through history and sanitizes the value', async () => {
@@ -270,7 +270,7 @@ describe('workspace store naming', () => {
     expect(workspaceStore.state.projectName).toBe('my-new-project');
 
     const recent = JSON.parse(
-      window.localStorage.getItem('pincraft:recent_sessions_v1') ?? '[]',
+      window.localStorage.getItem('pinspec:recent_sessions_v1') ?? '[]',
     ) as Array<{ state: WorkspaceState }>;
     expect(recent[0].state.projectName).toBe('my-new-project');
   });

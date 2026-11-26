@@ -27,7 +27,7 @@
 
 - [x] 5.1 Run `npm test` and confirm the full Vitest suite passes with zero failures.
 - [x] 5.2 Run `npm run check` and confirm strict `tsc --noEmit` passes with zero errors.
-- [x] 5.3 Run `BASE_PATH="/pincraft/" npm run build` and confirm the production subpath build succeeds with zero warnings and no broken asset path.
+- [x] 5.3 Run `BASE_PATH="/pinspec/" npm run build` and confirm the production subpath build succeeds with zero warnings and no broken asset path.
 - [x] 5.4 Run `openspec validate esp32-matrix-placement --strict` and confirm zero validation errors or warnings.
 - [x] 5.5 Review the final diff for ASCII-only text, zero emojis, no marketing language, no Svelte or DOM import in `src/core/`, no generated data or upstream cache change, no schema version bump, and no new dependency, using a changed-file review and a repository grep.
 

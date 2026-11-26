@@ -41,7 +41,7 @@ See `proposal.md` - Why. `src/core/solver.ts` currently emits six STM32 diagnost
 2. Introduce tag-driven debug/clock/warning diagnostics with STM32 regression fixtures.
 3. Add remap-group planning, resource collision grouping and PIO/GPIOBASE validation to `evaluateWorkspace()` and helpers.
 4. Extend `SolverReport` / `OneHopFix` types and update unit tests in `tests/core-solver.test.ts` and `tests/core-io.test.ts`.
-5. Verify with `npm test`, `npm run check`, `BASE_PATH="/pincraft/" npm run build`; confirm zero STM32 diagnostic regressions.
+5. Verify with `npm test`, `npm run check`, `BASE_PATH="/pinspec/" npm run build`; confirm zero STM32 diagnostic regressions.
 
 ## Open Questions
 

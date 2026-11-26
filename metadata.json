@@ -1,5 +1,5 @@
 {
-  "name": "PinCraft",
+  "name": "PinSpec",
   "description": "Fast, static CubeMX-style STM32 pinout configurator with perimeter and BGA package renderers, conflict checking, remap discovery, URL sharing, and Embassy Rust / C / CSV / JSON exports.",
   "majorCapabilities": []
 }

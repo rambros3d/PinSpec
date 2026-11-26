@@ -107,15 +107,15 @@ describe('data-gen helpers', () => {
 
 describe('data-gen source acquisition', () => {
   it('declares ST and Embassy sources with their licenses', () => {
-    const specs = stm32SourceSpecs('/tmp/pincraft-cache');
+    const specs = stm32SourceSpecs('/tmp/pinspec-cache');
     expect(specs.map((s) => s.id)).toEqual(['stm32-open-pin-data', 'embassy-stm32-data']);
     expect(specs[0].license).toBe(LICENSE_OPEN_PIN_DATA);
     expect(specs[1].license).toBe(LICENSE_EMBASSY_STM32);
-    expect(specs[0].dir).toBe('/tmp/pincraft-cache/STM32_open_pin_data');
+    expect(specs[0].dir).toBe('/tmp/pinspec-cache/STM32_open_pin_data');
   });
 
   it('resolves a short SHA from a real git checkout', () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pincraft-src-'));
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pinspec-src-'));
     try {
       execSync('git init -q', { cwd: dir });
       fs.writeFileSync(path.join(dir, 'README.md'), 'fixture\n');
@@ -141,7 +141,7 @@ describe('data-gen source acquisition', () => {
   });
 
   it('falls back to the literal unknown when no revision exists', () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pincraft-nogit-'));
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pinspec-nogit-'));
     try {
       expect(resolveRevision(dir)).toBe('unknown');
       const acquired = acquireSource({
@@ -201,7 +201,7 @@ std::array<std::array<string, 2>, 3> pin_functions_rp2040{{
 `;
 
   it('declares KiCad, FUNCSEL, Zephyr and documentation sources with SHAs', () => {
-    const specs = rpSourceSpecs('/tmp/pincraft-rp-cache');
+    const specs = rpSourceSpecs('/tmp/pinspec-rp-cache');
     expect(specs.map((s) => s.id)).toEqual([
       'kicad-symbols',
       'kicad-footprints',
@@ -215,11 +215,11 @@ std::array<std::array<string, 2>, 3> pin_functions_rp2040{{
     expect(specs[2].license).toBe(LICENSE_PICOTOOL);
     expect(specs[4].license).toBe(LICENSE_ZEPHYR);
     expect(specs[5].license).toBe(LICENSE_RPI_DOCS);
-    expect(specs[0].dir).toBe('/tmp/pincraft-rp-cache/kicad-symbols');
+    expect(specs[0].dir).toBe('/tmp/pinspec-rp-cache/kicad-symbols');
   });
 
   it('resolves raw-file sources from content without modifying cached files', () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pincraft-raw-'));
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pinspec-raw-'));
     try {
       const spec = {
         id: 'fixture-raw',

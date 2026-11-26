@@ -40,7 +40,7 @@ No breaking change. No new route, feature, dependency, or shareable state field.
 
 ### Modified Capabilities
 
-- `pincraft-start-screen`: the three-zone layout requirement gains the focused
+- `pinspec-start-screen`: the three-zone layout requirement gains the focused
   presentation constraint; the discovery column owns the only index count; the
   right rail requirement becomes a compact vendor list with a sync date, no
   total, no ratios, and no shortcut card.
@@ -60,4 +60,4 @@ No breaking change. No new route, feature, dependency, or shareable state field.
   `tests/global-app-shell.test.ts`, and `tests/workspace-qol.test.ts`.
 - Generated data, core solver, URL codec, exporters, and workspace behavior are
   unchanged. `npm test`, `npm run check`, and
-  `BASE_PATH="/pincraft/" npm run build` must remain green.
+  `BASE_PATH="/pinspec/" npm run build` must remain green.

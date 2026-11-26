@@ -118,7 +118,7 @@ describe('localStorage-only view preferences', () => {
     workspaceStore.renameProject('  Saved Name  ');
 
     const recent = JSON.parse(
-      window.localStorage.getItem('pincraft:recent_sessions_v1') ?? '[]',
+      window.localStorage.getItem('pinspec:recent_sessions_v1') ?? '[]',
     ) as Array<{ state: { projectName?: string } }>;
     expect(recent[0].state.projectName).toBe('saved-name');
 

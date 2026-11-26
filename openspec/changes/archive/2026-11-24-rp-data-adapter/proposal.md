@@ -2,7 +2,7 @@
 
 ## Why
 
-PinCraft's catalog currently covers STM32 only, so Raspberry Pi RP2040 / RP2350A / RP2350B / RP2354A / RP2354B parts cannot be planned in the workspace. The project decision is to generate all catalog data in CI from machine-readable upstream references, so RP support needs an adapter that derives physical pins and FUNCSEL mux data from those references rather than a hand-maintained pin table.
+PinSpec's catalog currently covers STM32 only, so Raspberry Pi RP2040 / RP2350A / RP2350B / RP2354A / RP2354B parts cannot be planned in the workspace. The project decision is to generate all catalog data in CI from machine-readable upstream references, so RP support needs an adapter that derives physical pins and FUNCSEL mux data from those references rather than a hand-maintained pin table.
 
 ## What Changes
 
@@ -29,4 +29,4 @@ PinCraft's catalog currently covers STM32 only, so Raspberry Pi RP2040 / RP2350A
 - Generated output (gitignored): `public/data/chips/RP*.json`, `public/data/index.json`, `public/data/meta.json`, `public/data/build-warnings.json`.
 - CI: `.github/workflows/deploy.yml` runs the expanded `npm run gen-data`; no generated data committed.
 - Consumers: hero chip preview lazy-fetches generated chip JSON; catalog store and landing footer read `meta.json` provenance. `src/core/types.ts` already declares the vendor/mux/PinTag fields consumed here.
-- Verification: `tests/data-gen.test.ts` parser/normalizer cases; `npm test`, `npm run check`, `BASE_PATH="/pincraft/" npm run build`.
+- Verification: `tests/data-gen.test.ts` parser/normalizer cases; `npm test`, `npm run check`, `BASE_PATH="/pinspec/" npm run build`.

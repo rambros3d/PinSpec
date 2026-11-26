@@ -2,7 +2,7 @@
 
 ## 1. Persist discovery filters in browser-local storage
 
-- [x] 1.1 Add `src/state/discovery-preferences.svelte.ts` with key `pincraft:discovery_preferences_v1`, independent `catalog` and `quickSearch` groups, default query/family/package strings and `all` vendor, normalization of malformed values, and guarded localStorage reads and writes; verify with a new `tests/discovery-preferences.test.ts` that checks defaults, reload restoration, storage failure tolerance, and that no filter field appears in `encodeWorkspaceState()` or `exportPinoutJson()` output.
+- [x] 1.1 Add `src/state/discovery-preferences.svelte.ts` with key `pinspec:discovery_preferences_v1`, independent `catalog` and `quickSearch` groups, default query/family/package strings and `all` vendor, normalization of malformed values, and guarded localStorage reads and writes; verify with a new `tests/discovery-preferences.test.ts` that checks defaults, reload restoration, storage failure tolerance, and that no filter field appears in `encodeWorkspaceState()` or `exportPinoutJson()` output.
 - [x] 1.2 Bind the four `CatalogPage.svelte` filters to the `catalog` preference group and make its reset action clear the same group; verify that `tests/global-app-shell.test.ts` and `tests/ui-multi-vendor.test.ts` still pass with added assertions for the four persisted field names and that the existing catalog filter and thumbnail assertions remain intact.
 - [x] 1.3 Bind the four `QuickSearchBar.svelte` filters to the `quickSearch` preference group and keep its reset action local to that group; verify that `tests/start-screen.test.ts` and `tests/ui-multi-vendor.test.ts` pass with added persistence assertions and that all existing test-locked quick-search strings are unchanged.
 - [x] 1.4 Update the README shell paragraph to state that catalog and quick-search discovery filters are localStorage-only preferences and are absent from share URLs and project files; verify the paragraph contains the storage key and no shareable-field claim.
@@ -24,7 +24,7 @@
 
 - [x] 4.1 Run `npm test` and confirm the full Vitest suite passes with no skipped or failing test, including the new discovery preference tests and the deliberately updated static UI tests; report the command output as evidence.
 - [x] 4.2 Run `npm run check` and confirm strict TypeScript and Svelte checking exits zero with no warning; report the command output as evidence.
-- [x] 4.3 Run `BASE_PATH="/pincraft/" npm run build` and confirm the production subpath build exits zero with no warning, no root-absolute data or asset path, and no new raw color literal; run `openspec validate shell-polish-and-persisted-discovery --strict` and confirm it reports the change valid.
+- [x] 4.3 Run `BASE_PATH="/pinspec/" npm run build` and confirm the production subpath build exits zero with no warning, no root-absolute data or asset path, and no new raw color literal; run `openspec validate shell-polish-and-persisted-discovery --strict` and confirm it reports the change valid.
 
 ## Workflow follow-up
 

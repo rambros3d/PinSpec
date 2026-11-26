@@ -10,7 +10,7 @@
 import type { VendorId } from '../core/types';
 import { createPersistedPreference } from './persisted-preference.svelte';
 
-export const DISCOVERY_PREFERENCES_STORAGE_KEY = 'pincraft:discovery_preferences_v1';
+export const DISCOVERY_PREFERENCES_STORAGE_KEY = 'pinspec:discovery_preferences_v1';
 
 const VENDOR_IDS: readonly VendorId[] = [
   'stm32',

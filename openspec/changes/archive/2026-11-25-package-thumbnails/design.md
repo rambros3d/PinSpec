@@ -5,7 +5,7 @@
 See proposal.md for motivation and the delta specs for behavior. Current state:
 
 - `src/pages/CatalogPage.svelte` renders a text-only table over `searchCatalogEntries(..., 500)`. It has local query, vendor, family, and package filters, a retry/loading/empty row block, and an Open button calling `router.navigateMcu(entry.id)`.
-- `src/pages/ProjectsPage.svelte` renders `workspaceStore.recentSessions.slice(0, 10)` as a table with Open, Export, and Delete controls. `RecentSession` carries `mcuId`, `packageName`, `pinCount`, `assignedCount`, `updatedAt`, and `state` from `pincraft:recent_sessions_v1`.
+- `src/pages/ProjectsPage.svelte` renders `workspaceStore.recentSessions.slice(0, 10)` as a table with Open, Export, and Delete controls. `RecentSession` carries `mcuId`, `packageName`, `pinCount`, `assignedCount`, `updatedAt`, and `state` from `pinspec:recent_sessions_v1`.
 - `src/core/types.ts` `PackageInfo` carries `name`, `kind`, `pinCount`, `sides`, `rows`, `cols`, and `hasExposedPad`; `CatalogIndexEntry` carries only `package`, `pinCount`, `vendor`, and `module`. Index-only geometry is ambiguous: package strings alone cannot resolve 17 perimeter variants, about 100 perimeter entries, or grid `rows`/`cols` from a count.
 - `src/state/catalog.svelte.ts` `loadChip()` caches every fetched chip without eviction. It is the correct fetch boundary but must not be called for every row. It already resolves paths through `dataUrl()` and `import.meta.env.BASE_URL`.
 - `src/core/compatibility.ts` provides the proven pattern: `mapWithConcurrency` with `MAX_CONCURRENT_SHARD_LOADS = 4`, a generation token, an `isCancelled` predicate, and a token check before applying results. `CompatibleMcuFinder.svelte` demonstrates it in a Svelte component.
@@ -65,7 +65,7 @@ See proposal.md for motivation and the delta specs for behavior. Current state:
 3. Add the leading catalog column, visibility action, bounded refinement pass, and cancellation; keep filters, cap, load states, and Open handoff unchanged.
 4. Replace the projects table with cards and verify Open, Export, Delete, Import, New project, empty state, and the 10-session limit.
 5. Update the affected static tests and README wording; confirm share, project, preference, and session storage contracts remain unchanged and no pending change artifact is edited.
-6. Run `npm test`, `npm run check`, and `BASE_PATH="/pincraft/" npm run build` with zero warnings. The implementation agent then runs `openspec archive package-thumbnails -y` and includes the synced spec and archived files in the implementation commit. This planning step makes no commit.
+6. Run `npm test`, `npm run check`, and `BASE_PATH="/pinspec/" npm run build` with zero warnings. The implementation agent then runs `openspec archive package-thumbnails -y` and includes the synced spec and archived files in the implementation commit. This planning step makes no commit.
 
 ## Open Questions
 

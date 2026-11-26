@@ -57,5 +57,5 @@ dialog components, `AppShell`, `LandingPage`, `WorkspacePage`,
 `top-bar-ui.svelte.ts`, and the static tests covering those surfaces. No pin
 configuration, share-link or project JSON schema, generated data, STM32
 behavior, theme token, exporter output, or dependency manifest changes.
-Verification is `npm test`, `npm run check`, `BASE_PATH="/pincraft/" npm run build`,
+Verification is `npm test`, `npm run check`, `BASE_PATH="/pinspec/" npm run build`,
 and `openspec validate --all --strict` with no active changes after archive.

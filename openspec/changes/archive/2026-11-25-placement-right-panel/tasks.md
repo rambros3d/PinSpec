@@ -26,7 +26,7 @@
 
 ## 6. Integration verification
 
-- [x] 6.1 Run `npm test`, `npm run check`, and `BASE_PATH="/pincraft/" npm run build`; verify all three succeed with zero warnings, no broken subpath requests, and unchanged STM32 allocation and export output.
+- [x] 6.1 Run `npm test`, `npm run check`, and `BASE_PATH="/pinspec/" npm run build`; verify all three succeed with zero warnings, no broken subpath requests, and unchanged STM32 allocation and export output.
 - [x] 6.2 Compare the four delta specs against the implemented behavior and run `openspec validate placement-right-panel --strict`; verify strict validation reports no errors.
 
 ## Workflow follow-up

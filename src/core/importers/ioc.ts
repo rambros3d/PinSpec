@@ -150,7 +150,7 @@ interface IocModeRule {
   mode: string;
 }
 
-/** Cube mode labels mapped to PinCraft declarative mode IDs. */
+/** Cube mode labels mapped to PinSpec declarative mode IDs. */
 const MODE_RULES: Record<string, IocModeRule> = {
   asynchronous: { kind: 'usart', mode: 'async' },
   synchronous: { kind: 'usart', mode: 'sync' },

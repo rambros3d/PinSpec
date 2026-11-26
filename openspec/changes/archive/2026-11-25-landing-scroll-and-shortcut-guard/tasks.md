@@ -16,7 +16,7 @@
 
 - [x] 3.1 Run `npm test` and verify all unit tests pass with no failures, including the viewport layout, dialog structure, and compatible MCU finder suites.
 - [x] 3.2 Run `npm run check` and verify strict TypeScript checking reports no errors.
-- [x] 3.3 Run `BASE_PATH="/pincraft/" npm run build` and verify the production subpath build succeeds with no warnings and no root-absolute asset paths introduced.
+- [x] 3.3 Run `BASE_PATH="/pinspec/" npm run build` and verify the production subpath build succeeds with no warnings and no root-absolute asset paths introduced.
 
 ## Workflow follow-up
 

@@ -11,7 +11,7 @@
 import { normalizeDockTab, normalizeSummaryTab, type DockTab, type SummaryTab } from '../core/types';
 import { createPersistedPreference } from './persisted-preference.svelte';
 
-export const VIEW_PREFERENCES_STORAGE_KEY = 'pincraft:workspace_view_preferences_v1';
+export const VIEW_PREFERENCES_STORAGE_KEY = 'pinspec:workspace_view_preferences_v1';
 
 /** Default expansion state; the catch-all category starts collapsed. */
 export const DEFAULT_CATEGORY_EXPANSION: Readonly<Record<string, boolean>> = {

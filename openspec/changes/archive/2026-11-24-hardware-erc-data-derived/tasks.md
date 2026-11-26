@@ -28,7 +28,7 @@
 
 - [x] 4.1 Run `npm test` and confirm the full Vitest suite passes, including CH32 tag tests, per-vendor audit tests, solver diagnostic counts, and provenance contracts
 - [x] 4.2 Run `npm run check` and confirm strict type checking passes with zero warnings
-- [x] 4.3 Run `BASE_PATH="/pincraft/" npm run build` and confirm a clean production subpath build with no broken `/data/` or `/assets/` requests
+- [x] 4.3 Run `BASE_PATH="/pinspec/" npm run build` and confirm a clean production subpath build with no broken `/data/` or `/assets/` requests
 - [x] 4.4 Verify touched files add no workspace state field, schema version, share-link field, project-file field, or `localStorage` setting, contain no emoji or raw color literal, and introduce no new npm dependency; verify with a repository scan and a review of `package.json`
 
 ## Workflow follow-up

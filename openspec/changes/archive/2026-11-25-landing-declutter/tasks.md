@@ -25,7 +25,7 @@
 ## 5. Integration verification
 
 - [x] 5.1 Run the full unit suite and type check. Verify: `npm test` and `npm run check` both exit zero with no failures and no diagnostics.
-- [x] 5.2 Run the production subpath build. Verify: `BASE_PATH="/pincraft/" npm run build` exits zero with no warnings and no root-absolute `/data/` or `/assets/` request in the built output.
+- [x] 5.2 Run the production subpath build. Verify: `BASE_PATH="/pinspec/" npm run build` exits zero with no warnings and no root-absolute `/data/` or `/assets/` request in the built output.
 - [x] 5.3 Confirm scope boundaries across all touched files. Verify: no new route or dependency, no shareable presentation field in `src/core/types.ts`, no change to generated data, and no STM32 behavior regression.
 
 ## Workflow follow-up

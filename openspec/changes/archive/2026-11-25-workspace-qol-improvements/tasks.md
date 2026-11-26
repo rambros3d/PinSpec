@@ -53,7 +53,7 @@
 
 - [x] 11.1 Run `npm test` and confirm the full unit and static-contract suite passes, including `tests/viewport-layout.test.ts`, `tests/ui-multi-vendor.test.ts`, `tests/theme-tokens.test.ts`, and `tests/hardware-audit.test.ts`, with no skipped or failing cases
 - [x] 11.2 Run `npm run check` and confirm strict TypeScript passes with zero warnings
-- [x] 11.3 Run `BASE_PATH="/pincraft/" npm run build` and confirm a clean production subpath build with no broken `/data/` or `/assets/` requests and no change to generated shards
+- [x] 11.3 Run `BASE_PATH="/pinspec/" npm run build` and confirm a clean production subpath build with no broken `/data/` or `/assets/` requests and no change to generated shards
 
 ## Workflow follow-up
 

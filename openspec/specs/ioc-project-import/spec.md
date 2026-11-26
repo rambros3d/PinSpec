@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Enables users to seed a PinCraft workspace from STM32CubeIDE `.ioc` project files and from official ST board configurations, including ST signal-name mapping and MCU part resolution, without a backend or changes to generated catalog data.
+Enables users to seed a PinSpec workspace from STM32CubeIDE `.ioc` project files and from official ST board configurations, including ST signal-name mapping and MCU part resolution, without a backend or changes to generated catalog data.
 
 ## Requirements
 

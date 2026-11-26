@@ -98,7 +98,7 @@ describe('exporters', () => {
 
   it('generates include-guarded C header macros', () => {
     const h = exportCHeader(sampleChip, sampleState);
-    expect(h).toContain('#ifndef PINCRAFT_STM32G431CBU6_PINOUT_H');
+    expect(h).toContain('#ifndef PINSPEC_STM32G431CBU6_PINOUT_H');
     expect(h).toContain('#define IMU_CLK_GPIO_PORT GPIOA');
     expect(h).toContain('#define IMU_CLK_PIN 5U');
     expect(h).toContain('#define IMU_CLK_AF 5U');

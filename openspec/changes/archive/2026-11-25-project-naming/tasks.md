@@ -9,14 +9,14 @@
 ## 2. Version-2 share URL and project file codecs
 
 - [x] 2.1 Add optional compact key `n` in `src/core/url-state.ts`, emit only for a normalized non-empty name, and decode string values by normalizing while ignoring malformed or empty ones; verify name round-trip, absent-name, and malformed-field cases in `tests/core-io.test.ts` pass with `npx vitest run tests/core-io.test.ts`.
-- [x] 2.2 Add optional `projectName` to `PinCraftProjectFile` in `src/core/exporters/json.ts`, emit it when present, and restore it on import without changing field ordering for existing files; verify deterministic export and import round-trip cases in `tests/core-io.test.ts` pass with `npx vitest run tests/core-io.test.ts`.
-- [x] 2.3 Confirm `PINCRAFT_STATE_VERSION` remains 2 and no legacy import path is introduced; verify `npm test` exits zero and a scan shows no version bump or v1 compatibility branch.
+- [x] 2.2 Add optional `projectName` to `PinSpecProjectFile` in `src/core/exporters/json.ts`, emit it when present, and restore it on import without changing field ordering for existing files; verify deterministic export and import round-trip cases in `tests/core-io.test.ts` pass with `npx vitest run tests/core-io.test.ts`.
+- [x] 2.3 Confirm `PINSPEC_STATE_VERSION` remains 2 and no legacy import path is introduced; verify `npm test` exits zero and a scan shows no version bump or v1 compatibility branch.
 
 ## 3. Workspace store creation, reuse, and rename
 
 - [x] 3.1 In `openMcu()` from `src/state/workspace.svelte.ts`, attach a generated name only on the fresh-session branch using the loaded chip and a `Math.random` wrapper; verify `tests/project-naming.test.ts` covers new MCU generation, recent-session reuse, pending-handoff reuse, share-link reuse, and project-file reuse with `npx vitest run tests/project-naming.test.ts`.
 - [x] 3.2 Add a single `renameProject(name, mcuId?)` store action that normalizes the value, commits through existing history when the target is active, and updates and persists the saved session otherwise; verify active and inactive rename cases in `tests/project-naming.test.ts` pass with `npx vitest run tests/project-naming.test.ts`.
-- [x] 3.3 Verify `persistCurrentSession()` carries the name into `pincraft:recent_sessions_v1` and that shell preferences stay free of it; verify updated `tests/view-preferences.test.ts` assertions pass with `npx vitest run tests/view-preferences.test.ts`.
+- [x] 3.3 Verify `persistCurrentSession()` carries the name into `pinspec:recent_sessions_v1` and that shell preferences stay free of it; verify updated `tests/view-preferences.test.ts` assertions pass with `npx vitest run tests/view-preferences.test.ts`.
 
 ## 4. Global top bar name pill and shortcut guard
 
@@ -33,7 +33,7 @@
 ## 6. Documentation and full verification
 
 - [x] 6.1 Update `README.md` to state that the optional project name is shareable metadata in workspace state, version-2 URLs and files, and recent sessions, and that inline editing state is component-local; verify the updated text contains no emoji or marketing wording.
-- [x] 6.2 Run `npm test && npm run check && BASE_PATH="/pincraft/" npm run build` after all earlier tasks pass; verify all three exit zero with no build warnings and no subpath asset error.
+- [x] 6.2 Run `npm test && npm run check && BASE_PATH="/pinspec/" npm run build` after all earlier tasks pass; verify all three exit zero with no build warnings and no subpath asset error.
 - [x] 6.3 Run `openspec validate project-naming --strict`; verify the command exits zero and all artifacts and delta specs are recognized.
 
 ## Workflow follow-up

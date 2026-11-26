@@ -124,14 +124,14 @@ The credit SHALL contain no promotional wording and no emoji.
 
 Static tests that scan UI source SHALL be updated to assert preserved behavior
 and the new import contract rather than a retired library name. `npm test`,
-`npm run check`, and `BASE_PATH="/pincraft/" npm run build` SHALL pass with zero
+`npm run check`, and `BASE_PATH="/pinspec/" npm run build` SHALL pass with zero
 warnings, and the implementation agent SHALL archive the change after all tasks
 pass.
 
 #### Scenario: Full verification sequence
 
 - **WHEN** the three verification commands are run after implementation
-- **THEN** each exits zero, the build resolves assets under `/pincraft/`, and no Svelte warning is emitted
+- **THEN** each exits zero, the build resolves assets under `/pinspec/`, and no Svelte warning is emitted
 
 #### Scenario: Static test assertions are current
 

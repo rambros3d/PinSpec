@@ -67,7 +67,7 @@ imports, and no new npm dependency is needed.
   break undo/redo and share-link parity.
 - **One persistence surface updated together.** `WorkspaceState`,
   `cloneWorkspaceState()`, `statesEqual()`, `CompactUrlPayload`/`url-state.ts`,
-  `PinCraftProjectFile`/`json.ts`, and the `localStorage` session serializer are
+  `PinSpecProjectFile`/`json.ts`, and the `localStorage` session serializer are
   updated in one pass with additive optional fields at version 2. A single
   shared normalizer supplies defaults when fields are missing, so every surface
   interprets older payloads identically.

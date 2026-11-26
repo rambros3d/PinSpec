@@ -81,7 +81,7 @@ imports, and no new npm dependency is allowed.
   version-2 `WorkspaceState` for the dock tab, normalized to `peripherals` when
   absent. Thread it through `cloneWorkspaceState()`, `statesEqual()`, the
   `localStorage` session serializer, `CompactUrlPayload`/`url-state.ts`, and
-  `PinCraftProjectFile`/`json.ts` in one pass. The dock tab is a genuine user
+  `PinSpecProjectFile`/`json.ts` in one pass. The dock tab is a genuine user
   preference and must survive reload and sharing under AGENTS.md; orientation
   itself is derived from the viewport and is not persisted. Alternative: keeping
   the tab only in a component variable would violate the persistence rule and

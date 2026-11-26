@@ -121,6 +121,6 @@ no user setting is introduced.
    solver-diagnostics regression check.
 3. Add the read-only panel and export tab, then integrate the panel into the portrait dock when
    `viewport-locked-workspace` is applied.
-4. Run `npm test`, `npm run check`, and `BASE_PATH="/pincraft/" npm run build`. The audit is derived
+4. Run `npm test`, `npm run check`, and `BASE_PATH="/pinspec/" npm run build`. The audit is derived
    on demand, so rollback consists of removing the new panel, export tab, module, and evidence
    mapping and regenerating shards from the unmodified adapter.

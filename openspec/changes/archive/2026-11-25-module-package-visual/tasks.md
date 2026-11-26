@@ -31,7 +31,7 @@
 
 - [x] 6.1 Run `npm test` and confirm the full Vitest suite passes with zero failures, including the new module data, gate, tag, rotation, and rendering assertions.
 - [x] 6.2 Run `npm run check` and confirm strict TypeScript and Svelte checks pass with zero errors or warnings.
-- [x] 6.3 Run `BASE_PATH="/pincraft/" npm run build` and confirm the production subpath build succeeds with no root-absolute data or asset path and no build warning.
+- [x] 6.3 Run `BASE_PATH="/pinspec/" npm run build` and confirm the production subpath build succeeds with no root-absolute data or asset path and no build warning.
 - [x] 6.4 Run `npm run gen-data` after all code changes and confirm the catalog is generated once, all release gates pass, the STM32 golden output is unchanged, and total JSON remains under the 150 MB budget.
 - [x] 6.5 Review the final diff: no emoji, no marketing wording, no raw color literal outside `src/themes/daisyui.css`, no Svelte or DOM import in `src/core/`, no handwritten chip fact, no `.cache/`, `public/data/`, `dist/`, or `node_modules/` file changed, and no new dependency.
 

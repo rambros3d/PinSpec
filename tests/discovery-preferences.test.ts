@@ -25,7 +25,7 @@ describe('localStorage-only discovery preferences', () => {
   it('uses documented defaults for absent values', async () => {
     installStorage();
     const module = await freshDiscoveryPreferences();
-    expect(module.DISCOVERY_PREFERENCES_STORAGE_KEY).toBe('pincraft:discovery_preferences_v1');
+    expect(module.DISCOVERY_PREFERENCES_STORAGE_KEY).toBe('pinspec:discovery_preferences_v1');
     const preferences = new module.DiscoveryPreferencesStore();
     for (const group of [preferences.catalog, preferences.quickSearch]) {
       expect(group.query).toBe('');
@@ -44,7 +44,7 @@ describe('localStorage-only discovery preferences', () => {
   it('normalizes malformed values and keeps the two groups independent', async () => {
     const storage = installStorage();
     storage.set(
-      'pincraft:discovery_preferences_v1',
+      'pinspec:discovery_preferences_v1',
       JSON.stringify({
         catalog: { query: 42, vendor: 'unknown', family: null, package: ['QFN'] },
         quickSearch: { query: 'RP2040', vendor: 'rp', family: 'RP2350', package: 'QFN' },
@@ -64,7 +64,7 @@ describe('localStorage-only discovery preferences', () => {
     preferences.catalog.family = 'G4';
     preferences.catalog.package = 'LQFP';
     const saved = JSON.parse(
-      storage.get('pincraft:discovery_preferences_v1') ?? '{}',
+      storage.get('pinspec:discovery_preferences_v1') ?? '{}',
     ) as Record<string, Record<string, unknown>>;
     expect(Object.keys(saved).sort()).toEqual(['catalog', 'quickSearch']);
     expect(saved.catalog).toEqual({
@@ -92,7 +92,7 @@ describe('localStorage-only discovery preferences', () => {
     expect(reloaded.catalog.query).toBe('');
     expect(reloaded.quickSearch.package).toBe('SOP');
     const saved = JSON.parse(
-      storage.get('pincraft:discovery_preferences_v1') ?? '{}',
+      storage.get('pinspec:discovery_preferences_v1') ?? '{}',
     ) as Record<string, Record<string, unknown>>;
     expect(saved.catalog).toEqual({ query: '', vendor: 'all', family: '', package: '' });
   });

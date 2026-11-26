@@ -72,12 +72,12 @@ describe('workspace title icon and sidebar navigation start', () => {
     expect(icon).toBeGreaterThan(-1);
     expect(name).toBeGreaterThan(icon);
     expect(bar).toContain('aria-label="Project name"');
-    expect(bar).toContain('PinCraft');
+    expect(bar).toContain('PinSpec');
   });
 
   it('drops the sidebar brand header without dropping navigation', () => {
     expect(sidebar).not.toContain('flex h-12 shrink-0 items-center border-b border-base-300');
-    expect(sidebar).not.toContain('>PinCraft<');
+    expect(sidebar).not.toContain('>PinSpec<');
     const panel = sidebar.indexOf('<aside');
     const nav = sidebar.indexOf('<nav class="shrink-0 space-y-1 py-2"', panel);
     const recents = sidebar.indexOf('Recent projects');

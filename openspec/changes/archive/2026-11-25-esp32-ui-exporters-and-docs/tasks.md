@@ -29,7 +29,7 @@
 
 - [x] 5.1 Run `npm test` and confirm the full Vitest suite passes with zero failures.
 - [x] 5.2 Run `npm run check` and confirm strict TypeScript validation passes with zero errors.
-- [x] 5.3 Run `BASE_PATH="/pincraft/" npm run build` and confirm the production subpath build succeeds with no broken asset path.
+- [x] 5.3 Run `BASE_PATH="/pinspec/" npm run build` and confirm the production subpath build succeeds with no broken asset path.
 - [x] 5.4 Confirm STM32 exports, routes, solver output, and generated catalog are unchanged, no `public/data/` or `.cache/` file was modified, no Svelte or DOM import exists under `src/core/`, and no new state field was added to share URLs or version-2 project files.
 - [x] 5.5 Run `openspec validate esp32-ui-exporters-and-docs --strict` and confirm all delta specs and scenarios pass strict validation.
 

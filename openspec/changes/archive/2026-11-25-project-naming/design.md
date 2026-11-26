@@ -9,7 +9,7 @@ share payload; `exportPinoutJson` and `parsePinoutJson` in
 `src/core/exporters/json.ts` define the version-2 project file. The workspace
 store's `openMcu()` chooses between an override state, a pending handoff, a saved
 recent session, and a fresh `createEmptyWorkspace(chip.id)`. `RecentSession`
-stores the whole state under `pincraft:recent_sessions_v1`, so a field on
+stores the whole state under `pinspec:recent_sessions_v1`, so a field on
 `WorkspaceState` reaches recent sessions without a second record shape. See
 `proposal.md` for motivation and `specs/` for the behavior contract.
 
@@ -68,7 +68,7 @@ metadata in the same doc comment style used by `placement` and
 is undoable. Both codecs use a new optional key emitted only for a normalized
 non-empty name: `n` in the compact URL payload and `projectName` in the project
 file. Decoders accept a string, normalize it, ignore malformed or empty values,
-and never throw. Because the field is optional, `PINCRAFT_STATE_VERSION` stays 2
+and never throw. Because the field is optional, `PINSPEC_STATE_VERSION` stays 2
 and there is no v1 compatibility path.
 
 ### Decision 3: Generate only on the fresh-session branch

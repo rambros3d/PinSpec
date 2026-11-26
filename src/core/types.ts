@@ -1,9 +1,9 @@
 /**
- * Current PinCraft state schema version for project files and share links.
+ * Current PinSpec state schema version for project files and share links.
  * There is deliberately no version-1 import path: the multi-vendor schema
  * replaces it outright, and any other version is rejected by both codecs.
  */
-export const PINCRAFT_STATE_VERSION = 2;
+export const PINSPEC_STATE_VERSION = 2;
 
 export type VendorId = 'stm32' | 'ch32' | 'rp' | 'esp32' | 'microchip' | 'nordic';
 

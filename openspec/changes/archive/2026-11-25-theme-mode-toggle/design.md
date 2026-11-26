@@ -21,7 +21,7 @@ Constraints from `AGENTS.md`: theme is a UI preference stored only in `localStor
 - No migration or compatibility path for previously saved theme ids.
 - No live OS color-scheme listener or mid-session theme reaction.
 - No change to pin status colors, package texture, solver, exporters, share URL schema, project JSON schema, or generated catalog data.
-- No new dependency and no change to the `pincraft:theme` storage key.
+- No new dependency and no change to the `pinspec:theme` storage key.
 
 ## Decisions
 

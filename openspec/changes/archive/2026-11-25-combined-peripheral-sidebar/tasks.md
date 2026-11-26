@@ -40,7 +40,7 @@
 
 ## 6. Integration verification
 
-- [x] 6.1 Run `npm test`, `npm run check`, and `BASE_PATH="/pincraft/" npm run build`; verify all three succeed with zero warnings.
+- [x] 6.1 Run `npm test`, `npm run check`, and `BASE_PATH="/pinspec/" npm run build`; verify all three succeed with zero warnings.
 - [x] 6.2 Smoke-test the combined sidebar at a narrow landscape width, the portrait side-by-side dock, the outer ring clearing canvas buttons at several zooms, and a share URL round trip; verify the observed behavior matches the delta specs.
 
 ## Workflow follow-up

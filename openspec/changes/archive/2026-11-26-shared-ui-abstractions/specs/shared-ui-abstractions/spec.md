@@ -24,7 +24,7 @@ getters, setters, actions, defaults, and normalization rules.
 #### Scenario: Theme stays a raw localStorage string
 
 - **WHEN** the theme mode is read or set
-- **THEN** the value under `pincraft:theme` is one of the three mode strings and unknown saved values still resolve to system mode
+- **THEN** the value under `pinspec:theme` is one of the three mode strings and unknown saved values still resolve to system mode
 
 #### Scenario: Preferences stay out of shareable state
 

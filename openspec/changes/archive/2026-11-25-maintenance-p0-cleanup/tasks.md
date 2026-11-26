@@ -4,7 +4,7 @@
 
 - [x] 1.1 Remove `@vitejs/plugin-react`, `lucide-react`, `motion`, `react`, `react-dom`, `@types/react`, `@types/react-dom`, `autoprefixer`, `svelte-check`, direct `esbuild`, and the `lint` script from `package.json`; regenerate `package-lock.json` with `npm install --package-lock-only` and verify `npm ci --dry-run` succeeds
 - [x] 1.2 Re-evaluate `.npmrc`: keep `legacy-peer-deps=true` only if a real peer conflict blocks install after the removals and document the remaining conflict, otherwise delete the file; verify a clean `npm ci` with the final configuration
-- [x] 1.3 Delete the dead `copy-unbundled-src-assets` plugin and unused `@/*` alias from `vite.config.ts` and `tsconfig.json`; verify `npm run check` and `BASE_PATH="/pincraft/" npm run build` pass with no missing imports
+- [x] 1.3 Delete the dead `copy-unbundled-src-assets` plugin and unused `@/*` alias from `vite.config.ts` and `tsconfig.json`; verify `npm run check` and `BASE_PATH="/pinspec/" npm run build` pass with no missing imports
 
 ## 2. Remove dead runtime surface
 
@@ -34,5 +34,5 @@
 
 ## 6. Full verification and closeout
 
-- [x] 6.1 Run `npm ci`, `npm test`, `npm run check`, `BASE_PATH="/pincraft/" npm run build`, and `npm run gen-data` and confirm zero warnings, no STM32 shard regressions, and no broken subpath requests
+- [x] 6.1 Run `npm ci`, `npm test`, `npm run check`, `BASE_PATH="/pinspec/" npm run build`, and `npm run gen-data` and confirm zero warnings, no STM32 shard regressions, and no broken subpath requests
 - [x] 6.2 Run `openspec validate --all --strict`, confirm no active changes remain after archive, then commit all artifacts and code changes without pushing

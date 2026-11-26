@@ -10,7 +10,7 @@
 
 import { createPersistedPreference } from './persisted-preference.svelte';
 
-export const SHELL_PREFERENCES_STORAGE_KEY = 'pincraft:shell_preferences_v1';
+export const SHELL_PREFERENCES_STORAGE_KEY = 'pinspec:shell_preferences_v1';
 
 function normalizeSidebarExpanded(value: unknown): boolean {
   return value === true;

@@ -13,7 +13,7 @@ Delivered UI source SHALL contain no raw color literals outside `src/themes/dais
 
 #### Scenario: Verification sequence
 
-- **WHEN** `npm test`, `npm run check`, and `BASE_PATH="/pincraft/" npm run build` are run
+- **WHEN** `npm test`, `npm run check`, and `BASE_PATH="/pinspec/" npm run build` are run
 - **THEN** all three commands exit zero and the build reports no Svelte warnings
 
 #### Scenario: Duotone color follows the active theme

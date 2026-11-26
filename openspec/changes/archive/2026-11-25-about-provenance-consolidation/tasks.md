@@ -8,7 +8,7 @@
 
 ## 2. Shortcut removal and tab preference
 
-- [x] 2.1 Reduce `ABOUT_TABS` in `src/state/shell-preferences.svelte.ts` to the `sources` tab while keeping `DEFAULT_ABOUT_TAB`, `normalizeAboutTab`, and the `pincraft:shell_preferences_v1` key unchanged. Verify that `tests/shell-preferences.test.ts` passes unchanged, including the fallback from a stale `shortcuts` value.
+- [x] 2.1 Reduce `ABOUT_TABS` in `src/state/shell-preferences.svelte.ts` to the `sources` tab while keeping `DEFAULT_ABOUT_TAB`, `normalizeAboutTab`, and the `pinspec:shell_preferences_v1` key unchanged. Verify that `tests/shell-preferences.test.ts` passes unchanged, including the fallback from a stale `shortcuts` value.
 - [x] 2.2 Remove the `SHORTCUTS` import, the Shortcuts tab, and both inline shortcut blocks from the About surface. Verify that `tests/start-screen.test.ts` keeps the shared `SHORTCUTS` and landing-rail assertions while asserting no shortcut text on About, and that `tests/global-app-shell.test.ts` asserts no Shortcuts tab.
 - [x] 2.3 Update `README.md` so the `#/about` route describes the grouped catalog sources table and the shortcut reference is owned by the shared dialog and landing rail, not About. Verify that `tests/docs-attribution.test.ts` passes with the updated document metadata and attribution checks.
 
@@ -24,7 +24,7 @@
 - [x] 4.1 Confirm that no file under `openspec/changes/global-top-bar/` was edited by this change and record the integration seam: its shortcuts control must open the shared dialog because the About Shortcuts tab is removed, and the merged sidebar requirement must retain its rail, toggle, label, and ordering behavior. Verify with `git status --short` that only owned files are modified.
 - [x] 4.2 Run `npm test` and resolve every failure or warning. Verify the command exits zero with the full suite green, including unchanged data-gen, gate, pin-configuration, and subpath contracts.
 - [x] 4.3 Run `npm run check` and resolve every type or Svelte diagnostic. Verify the command exits zero with no output warnings.
-- [x] 4.4 Run `BASE_PATH="/pincraft/" npm run build` and confirm the built app resolves assets under `/pincraft/` with no root-absolute data or asset paths. Verify the command exits zero with no build warnings.
+- [x] 4.4 Run `BASE_PATH="/pinspec/" npm run build` and confirm the built app resolves assets under `/pinspec/` with no root-absolute data or asset paths. Verify the command exits zero with no build warnings.
 
 ## Workflow follow-up
 

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Defines how the PinCraft UI consumes vendored daisyUI design tokens so theme switches affect the whole app, while the MCU IC package keeps its dedicated always-on texture and pin status colors keep their fixed semantic mapping.
+Defines how the PinSpec UI consumes vendored daisyUI design tokens so theme switches affect the whole app, while the MCU IC package keeps its dedicated always-on texture and pin status colors keep their fixed semantic mapping.
 
 ## Requirements
 
@@ -78,7 +78,7 @@ Delivered UI source SHALL contain no raw color literals outside `src/themes/dais
 
 #### Scenario: Verification sequence
 
-- **WHEN** `npm test`, `npm run check`, and `BASE_PATH="/pincraft/" npm run build` are run
+- **WHEN** `npm test`, `npm run check`, and `BASE_PATH="/pinspec/" npm run build` are run
 - **THEN** all three commands exit zero and the build reports no Svelte warnings
 
 #### Scenario: Duotone color follows the active theme

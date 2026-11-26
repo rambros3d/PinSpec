@@ -85,4 +85,4 @@ Existing static contracts in `tests/viewport-layout.test.ts`,
 media query, `43dvh` dock height, toolbar `overflow-x-auto`, vendor export
 labels and function names, token confinement, and emoji exclusion. Required
 verification is `npm test`, `npm run check`, and
-`BASE_PATH="/pincraft/" npm run build` with zero warnings.
+`BASE_PATH="/pinspec/" npm run build` with zero warnings.

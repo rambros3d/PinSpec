@@ -8,5 +8,5 @@
 ## 2. Contracts and verification
 
 - [x] 2.1 Update the static view assertions that expected inline arithmetic to check the helper module and call sites; verify `npm test` passes
-- [x] 2.2 Run `npm test`, `npm run check`, and `BASE_PATH="/pincraft/" npm run build` with zero warnings; confirm STM32 rendering, share URLs, and persistence are unchanged and no dependency was added
+- [x] 2.2 Run `npm test`, `npm run check`, and `BASE_PATH="/pinspec/" npm run build` with zero warnings; confirm STM32 rendering, share URLs, and persistence are unchanged and no dependency was added
 - [x] 2.3 Run `openspec validate canvas-view-extraction --strict`, archive with `openspec archive canvas-view-extraction -y`, fix any archived spec purpose placeholder, run `openspec validate --all --strict`, confirm no active changes remain, and commit code, specs, and archive artifacts

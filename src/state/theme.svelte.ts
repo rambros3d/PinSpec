@@ -2,7 +2,7 @@
  * Appearance mode for the interface.
  *
  * The mode is a UI preference stored only in localStorage under
- * `pincraft:theme`. It is never serialized into share URLs, project files, or
+ * `pinspec:theme`. It is never serialized into share URLs, project files, or
  * exports. The operating system color scheme is read once at load; no live
  * `matchMedia` listener is registered.
  */
@@ -17,7 +17,7 @@ export type ThemeMode = (typeof THEME_MODES)[number];
 export type ThemeId = 'fantasy' | 'halloween';
 
 /** localStorage key for the persisted mode. */
-export const THEME_STORAGE_KEY = 'pincraft:theme';
+export const THEME_STORAGE_KEY = 'pinspec:theme';
 
 /** Short labels for the three modes. */
 export const MODE_LABELS: Record<ThemeMode, string> = {

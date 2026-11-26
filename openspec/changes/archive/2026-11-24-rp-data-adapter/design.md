@@ -39,7 +39,7 @@ See `proposal.md` - Why. The existing generator in `tools/data-gen/index.ts` is 
 1. Introduce `tools/data-gen/adapters/rp/` with pure parser/normalizer helpers and unit tests in `tests/data-gen.test.ts`.
 2. Wire the RP adapter into the orchestrator after STM32 emission, reusing shared emitters for `index.json` / `meta.json` / `build-warnings.json`.
 3. Add RP gate assertions and attribution fields; run `npm run gen-data` locally with fresh `.cache/` once.
-4. Verify with `npm test`, `npm run check`, `BASE_PATH="/pincraft/" npm run build`. No committed generated data; CI regenerates.
+4. Verify with `npm test`, `npm run check`, `BASE_PATH="/pinspec/" npm run build`. No committed generated data; CI regenerates.
 
 ## Open Questions
 

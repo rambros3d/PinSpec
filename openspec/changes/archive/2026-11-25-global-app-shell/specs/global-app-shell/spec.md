@@ -53,7 +53,7 @@ workspace or shared pinout is open.
 ### Requirement: Recent projects are listed in the sidebar
 
 The sidebar recent-projects area SHALL list at most 10 sessions from
-`pincraft:recent_sessions_v1` in the same order as the workspace store. Each
+`pinspec:recent_sessions_v1` in the same order as the workspace store. Each
 entry SHALL offer quick open and delete. Opening SHALL restore the saved pin
 configuration through the existing workspace handoff.
 
@@ -220,7 +220,7 @@ under a GitHub Pages subpath, or data fetches through `dataUrl()`.
 
 #### Scenario: Shell routes work under a subpath
 
-- **WHEN** the built app is served under `/pincraft/` and a shell route is opened
+- **WHEN** the built app is served under `/pinspec/` and a shell route is opened
 - **THEN** the route resolves from the hash and data requests resolve relative to `import.meta.env.BASE_URL`
 
 ### Requirement: Shell surfaces meet source and verification constraints
@@ -228,7 +228,7 @@ under a GitHub Pages subpath, or data fetches through `dataUrl()`.
 Shell surfaces SHALL use existing theme tokens and monochrome vector icons,
 SHALL add no npm dependency, SHALL contain no emoji, and SHALL keep raw color
 literals in the vendored theme file. `npm test`, `npm run check`, and
-`BASE_PATH="/pincraft/" npm run build` SHALL exit zero with no build warnings.
+`BASE_PATH="/pinspec/" npm run build` SHALL exit zero with no build warnings.
 
 #### Scenario: Theme tokens cover the shell
 
@@ -238,7 +238,7 @@ literals in the vendored theme file. `npm test`, `npm run check`, and
 #### Scenario: Verification sequence passes
 
 - **WHEN** the three verification commands are run after implementation
-- **THEN** all three exit zero and the build resolves assets under `/pincraft/` without root-absolute data or asset paths
+- **THEN** all three exit zero and the build resolves assets under `/pinspec/` without root-absolute data or asset paths
 
 #### Scenario: No new raw colors or emoji
 

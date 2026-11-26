@@ -280,7 +280,7 @@ describe('vendor-dispatched Rust exporter', () => {
 describe('vendor-dispatched C header', () => {
   it('preserves STM32 PORT/PIN/AF macros', () => {
     const h = exportCHeader(stm32, stm32State);
-    expect(h).toContain('#ifndef PINCRAFT_STM32G431CBU6_PINOUT_H');
+    expect(h).toContain('#ifndef PINSPEC_STM32G431CBU6_PINOUT_H');
     expect(h).toContain('#define SPI1_SCK_GPIO_PORT GPIOA');
     expect(h).toContain('#define SPI1_SCK_PIN 5U');
     expect(h).toContain('#define SPI1_SCK_AF 7U');
@@ -309,7 +309,7 @@ describe('vendor-dispatched C header', () => {
 
   it('emits ESP32 GPIO macros and matrix function comments without AF macros', () => {
     const h = exportCHeader(esp32, esp32State);
-    expect(h).toContain('#ifndef PINCRAFT_ESP32_C3FH4_PINOUT_H');
+    expect(h).toContain('#ifndef PINSPEC_ESP32_C3FH4_PINOUT_H');
     expect(h).toContain('#define UART0_TX_GPIO 2U');
     expect(h).toContain('Matrix function: U0TXD');
     expect(h).not.toContain('_AF ');
@@ -318,7 +318,7 @@ describe('vendor-dispatched C header', () => {
   it('emits a guarded empty header for ESP32', () => {
     const h = exportCHeader(esp32, createEmptyWorkspace(esp32.id));
     expect(h).toContain('/* No pins assigned yet. */');
-    expect(h).toContain('#endif /* PINCRAFT_ESP32_C3FH4_PINOUT_H */');
+    expect(h).toContain('#endif /* PINSPEC_ESP32_C3FH4_PINOUT_H */');
     expect(h).not.toContain('#define UART0_TX_GPIO');
   });
 });

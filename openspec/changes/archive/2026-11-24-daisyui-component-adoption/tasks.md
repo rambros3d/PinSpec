@@ -32,8 +32,8 @@
 
 ## 6. Integration verification
 
-- [x] 6.1 Run `npm ci`, `npm test`, `npm run check`, and `BASE_PATH="/pincraft/" npm run build`; verify all four commands exit zero and the build reports no Svelte warnings.
-- [x] 6.2 Inspect the built CSS asset emitted for the `/pincraft/` subpath; verify it contains daisyUI component selectors and no former custom foreground or retired shape utility definitions.
+- [x] 6.1 Run `npm ci`, `npm test`, `npm run check`, and `BASE_PATH="/pinspec/" npm run build`; verify all four commands exit zero and the build reports no Svelte warnings.
+- [x] 6.2 Inspect the built CSS asset emitted for the `/pinspec/` subpath; verify it contains daisyUI component selectors and no former custom foreground or retired shape utility definitions.
 - [x] 6.3 Confirm every scenario in the `daisyui-component-adoption` delta spec is covered by a passing test, command result, or inspected artifact, then report validation and verification output before archive.
 
 ## Workflow follow-up

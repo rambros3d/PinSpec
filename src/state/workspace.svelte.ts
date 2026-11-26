@@ -41,7 +41,7 @@ export interface RecentSession {
   state: WorkspaceState;
 }
 
-const RECENT_STORAGE_KEY = 'pincraft:recent_sessions_v1';
+const RECENT_STORAGE_KEY = 'pinspec:recent_sessions_v1';
 const MAX_RECENT = 10;
 
 function loadRecentFromStorage(): RecentSession[] {

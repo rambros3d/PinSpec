@@ -171,7 +171,7 @@ generated data regeneration is performed.
    `src/core/solver.ts`, then dispatch from
    `src/state/workspace.svelte.ts`.
 5. Verify non-regression, then run `npm test`, `npm run check`, and
-   `BASE_PATH="/pincraft/" npm run build`; fix warnings before closeout.
+   `BASE_PATH="/pinspec/" npm run build`; fix warnings before closeout.
 6. The implementation agent archives this change with
    `openspec archive esp32-matrix-placement -y` and includes the synced spec and
    archived change files in the implementation commit. This planning task set

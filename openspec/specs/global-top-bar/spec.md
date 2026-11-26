@@ -26,21 +26,21 @@ no route renders two bars.
 - **WHEN** the home route and a workspace route are compared
 - **THEN** the bar uses the same height, surface, and border treatment in both routes
 
-### Requirement: The PinCraft wordmark is omitted only in the workspace
+### Requirement: The PinSpec wordmark is omitted only in the workspace
 
-The global bar SHALL show the PinCraft wordmark on the home, catalog, projects,
+The global bar SHALL show the PinSpec wordmark on the home, catalog, projects,
 and about routes. On workspace and shared routes the wordmark SHALL be omitted to
 save horizontal space while every other bar control remains available.
 
 #### Scenario: Wordmark on shell routes
 
 - **WHEN** any of home, catalog, projects, or about is opened
-- **THEN** the global bar contains the text PinCraft
+- **THEN** the global bar contains the text PinSpec
 
 #### Scenario: Wordmark omitted in the workspace
 
 - **WHEN** a workspace or shared route is opened
-- **THEN** the global bar contains no PinCraft text and retains the same height and controls
+- **THEN** the global bar contains no PinSpec text and retains the same height and controls
 
 ### Requirement: The collapsed rail reserves horizontal space on every route
 
@@ -184,7 +184,7 @@ mode remains transient view state.
 
 #### Scenario: Routes and subpaths are unchanged
 
-- **WHEN** a route or version-2 shared link is opened under `/pincraft/`
+- **WHEN** a route or version-2 shared link is opened under `/pinspec/`
 - **THEN** it resolves from the hash and data requests use `import.meta.env.BASE_URL`
 
 #### Scenario: Preferences stay local

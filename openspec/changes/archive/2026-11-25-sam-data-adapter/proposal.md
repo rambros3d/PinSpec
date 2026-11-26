@@ -2,7 +2,7 @@
 
 ## Why
 
-PinCraft has no Microchip SAM catalog data, so SAM D21, D51, E51, and SAMV parts cannot be planned in the workspace. Microchip publishes complete machine-readable ATDF device files in the `Microchip-MPLAB-Harmony/dev_packs` repository; these files describe variants, physical pinouts, module instance signals with function letters, memories, and interrupts. The repository is about 320 MB and provides no SPDX declaration, so a full clone is not suitable for provenance-tagged generation. A raw-file adapter with SHA-256 provenance is needed to convert the selected ATDF files into catalog shards without hand-maintained chip tables.
+PinSpec has no Microchip SAM catalog data, so SAM D21, D51, E51, and SAMV parts cannot be planned in the workspace. Microchip publishes complete machine-readable ATDF device files in the `Microchip-MPLAB-Harmony/dev_packs` repository; these files describe variants, physical pinouts, module instance signals with function letters, memories, and interrupts. The repository is about 320 MB and provides no SPDX declaration, so a full clone is not suitable for provenance-tagged generation. A raw-file adapter with SHA-256 provenance is needed to convert the selected ATDF files into catalog shards without hand-maintained chip tables.
 
 ## What Changes
 

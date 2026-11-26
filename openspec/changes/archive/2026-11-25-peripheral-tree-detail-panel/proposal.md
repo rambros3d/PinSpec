@@ -89,4 +89,4 @@ Pin configuration remains shareable and unchanged: assignments, labels,
 locks, peripheral modes, active remaps, PIO bindings, GPIO electrical
 settings, placement preferences, and rotation still round-trip through share
 URLs and version-2 project JSON. Required verification is `npm test`,
-`npm run check`, and `BASE_PATH="/pincraft/" npm run build` with zero warnings.
+`npm run check`, and `BASE_PATH="/pinspec/" npm run build` with zero warnings.

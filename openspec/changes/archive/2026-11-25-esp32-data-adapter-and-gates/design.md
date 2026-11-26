@@ -67,7 +67,7 @@ Alternative: use the existing lenient `createReferencePartsGate`. Rejected becau
 
 ### Verification approach
 
-Per-group verification uses `npx vitest run tests/data-gen-esp32.test.ts`, `npm run check`, and a focused `npm run gen-data` with gate output. Full verification requires `npm test`, `npm run check`, and `BASE_PATH="/pincraft/" npm run build`, followed by `openspec validate esp32-data-adapter-and-gates --strict` and `openspec archive esp32-data-adapter-and-gates -y` by the implementation agent after all tasks pass.
+Per-group verification uses `npx vitest run tests/data-gen-esp32.test.ts`, `npm run check`, and a focused `npm run gen-data` with gate output. Full verification requires `npm test`, `npm run check`, and `BASE_PATH="/pinspec/" npm run build`, followed by `openspec validate esp32-data-adapter-and-gates --strict` and `openspec archive esp32-data-adapter-and-gates -y` by the implementation agent after all tasks pass.
 
 ## Risks / Trade-offs
 

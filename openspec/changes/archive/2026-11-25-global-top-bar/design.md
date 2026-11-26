@@ -23,7 +23,7 @@ change. See proposal.md for motivation and the delta specs for behavior.
   panel a fixed overlay with a backdrop and no reflow.
 - Preserve each workspace action and shortcut after it moves into the bar.
 - Use one shared bar component for every route; the only intentional difference
-  is that the PinCraft wordmark is rendered on shell routes and omitted on
+  is that the PinSpec wordmark is rendered on shell routes and omitted on
   workspace/shared routes to conserve horizontal space.
 - Keep route resolution, data fetches, share URLs, project JSON, and the
   localStorage preference boundary unchanged.
@@ -177,7 +177,7 @@ Implemented by the implementation agent after artifacts are complete:
    actions and dialogs through the new store.
 3. Update `GlobalSidebar` labels, order, separator, and toggle placement.
 4. Update static test contracts in the same change, then run `npm test`,
-   `npm run check`, and `BASE_PATH="/pincraft/" npm run build`.
+   `npm run check`, and `BASE_PATH="/pinspec/" npm run build`.
 5. Run `openspec archive global-top-bar -y` and include archive output in the
    implementation commit. No user data migration is required: the new store is
    transient and the only persisted values are the existing localStorage keys.

@@ -2,7 +2,7 @@
 
 ## Context
 
-See `proposal.md` for motivation and `specs/pinout-visual-diff/spec.md` for the behavior contract. The workspace already stores state as `WorkspaceState` keyed by physical pin position, serializes it as `PinCraftProjectFile` version 2 through `exportPinoutJson()` and `parsePinoutJson()`, and lazily fetches chip shards through `catalogStore.loadChip()`. Both package SVG renderers already accept assignments, labels, locks, status, and highlight sets, so they can serve as read-only previews without changes to their rendering contracts. `SummaryDrawer.svelte` has fixed tabs and `ExportModal.svelte` has a fixed tab list, so neither is extended; a separate modal is used.
+See `proposal.md` for motivation and `specs/pinout-visual-diff/spec.md` for the behavior contract. The workspace already stores state as `WorkspaceState` keyed by physical pin position, serializes it as `PinSpecProjectFile` version 2 through `exportPinoutJson()` and `parsePinoutJson()`, and lazily fetches chip shards through `catalogStore.loadChip()`. Both package SVG renderers already accept assignments, labels, locks, status, and highlight sets, so they can serve as read-only previews without changes to their rendering contracts. `SummaryDrawer.svelte` has fixed tabs and `ExportModal.svelte` has a fixed tab list, so neither is extended; a separate modal is used.
 
 ## Goals / Non-Goals
 

@@ -12,7 +12,7 @@ defines `SECTIONS` and renders anchors with router helpers. The existing
 `ShortcutHelpDialog` is a native `<dialog class="modal">` with focus handling
 from `openDialogWithFocus`, currently mounted by `WorkspacePage` and driven by a
 local `showShortcutHelp` flag. The selected About tab is a localStorage-only
-preference under `pincraft:shell_preferences_v1`. Most contracts are static
+preference under `pinspec:shell_preferences_v1`. Most contracts are static
 source-string tests, so test edits must land with the behavior change.
 
 The pending `global-top-bar` change is not edited here. It also modifies
@@ -61,7 +61,7 @@ and leaves two failure states.
 ### Shortcut removal and tab preference
 
 `ABOUT_TABS` becomes a single `sources` tab. The tab strip and the `aboutTab`
-localStorage preference stay, so `pincraft:shell_preferences_v1` keeps its
+localStorage preference stay, so `pinspec:shell_preferences_v1` keeps its
 shape, `normalizeAboutTab` still maps a stale `shortcuts` value to `sources`,
 and `tests/shell-preferences.test.ts` remains unchanged. `ProvenancePanel`
 drops the `SHORTCUTS` import and both shortcut blocks. About never falls back
@@ -170,7 +170,7 @@ Implemented by the implementation agent after artifacts are complete:
 2. Add the sidebar Hotkeys entry and dialog wiring; retarget
    `ShortcutHelpDialog` to `SHORTCUTS`; update sidebar and dialog tests.
 3. Update README and the remaining static contracts, then run `npm test`,
-   `npm run check`, and `BASE_PATH="/pincraft/" npm run build`.
+   `npm run check`, and `BASE_PATH="/pinspec/" npm run build`.
 4. Run `openspec archive about-provenance-consolidation -y` and report the
    archive output with the test and build evidence. No user data migration is
    required: preferences keep their key and stale tab values normalize.

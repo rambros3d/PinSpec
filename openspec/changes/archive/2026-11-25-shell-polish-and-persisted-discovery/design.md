@@ -37,7 +37,7 @@ and generated catalog data is read-only at runtime.
 ### 1. A dedicated localStorage-only discovery preference store
 
 Add `src/state/discovery-preferences.svelte.ts` with key
-`pincraft:discovery_preferences_v1`. It holds two independent groups, `catalog`
+`pinspec:discovery_preferences_v1`. It holds two independent groups, `catalog`
 and `quickSearch`, each with `query`, `vendor`, `family`, and `package`. Defaults
 are an empty string for text fields and `all` for vendor. Reads and writes are
 guarded by `typeof window` and `try/catch`, matching the existing stores. The
@@ -125,7 +125,7 @@ remain unchanged because their stores are not modified.
 ## Migration Plan
 
 No data migration is needed. A missing or malformed
-`pincraft:discovery_preferences_v1` record resolves to defaults on first read
+`pinspec:discovery_preferences_v1` record resolves to defaults on first read
 and is rewritten only when a filter changes. Share URLs, version-2 project
 files, recent-session records, and undo history keep their current schemas.
 Rollback is a source revert of this change plus removal of the new key.
@@ -143,5 +143,5 @@ Rollback is a source revert of this change plus removal of the new key.
 | Pin configuration and share schema non-regression | `tests/shell-preferences.test.ts`, `tests/view-preferences.test.ts`, `tests/core-io.test.ts`, `tests/viewport-layout.test.ts` |
 
 Final verification for the implementation agent is `npm test`, `npm run check`,
-and `BASE_PATH="/pincraft/" npm run build`, followed by the archive step listed
+and `BASE_PATH="/pinspec/" npm run build`, followed by the archive step listed
 in `tasks.md`.

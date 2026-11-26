@@ -64,7 +64,7 @@ describe('global top bar', () => {
 
   it('shows the wordmark on shell routes and merges workspace actions', () => {
     expect(bar).toContain('{#if !isWorkspace}');
-    expect(bar).toContain('PinCraft');
+    expect(bar).toContain('PinSpec');
     for (const token of [
       'router.navigateCatalog()',
       'router.navigateProjects()',
@@ -324,7 +324,7 @@ describe('collapsible sidebar overlay', () => {
     expect(sidebar).toContain('workspaceStore.deleteRecentSession(mcuId)');
     expect(sidebar).toContain('No recent projects.');
     const workspace = read('src/state/workspace.svelte.ts');
-    expect(workspace).toContain("'pincraft:recent_sessions_v1'");
+    expect(workspace).toContain("'pinspec:recent_sessions_v1'");
     expect(workspace).toContain('const MAX_RECENT = 10');
   });
 });
@@ -349,7 +349,7 @@ describe('catalog route', () => {
     }
     expect(page).toContain('filters.reset()');
     expect(read('src/state/discovery-preferences.svelte.ts')).toContain(
-      "'pincraft:discovery_preferences_v1'",
+      "'pinspec:discovery_preferences_v1'",
     );
     expect(page).toContain('router.navigateMcu(entry.id)');
   });
@@ -445,7 +445,7 @@ describe('about route', () => {
     expect(panel).not.toContain('AboutTab');
     expect(panel).not.toContain('sr-only');
     expect(read('src/state/shell-preferences.svelte.ts')).toContain(
-      "'pincraft:shell_preferences_v1'",
+      "'pinspec:shell_preferences_v1'",
     );
     expect(read('src/state/shell-preferences.svelte.ts')).not.toContain('aboutTab');
   });
@@ -479,7 +479,7 @@ describe('about route', () => {
 describe('shell documentation', () => {
   it('documents local-only discovery filters and the Workspace sidebar target', () => {
     const readme = read('README.md');
-    expect(readme).toContain('pincraft:discovery_preferences_v1');
+    expect(readme).toContain('pinspec:discovery_preferences_v1');
     expect(readme).toContain('Catalog and quick-search discovery filters');
     expect(readme).toContain('absent from share URLs, version-2 project files');
     expect(readme).toContain('two curated words');

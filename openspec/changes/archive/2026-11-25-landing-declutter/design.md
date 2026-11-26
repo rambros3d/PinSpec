@@ -130,7 +130,7 @@ All tests remain static source assertions. Update deliberately:
 No data or route migration. Implementation order: rail simplifications,
 discovery header count, hierarchy/spacing pass, then test updates. After all
 groups pass `npm test`, `npm run check`, and
-`BASE_PATH="/pincraft/" npm run build`, the implementation agent archives the
+`BASE_PATH="/pinspec/" npm run build`, the implementation agent archives the
 change with `openspec archive landing-declutter -y` and includes the archived
 files in its commit. Rollback is a revert of the page and test edits; no
 generated data is touched.

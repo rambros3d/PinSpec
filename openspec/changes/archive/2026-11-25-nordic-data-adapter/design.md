@@ -73,7 +73,7 @@ Alternative: assert hard-coded pin counts for each pilot. Rejected because fixed
 
 ### Verification approach
 
-Per-group verification uses `npx vitest run tests/data-gen-nordic.test.ts`, `npm run check`, and a focused `npm run gen-data` gate run. Full verification requires `npm test`, `npm run check`, `BASE_PATH="/pincraft/" npm run build`, an end-to-end `npm run gen-data`, `openspec validate nordic-data-adapter --strict`, and archive by the implementation agent after all tasks pass.
+Per-group verification uses `npx vitest run tests/data-gen-nordic.test.ts`, `npm run check`, and a focused `npm run gen-data` gate run. Full verification requires `npm test`, `npm run check`, `BASE_PATH="/pinspec/" npm run build`, an end-to-end `npm run gen-data`, `openspec validate nordic-data-adapter --strict`, and archive by the implementation agent after all tasks pass.
 
 ## Risks / Trade-offs
 

@@ -27,4 +27,4 @@ None. Existing workspace behavior, pin colors, and export/data contracts are unc
 - `src/app.css`: new semantic radius/border/size utilities and color aliases.
 - `src/components/**`, `src/pages/**`: class replacements only, no DOM/layout restructuring.
 - `src/components/workspace/{GridPackage,PerimeterPackage}.svelte`: texture scoping and warning-free SVG ID generation.
-- Verification: color-literal and token-usage scans, `npm test`, `npm run check`, `BASE_PATH="/pincraft/" npm run build` with zero Svelte warnings, and OpenSpec archive/validation.
+- Verification: color-literal and token-usage scans, `npm test`, `npm run check`, `BASE_PATH="/pinspec/" npm run build` with zero Svelte warnings, and OpenSpec archive/validation.

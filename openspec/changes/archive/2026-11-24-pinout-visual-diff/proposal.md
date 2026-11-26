@@ -12,7 +12,7 @@ Pin assignments are currently reviewed one project at a time, so comparing a sav
 - Add `PinoutDiffModal.svelte`, a dedicated workspace modal with two file inputs, per-file load and error states, two read-only package previews with color-coded change markers, and a summary table of changes.
 - Reuse `PerimeterPackage.svelte` and `GridPackage.svelte` as read-only previews driven by the diff result; do not add interaction handlers or mutation paths.
 - Add a workspace toolbar entry point that opens the modal without altering current workspace state.
-- Accept two `PinCraftProjectFile` version 2 files via the existing `parsePinoutJson()` parser. `.ioc` input is optional and only supported once the separate importer change lands; this change does not depend on it.
+- Accept two `PinSpecProjectFile` version 2 files via the existing `parsePinoutJson()` parser. `.ioc` input is optional and only supported once the separate importer change lands; this change does not depend on it.
 - Add unit tests for same-chip diffs, cross-chip diffs, malformed files, and non-mutation of the active workspace.
 - Explicit out of scope: KiCad `.kicad_sym` symbol export. This change produces a visual comparison only, no symbol or library output.
 
@@ -20,7 +20,7 @@ Pin assignments are currently reviewed one project at a time, so comparing a sav
 
 ### New Capabilities
 
-- `pinout-visual-diff`: Comparing two PinCraft project snapshots and presenting pin-level differences on read-only package previews and in a summary table.
+- `pinout-visual-diff`: Comparing two PinSpec project snapshots and presenting pin-level differences on read-only package previews and in a summary table.
 
 ### Modified Capabilities
 

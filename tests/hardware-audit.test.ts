@@ -11,7 +11,7 @@ import { cloneWorkspaceState, createWorkspaceHistory } from '../src/core/history
 import { createEmptyWorkspace, evaluateWorkspace } from '../src/core/solver';
 import {
   DOCK_TABS,
-  PINCRAFT_STATE_VERSION,
+  PINSPEC_STATE_VERSION,
   normalizeDockTab,
   type ChipData,
   type WorkspaceState,
@@ -335,7 +335,7 @@ describe('workspace UI and dock integration', () => {
     const parsed = parsePinoutJson(exportPinoutJson(state));
     if (parsed.ok) expect(parsed.state).toEqual(state);
 
-    expect(PINCRAFT_STATE_VERSION).toBe(2);
+    expect(PINSPEC_STATE_VERSION).toBe(2);
     expect(Object.keys(JSON.parse(exportPinoutJson(state)) as Record<string, unknown>).sort()).toEqual([
       'assignments', 'format', 'labels', 'locked', 'mcuId', 'peripheralModes', 'version',
     ]);
@@ -370,10 +370,10 @@ describe('workspace UI and dock integration', () => {
       expect(workspaceStore.dockTab).toBe('audit');
 
       const preferences = JSON.parse(
-        storage.get('pincraft:workspace_view_preferences_v1') ?? '{}',
+        storage.get('pinspec:workspace_view_preferences_v1') ?? '{}',
       ) as Record<string, unknown>;
       expect(preferences.dockTab).toBe('audit');
-      const sessions = JSON.parse(storage.get('pincraft:recent_sessions_v1') ?? '[]') as Array<{
+      const sessions = JSON.parse(storage.get('pinspec:recent_sessions_v1') ?? '[]') as Array<{
         state: WorkspaceState;
       }>;
       expect(Object.keys(sessions[0].state)).not.toContain('dockTab');

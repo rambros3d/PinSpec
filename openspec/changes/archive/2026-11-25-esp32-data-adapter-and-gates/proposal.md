@@ -2,7 +2,7 @@
 
 ## Why
 
-PinCraft has no ESP32 catalog data. The ESP32 families are described by first-party Espressif and esp-hal sources that can be converted mechanically into `ChipData` shards, but no generated JSON exists today. Without an adapter and build-blocking gates, ESP32 workspace work cannot rely on reproducible pin, pad, and signal data.
+PinSpec has no ESP32 catalog data. The ESP32 families are described by first-party Espressif and esp-hal sources that can be converted mechanically into `ChipData` shards, but no generated JSON exists today. Without an adapter and build-blocking gates, ESP32 workspace work cannot rely on reproducible pin, pad, and signal data.
 
 ## What Changes
 

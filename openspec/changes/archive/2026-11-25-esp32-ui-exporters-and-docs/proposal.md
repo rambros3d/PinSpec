@@ -49,7 +49,7 @@ crate-matched formats, and absent from provenance copy.
 Dependencies: `esp32-schema-and-core-mux` for `VendorId`, `gpio-matrix`, pin
 tags, and signal direction; `esp32-matrix-placement` for placement facts and
 their shareable-state boundary; `esp32-data-adapter-and-gates` for the shards,
-families, and eleven-source provenance; and the archived `pincraft-start-screen`
+families, and eleven-source provenance; and the archived `pinspec-start-screen`
 change for the current discovery and provenance layout. The start-screen
 artifacts are not edited by this change.
 
@@ -70,7 +70,7 @@ artifacts are not edited by this change.
 - `multi-vendor-exports`: Rust and C dispatch includes `esp-hal` and ESP32 GPIO
   macros; mux annotations use matrix route labels instead of AF indices.
 
-`pincraft-start-screen` is an archived change rather than a main spec and is a
+`pinspec-start-screen` is an archived change rather than a main spec and is a
 dependency only; no delta is created for it. `multi-vendor-ci-gates` is owned by
 `esp32-data-adapter-and-gates` and is not modified here.
 

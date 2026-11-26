@@ -478,7 +478,7 @@ describe('placement persistence', () => {
 
     const parsed = parsePinoutJson(
       JSON.stringify({
-        format: 'pincraft-pinout',
+        format: 'pinspec-pinout',
         version: 2,
         mcuId: chip.id,
         peripheralModes: {},
@@ -534,10 +534,10 @@ describe('placement persistence', () => {
 
     expect(viewPreferences.placementOverlayVisible).toBe(true);
     const preferences = JSON.parse(
-      storage.get('pincraft:workspace_view_preferences_v1') ?? '{}',
+      storage.get('pinspec:workspace_view_preferences_v1') ?? '{}',
     ) as Record<string, unknown>;
     expect(preferences.placementOverlayVisible).toBe(true);
-    const sessions = JSON.parse(storage.get('pincraft:recent_sessions_v1') ?? '[]') as Array<{
+    const sessions = JSON.parse(storage.get('pinspec:recent_sessions_v1') ?? '[]') as Array<{
       state: WorkspaceState;
     }>;
     expect(sessions[0].state.placement).toEqual({ SPI1: { angle: 123.5, ring: 'high', enabled: true } });
@@ -816,14 +816,14 @@ describe('placement overlay interaction refresh', () => {
 
     workspaceStore.setPlacementOverlayRotation(90);
     expect(workspaceStore.state.placementOverlayRotation).toBe(90);
-    let sessions = JSON.parse(storage.get('pincraft:recent_sessions_v1') ?? '[]') as Array<{
+    let sessions = JSON.parse(storage.get('pinspec:recent_sessions_v1') ?? '[]') as Array<{
       state: WorkspaceState;
     }>;
     expect(sessions[0].state.placementOverlayRotation).toBe(90);
     workspaceStore.undo();
     workspaceStore.redo();
     expect(workspaceStore.state.placementOverlayRotation).toBe(90);
-    sessions = JSON.parse(storage.get('pincraft:recent_sessions_v1') ?? '[]') as Array<{
+    sessions = JSON.parse(storage.get('pinspec:recent_sessions_v1') ?? '[]') as Array<{
       state: WorkspaceState;
     }>;
     expect(sessions[0].state.placementOverlayRotation).toBe(90);
@@ -909,7 +909,7 @@ describe('priority ring identifiers', () => {
 
     const parsed = parsePinoutJson(
       JSON.stringify({
-        format: 'pincraft-pinout',
+        format: 'pinspec-pinout',
         version: 2,
         mcuId: chip.id,
         peripheralModes: {},

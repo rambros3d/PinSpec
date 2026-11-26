@@ -28,7 +28,7 @@ None. `openspec/specs/` is empty, so no existing capability requirements change.
 - `tools/data-gen/` (orchestrator and vendor adapters): gate invocation and assertion helpers shared by all three adapters; `meta.json` and `build-warnings.json` emitters gain per-vendor fields.
 - `public/data/` (generated, gitignored): `index.json`, `meta.json`, and `chips/<MCU>.json` schemas gain vendor fields consumed by the gate; total output must stay under 150 MB.
 - `.github/workflows/deploy.yml`: additional source-checkout/refresh steps and subpath verification while preserving push/manual/weekly triggers, `actions/upload-pages-artifact@v5`, and `actions/deploy-pages@v4`.
-- `tests/`: new Vitest gate/shard/warning/URL tests; existing `npm test`, `npm run check`, and `BASE_PATH="/pincraft/" npm run build` commands remain the verification path.
+- `tests/`: new Vitest gate/shard/warning/URL tests; existing `npm test`, `npm run check`, and `BASE_PATH="/pinspec/" npm run build` commands remain the verification path.
 - `README.md`, `AGENTS.md`, `src/pages/LandingPage.svelte` footer, and landing copy: multi-vendor docs plus credits for ST (BSD-3-Clause), Embassy (MIT/Apache-2.0), ch32-device-data (MIT), KiCad (CC-BY-SA-4.0, generated-file exception), pico-sdk (BSD-3-Clause), Zephyr (Apache-2.0), and Raspberry Pi docs (CC-BY-SA-4.0).
 - Depends on `ci-native-data-generation`, `ch32-data-adapter`, `rp-data-adapter`, `multi-vendor-core-solver`, `multi-vendor-exporters-state`, and `multi-vendor-workspace-ui`; no other change directory is edited.
 - Zero emojis in any artifact, log, test, or document touched by this change.

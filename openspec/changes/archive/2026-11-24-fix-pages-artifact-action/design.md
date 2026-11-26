@@ -36,7 +36,7 @@ The RESTful artifact list shows a valid, unexpired `github-pages` artifact, so t
 ## Migration Plan
 
 1. Replace `actions/upload-pages-artifact@v5` with `@v4` in `.github/workflows/deploy.yml`.
-2. Verify locally with `npm test`, `npm run check`, and `BASE_PATH="/pincraft/" npm run build`.
+2. Verify locally with `npm test`, `npm run check`, and `BASE_PATH="/pinspec/" npm run build`.
 3. Parse the workflow YAML to confirm the pinned version.
 4. On merge, CI uploads with the v4.6.2 artifact client and `deploy-pages@v4` discovers the artifact.
 5. Rollback: revert the single version reference to `@v5` if compatibility is restored by a different means.

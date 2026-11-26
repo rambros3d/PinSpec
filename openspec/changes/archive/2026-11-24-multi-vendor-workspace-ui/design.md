@@ -36,4 +36,4 @@ See `proposal.md` for motivation. The UI is custom Svelte 5 runes components wit
 
 ## Migration Plan
 
-No state or data migration; all chip data is generated in CI. Verify with `npm test`, `npm run check`, `BASE_PATH="/pincraft/" npm run build`, and a manual render checklist for SOP8, TSSOP20, LQFP48, QFN-56, and QFN-80 at both zoom bounds in light and dark themes.
+No state or data migration; all chip data is generated in CI. Verify with `npm test`, `npm run check`, `BASE_PATH="/pinspec/" npm run build`, and a manual render checklist for SOP8, TSSOP20, LQFP48, QFN-56, and QFN-80 at both zoom bounds in light and dark themes.

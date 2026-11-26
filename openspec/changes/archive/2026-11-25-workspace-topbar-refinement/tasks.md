@@ -19,7 +19,7 @@
 
 - [x] 3.1 Run the full unit suite. Verify: `npm test` exits zero with no failures.
 - [x] 3.2 Run the strict type check. Verify: `npm run check` exits zero with no diagnostics.
-- [x] 3.3 Run the production subpath build. Verify: `BASE_PATH="/pincraft/" npm run build` exits zero with no warnings and no root-absolute `/data/` or `/assets/` request in the built output.
+- [x] 3.3 Run the production subpath build. Verify: `BASE_PATH="/pinspec/" npm run build` exits zero with no warnings and no root-absolute `/data/` or `/assets/` request in the built output.
 - [x] 3.4 Audit scope boundaries across changed files. Verify: no new dependency, no new route, no change to `src/core/`, no schema version change, no generated-data change, no raw color literal, no emoji or non-ASCII character, and no STM32 behavior regression.
 - [x] 3.5 Re-run strict change validation. Verify: `openspec validate workspace-topbar-refinement --strict` exits zero.
 

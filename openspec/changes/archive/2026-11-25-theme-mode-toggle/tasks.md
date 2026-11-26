@@ -9,7 +9,7 @@
 ## 2. Theme mode state
 
 - [x] 2.1 Replace the `ThemeId`-based state in `src/state/theme.svelte.ts` with an exported `ThemeMode` (`system` | `light` | `dark`), the `system -> light -> dark -> system` cycle, and a resolved theme id of `fantasy` or `halloween`; export a `ThemeStore` class and the storage key for tests while keeping the `themeStore` singleton; verify `npm run check` passes under strict TypeScript.
-- [x] 2.2 Resolve `prefers-color-scheme` only at initialization without a change listener, ignore every stored value outside the three mode values, use light as the baseline when no preference exists, and keep the `pincraft:theme` key; verify a new `tests/theme-mode-toggle.test.ts` with a stubbed `window` covers cycle order, legacy reset for `lofi`/`forest`/`caramellatte`/`halloween`, unknown values, absent preference, no listener registration, and storage failure.
+- [x] 2.2 Resolve `prefers-color-scheme` only at initialization without a change listener, ignore every stored value outside the three mode values, use light as the baseline when no preference exists, and keep the `pinspec:theme` key; verify a new `tests/theme-mode-toggle.test.ts` with a stubbed `window` covers cycle order, legacy reset for `lofi`/`forest`/`caramellatte`/`halloween`, unknown values, absent preference, no listener registration, and storage failure.
 - [x] 2.3 Confirm no theme mode or theme id is read or written by `src/core/url-state.ts`, `src/core/exporters/json.ts`, or any other exporter; verify a test asserts share URLs and project JSON contain no theme field and import leaves localStorage unchanged.
 
 ## 3. No-FOUC bootstrap
@@ -30,7 +30,7 @@
 
 - [x] 6.1 Run `npm test` and verify all suites pass.
 - [x] 6.2 Run `npm run check` and verify zero TypeScript errors under strict mode.
-- [x] 6.3 Run `BASE_PATH="/pincraft/" npm run build` and verify zero Svelte warnings and a built CSS asset containing only the two vendored theme selectors.
+- [x] 6.3 Run `BASE_PATH="/pinspec/" npm run build` and verify zero Svelte warnings and a built CSS asset containing only the two vendored theme selectors.
 - [x] 6.4 Confirm no new dependency entry and no generated or cached artifact was added; verify `git status --short` lists only intended source, test, and planning files.
 
 ## Workflow follow-up

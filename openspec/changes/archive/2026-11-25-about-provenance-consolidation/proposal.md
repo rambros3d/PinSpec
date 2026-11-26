@@ -57,7 +57,7 @@ and move shortcut reference into a shell-level dialog.
   `src/components/workspace/ShortcutHelpDialog.svelte`, `README.md`, and the
   static contract tests named in tasks.md.
 - State: `aboutTab` remains a localStorage-only UI preference under
-  `pincraft:shell_preferences_v1` with `sources` as the only tab. The Hotkeys
+  `pinspec:shell_preferences_v1` with `sources` as the only tab. The Hotkeys
   dialog flag is transient component state. No pin-configuration field is added
   to workspace state, share URLs, version-2 project files, recent sessions, or
   undo history.
@@ -73,5 +73,5 @@ and move shortcut reference into a shell-level dialog.
   requirements so the Hotkeys entry sits above About without losing the rail,
   toggle, label, and ordering behavior from that change.
 - Verification: `npm test`, `npm run check`, and
-  `BASE_PATH="/pincraft/" npm run build` must pass with zero warnings, followed
+  `BASE_PATH="/pinspec/" npm run build` must pass with zero warnings, followed
   by change archive by the implementation agent.

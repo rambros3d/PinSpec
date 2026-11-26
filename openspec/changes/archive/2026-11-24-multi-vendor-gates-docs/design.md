@@ -2,7 +2,7 @@
 
 ## Context
 
-See `proposal.md` for motivation. PinCraft currently generates an STM32-only catalog in `tools/data-gen/index.ts` and verifies it with ad-hoc Gate 1 assertions. The six in-flight changes add CH32, RP, vendor-aware core/state/exporters, and workspace UI, but none of them defines a single release gate. `public/data/` is gitignored, `.cache/` clones are existence-only and never refreshed locally, `openspec/specs/` is empty, and the landing footer in `LandingPage.svelte` hardcodes the two STM32 sources. The deploy workflow already runs on push, manual dispatch, and a weekly cron and must keep that shape.
+See `proposal.md` for motivation. PinSpec currently generates an STM32-only catalog in `tools/data-gen/index.ts` and verifies it with ad-hoc Gate 1 assertions. The six in-flight changes add CH32, RP, vendor-aware core/state/exporters, and workspace UI, but none of them defines a single release gate. `public/data/` is gitignored, `.cache/` clones are existence-only and never refreshed locally, `openspec/specs/` is empty, and the landing footer in `LandingPage.svelte` hardcodes the two STM32 sources. The deploy workflow already runs on push, manual dispatch, and a weekly cron and must keep that shape.
 
 ## Goals / Non-Goals
 
@@ -26,8 +26,8 @@ See `proposal.md` for motivation. PinCraft currently generates an STM32-only cat
 - **Provenance schema:** `meta.json` gains a `sources` map keyed by stable id (`st-open-pin-data`, `stm32-data-generated`, `ch32-device-data`, `kicad`, `pico-sdk`, `zephyr`, `raspberry-pi-docs`) carrying `sha`, `url`, `license`, plus per-vendor `counts` and `ratios`. The footer iterates this map instead of hardcoding per-vendor markup, so adding a source later needs no UI change. The license strings are centralized in the generator and emitted into `meta.json` to keep README/AGENTS/footer consistent.
 - **Deferrals:** `build-warnings.json` is a flat array of `{ id, vendor, source, reason }`. Missing curated mappings are warnings, never hard failures; structural corruption and failed assertions are hard failures. The file is always emitted, even when empty.
 - **Cache refresh:** Local runs keep the existing existence-only cache check. On the weekly scheduled workflow, a step deletes `.cache/` before `npm run gen-data` so upstream SHAs advance; push/manual runs reuse the cache for speed. SHAs come from the cloned repos and are written to `meta.json` by the generator.
-- **Subpath verification:** A unit test asserts that runtime fetch helpers build URLs from `import.meta.env.BASE_URL` and contains no root-absolute `/data/` or `/assets/` literal. A CI smoke step serves `dist` mounted at `/pincraft/` and requests `index.html`, `data/index.json`, and one sample chip shard, failing on any non-200. Alternative: build-only check; rejected because it cannot catch broken runtime fetches.
-- **Documentation:** README verification section and AGENTS.md status section are updated to `npm test`, `npm run check`, and `BASE_PATH="/pincraft/" npm run build`; the landing footer gains a generic license list and per-vendor SHAs. All added copy must use semantic tokens and contain no emojis.
+- **Subpath verification:** A unit test asserts that runtime fetch helpers build URLs from `import.meta.env.BASE_URL` and contains no root-absolute `/data/` or `/assets/` literal. A CI smoke step serves `dist` mounted at `/pinspec/` and requests `index.html`, `data/index.json`, and one sample chip shard, failing on any non-200. Alternative: build-only check; rejected because it cannot catch broken runtime fetches.
+- **Documentation:** README verification section and AGENTS.md status section are updated to `npm test`, `npm run check`, and `BASE_PATH="/pinspec/" npm run build`; the landing footer gains a generic license list and per-vendor SHAs. All added copy must use semantic tokens and contain no emojis.
 
 ## Risks / Trade-offs
 

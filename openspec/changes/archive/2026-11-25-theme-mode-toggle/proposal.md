@@ -8,7 +8,7 @@ The theme picker offers four unrelated daisyUI themes through a dropdown, while 
 
 - Reduce the vendored daisyUI catalog to two `[data-theme]` blocks: `fantasy` for light mode and `halloween` for dark mode. Remove `lofi`, `forest`, and `caramellatte` from the vendored CSS and all code and tests.
 - Replace the four-item dropdown with a single button that cycles System -> Light -> Dark -> System. The full form shows a Monitor, Sun, or Moon icon plus the label `System`, `Light`, or `Dark`; the compact toolbar form is icon-only with `title` and `aria-label`.
-- Store the mode (`system`, `light`, or `dark`) under the existing `pincraft:theme` localStorage key. Resolve `prefers-color-scheme` only at load and register no live change listener.
+- Store the mode (`system`, `light`, or `dark`) under the existing `pinspec:theme` localStorage key. Resolve `prefers-color-scheme` only at load and register no live change listener.
 - Treat saved theme ids (`lofi`, `forest`, `caramellatte`, `halloween`) and any other unknown value as absent: the application starts in system mode. No migration shim is added. **BREAKING** for users of the old picker, whose saved theme resets to system mode.
 - Update the inline no-FOUC bootstrap in `index.html` to derive `fantasy` or `halloween` from the stored mode and the load-time color-scheme value before the application module executes.
 - Update static tests that assert four themes and add coverage for the cycle order, legacy reset, one-time resolution, localStorage-only persistence, and bootstrap parity. Theme remains a UI preference and never enters share URLs or project files.

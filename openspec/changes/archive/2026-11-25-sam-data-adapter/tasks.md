@@ -38,7 +38,7 @@
 ## 7. Full verification
 
 - [x] 7.1 Run `npm test` and `npm run check` and verify zero failures and zero warnings.
-- [x] 7.2 Run `BASE_PATH="/pincraft/" npm run build` and verify the subpath contract checks pass with no broken asset or data request.
+- [x] 7.2 Run `BASE_PATH="/pinspec/" npm run build` and verify the subpath contract checks pass with no broken asset or data request.
 - [x] 7.3 Run `npm run gen-data` end to end and verify all per-vendor and global gates pass with no STM32, CH32, RP, or ESP32 regression.
 - [x] 7.4 Run `openspec validate sam-data-adapter --strict` and verify no validation errors.
 

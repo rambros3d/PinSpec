@@ -199,6 +199,6 @@ threading a new field through state, URL, project JSON, and sessions.
 
 This is a static client-only change with no data or schema migration. Apply the
 edits, run `npm test`, `npm run check`, and
-`BASE_PATH="/pincraft/" npm run build`, then archive the change so the delta
+`BASE_PATH="/pinspec/" npm run build`, then archive the change so the delta
 spec is synced into `openspec/specs/workspace-qol/`. Rollback is a normal
 revert of the implementation commit; no stored user state needs conversion.

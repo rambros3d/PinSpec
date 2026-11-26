@@ -25,10 +25,10 @@ afterEach(() => {
 describe('shared persisted preference helper', () => {
   it('normalizes stored values and writes through a namespaced record', async () => {
     const storage = installStorage();
-    storage.set('pincraft:test_v1', JSON.stringify({ flag: 'yes', untouched: 'keep' }));
+    storage.set('pinspec:test_v1', JSON.stringify({ flag: 'yes', untouched: 'keep' }));
     const { createPersistedPreference } = await freshHelper();
     const flag = createPersistedPreference<boolean>(
-      'pincraft:test_v1',
+      'pinspec:test_v1',
       false,
       (value) => value === true,
       'flag',
@@ -37,7 +37,7 @@ describe('shared persisted preference helper', () => {
 
     flag.set(true);
     expect(flag.value).toBe(true);
-    expect(JSON.parse(storage.get('pincraft:test_v1') ?? '{}')).toEqual({
+    expect(JSON.parse(storage.get('pinspec:test_v1') ?? '{}')).toEqual({
       flag: true,
       untouched: 'keep',
     });
@@ -53,7 +53,7 @@ describe('shared persisted preference helper', () => {
     };
     const { createPersistedPreference } = await freshHelper();
     const mode = createPersistedPreference<string>(
-      'pincraft:mode_v1',
+      'pinspec:mode_v1',
       'system',
       (value) => (value === 'light' || value === 'dark' ? value : 'system'),
     );
@@ -62,24 +62,24 @@ describe('shared persisted preference helper', () => {
     expect(writes).toEqual([]);
     mode.set('dark');
     expect(writes).toEqual(['dark']);
-    expect(storage.get('pincraft:mode_v1')).toBe('dark');
+    expect(storage.get('pinspec:mode_v1')).toBe('dark');
   });
 
   it('restores a persisted value after a simulated reload', async () => {
     const storage = installStorage();
     const first = await freshHelper();
     const preference = first.createPersistedPreference<string>(
-      'pincraft:query_v1',
+      'pinspec:query_v1',
       '',
       (value) => (typeof value === 'string' ? value : ''),
       'query',
     );
     preference.set('STM32G431');
-    expect(JSON.parse(storage.get('pincraft:query_v1') ?? '{}')).toEqual({ query: 'STM32G431' });
+    expect(JSON.parse(storage.get('pinspec:query_v1') ?? '{}')).toEqual({ query: 'STM32G431' });
 
     const second = await freshHelper();
     const reloaded = second.createPersistedPreference<string>(
-      'pincraft:query_v1',
+      'pinspec:query_v1',
       '',
       (value) => (typeof value === 'string' ? value : ''),
       'query',
@@ -89,10 +89,10 @@ describe('shared persisted preference helper', () => {
 
   it('keeps values in memory when storage is unavailable or malformed', async () => {
     const storage = installStorage();
-    storage.set('pincraft:broken_v1', 'not json');
+    storage.set('pinspec:broken_v1', 'not json');
     const { createPersistedPreference } = await freshHelper();
     const preference = createPersistedPreference<number>(
-      'pincraft:broken_v1',
+      'pinspec:broken_v1',
       0,
       (value) => (typeof value === 'number' ? value : 0),
       'count',
@@ -100,7 +100,7 @@ describe('shared persisted preference helper', () => {
     expect(preference.value).toBe(0);
     expect(() => preference.set(3)).not.toThrow();
     expect(preference.value).toBe(3);
-    expect(JSON.parse(storage.get('pincraft:broken_v1') ?? '{}')).toEqual({ count: 3 });
+    expect(JSON.parse(storage.get('pinspec:broken_v1') ?? '{}')).toEqual({ count: 3 });
 
     vi.stubGlobal('window', {
       get localStorage() {
@@ -108,7 +108,7 @@ describe('shared persisted preference helper', () => {
       },
     });
     const offline = createPersistedPreference<boolean>(
-      'pincraft:offline_v1',
+      'pinspec:offline_v1',
       false,
       (value) => value === true,
       'enabled',
@@ -122,16 +122,16 @@ describe('shared persisted preference helper', () => {
     installStorage();
     const { readPersistedRecord, writePersistedRecord: write } = await freshHelper();
     expect(readPersistedRecord('missing')).toEqual({});
-    write('pincraft:record_v1', { a: 1 });
-    expect(readPersistedRecord('pincraft:record_v1')).toEqual({ a: 1 });
+    write('pinspec:record_v1', { a: 1 });
+    expect(readPersistedRecord('pinspec:record_v1')).toEqual({ a: 1 });
 
     vi.stubGlobal('window', {
       get localStorage() {
         throw new Error('storage disabled');
       },
     });
-    expect(readPersistedRecord('pincraft:record_v1')).toEqual({});
-    expect(() => write('pincraft:record_v1', { a: 2 })).not.toThrow();
-    expect(() => writePersistedRecord('pincraft:record_v1', { a: 3 })).not.toThrow();
+    expect(readPersistedRecord('pinspec:record_v1')).toEqual({});
+    expect(() => write('pinspec:record_v1', { a: 2 })).not.toThrow();
+    expect(() => writePersistedRecord('pinspec:record_v1', { a: 3 })).not.toThrow();
   });
 });

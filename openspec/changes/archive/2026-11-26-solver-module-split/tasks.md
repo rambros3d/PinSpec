@@ -15,5 +15,5 @@
 
 ## 3. Full verification and closeout
 
-- [x] 3.1 Run `npm test`, `npm run check`, and `BASE_PATH="/pincraft/" npm run build` with zero warnings; confirm solver results, diagnostics, share schema, and STM32 behavior are unchanged and no dependency was added
+- [x] 3.1 Run `npm test`, `npm run check`, and `BASE_PATH="/pinspec/" npm run build` with zero warnings; confirm solver results, diagnostics, share schema, and STM32 behavior are unchanged and no dependency was added
 - [x] 3.2 Run `openspec validate solver-module-split --strict`, archive with `openspec archive solver-module-split -y`, fix any archived spec purpose placeholder, run `openspec validate --all --strict`, confirm no active changes remain, and commit code, specs, and archive artifacts

@@ -28,4 +28,4 @@
 - Tests: `tests/core-solver.test.ts`, `tests/core-io.test.ts` add CH32 atomic remap, locked/occupied remap blocks, resource collisions, RP PWM slice wrap, GPIOBASE valid/invalid window, and export round-trips.
 - Downstream consumers (separate change `multi-vendor-workspace-ui`): Svelte state stores and components read `SolverReport`; new diagnostic codes and PIO panel are consumed there. This change does not modify application UI.
 - Depends on data adapter changes `ci-native-data-generation`, `ch32-data-adapter` and `rp-data-adapter` for the emitted tags/remaps/pio data.
-- Verification: `npm test`, `npm run check`, `BASE_PATH="/pincraft/" npm run build` with no STM32 regressions.
+- Verification: `npm test`, `npm run check`, `BASE_PATH="/pinspec/" npm run build` with no STM32 regressions.

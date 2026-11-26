@@ -270,7 +270,7 @@ describe('workspace rotation control', () => {
     const before = cloneWorkspaceState(workspaceStore.state);
 
     const readSessions = (): Array<{ state: WorkspaceState }> =>
-      JSON.parse(storage.get('pincraft:recent_sessions_v1') ?? '[]') as Array<{
+      JSON.parse(storage.get('pinspec:recent_sessions_v1') ?? '[]') as Array<{
         state: WorkspaceState;
       }>;
 

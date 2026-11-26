@@ -71,8 +71,8 @@ is no single navigation and action surface shared by every route.
   `src/components/workspace/TopToolbar.svelte`, `src/app.css`, `README.md`,
   and static contract tests.
 - State: no new persisted field. Sidebar expansion and About tab stay in
-  localStorage under `pincraft:shell_preferences_v1`; recent sessions stay in
-  `pincraft:recent_sessions_v1`. Pin configuration stays in workspace state,
+  localStorage under `pinspec:shell_preferences_v1`; recent sessions stay in
+  `pinspec:recent_sessions_v1`. Pin configuration stays in workspace state,
   undo/redo history, share URLs, and project JSON.
 - Data: catalog and meta reads continue through `catalogStore` and `dataUrl()`
   with `import.meta.env.BASE_URL`. No generated data, data generator, or
@@ -80,5 +80,5 @@ is no single navigation and action surface shared by every route.
 - Dependencies: none added. Colors continue to come from theme tokens and the
   vendored theme file; icons come from `lucide-svelte`. No emoji.
 - Verification: `npm test`, `npm run check`, and
-  `BASE_PATH="/pincraft/" npm run build` must pass with zero warnings, followed
+  `BASE_PATH="/pinspec/" npm run build` must pass with zero warnings, followed
   by change archive by the implementation agent.

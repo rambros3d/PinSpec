@@ -10,7 +10,7 @@
 
 ## 3. Verify and close out
 
-- [x] 3.1 Run `npm test`, `npm run check`, and `BASE_PATH="/pincraft/" npm run build` successfully, and parse the workflow YAML to confirm two jobs, `needs: build`, and `actions/deploy-pages@v4` only in the `deploy` job.
+- [x] 3.1 Run `npm test`, `npm run check`, and `BASE_PATH="/pinspec/" npm run build` successfully, and parse the workflow YAML to confirm two jobs, `needs: build`, and `actions/deploy-pages@v4` only in the `deploy` job.
 
 ## Workflow follow-up
 

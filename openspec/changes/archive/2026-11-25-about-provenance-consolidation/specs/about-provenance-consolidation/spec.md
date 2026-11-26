@@ -134,7 +134,7 @@ files, recent sessions, or undo history.
 This capability SHALL add no dependency, no raw color literal outside the
 vendored theme file, no emoji, and no change to generated data, pin
 configuration, solver, exporters, or hash routing. `npm test`, `npm run check`,
-and `BASE_PATH="/pincraft/" npm run build` SHALL exit zero with no build
+and `BASE_PATH="/pinspec/" npm run build` SHALL exit zero with no build
 warnings.
 
 #### Scenario: Generated data and pin contracts remain stable

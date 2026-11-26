@@ -2,7 +2,7 @@
 
 ## Context
 
-See proposal.md for motivation. State is strictly version 2 (`PINCRAFT_STATE_VERSION = 2`) with no v1 path; tests assert v2 and reject v1/v3. Every new workspace field must be threaded through `WorkspaceState`, `cloneWorkspaceState()`, `statesEqual()`, the URL codec (`CompactUrlPayload`), and the JSON codec together. Exporters dispatch by vendor and existing STM32 output is asserted by tests. `SummaryDrawer.svelte` is the right-pane summary surface. No new dependency is allowed. 5V-tolerance badges are out of scope because the ST XML source has no such attribute.
+See proposal.md for motivation. State is strictly version 2 (`PINSPEC_STATE_VERSION = 2`) with no v1 path; tests assert v2 and reject v1/v3. Every new workspace field must be threaded through `WorkspaceState`, `cloneWorkspaceState()`, `statesEqual()`, the URL codec (`CompactUrlPayload`), and the JSON codec together. Exporters dispatch by vendor and existing STM32 output is asserted by tests. `SummaryDrawer.svelte` is the right-pane summary surface. No new dependency is allowed. 5V-tolerance badges are out of scope because the ST XML source has no such attribute.
 
 ## Goals / Non-Goals
 

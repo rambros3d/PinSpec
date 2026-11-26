@@ -33,7 +33,7 @@ second source of icon names to maintain.
   provenance rather than a retired icon library name, and add a check for the
   icon import boundary and the attribution line.
 - Verify with `npm test`, `npm run check`, and
-  `BASE_PATH="/pincraft/" npm run build`, then archive this change.
+  `BASE_PATH="/pinspec/" npm run build`, then archive this change.
 
 ## Capabilities
 

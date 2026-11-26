@@ -42,7 +42,7 @@ in `localStorage` or component state.
 - No new workspace-state field, share-link field, or project-file version.
 - No change to the data adapter, gates, solver semantics, placement scoring,
   generated data files, dependency manifests, or deployment workflow.
-- No edit to the archived `pincraft-start-screen` change artifacts.
+- No edit to the archived `pinspec-start-screen` change artifacts.
 
 ## Decisions
 
@@ -109,6 +109,6 @@ No runtime or data migration is required. Implementation proceeds in four
 groups: presentation helpers and discovery, starter chips and tag display,
 exporters and export modal, then provenance, documentation, and tests. After
 every group, run the unit tests. After all groups, run `npm test`,
-`npm run check`, and `BASE_PATH="/pincraft/" npm run build`, confirm STM32
+`npm run check`, and `BASE_PATH="/pinspec/" npm run build`, confirm STM32
 stability and no generated-data edits, then run strict validation and archive
 this change in the implementation commit.

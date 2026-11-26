@@ -20,9 +20,9 @@
 ## 4. Workspace title icon and sidebar header removal
 
 - [x] 4.1 Render `radiokit-logo.svg` through `import.meta.env.BASE_URL` before the editable project-name control in `src/components/shell/GlobalTopBar.svelte`, leaving non-workspace routes unchanged, and add a static regression assertion
-- [x] 4.2 Delete the sidebar logo and PinCraft header block from `src/components/shell/GlobalSidebar.svelte`, add a static regression assertion for its absence, and confirm navigation, recents, Hotkeys, and collapse controls remain wired
+- [x] 4.2 Delete the sidebar logo and PinSpec header block from `src/components/shell/GlobalSidebar.svelte`, add a static regression assertion for its absence, and confirm navigation, recents, Hotkeys, and collapse controls remain wired
 
 ## 5. Verification and closeout
 
-- [x] 5.1 Run `npm test`, `npm run check`, and `BASE_PATH="/pincraft/" npm run build` with zero warnings and confirm no STM32, export, theme-token, or persistence regression
+- [x] 5.1 Run `npm test`, `npm run check`, and `BASE_PATH="/pinspec/" npm run build` with zero warnings and confirm no STM32, export, theme-token, or persistence regression
 - [x] 5.2 Run `openspec validate workspace-button-fixes --strict`, mark every completed task above only after its verification passes, and run `openspec validate --all --strict` after archiving with no active changes remaining

@@ -112,7 +112,7 @@ describe('multi-vendor documentation and attribution', () => {
       'npm run gen-data',
       'npm test',
       'npm run check',
-      'BASE_PATH="/pincraft/" npm run build',
+      'BASE_PATH="/pinspec/" npm run build',
     ]) {
       expect(readme, command).toContain(command);
     }
@@ -127,7 +127,7 @@ describe('multi-vendor documentation and attribution', () => {
     for (const route of ['#/', '#/catalog', '#/projects', '#/about', '#/mcu/', '#/s/']) {
       expect(readme, route).toContain(route);
     }
-    expect(readme).toContain('pincraft:shell_preferences_v1');
+    expect(readme).toContain('pinspec:shell_preferences_v1');
     expect(readme).toContain('About provenance table');
     expect(readme).toContain('Nine reactive Svelte 5 runes stores');
     expect(readme).toContain('TypeScript strict validation (tsc --noEmit)');
@@ -163,7 +163,7 @@ describe('multi-vendor documentation and attribution', () => {
     for (const route of ['#/catalog', '#/projects', '#/about']) {
       expect(agents, route).toContain(route);
     }
-    expect(agents).toContain('pincraft:shell_preferences_v1');
+    expect(agents).toContain('pinspec:shell_preferences_v1');
     expect(agents).toContain('Solar Svelte');
     expect(agents).toContain('Nine Svelte 5 runes stores');
     expect(agents).toContain('{stm32,ch32,rp,esp32,sam,nordic}');

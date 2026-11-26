@@ -5,7 +5,7 @@
 ### Requirement: Recent projects are listed in the sidebar
 
 The sidebar recent-projects area SHALL list at most 10 sessions from
-`pincraft:recent_sessions_v1` in the same order as the workspace store. Each
+`pinspec:recent_sessions_v1` in the same order as the workspace store. Each
 entry SHALL offer quick open and delete. Opening SHALL restore the saved pin
 configuration through the existing workspace handoff. Each entry SHALL also
 display its saved project name when present.

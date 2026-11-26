@@ -1,14 +1,14 @@
 # AGENTS.md
 
-## Project: PinCraft (STM32 / CH32 / RP / ESP32 / Microchip SAM / Nordic Pinout Configurator)
+## Project: PinSpec (STM32 / CH32 / RP / ESP32 / Microchip SAM / Nordic Pinout Configurator)
 
-PinCraft is a fast, static, CubeMX-style pinout planning web application. It is a
+PinSpec is a fast, static, CubeMX-style pinout planning web application. It is a
 browser-native alternative to STM32CubeMX: no backend, no install, no cloud
 service. It combines an engineering-grade landing page, a three-pane pinout
 workspace, and an automated build-time catalog generator.
 
-- Repository: https://github.com/rambros3d/pincraft (public)
-- Production site: https://rambros3d.github.io/pincraft/
+- Repository: https://github.com/rambros3d/pinspec (public)
+- Production site: https://rambros3d.github.io/pinspec/
 - Source of truth for behavior: this file and `README.md`
 - Upstream data is **read-only reference**; never edit files inside `.cache/`
 
@@ -186,7 +186,7 @@ expansion is a fixed overlay with a backdrop that never reflows the workspace
 canvas. The sidebar also offers a Hotkeys entry above About that opens the shared
 shortcut dialog over the current route; the keyboard reference is not repeated
 on About. Sidebar expansion is the only UI preference in `localStorage` under
-`pincraft:shell_preferences_v1`; the bar's dialog flags and search focus callback
+`pinspec:shell_preferences_v1`; the bar's dialog flags and search focus callback
 are transient view state in `src/state/top-bar-ui.svelte.ts`. Neither category
 enters share URLs or project files. About owns a single static provenance table
 and has no tab preference.
@@ -194,12 +194,12 @@ and has no tab preference.
 `vite.config.ts` sets `base: process.env.BASE_PATH ?? '/'`. All runtime data
 fetches resolve relative to `import.meta.env.BASE_URL`, e.g.
 `${import.meta.env.BASE_URL}data/index.json`. The current production subpath is
-`/pincraft/`.
+`/pinspec/`.
 
 ### Repository layout
 
 ```
-PinCraft/
+PinSpec/
 +-- tools/data-gen/            # STM32 + CH32 + RP + ESP32 + SAM adapter orchestrator
 |   +-- index.ts               # CLI entry point, emitters, gate invocation
 |   +-- gates.ts               # Pure per-vendor and global gate helpers
@@ -570,10 +570,10 @@ vendor-attributed warnings, runs all gates, and writes artifacts once.
 - **Gate 3:** clean SVG rendering for SOP8, TSSOP20, LQFP48, QFN-56, QFN-80 in
   both themes at multiple zooms; share URLs round-trip remaps and PIO
   assignments.
-- **Gate 4:** `npm test && npm run check && BASE_PATH="/pincraft/" npm run build`
+- **Gate 4:** `npm test && npm run check && BASE_PATH="/pinspec/" npm run build`
   succeed with zero warnings, no broken subpath requests, and no STM32
   regressions. CI additionally forces a weekly source refresh and smoke-tests
-  `index.html`, `data/index.json`, and a sample chip shard under `/pincraft/`.
+  `index.html`, `data/index.json`, and a sample chip shard under `/pinspec/`.
 
 ---
 
@@ -585,7 +585,7 @@ npm run acquire-sources                  # fetch all thirteen upstream sources
 npm run gen-data                         # emit shards and run all release gates
 npm test                                 # Vitest unit tests
 npm run check                            # tsc --noEmit (strict)
-BASE_PATH="/pincraft/" npm run build     # production subpath build check
+BASE_PATH="/pinspec/" npm run build      # production subpath build check
 npm run dev                              # local dev on port 3000
 npm run preview                          # preview dist on port 4173
 ```
@@ -593,7 +593,7 @@ npm run preview                          # preview dist on port 4173
 Every phase must end with `npm test`, `npm run check`, and the production build
 passing. Fix warnings before moving on. CI runs the same sequence on every push
 to `main`, on manual dispatch, and weekly (with a forced `.cache/` refresh),
-then smoke-tests the built site under `/pincraft/` and deploys `dist` to GitHub
+then smoke-tests the built site under `/pinspec/` and deploys `dist` to GitHub
 Pages. Runtime fetches must use `import.meta.env.BASE_URL` through the pure
 `dataUrl()` helper in `src/core/data-url.ts`; no root-absolute `/data/` or
 `/assets/` URL is permitted.

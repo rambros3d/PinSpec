@@ -1,4 +1,4 @@
-# PinCraft
+# PinSpec
 
 Static, zero-backend STM32 / CH32 / RP / ESP32 / Microchip SAM / Nordic pinout configurator built with Svelte 5 (Runes), TypeScript, Vite, and Tailwind CSS v4.
 
@@ -23,7 +23,7 @@ npm run acquire-sources                      # Fetch all thirteen upstream sourc
 npm run gen-data                             # Emit shards and run every generation gate
 npm test                                     # Vitest unit tests for core, exporters, gates, and data-gen helpers
 npm run check                                # TypeScript strict validation (tsc --noEmit)
-BASE_PATH="/pincraft/" npm run build         # Production subpath build check
+BASE_PATH="/pinspec/" npm run build          # Production subpath build check
 npm run dev                                  # Local dev server on port 3000
 npm run preview                              # Preview dist on port 4173
 ```
@@ -89,7 +89,7 @@ The application mounts one global shell on every route. A single h-12 global top
 
 Each newly created workspace session receives an optional short project name made of two curated words (`word-word`) from a fixed vocabulary; no chip family or MCU identifier is appended. The name is shareable pin-planning metadata: it lives in `WorkspaceState`, version-2 share URLs, version-2 project files, and localStorage recent sessions, and renaming is undoable. Existing sessions, share links, and project files keep their stored name without regeneration. The top-bar pill and Projects cards edit the same name through one store action; the inline editing mode itself is component-local and never persisted.
 
-The start screen's New pinout MCU/Board action opens `#/catalog`; its inline search and other quick actions remain available. Catalog rows lead with a 44px package outline rendered from exact geometry generated into each `index.json` entry. No thumbnail fetches a chip shard; the table, filters, 500-result cap, and Open handoff are unchanged. No thumbnail state is persisted or shared. The projects route shows recent sessions as cards with outlines derived from saved package name and pin count, without shard fetches. Chip shards are cached with in-flight request sharing, a 48-entry LRU cap, and optional cancellation for generation-token callers. About owns the full provenance reference, presented in one grouped Catalog sources table; the keyboard reference is owned by the shared dialog and the start-screen rail, not About. Sidebar expansion is a UI preference stored only in `localStorage` under `pincraft:shell_preferences_v1`. Catalog and quick-search discovery filters (query, vendor, family, and package) are independent UI preferences stored only in `localStorage` under `pincraft:discovery_preferences_v1`; they are absent from share URLs, version-2 project files, recent sessions, and undo history. The global bar's dialog flags and registered search-focus callback are transient view state in `src/state/top-bar-ui.svelte.ts`; none is persisted. About owns one static provenance table and has no saved tab. These view-state values are never written to share URLs, project JSON, recent sessions, or undo history. Pin configuration remains shareable through version-2 URLs and project files.
+The start screen's New pinout MCU/Board action opens `#/catalog`; its inline search and other quick actions remain available. Catalog rows lead with a 44px package outline rendered from exact geometry generated into each `index.json` entry. No thumbnail fetches a chip shard; the table, filters, 500-result cap, and Open handoff are unchanged. No thumbnail state is persisted or shared. The projects route shows recent sessions as cards with outlines derived from saved package name and pin count, without shard fetches. Chip shards are cached with in-flight request sharing, a 48-entry LRU cap, and optional cancellation for generation-token callers. About owns the full provenance reference, presented in one grouped Catalog sources table; the keyboard reference is owned by the shared dialog and the start-screen rail, not About. Sidebar expansion is a UI preference stored only in `localStorage` under `pinspec:shell_preferences_v1`. Catalog and quick-search discovery filters (query, vendor, family, and package) are independent UI preferences stored only in `localStorage` under `pinspec:discovery_preferences_v1`; they are absent from share URLs, version-2 project files, recent sessions, and undo history. The global bar's dialog flags and registered search-focus callback are transient view state in `src/state/top-bar-ui.svelte.ts`; none is persisted. About owns one static provenance table and has no saved tab. These view-state values are never written to share URLs, project JSON, recent sessions, or undo history. Pin configuration remains shareable through version-2 URLs and project files.
 
 ## Architecture Overview
 
@@ -104,7 +104,7 @@ The workspace accepts STM32CubeMX / CubeIDE `.ioc` project files. Drop a `.ioc`
 file anywhere over the workspace or use the **Import .ioc** control in the
 center pane. The importer parses the flat `key=value` format, maps ST signal
 names (`GPIO_EXTI13`, `SYS_JTMS-SWDIO`, `GPIO_Output`, and others) to the
-normalized PinCraft vocabulary, and joins signals to physical positions by pin
+normalized PinSpec vocabulary, and joins signals to physical positions by pin
 name. `.ioc` files do not carry package coordinates, so pin names are the only
 join key. Virtual `VP_` entries are ignored.
 
@@ -135,13 +135,13 @@ mapper with no DOM or Svelte imports; UI handoff reuses
 
 ## Themes
 
-PinCraft uses two vendored [daisyUI](https://github.com/saadeghi/daisyui) theme
+PinSpec uses two vendored [daisyUI](https://github.com/saadeghi/daisyui) theme
 variable blocks (`src/themes/daisyui.css`): `fantasy` for light mode and
 `halloween` for dark mode. daisyUI is licensed under MIT
 (https://github.com/saadeghi/daisyui/blob/master/LICENSE); its component layer
 is registered as a build-time plugin. The theme button in the global top bar
 cycles through System, Light, and Dark, and writes the chosen
-mode to `localStorage` under `pincraft:theme`. System mode reads the operating
+mode to `localStorage` under `pinspec:theme`. System mode reads the operating
 system color scheme once at load; no live change listener is registered. With no
 saved mode and no OS preference, light mode is the baseline. Saved values outside
 the three mode values, including theme ids from the previous picker, are ignored

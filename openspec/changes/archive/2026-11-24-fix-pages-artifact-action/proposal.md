@@ -24,4 +24,4 @@ Every recent Pages deployment passes all build and upload steps, but `actions/de
 
 - `.github/workflows/deploy.yml`: one action version reference changes.
 - Effective artifact client changes from `actions/upload-artifact@v7.0.0` to `@v4.6.2`, matching the client `deploy-pages@v4` queries.
-- Build inputs, generated artifacts, tests, checks, and the `/pincraft/` subpath build are unaffected.
+- Build inputs, generated artifacts, tests, checks, and the `/pinspec/` subpath build are unaffected.

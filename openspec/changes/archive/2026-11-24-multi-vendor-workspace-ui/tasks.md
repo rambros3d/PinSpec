@@ -26,4 +26,4 @@
 
 ## 6. Integration and visual verification
 
-- [x] 6.1 Run `npm test`, `npm run check`, and `BASE_PATH="/pincraft/" npm run build` with zero warnings, and visually verify SOP8, TSSOP20, LQFP48, QFN-56, and QFN-80 at minimum and maximum zoom in light and dark themes with no overlapping labels or console errors.
+- [x] 6.1 Run `npm test`, `npm run check`, and `BASE_PATH="/pinspec/" npm run build` with zero warnings, and visually verify SOP8, TSSOP20, LQFP48, QFN-56, and QFN-80 at minimum and maximum zoom in light and dark themes with no overlapping labels or console errors.

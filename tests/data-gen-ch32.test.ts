@@ -240,7 +240,7 @@ describe('CH32 CSV and manifest helpers', () => {
   });
 
   it('accepts matching digests and rejects a corrupted fixture by filename', () => {
-    const root = tempRoot('pincraft-ch32-manifest-');
+    const root = tempRoot('pinspec-ch32-manifest-');
     const sourceDir = writeFixture(root, {});
     const entries = verifyCh32Sources(path.join(sourceDir, 'index'));
     expect(entries.size).toBe(CH32_CONSUMED_FILES.length);
@@ -255,7 +255,7 @@ describe('CH32 CSV and manifest helpers', () => {
   });
 
   it('reads declared tolerance evidence with its digest and rejects missing or malformed files', () => {
-    const root = tempRoot('pincraft-ch32-evidence-');
+    const root = tempRoot('pinspec-ch32-evidence-');
     const sourceDir = writeFixture(root, {});
     const evidencePath = path.join(sourceDir, 'evidence', 'pins.csv');
     const evidence = readCh32ToleranceEvidence(sourceDir);
@@ -275,7 +275,7 @@ describe('CH32 CSV and manifest helpers', () => {
   });
 
   it('aborts generation when the declared tolerance evidence is absent', () => {
-    const root = tempRoot('pincraft-ch32-evidence-abort-');
+    const root = tempRoot('pinspec-ch32-evidence-abort-');
     const sourceDir = writeFixture(root, {});
     fs.rmSync(path.join(sourceDir, 'evidence', 'pins.csv'));
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
@@ -291,7 +291,7 @@ describe('CH32 CSV and manifest helpers', () => {
   });
 
   it('aborts generation with a named error and writes no CH32 shards on digest mismatch', () => {
-    const root = tempRoot('pincraft-ch32-abort-');
+    const root = tempRoot('pinspec-ch32-abort-');
     const sourceDir = writeFixture(root, {});
     const indexDir = path.join(sourceDir, 'index');
     const partsPath = path.join(indexDir, 'parts.csv');
@@ -330,7 +330,7 @@ describe('CH32 CSV and manifest helpers', () => {
 
 describe('CH32 parts, packages, and physical pins', () => {
   it('emits exactly 105 covered parts with vendor tags and non-zero memory', () => {
-    const root = tempRoot('pincraft-ch32-parts-');
+    const root = tempRoot('pinspec-ch32-parts-');
     const allParts = Array.from({ length: 105 }, (_, i) =>
       part(`CH32V003X${String(i).padStart(3, '0')}6`, { flash_bytes: 16384 + i, sram_bytes: 2048 }),
     );
@@ -352,7 +352,7 @@ describe('CH32 parts, packages, and physical pins', () => {
   });
 
   it('keeps one position per physical lead and folds EP into hasExposedPad', () => {
-    const root = tempRoot('pincraft-ch32-geometry-');
+    const root = tempRoot('pinspec-ch32-geometry-');
     const parts = referenceParts();
     const mixedLeads = leads('CH32V003F4P6', 20, (i) =>
       i === 6 ? 'VDD' : i === 8 ? 'VSS' : i === 9 ? 'NRST' :
@@ -402,7 +402,7 @@ describe('CH32 parts, packages, and physical pins', () => {
 
 describe('CH32 bonded pads, signals, remaps, and tags', () => {
   it('merges bonded pads, deduplicates signals, and keeps eight SOP8 leads', () => {
-    const root = tempRoot('pincraft-ch32-bonded-');
+    const root = tempRoot('pinspec-ch32-bonded-');
     const pinouts = leads('CH32V003J4M6', 8, (i) => ['PD1', 'VDD', 'PA2', 'VSS', 'PC4', 'PC1', 'PD6', 'PD4'][i]);
     pinouts.push(
       pinout('CH32V003J4M6', 1, 'PD1', { peripheral: 'SDI', role: 'SWDIO', signal: 'SWIO' }),
@@ -429,7 +429,7 @@ describe('CH32 bonded pads, signals, remaps, and tags', () => {
   });
 
   it('groups default and remap routes with evidence-backed register notes only', () => {
-    const root = tempRoot('pincraft-ch32-remaps-');
+    const root = tempRoot('pinspec-ch32-remaps-');
     const id = 'CH32V003F4P6';
     const pinouts = [
       ...leads(id, 20),
@@ -462,7 +462,7 @@ describe('CH32 bonded pads, signals, remaps, and tags', () => {
   });
 
   it('tags FT pins by part, position, and pad while leaving plain I/O untagged', () => {
-    const root = tempRoot('pincraft-ch32-ft-');
+    const root = tempRoot('pinspec-ch32-ft-');
     const id = 'CH32V003F4P6';
     const pinouts = [
       pinout(id, 11, 'PC1'),
@@ -516,7 +516,7 @@ describe('CH32 bonded pads, signals, remaps, and tags', () => {
 
 describe('CH32 deferral, gates, provenance, and registration', () => {
   it('defers low-confidence, uncovered, and pinout-only parts without failing', () => {
-    const root = tempRoot('pincraft-ch32-defer-');
+    const root = tempRoot('pinspec-ch32-defer-');
     const good = part('CH32V003GOOD6');
     const low = part('CH32V003LOW6');
     const noPinout = part('CH32V003NONE6');
@@ -549,7 +549,7 @@ describe('CH32 deferral, gates, provenance, and registration', () => {
   });
 
   it('passes the four reference assertions and names malformed parts', () => {
-    const root = tempRoot('pincraft-ch32-gate-');
+    const root = tempRoot('pinspec-ch32-gate-');
     writeFixture(root, { parts: referenceParts(), pinouts: referenceRows() });
     const result = generateCh32({ paths: {
       root, cacheDir: path.join(root, '.cache'),
@@ -589,7 +589,7 @@ describe('CH32 deferral, gates, provenance, and registration', () => {
   });
 
   it('records CH32 revision and chip count in meta.json with vendor-tagged shards', () => {
-    const root = tempRoot('pincraft-ch32-meta-');
+    const root = tempRoot('pinspec-ch32-meta-');
     const sourceDir = writeFixture(root, { parts: referenceParts(), pinouts: referenceRows() });
     execSync('git init -q', { cwd: sourceDir });
     fs.writeFileSync(path.join(sourceDir, 'fixture.txt'), 'verified fixture\n');

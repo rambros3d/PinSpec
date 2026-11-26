@@ -2,7 +2,7 @@
 
 ## Why
 
-Users migrating pinouts from STM32CubeMX or STM32CubeIDE have `.ioc` project files that describe their part, package, and pin assignments; PinCraft currently has no way to bring that configuration into a workspace. Official ST board configurations let a user start from a known-good hardware setup instead of assigning dozens of pins by hand.
+Users migrating pinouts from STM32CubeMX or STM32CubeIDE have `.ioc` project files that describe their part, package, and pin assignments; PinSpec currently has no way to bring that configuration into a workspace. Official ST board configurations let a user start from a known-good hardware setup instead of assigning dozens of pins by hand.
 
 ## What Changes
 
@@ -31,4 +31,4 @@ Users migrating pinouts from STM32CubeMX or STM32CubeIDE have `.ioc` project fil
 - Data: static board preset file checked in; generated shards, `public/data/`, and `.cache/` are untouched.
 - Tests: new importer test file with synthetic `.ioc` fixtures covering escaped spaces, suffixes, wildcards, virtual pins, and signal mapping.
 - Licensing: ST board `.ioc` files are BSD-3-Clause and already credited through the existing STM32 open pin data source; no new upstream source is introduced.
-- Verification: `npm test`, `npm run check`, and `BASE_PATH="/pincraft/" npm run build` must pass with no STM32 regressions.
+- Verification: `npm test`, `npm run check`, and `BASE_PATH="/pinspec/" npm run build` must pass with no STM32 regressions.

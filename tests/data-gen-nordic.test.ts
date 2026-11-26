@@ -268,7 +268,7 @@ describe('generated Nordic catalog and gates', () => {
   });
 
   it('writes no partial catalog when a forced Nordic gate error occurs', () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pincraft-nordic-gate-'));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pinspec-nordic-gate-'));
     const failing = {
       ...nordicAdapter,
       sourceSpecs: [],

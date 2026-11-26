@@ -83,5 +83,5 @@ version-2 project JSON.
 
 #### Scenario: Verification sequence passes
 
-- **WHEN** `npm test`, `npm run check`, and `BASE_PATH="/pincraft/" npm run build` are run after the presentation pass
-- **THEN** all three exit zero with no build warnings and assets resolve under `/pincraft/`
+- **WHEN** `npm test`, `npm run check`, and `BASE_PATH="/pinspec/" npm run build` are run after the presentation pass
+- **THEN** all three exit zero with no build warnings and assets resolve under `/pinspec/`

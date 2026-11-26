@@ -1,15 +1,23 @@
-# Spec Delta
+# pinspec-start-screen Specification
 
-## ADDED Requirements
+## Purpose
+
+Defines the `#/` application start screen: its three zones, the entry points for
+new, opened, imported, and compared pinouts, the retained discovery and
+provenance surfaces, and the boundary between shareable pin configuration and
+local-only presentation state.
+
+## Requirements
 
 ### Requirement: The landing route is a three-zone start screen
 
 The `#/` route SHALL render an application start screen inside one
-`.landing-shell` container with three zones: a left action column for starting
-and importing work, a central discovery column for MCU search, recent sessions,
-and starter chips, and a right rail for catalog facts, provenance summary, and
-shortcuts. The shell SHALL remain contained in the visible viewport and SHALL
-scroll its own content.
+`.landing-shell` container with three zones: a left action column, a central
+discovery column for search, recent sessions, and starter chips, and a right
+rail with a compact vendor list and sync date. The shell SHALL remain in the
+visible viewport and scroll its own content. Spacing SHALL read as
+a focused application start screen, and the pass SHALL change presentation only
+with no new route, feature, or shareable field.
 
 #### Scenario: Opening the start screen
 
@@ -26,32 +34,43 @@ scroll its own content.
 - **WHEN** the start screen renders before catalog data has loaded
 - **THEN** no control on the start screen is disabled by or bound to a hero chip load
 
+#### Scenario: Focused hierarchy is applied across all zones
+
+- **WHEN** the reworked start screen renders at a supported desktop width
+- **THEN** the action, discovery, and rail zones use consistent spacing and card density and no zone uses promotional language
+
 ### Requirement: The sticky header keeps navigation and theme
 
 The header SHALL remain sticky and SHALL keep the brand link, the `#presets`
-and `#provenance` anchors, and the theme control. An export-preview anchor SHALL
-NOT be present.
+anchor, a link to the About destination that replaces the former provenance
+anchor, and the theme control. An export-preview anchor SHALL NOT be present.
 
 #### Scenario: Header remains available
 
 - **WHEN** the start screen is scrolled or opened at any supported viewport width
-- **THEN** the header keeps the brand link, the Starter Chips and Data Sources anchors, and the theme control
+- **THEN** the header keeps the brand link, the Starter Chips anchor, the About link, and the theme control
 
 #### Scenario: Export anchor is gone
 
 - **WHEN** the header is inspected
 - **THEN** it contains no `#export-preview` anchor
 
+#### Scenario: Data Sources opens About
+
+- **WHEN** the user activates the Data Sources or About navigation link
+- **THEN** the About destination opens with the provenance information previously shown in the start-screen footer
+
 ### Requirement: The left action column provides five entry points
 
 The action column SHALL expose New pinout MCU/Board, Open project, Import
-`.ioc`, Import pinout.json, and Compare. Each action SHALL reuse the existing
-navigation, dialog, and handoff paths without adding a new persisted field.
+`.ioc`, Import pinout.json, and Compare. New pinout MCU/Board SHALL navigate to
+`#/catalog`; the other actions SHALL reuse their existing navigation, dialog,
+and handoff paths without adding a new persisted field.
 
 #### Scenario: New pinout MCU or board
 
 - **WHEN** the user activates New pinout MCU/Board
-- **THEN** the central MCU quick search is ready for input and the existing board preset selector is reachable
+- **THEN** the catalog route opens and the start screen keeps its inline quick search and board preset selector for direct use
 
 #### Scenario: Board preset seeds a workspace
 
@@ -86,9 +105,12 @@ navigation, dialog, and handoff paths without adding a new persisted field.
 ### Requirement: The central discovery column keeps existing search and presets
 
 The central column SHALL keep the existing quick search with `Ctrl+K`, vendor
-tabs, family and package filters, and its catalog error and retry row. It SHALL
-keep recent local sessions and the cross-vendor starter chips with their current
-part identifiers and section anchor.
+tabs, family and package filters, and its catalog error and retry row. Query and
+filters SHALL be restored from localStorage. The error and pending rows SHALL
+use daisyUI component classes. The column SHALL keep recent local sessions and the
+cross-vendor starter chips with their current part identifiers and section
+anchor. The discovery header SHALL be the only location of the parts-indexed
+and families count.
 
 #### Scenario: Quick search opens a part
 
@@ -100,50 +122,70 @@ part identifiers and section anchor.
 - **WHEN** the catalog index cannot be loaded and the quick search dropdown is opened
 - **THEN** the existing failure message and retry control are shown instead of an empty result list
 
+#### Scenario: Quick-search filters survive reload
+
+- **WHEN** the user changes query, vendor, family, or package filters and reloads the start screen
+- **THEN** the quick search restores those filters and can still reset them to defaults
+
+#### Scenario: Quick-search status surfaces use daisyUI classes
+
+- **WHEN** the quick-search dropdown shows a catalog error or a pending catalog load
+- **THEN** the error uses `alert alert-soft alert-error` and the pending text is accompanied by `loading loading-spinner loading-xs`
+
 #### Scenario: Starter chips remain cross-vendor
 
 - **WHEN** the starter chip section is rendered
 - **THEN** it contains the existing STM32, CH32, and RP part identifiers and the Cross-Vendor Starter Chips heading
 
+#### Scenario: Index count appears only in the discovery header
+
+- **WHEN** `meta.json` has loaded and the start screen is rendered
+- **THEN** the parts-indexed and families count appears in the discovery header with its two badges and is absent from the right rail
+
 ### Requirement: The right rail shows live catalog facts and shortcuts
 
-The right rail SHALL show the indexed chip count, per-vendor counts and match or
-coverage ratios from `meta.json` when available, a compact provenance summary,
-and a text list of the keyboard shortcuts available in the application and
-workspace. It SHALL NOT contain pin assignments or other shareable pin
-configuration.
+The right rail SHALL show a compact catalog card with vendor label and chip
+count rows plus the sync date from `meta.json` when available. It SHALL NOT show
+a total, match or coverage ratios, or shortcuts; the Shortcuts card SHALL be
+removed. Statistics errors SHALL use `alert alert-soft alert-error` and pending
+text SHALL use `loading loading-spinner loading-xs`. It SHALL NOT contain pin
+assignments or shareable configuration. The sidebar Hotkeys dialog SHALL be the
+only shortcut reference.
 
 #### Scenario: Catalog metadata is available
 
 - **WHEN** `meta.json` has loaded
-- **THEN** the rail shows the indexed chip count and the per-vendor counts and ratios from that metadata
+- **THEN** the rail lists each available vendor label with its chip count and the sync date, and shows no total count and no match or coverage ratio
 
 #### Scenario: Catalog metadata is unavailable
 
 - **WHEN** `meta.json` has not loaded or cannot be loaded
 - **THEN** the rail shows a loading or unavailable state and the rest of the start screen remains usable
 
+#### Scenario: Statistics error uses an alert surface
+
+- **WHEN** catalog statistics are unavailable on the start screen
+- **THEN** the existing "Catalog statistics unavailable." guidance is shown inside an `alert alert-soft alert-error` surface
+
+#### Scenario: Statistics pending state uses a loading indicator
+
+- **WHEN** catalog statistics are still loading
+- **THEN** the existing loading text is accompanied by a `loading loading-spinner loading-xs` indicator
+
 #### Scenario: Shortcut reference is textual
 
-- **WHEN** the rail is rendered
-- **THEN** it lists `Ctrl+K`, `Ctrl+F`, `Ctrl+Click`, `Ctrl+Z`, `Ctrl+Y`, `0`, and `Escape` as text
+- **WHEN** the shared shortcut reference is rendered in the shortcut help dialog
+- **THEN** it lists `Ctrl+K`, `Ctrl+F`, `Ctrl+Click`, `Ctrl+Z`, `Ctrl+Y`, `0`, and `Escape` as text and the right rail contains no shortcut card
 
-### Requirement: The provenance footer is retained
+#### Scenario: Rail carries no shortcut reference
 
-The start screen SHALL keep the technical footer with `id="provenance"` that
-lists the seven upstream sources, their licenses, and the source revisions from
-`meta.json`. The Data Sources navigation anchor SHALL continue to target that
-footer.
+- **WHEN** the right rail is rendered in any metadata state
+- **THEN** it contains no shortcut keys, no shortcut action list, and no Shortcuts card
 
-#### Scenario: Footer reports source provenance
+#### Scenario: Rail omits derived ratios and totals
 
-- **WHEN** generated metadata is available on the start screen
-- **THEN** the footer lists per-vendor chip counts, source revisions, and all seven source licenses
-
-#### Scenario: Footer anchor resolves
-
-- **WHEN** the user activates the Data Sources navigation link
-- **THEN** the `provenance` footer is the scroll target inside `.landing-shell`
+- **WHEN** a vendor row is rendered in the rail
+- **THEN** the row text contains only the vendor label and chip count, with no match percentage, coverage percentage, or indexed total
 
 ### Requirement: The hero preview and landing export preview are removed
 
@@ -171,16 +213,17 @@ export modal only.
 
 ### Requirement: Presentation state stays out of shareable pin configuration
 
-No new state field SHALL be introduced by the start screen. Action selection,
-rail expansion, and filter chips SHALL remain component-local presentation
-state. The theme preference SHALL remain in localStorage only. Pin configuration
-handoff to the workspace SHALL continue through the existing workspace store
-path and SHALL NOT gain a presentation field.
+No new shareable state field SHALL be introduced by the start screen. Action
+selection and rail expansion SHALL remain component-local presentation state,
+while quick-search discovery filters SHALL be presentation state persisted only
+in localStorage. The theme preference SHALL remain in localStorage only. Pin
+configuration handoff to the workspace SHALL continue through the existing
+workspace store path and SHALL NOT gain a presentation field.
 
 #### Scenario: Start screen state is not shared
 
 - **WHEN** a workspace is opened through a start-screen action and then shared or exported as project JSON
-- **THEN** neither the share payload nor the project JSON contains an action, rail, or shortcut field
+- **THEN** neither the share payload nor the project JSON contains an action, rail, shortcut, or discovery filter field
 
 #### Scenario: Theme preference remains local
 
@@ -192,12 +235,12 @@ path and SHALL NOT gain a presentation field.
 The start screen SHALL add no dependency, SHALL keep raw color literals in the
 vendored theme file, SHALL contain no emoji characters, and SHALL keep strict
 TypeScript clean. `npm test`, `npm run check`, and
-`BASE_PATH="/pincraft/" npm run build` SHALL exit zero with no build warnings.
+`BASE_PATH="/pinspec/" npm run build` SHALL exit zero with no build warnings.
 
 #### Scenario: Verification sequence passes
 
 - **WHEN** the three verification commands are run after the change
-- **THEN** all three exit zero and the build resolves assets under `/pincraft/` without root-absolute data or asset paths
+- **THEN** all three exit zero and the build resolves assets under `/pinspec/` without root-absolute data or asset paths
 
 #### Scenario: No new raw colors or emoji
 

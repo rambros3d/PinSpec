@@ -321,7 +321,7 @@ describe('ESP32 strict gate behavior', () => {
   });
 
   it('publishes no partial catalog when a strict ESP32 gate fails', () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pincraft-esp32-gate-'));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pinspec-esp32-gate-'));
     try {
       fs.symlinkSync(CACHE, path.join(root, '.cache'), 'dir');
       const failing = {

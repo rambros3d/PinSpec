@@ -25,7 +25,7 @@ The catalog lists up to 500 generated parts in a dense text-only table, and the 
 - `global-app-shell`: The catalog route gains a leading thumbnail column while keeping its dense table and load states. The projects route changes from a list to session cards while keeping import, export, handoff, and empty-state behavior. Source and verification constraints now cover thumbnails.
 - `multi-vendor-workspace`: Full package geometry from shards (`kind`, `sides`, `rows`, `cols`, `hasExposedPad`) also drives a non-interactive thumbnail surface without changing the interactive package renderers, their mux/bonded/exposed-pad behavior, or their theme and texture constraints.
 
-`pincraft-start-screen` is not modified. Its three zones, quick search, presets, recent-session list, and no-preview contract remain unchanged, and no thumbnail or shard fetch is added to `#/`.
+`pinspec-start-screen` is not modified. Its three zones, quick search, presets, recent-session list, and no-preview contract remain unchanged, and no thumbnail or shard fetch is added to `#/`.
 
 ## Impact
 
@@ -33,4 +33,4 @@ The catalog lists up to 500 generated parts in a dense text-only table, and the 
 - Data: no generator, shard, index, `meta.json`, or `build-warnings.json` change. All runtime fetches continue through `catalogStore` and `dataUrl()` with `import.meta.env.BASE_URL`.
 - State: no share, project, workspace, undo, or recent-session schema change. No new localStorage preference; refinement state is component-local and cancelled on teardown.
 - Dependencies: none added. Colors come from existing theme utilities; icons remain `lucide-svelte` where used.
-- Verification: `npm test`, `npm run check`, and `BASE_PATH="/pincraft/" npm run build` must pass with zero warnings, after which the implementation agent archives the change. This planning artifact makes no commit.
+- Verification: `npm test`, `npm run check`, and `BASE_PATH="/pinspec/" npm run build` must pass with zero warnings, after which the implementation agent archives the change. This planning artifact makes no commit.

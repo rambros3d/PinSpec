@@ -23,7 +23,7 @@
 
 - [x] 4.1 Replace the table in `src/pages/ProjectsPage.svelte` with a responsive card grid. Each card shows a `PackageThumbnail`, MCU ID, package name, assigned/total pins, relative updated time, and Open, Export, and Delete controls. Verify with `tests/global-app-shell.test.ts` that the card fields and all three actions are present and that the import and New project actions remain.
 - [x] 4.2 Derive each card thumbnail from `session.packageName` and `session.pinCount` through the approximate helper and add no shard fetch to this route. Verify with `tests/package-thumbnails.test.ts` that `ProjectsPage.svelte` contains no `loadChip(` and that the helper receives the stored session fields.
-- [x] 4.3 Preserve the 10-session limit, `pincraft:recent_sessions_v1` shape, empty-state guidance, workspace handoff, and version-2 import/export behavior. Verify with `tests/global-app-shell.test.ts` and `tests/view-preferences.test.ts` that `recentSessions.slice(0, 10)`, `parsePinoutJson(`, `exportPinoutJson(`, `setPendingHandoff(`, and `href="#/catalog"` remain and no new persisted field appears.
+- [x] 4.3 Preserve the 10-session limit, `pinspec:recent_sessions_v1` shape, empty-state guidance, workspace handoff, and version-2 import/export behavior. Verify with `tests/global-app-shell.test.ts` and `tests/view-preferences.test.ts` that `recentSessions.slice(0, 10)`, `parsePinoutJson(`, `exportPinoutJson(`, `setPendingHandoff(`, and `href="#/catalog"` remain and no new persisted field appears.
 
 ## 5. Contract non-regression and documentation
 
@@ -36,7 +36,7 @@
 
 - [x] 6.1 Run `npm test` and resolve every failure or warning. Verify the command exits zero with the full suite green.
 - [x] 6.2 Run `npm run check` and resolve every type or Svelte diagnostic. Verify the command exits zero with no output warnings.
-- [x] 6.3 Run `BASE_PATH="/pincraft/" npm run build` and confirm the built app resolves assets under `/pincraft/` with no root-absolute data or asset path. Verify the command exits zero with no build warnings.
+- [x] 6.3 Run `BASE_PATH="/pinspec/" npm run build` and confirm the built app resolves assets under `/pinspec/` with no root-absolute data or asset path. Verify the command exits zero with no build warnings.
 
 ## Workflow follow-up
 

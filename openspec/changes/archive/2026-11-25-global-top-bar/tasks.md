@@ -35,7 +35,7 @@
 
 - [x] 6.1 Run `npm test` and resolve every failure or warning. Verify the command exits zero with the full suite green.
 - [x] 6.2 Run `npm run check` and resolve every type or Svelte diagnostic. Verify the command exits zero with no output warnings.
-- [x] 6.3 Run `BASE_PATH="/pincraft/" npm run build` and confirm the built app resolves assets under `/pincraft/` with no root-absolute data or asset paths. Verify the command exits zero with no build warnings.
+- [x] 6.3 Run `BASE_PATH="/pinspec/" npm run build` and confirm the built app resolves assets under `/pinspec/` with no root-absolute data or asset paths. Verify the command exits zero with no build warnings.
 
 ## Workflow follow-up
 

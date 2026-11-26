@@ -26,7 +26,7 @@
 
 - [x] 4.1 Update the static overlay wiring test in `tests/pin-placement-affinity.test.ts` so it asserts the removed `onRing` token is gone while retaining `PLACEMENT_RINGS`, `setPointerCapture`, `type="number"`, `indicator.name`, `PlacementOverlay`, `setPlacementOverlayVisible`, `previewPlacement`, `commitPlacement`, and `set.add(pos)`. Verify with `npm test`.
 - [x] 4.2 Confirm the golden allocation fixture and placement scoring tests are unchanged, including the zero placement term when disabled and byte-identical default assignments. Verify with `npm test` that no regression appears in `tests/fixtures/stm32-golden.json` comparisons or scoring cases.
-- [x] 4.3 Run the full project verification sequence `npm test && npm run check && BASE_PATH="/pincraft/" npm run build` and confirm all three commands pass with zero warnings and no broken subpath references.
+- [x] 4.3 Run the full project verification sequence `npm test && npm run check && BASE_PATH="/pinspec/" npm run build` and confirm all three commands pass with zero warnings and no broken subpath references.
 
 ## Workflow follow-up
 

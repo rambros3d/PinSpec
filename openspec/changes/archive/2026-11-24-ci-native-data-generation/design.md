@@ -44,4 +44,4 @@ See `proposal.md` for motivation. Today `tools/data-gen/index.ts` is a single ~7
 2. Introduce `sources.ts` and `adapters/stm32.ts`, leaving the old entry point temporarily delegating to the orchestrator; verify byte equality.
 3. Switch the landing hero to `catalogStore.loadChip()`, delete `src/data/hero-chip.json`, and remove the hero write from generation.
 4. Move gates to per-vendor functions and centralize warnings/provenance; update CI to fetch all sources.
-5. Run `npm test`, `npm run check`, and `BASE_PATH="/pincraft/" npm run build`; remove the old monolith once all checks pass. Rollback is a git revert plus regenerating data; no persisted state exists.
+5. Run `npm test`, `npm run check`, and `BASE_PATH="/pinspec/" npm run build`; remove the old monolith once all checks pass. Rollback is a git revert plus regenerating data; no persisted state exists.

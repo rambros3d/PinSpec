@@ -31,7 +31,7 @@
 
 - [x] 6.1 Run `npm test` and confirm the full unit and static-contract suite passes, including the new core partition cases, retargeted detail assertions, rewritten dock persistence cases, and unchanged pin-configuration round-trip cases, with no skipped or failing tests
 - [x] 6.2 Run `npm run check` and confirm strict TypeScript passes with zero warnings, and confirm no DOM or Svelte import exists under `src/core/`
-- [x] 6.3 Run `BASE_PATH="/pincraft/" npm run build` and confirm a clean production subpath build with no broken `/data/` or `/assets/` requests and no change to generated shards
+- [x] 6.3 Run `BASE_PATH="/pinspec/" npm run build` and confirm a clean production subpath build with no broken `/data/` or `/assets/` requests and no change to generated shards
 - [x] 6.4 Run `tests/theme-tokens.test.ts` checks and confirm zero raw color literals outside `src/themes/daisyui.css`, no retired utilities in new markup, and zero emoji in delivered source, then confirm no new npm dependency was added
 
 ## Workflow follow-up

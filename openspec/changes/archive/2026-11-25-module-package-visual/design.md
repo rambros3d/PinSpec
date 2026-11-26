@@ -57,7 +57,7 @@ See proposal.md for motivation and the delta spec for behavior. Current state:
 1. Add the two type fields, then emit module metadata in the ESP32 join and index entry, with the new strict gate.
 2. Add the module-only decoration branch to `PerimeterPackage.svelte` and verify rotation and interaction contracts.
 3. Add the MODULE tag in the three catalog result surfaces and derive starter-chip tags from the catalog index.
-4. Update the six affected test files and run the full verification sequence: `npm test`, `npm run check`, `BASE_PATH="/pincraft/" npm run build`, and `npm run gen-data`.
+4. Update the six affected test files and run the full verification sequence: `npm test`, `npm run check`, `BASE_PATH="/pinspec/" npm run build`, and `npm run gen-data`.
 5. After all tasks pass, the implementation agent runs `openspec archive module-package-visual -y` and includes the synced spec and archived change files in the implementation commit. This planning step makes no commit.
 
 ## Open Questions

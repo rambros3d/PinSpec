@@ -35,7 +35,7 @@
 
 ## 6. Full verification
 
-- [x] 6.1 Ran `npm run acquire-sources`, `npm run gen-data`, `npm test`, `npm run check`, and `BASE_PATH="/pincraft/" npm run build`; all succeeded with no warnings, index grew from 573,307 to 619,954 bytes, and all 2,894 chips emitted.
+- [x] 6.1 Ran `npm run acquire-sources`, `npm run gen-data`, `npm test`, `npm run check`, and `BASE_PATH="/pinspec/" npm run build`; all succeeded with no warnings, index grew from 573,307 to 619,954 bytes, and all 2,894 chips emitted.
 - [x] 6.2 Confirmed no emoji characters, raw color literals in changed source, or whitespace errors in the diff.
 
 ## Workflow follow-up

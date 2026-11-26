@@ -143,7 +143,7 @@ A thumbnail SHALL be a static inline SVG with no click, pointer, or keyboard han
 
 ### Requirement: Thumbnail state is not shareable or persisted
 
-Thumbnail geometry, refinement results, approximation fidelity, and visibility SHALL NOT enter share URLs, version-2 project JSON, workspace state, undo history, or recent-session storage. No new localStorage preference SHALL be introduced; display state SHALL be component-local and reset on route teardown. Data fetches SHALL continue to resolve through the existing base-URL-aware catalog path so thumbnails work under `/pincraft/`.
+Thumbnail geometry, refinement results, approximation fidelity, and visibility SHALL NOT enter share URLs, version-2 project JSON, workspace state, undo history, or recent-session storage. No new localStorage preference SHALL be introduced; display state SHALL be component-local and reset on route teardown. Data fetches SHALL continue to resolve through the existing base-URL-aware catalog path so thumbnails work under `/pinspec/`.
 
 #### Scenario: Share and export stay unchanged
 
@@ -157,5 +157,5 @@ Thumbnail geometry, refinement results, approximation fidelity, and visibility S
 
 #### Scenario: Subpath fetches remain catalog-owned
 
-- **WHEN** the built app is served under `/pincraft/` and a thumbnail is refined
+- **WHEN** the built app is served under `/pinspec/` and a thumbnail is refined
 - **THEN** the shard fetch resolves relative to `import.meta.env.BASE_URL` and no root-absolute data or asset path is used

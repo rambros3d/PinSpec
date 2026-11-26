@@ -33,7 +33,7 @@ repeats the app brand in a dedicated header block above navigation.
 - Render the RadioKit app icon from `import.meta.env.BASE_URL` before the
   editable project-name control on workspace and shared routes. Non-workspace
   routes keep their existing wordmark and layout.
-- Remove the sidebar's separate logo and PinCraft header block so the section
+- Remove the sidebar's separate logo and PinSpec header block so the section
   navigation begins at the top of the panel.
 
 ## Capabilities
@@ -61,5 +61,5 @@ Affected code: `src/components/workspace/PackageCanvas.svelte`,
 exporter, routing, theme token, or persistence schema change is made. No new
 dependency, raw color literal, or emoji is introduced. Verification is
 `npm test`, `npm run check`, and
-`BASE_PATH="/pincraft/" npm run build` with zero warnings, followed by strict
+`BASE_PATH="/pinspec/" npm run build` with zero warnings, followed by strict
 OpenSpec validation and archive.

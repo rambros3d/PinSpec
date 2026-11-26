@@ -11,7 +11,7 @@ Defines the global application shell: a collapsible sidebar available on every r
 The shell SHALL render a left sidebar on all six routes with a collapsed 3rem
 rail in reserved space and a top-bar expand/collapse control. Expansion SHALL
 overlay content without reflow. The sidebar SHALL NOT render a separate brand
-header with an app logo or PinCraft label; section navigation SHALL be its
+header with an app logo or PinSpec label; section navigation SHALL be its
 first visible content.
 
 #### Scenario: Collapsed rail stays visible on every route
@@ -47,7 +47,7 @@ first visible content.
 #### Scenario: Navigation starts at the top
 
 - **WHEN** the sidebar is opened on any supported route
-- **THEN** the first visible block inside the panel is the section navigation and no separate logo or PinCraft label appears above it
+- **THEN** the first visible block inside the panel is the section navigation and no separate logo or PinSpec label appears above it
 
 ### Requirement: The sidebar provides four section entries
 
@@ -96,7 +96,7 @@ destination and SHALL remain usable while a workspace or shared pinout is open.
 ### Requirement: Recent projects are listed in the sidebar
 
 The sidebar recent-projects area SHALL list at most 10 sessions from
-`pincraft:recent_sessions_v1` in the same order as the workspace store. Each
+`pinspec:recent_sessions_v1` in the same order as the workspace store. Each
 entry SHALL offer quick open and delete. Opening SHALL restore the saved pin
 configuration through the existing workspace handoff. Each entry SHALL also
 display its saved project name when present.
@@ -318,7 +318,7 @@ and `.landing-shell`.
 
 #### Scenario: Shell routes work under a subpath
 
-- **WHEN** the built app is served under `/pincraft/` and a shell route is opened
+- **WHEN** the built app is served under `/pinspec/` and a shell route is opened
 - **THEN** the route resolves from the hash and data requests resolve relative to `import.meta.env.BASE_URL`
 
 #### Scenario: Global bar preserves persistence
@@ -333,7 +333,7 @@ and `.landing-shell`.
 
 ### Requirement: Shell surfaces meet source and verification constraints
 
-Shell surfaces SHALL use existing theme tokens and bold duotone vector icons, SHALL add no npm dependency other than the single icon package, SHALL contain no emoji, and SHALL keep raw color literals in the vendored theme file. Catalog and projects thumbnails SHALL be static inline SVG with no interaction handler, no raw color literal, and no texture primitive. `npm test`, `npm run check`, and `BASE_PATH="/pincraft/" npm run build` SHALL exit zero with no build warnings.
+Shell surfaces SHALL use existing theme tokens and bold duotone vector icons, SHALL add no npm dependency other than the single icon package, SHALL contain no emoji, and SHALL keep raw color literals in the vendored theme file. Catalog and projects thumbnails SHALL be static inline SVG with no interaction handler, no raw color literal, and no texture primitive. `npm test`, `npm run check`, and `BASE_PATH="/pinspec/" npm run build` SHALL exit zero with no build warnings.
 
 #### Scenario: Theme tokens cover the shell
 
@@ -343,7 +343,7 @@ Shell surfaces SHALL use existing theme tokens and bold duotone vector icons, SH
 #### Scenario: Verification sequence passes
 
 - **WHEN** the three verification commands are run after implementation
-- **THEN** all three exit zero and the build resolves assets under `/pincraft/` without root-absolute data or asset paths
+- **THEN** all three exit zero and the build resolves assets under `/pinspec/` without root-absolute data or asset paths
 
 #### Scenario: No new raw colors or emoji
 

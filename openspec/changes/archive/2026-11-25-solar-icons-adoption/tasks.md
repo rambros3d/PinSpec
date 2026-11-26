@@ -39,7 +39,7 @@
 ## 8. Integration verification
 
 - [x] 8.1 Scan all 21 affected files and the whole `src/` tree for `lucide-svelte` references and for any `@solar-icons/svelte` import outside the `bold-duotone` style; verify the scan returns no result and that all 49 original glyph names are either mapped or recorded as removed.
-- [x] 8.2 Run `npm test`, `npm run check`, and `BASE_PATH="/pincraft/" npm run build` and verify all three exit zero with no Svelte warnings, no broken subpath asset requests, and no STM32 behavior or generated catalog change.
+- [x] 8.2 Run `npm test`, `npm run check`, and `BASE_PATH="/pinspec/" npm run build` and verify all three exit zero with no Svelte warnings, no broken subpath asset requests, and no STM32 behavior or generated catalog change.
 
 ## Workflow follow-up
 

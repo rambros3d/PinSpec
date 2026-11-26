@@ -24,4 +24,4 @@
 
 ## 6. Integration verification
 
-- [x] 6.1 Run `npm test`, `npm run check`, and `BASE_PATH="/pincraft/" npm run build`; verify zero warnings and confirm no version-1 branch or STM32-only export path remains via repository search.
+- [x] 6.1 Run `npm test`, `npm run check`, and `BASE_PATH="/pinspec/" npm run build`; verify zero warnings and confirm no version-1 branch or STM32-only export path remains via repository search.

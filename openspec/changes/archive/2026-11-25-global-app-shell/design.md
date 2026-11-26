@@ -5,7 +5,7 @@
 `src/App.svelte` switches between `landing`, `workspace`, and `shared` views;
 `src/state/router.svelte.ts` parses only `#/`, `#/mcu/<PART>`, and `#/s/<PAYLOAD>`.
 The workspace is viewport-locked by `src/app.css`, while the start screen scrolls
-inside `.landing-shell`. Recent sessions live in `pincraft:recent_sessions_v1`
+inside `.landing-shell`. Recent sessions live in `pinspec:recent_sessions_v1`
 through `workspaceStore`, which already exposes open and delete operations.
 `catalogStore` owns `meta.json` and `index.json` loading with retryable errors.
 `viewPreferences` demonstrates the localStorage-only preference pattern, and its
@@ -96,7 +96,7 @@ the recent-session payload stays identical to today's version-2 workspace state.
 ### Shell preferences
 
 Add `src/state/shell-preferences.svelte.ts` with its own key
-`pincraft:shell_preferences_v1`. It stores `sidebarExpanded` and `aboutTab`,
+`pinspec:shell_preferences_v1`. It stores `sidebarExpanded` and `aboutTab`,
 normalizes absent or unknown values to collapsed and the first tab, and writes
 only through localStorage. Do not extend `VIEW_PREFERENCES_STORAGE_KEY`: its
 exact key set is asserted by `tests/view-preferences.test.ts`, and shell
@@ -159,7 +159,7 @@ Implemented by the implementation agent after artifacts are complete:
 2. Add the catalog, projects, and about pages and extract provenance content.
 3. Adjust the start screen, workspace overlay stacking, CSS, and documentation.
 4. Update static test contracts in the same change.
-5. Run `npm test`, `npm run check`, and `BASE_PATH="/pincraft/" npm run build`.
+5. Run `npm test`, `npm run check`, and `BASE_PATH="/pinspec/" npm run build`.
 6. Run `openspec archive global-app-shell -y` and include archive output in the
    implementation commit. No persisted user data migration is required; the new
    localStorage key is additive and can be ignored on rollback.

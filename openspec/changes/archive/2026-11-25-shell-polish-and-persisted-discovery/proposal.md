@@ -49,7 +49,7 @@ localStorage.
 - `global-top-bar`: The shortcut help and MCU switcher surfaces reached from
   the bar keep their dialog and pending-state behavior under the adopted
   classes.
-- `pincraft-start-screen`: Quick-search filters persist locally; start-screen
+- `pinspec-start-screen`: Quick-search filters persist locally; start-screen
   error and pending surfaces use the adopted classes.
 - `workspace-qol`: Catalog failure and pending rows and native dialog focus
   behavior remain intact with the adopted classes.

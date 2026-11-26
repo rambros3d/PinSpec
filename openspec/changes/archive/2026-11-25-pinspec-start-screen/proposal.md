@@ -42,7 +42,7 @@ screen.
 
 ### New Capabilities
 
-- `pincraft-start-screen`: the three-zone `#/` start screen, its five entry
+- `pinspec-start-screen`: the three-zone `#/` start screen, its five entry
   points, retained discovery and provenance surfaces, and the boundary between
   shareable pin configuration and localStorage-only presentation state.
 

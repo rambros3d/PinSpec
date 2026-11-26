@@ -1,4 +1,4 @@
-name: Build and Deploy PinCraft to GitHub Pages
+name: Build and Deploy PinSpec to GitHub Pages
 
 on:
   push:
@@ -34,8 +34,8 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .cache
-          key: ${{ runner.os }}-pincraft-sources-${{ hashFiles('tools/data-gen/sources.ts', 'tools/data-gen/adapters/**/sources.ts', 'package-lock.json') }}
-          restore-keys: ${{ runner.os }}-pincraft-sources-
+          key: ${{ runner.os }}-pinspec-sources-${{ hashFiles('tools/data-gen/sources.ts', 'tools/data-gen/adapters/**/sources.ts', 'package-lock.json') }}
+          restore-keys: ${{ runner.os }}-pinspec-sources-
 
       - name: Install dependencies
         run: npm ci
@@ -68,20 +68,20 @@ jobs:
       - name: Verify subpath runtime fetches
         run: |
           set -euo pipefail
-          rm -rf /tmp/pincraft-site
-          mkdir -p /tmp/pincraft-site/pincraft
-          cp -r dist/. /tmp/pincraft-site/pincraft/
-          python3 -m http.server 8099 --directory /tmp/pincraft-site >/tmp/pincraft-http.log 2>&1 &
+          rm -rf /tmp/pinspec-site
+          mkdir -p /tmp/pinspec-site/pinspec
+          cp -r dist/. /tmp/pinspec-site/pinspec/
+          python3 -m http.server 8099 --directory /tmp/pinspec-site >/tmp/pinspec-http.log 2>&1 &
           SERVER_PID=$!
           trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
           for _ in $(seq 1 30); do
-            if curl -fsS http://127.0.0.1:8099/pincraft/index.html -o /dev/null; then break; fi
+            if curl -fsS http://127.0.0.1:8099/pinspec/index.html -o /dev/null; then break; fi
             sleep 1
           done
-          curl -fsS http://127.0.0.1:8099/pincraft/index.html -o /dev/null
-          curl -fsS http://127.0.0.1:8099/pincraft/data/index.json -o /dev/null
+          curl -fsS http://127.0.0.1:8099/pinspec/index.html -o /dev/null
+          curl -fsS http://127.0.0.1:8099/pinspec/data/index.json -o /dev/null
           SAMPLE=$(node -e "const fs=require('fs'); const i=JSON.parse(fs.readFileSync('dist/data/index.json','utf8')); process.stdout.write(i[0].id)")
-          curl -fsS "http://127.0.0.1:8099/pincraft/data/chips/${SAMPLE}.json" -o /dev/null
+          curl -fsS "http://127.0.0.1:8099/pinspec/data/chips/${SAMPLE}.json" -o /dev/null
           if grep -Eq '(src|href)="/(data|assets)/' dist/index.html; then
             echo "Subpath check failed: root-absolute data or asset URL in dist/index.html" >&2
             exit 1

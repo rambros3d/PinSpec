@@ -20,7 +20,7 @@
 
 ## 4. Integration verification
 
-- [x] 4.1 Run `npm test && npm run check && BASE_PATH="/pincraft/" npm run build` and confirm zero warnings, no subpath asset failures, and no STM32 regressions; verify all three commands exit successfully.
+- [x] 4.1 Run `npm test && npm run check && BASE_PATH="/pinspec/" npm run build` and confirm zero warnings, no subpath asset failures, and no STM32 regressions; verify all three commands exit successfully.
 
 ## Workflow follow-up
 

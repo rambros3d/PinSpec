@@ -8,7 +8,7 @@
 ## 2. Persisted dock tab state
 
 - [x] 2.1 Add one additive optional version-2 dock-tab field to `WorkspaceState` in `src/core/types.ts` with a doc comment naming the persistence rationale, and update `cloneWorkspaceState()`, `statesEqual()`, and the shared normalizer to default to `peripherals` when absent; verify unit tests cover clone, equality, and absent-field normalization under `npm test`
-- [x] 2.2 Thread the dock-tab field through `CompactUrlPayload`/`src/core/url-state.ts`, `PinCraftProjectFile`/`src/core/exporters/json.ts`, undo/redo history, and the `localStorage` session serializer without a schema version bump or v1 path; verify round-trip tests restore the selected tab across share URL, project JSON, history, and session with `npm test`
+- [x] 2.2 Thread the dock-tab field through `CompactUrlPayload`/`src/core/url-state.ts`, `PinSpecProjectFile`/`src/core/exporters/json.ts`, undo/redo history, and the `localStorage` session serializer without a schema version bump or v1 path; verify round-trip tests restore the selected tab across share URL, project JSON, history, and session with `npm test`
 
 ## 3. Orientation-driven grid layout
 
@@ -31,7 +31,7 @@
 - [x] 6.1 Verify an orientation switch preserves all pin assignments, labels, locks, peripheral modes, diagnostics, and undo/redo history while the document stays fixed and the canvas plus dock remain reachable
 - [x] 6.2 Run `npm test` and confirm the full unit suite passes with no failures
 - [x] 6.3 Run `npm run check` and confirm strict type checking passes with zero warnings
-- [x] 6.4 Run `BASE_PATH="/pincraft/" npm run build` and confirm a clean production subpath build with no broken `/data/` or `/assets/` requests
+- [x] 6.4 Run `BASE_PATH="/pinspec/" npm run build` and confirm a clean production subpath build with no broken `/data/` or `/assets/` requests
 
 ## Workflow follow-up
 

@@ -35,7 +35,7 @@ See `proposal.md` for motivation. `.github/workflows/deploy.yml` currently has o
 
 1. Edit the workflow to rename the single job to `build`, remove its environment and deploy step, and add the `deploy` job after it.
 2. Update the workflow contract tests for the two-job layout while keeping all prior behavior assertions.
-3. Run `npm test`, `npm run check`, and `BASE_PATH="/pincraft/" npm run build`, then parse the YAML to confirm the structure.
+3. Run `npm test`, `npm run check`, and `BASE_PATH="/pinspec/" npm run build`, then parse the YAML to confirm the structure.
 4. Archive the OpenSpec change; the next Pages run consumes the new workflow.
 
 Rollback: restore the previous single-job workflow and test assertions from git if the two-job split causes an unexpected failure.

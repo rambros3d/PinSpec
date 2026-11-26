@@ -89,18 +89,16 @@
     {/each}
   </nav>
 
-  {#if !isWorkspace}
-    <div class="absolute left-1/2 -translate-x-1/2">
-      <span class="flex shrink-0 items-center gap-1.5" title="PinSpec">
-        <img
-          src={`${import.meta.env.BASE_URL}radiokit-logo.svg`}
-          alt=""
-          class="size-5 shrink-0"
-        />
-        <span class="font-bold text-foreground">PinSpec</span>
-      </span>
-    </div>
-  {/if}
+  <div class="absolute left-1/2 -translate-x-1/2">
+    <span class="flex shrink-0 items-center gap-1.5" title="PinSpec">
+      <img
+        src={`${import.meta.env.BASE_URL}radiokit-logo.svg`}
+        alt=""
+        class="size-5 shrink-0"
+      />
+      <span class="font-bold text-foreground">PinSpec</span>
+    </span>
+  </div>
 
   <nav class="flex min-w-0 items-center gap-1" aria-label="Resources">
     {#if !isWorkspace}

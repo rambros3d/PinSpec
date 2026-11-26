@@ -180,9 +180,9 @@ Hash routing only, so deep links never trigger Pages 404s under a subpath:
 
 One global shell wraps every route. A thin h-8 (32 px) navigation bar is mounted
 on every route: Home, Projects, and Catalog on the left; a centered app icon and
-`PinSpec` name on non-workspace routes; Workspace, an About info icon, a GitHub
-link, keyboard shortcuts, and the compact theme picker on the right. The
-workspace action bar carries the app icon on workspace and shared routes.
+`PinSpec` name; Workspace, an About info icon, a GitHub link, keyboard shortcuts,
+and the compact theme picker on the right. The workspace action bar also carries
+the app icon on workspace and shared routes.
 Labels collapse to icons below the `sm` breakpoint and every target stays
 operable without horizontal scrolling. No route-title text is rendered. The
 right-side Workspace control appears only on non-workspace routes, opens the
@@ -458,10 +458,9 @@ route and repository documentation.
 Three-pane IDE:
 
 - **Global navigation bar (32px):** Home, Projects, and Catalog on the left;
-  a centered app icon and name on non-workspace routes; Workspace, About,
-  GitHub, keyboard shortcuts, and the compact theme picker on the right.
-  GitHub and shortcuts are icon-only; labels collapse to icons below `sm`.
-  No route title is rendered.
+  a centered app icon and name; Workspace, About, GitHub, keyboard shortcuts,
+  and the compact theme picker on the right. GitHub and shortcuts are icon-only;
+  labels collapse to icons below `sm`. No route title is rendered.
 - **Workspace action bar (48px):** mounted only on workspace and shared routes.
   It hosts the inline project name, MCU switcher, undo/redo, Clear All,
   Compatible MCUs, Compare, Share, and Export, with a horizontal scroll

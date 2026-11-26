@@ -47,12 +47,13 @@ describe('thin global navigation bar', () => {
   const nav = read('src/components/shell/GlobalNavBar.svelte');
   const shell = read('src/components/shell/AppShell.svelte');
 
-  it('mounts one h-8 bar with route-specific product identity', () => {
+  it('mounts one h-8 bar with persistent product identity', () => {
     expect(nav).toContain('global-nav-bar relative flex h-8 shrink-0');
     expect(shell).toContain('<GlobalNavBar />');
     expect(nav).toContain('radiokit-logo.svg');
     expect(nav).toContain('>PinSpec<');
     expect(nav).not.toContain('routeTitle');
+    expect(nav.indexOf('absolute left-1/2')).toBeLessThan(nav.indexOf('{#if !isWorkspace}'));
     for (const file of [
       'src/pages/LandingPage.svelte',
       'src/pages/CatalogPage.svelte',

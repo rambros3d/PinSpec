@@ -43,25 +43,6 @@ existing scarcity-only allocation behavior.
 - **WHEN** a high-ring peripheral and a low-ring peripheral both have enabled placement preferences and compete for the same scarce pin
 - **THEN** the high-ring peripheral is allocated first and the low-ring peripheral is allocated to the next available pin
 
-### Requirement: Angular and radial scoring applies within a ring
-
-Within a single ring, the system SHALL rank candidate pins by a weighted score
-that favors smaller angular distance between the pin and the peripheral's
-configured angle. For grid and BGA packages the score SHALL also incorporate
-radial distance from the package centre such that outer balls are preferred for
-connector-facing placement. The weighting SHALL be deterministic for a given
-package and placement preference.
-
-#### Scenario: Smaller angular distance is preferred
-
-- **WHEN** two candidate pins in the same ring support a signal and one is angularly closer to the configured angle
-- **THEN** the angularly closer pin is selected
-
-#### Scenario: Outer balls are preferred on a grid package
-
-- **WHEN** two candidate pins in the same ring have equal angular score on a BGA package and one is farther from the package centre
-- **THEN** the outer ball is selected
-
 ### Requirement: Disabled placement leaves allocation byte-identical
 
 The optional placement term SHALL evaluate to zero whenever no placement

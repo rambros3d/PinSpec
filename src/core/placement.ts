@@ -13,6 +13,7 @@ import {
   type PlacementRing,
   type WorkspaceState,
 } from './types';
+import { RING_RADIUS_FACTORS } from './placement-rings';
 import { partitionPeripherals } from './vendor-view';
 
 /** Normalized shareable placement preferences used by every persistence surface. */
@@ -85,11 +86,13 @@ export function normalizePlacement(
   return { preferences };
 }
 
-/** One pin's polar position relative to the package centre. */
+/** One pad centre in package space, in both Cartesian and polar form. */
 export interface PinGeometry {
   pos: string;
   angle: number;
   radius: number;
+  x: number;
+  y: number;
 }
 
 /** Precomputed pin geometry plus the largest radius for radial normalization. */
@@ -141,6 +144,8 @@ function perimeterGeometry(pins: PinInfo[], packageInfo: PackageInfo): PinGeomet
       pos: pin.pos,
       angle: normalizeAngle((Math.atan2(y, x) * 180) / Math.PI),
       radius,
+      x,
+      y,
     });
   }
   return { byPos, maxRadius };
@@ -166,21 +171,46 @@ function gridGeometry(pins: PinInfo[], packageInfo: PackageInfo): PinGeometryMap
       pos: pin.pos,
       angle: normalizeAngle((Math.atan2(y, x) * 180) / Math.PI),
       radius,
+      x,
+      y,
     });
   }
   return { byPos, maxRadius };
 }
 
 /**
- * Derive every pin's angle and radius from the package centre. Perimeter
- * packages use `sides` with the canonical pin order; grid packages use
- * `rows`/`cols`. Two-sided packages simply have no bottom/top segment, so all
- * pins still receive finite polar coordinates.
+ * Derive every pin's pad centre from the package centre in one coordinate
+ * system. Perimeter packages use `sides` with the canonical pin order; grid
+ * packages use `rows`/`cols`. Both retain angle and radius for existing
+ * consumers and add Cartesian x/y for distance-based scoring. No DOM value
+ * enters this pure helper.
  */
 export function buildPinGeometryMap(chip: ChipData): PinGeometryMap {
   return chip.package.kind === 'grid'
     ? gridGeometry(chip.pins, chip.package)
     : perimeterGeometry(chip.pins, chip.package);
+}
+
+/** A placement bubble point in the same package-space coordinates as pad centres. */
+export interface PlacementBubblePoint {
+  x: number;
+  y: number;
+  radius: number;
+}
+
+/**
+ * Map the stored angle and priority ring to a bubble point. Ring radii reuse
+ * the canvas factors (1.4 / 1.55 / 1.7) applied to the shared geometry's
+ * largest pad-centre radius, so scoring and the visible rings stay aligned.
+ */
+export function placementBubblePoint(
+  preference: PinPlacementPreference,
+  geometry: PinGeometryMap,
+): PlacementBubblePoint {
+  const ring = normalizePlacementRing(preference.ring) ?? 'low';
+  const radius = RING_RADIUS_FACTORS[ring] * Math.max(1e-6, geometry.maxRadius);
+  const radians = (normalizeAngle(preference.angle) * Math.PI) / 180;
+  return { x: Math.cos(radians) * radius, y: Math.sin(radians) * radius, radius };
 }
 
 /** Optional scoring input: a preference and a reusable geometry cache. */
@@ -189,7 +219,12 @@ export interface PlacementAffinityContext {
   geometry?: PinGeometryMap;
 }
 
-/** Additive placement term; exactly zero when no preference is enabled. */
+/**
+ * Additive placement term; exactly zero when no preference is enabled. The
+ * ring rank dominates every other term; within one ring the penalty is the
+ * normalized Euclidean distance from the bubble to the pad centre, scaled into
+ * 0-60 by the bubble radius plus the farthest pad-centre radius.
+ */
 export function placementAffinityForPin(
   pin: PinInfo,
   chip: ChipData,
@@ -199,15 +234,16 @@ export function placementAffinityForPin(
   if (!preference?.enabled) return 0;
   const geometry = context.geometry ?? buildPinGeometryMap(chip);
   const pinGeometry = geometry.byPos.get(pin.pos);
-  const angle = pinGeometry?.angle ?? 0;
-  const radius = pinGeometry?.radius ?? 1;
+  const bubble = placementBubblePoint(preference, geometry);
+  const distance = Math.hypot(
+    (pinGeometry?.x ?? 0) - bubble.x,
+    (pinGeometry?.y ?? 0) - bubble.y,
+  );
+  const worstCase = Math.max(1e-6, bubble.radius + geometry.maxRadius);
+  const penalty = Math.min(1, distance / worstCase) * 60;
 
-  // Inter-ring priority dominates scarcity; intra-ring ranking combines
-  // angular closeness with a smaller radial term that favors outer balls.
   const rank = PLACEMENT_RING_RANK[normalizePlacementRing(preference.ring) ?? 'low'] ?? 2;
-  const angularPenalty = (angularGap(angle, preference.angle) / 180) * 60;
-  const radialPenalty = (1 - Math.min(1, radius / Math.max(1e-6, geometry.maxRadius))) * 30;
-  return rank * 10000 + angularPenalty + radialPenalty;
+  return rank * 10000 + penalty;
 }
 
 /** Fixed cap for matrix alternate lists after legality filtering. */

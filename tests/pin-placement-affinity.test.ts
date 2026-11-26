@@ -8,10 +8,12 @@ import {
   createWorkspaceHistory,
   statesEqual,
 } from '../src/core/history';
+import { RING_RADIUS_FACTORS } from '../src/core/placement-rings';
 import {
   buildPinGeometryMap,
   canonicalPinPlacementPreference,
   configuredPeripheralNames,
+  placementBubblePoint,
   measuredSafeRadius,
   normalizeAngle,
   normalizePlacement,
@@ -120,6 +122,17 @@ describe('package geometry helper', () => {
     expect(left.angle).toBeGreaterThan(90);
     expect(bottom.angle).toBeGreaterThan(left.angle);
     expect(right.angle).toBeLessThan(90);
+    expect(left.x).toBeCloseTo(-1, 9);
+    expect(left.y).toBeCloseTo(-0.5, 9);
+    expect(bottom.y).toBeCloseTo(-1, 9);
+    expect(right.x).toBeCloseTo(1, 9);
+    for (const point of geometry.byPos.values()) {
+      expect(point.radius).toBeCloseTo(Math.hypot(point.x, point.y), 9);
+      expect(normalizeAngle((Math.atan2(point.y, point.x) * 180) / Math.PI)).toBeCloseTo(
+        point.angle,
+        9,
+      );
+    }
   });
 
   it('falls back gracefully for two-sided packages', () => {
@@ -135,6 +148,10 @@ describe('package geometry helper', () => {
     }
     expect(geometry.byPos.get('2')!.angle).toBeGreaterThan(90);
     expect(geometry.byPos.get('4')!.angle).toBeLessThan(90);
+    for (const point of geometry.byPos.values()) {
+      expect(Number.isFinite(point.x)).toBe(true);
+      expect(Number.isFinite(point.y)).toBe(true);
+    }
   });
 
   it('derives outer balls with larger radii for grid packages', () => {
@@ -155,6 +172,12 @@ describe('package geometry helper', () => {
     });
     const geometry = buildPinGeometryMap(grid);
     expect(geometry.byPos.get('5')!.radius).toBe(0);
+    expect(geometry.byPos.get('5')!.x).toBe(0);
+    expect(geometry.byPos.get('5')!.y).toBe(0);
+    expect(geometry.byPos.get('3')!.x).toBeCloseTo(1, 9);
+    expect(geometry.byPos.get('3')!.y).toBeCloseTo(1, 9);
+    expect(geometry.byPos.get('7')!.x).toBeCloseTo(-1, 9);
+    expect(geometry.byPos.get('7')!.y).toBeCloseTo(-1, 9);
     expect(geometry.byPos.get('3')!.radius).toBeGreaterThan(geometry.byPos.get('2')!.radius);
     for (const point of geometry.byPos.values()) {
       expect(Number.isFinite(point.angle)).toBe(true);
@@ -180,7 +203,7 @@ describe('placement scoring hook', () => {
     ).toBe(0);
   });
 
-  it('enforces strict inter-ring ordering before angular score', () => {
+  it('keeps ring rank ahead of the distance penalty', () => {
     const make = (ring: 'high' | 'medium' | 'low') =>
       placementAffinityForPin(chip.pins[3], chip, { angle: target.angle, ring, enabled: true }, { geometry });
     const inner = make('high');
@@ -188,15 +211,43 @@ describe('placement scoring hook', () => {
     const outer = make('low');
     expect(inner).toBeLessThan(middle);
     expect(middle).toBeLessThan(outer);
-    expect(outer - middle).toBe(10000);
-    expect(middle - inner).toBe(10000);
+    // Rank contributes exactly 10000 per ring; the remaining distance penalty
+    // stays below 60 for every ring.
+    for (const gap of [middle - inner, outer - middle]) {
+      expect(gap).toBeGreaterThanOrEqual(10000);
+      expect(gap).toBeLessThanOrEqual(10060);
+    }
   });
 
-  it('prefers the angularly closer pin and, on a tie, the outer ball', () => {
+  it('maps angle and ring to a bubble point with the canvas ring factors', () => {
+    expect(RING_RADIUS_FACTORS).toEqual({ high: 1.4, medium: 1.55, low: 1.7 });
+    const high = placementBubblePoint({ angle: 0, ring: 'high', enabled: true }, geometry);
+    expect(high.radius).toBeCloseTo(1.4 * geometry.maxRadius, 9);
+    expect(high.x).toBeCloseTo(high.radius, 9);
+    expect(high.y).toBeCloseTo(0, 9);
+
+    const up = placementBubblePoint({ angle: 90, ring: 'medium', enabled: true }, geometry);
+    expect(up.x).toBeCloseTo(0, 9);
+    expect(up.y).toBeCloseTo(1.55 * geometry.maxRadius, 9);
+
+    const radii = (['high', 'medium', 'low'] as const).map(
+      (ring) => placementBubblePoint({ angle: 45, ring, enabled: true }, geometry).radius,
+    );
+    expect(radii[0]).toBeLessThan(radii[1]);
+    expect(radii[1]).toBeLessThan(radii[2]);
+  });
+
+  it('ranks closer pad centres ahead of distant ones within a ring', () => {
     const preference = { angle: target.angle, ring: 'high' as const, enabled: true };
     const near = placementAffinityForPin(chip.pins[3], chip, preference, { geometry });
     const far = placementAffinityForPin(chip.pins[1], chip, preference, { geometry });
     expect(near).toBeLessThan(far);
+
+    const penalty = (score: number, ring: 'high' | 'medium' | 'low') =>
+      score - PLACEMENT_RING_RANK[ring] * 10000;
+    expect(penalty(near, 'high')).toBeGreaterThanOrEqual(0);
+    expect(penalty(near, 'high')).toBeLessThanOrEqual(60);
+    expect(penalty(far, 'high')).toBeLessThanOrEqual(60);
 
     const grid = fixtureChip({
       package: {
@@ -215,10 +266,28 @@ describe('placement scoring hook', () => {
     });
     const gridGeometry = buildPinGeometryMap(grid);
     const gridPreference = { angle: 0, ring: 'high' as const, enabled: true };
-    // Centre and right-edge pins both lie on angle 0; the outer ball wins.
+    // Centre and right-edge pins both lie on angle 0; the outer pad is closer
+    // to the bubble.
     const centre = placementAffinityForPin(grid.pins[4], grid, gridPreference, { geometry: gridGeometry });
     const outer = placementAffinityForPin(grid.pins[5], grid, gridPreference, { geometry: gridGeometry });
     expect(outer).toBeLessThan(centre);
+  });
+
+  it('keeps a high-ring bubble ahead of a low-ring bubble even when farther', () => {
+    const pin = chip.pins[3];
+    const highFar = placementAffinityForPin(
+      pin,
+      chip,
+      { angle: 180, ring: 'high', enabled: true },
+      { geometry },
+    );
+    const lowNear = placementAffinityForPin(
+      pin,
+      chip,
+      { angle: target.angle, ring: 'low', enabled: true },
+      { geometry },
+    );
+    expect(highFar).toBeLessThan(lowNear);
   });
 
   it('orders enabled peripherals by ring and keeps unconfigured ones last', () => {
@@ -1396,5 +1465,36 @@ describe('matrix placement store dispatch', () => {
     const baseline = reallocatePeripheralPlacement(chip, empty, 'SPI1', null);
     expect(baseline.assignments).toEqual({});
     expect(validateMatrixPlan(chip, baseline)).toEqual([]);
+  });
+});
+
+describe('placement bubble distance source contracts', () => {
+  it('scores from the bubble point without changing integrators or the preference schema', () => {
+    const core = fs.readFileSync(path.join(ROOT, 'src/core/placement.ts'), 'utf8');
+    expect(core).toContain('x: number');
+    expect(core).toContain('y: number');
+    expect(core).toContain('placementBubblePoint');
+    expect(core).toContain('RING_RADIUS_FACTORS');
+    expect(core).toContain('Math.hypot(');
+    expect(core).toContain('rank * 10000 + penalty');
+    expect(core).not.toContain('angularPenalty');
+    expect(core).not.toContain('radialPenalty');
+    expect(core).toContain('export const MATRIX_ALTERNATE_CAP = 12;');
+
+    const common = fs.readFileSync(path.join(ROOT, 'src/core/solver-common.ts'), 'utf8');
+    expect(common).toContain('placementAffinityForPin(pin, chip, preference, affinity ?? {})');
+    const allocation = fs.readFileSync(
+      path.join(ROOT, 'src/core/solver-allocation.ts'),
+      'utf8',
+    );
+    expect(allocation.match(/geometry: buildPinGeometryMap\(chip\)/g)).toHaveLength(2);
+    expect(allocation).toContain('computePinScarcityScore(');
+    expect(allocation).toContain('affinityContext');
+
+    const types = fs.readFileSync(path.join(ROOT, 'src/core/types.ts'), 'utf8');
+    const preference = types.match(
+      /export interface PinPlacementPreference \{[\s\S]*?\n\}/)?.[0] ?? '';
+    for (const field of ['angle:', 'ring:', 'enabled:']) expect(preference, field).toContain(field);
+    expect(preference).not.toContain('bubble');
   });
 });

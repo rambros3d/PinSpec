@@ -188,14 +188,21 @@ describe('dialog focus management', () => {
   });
 
   it('restores focus for all six native dialogs and the help dialog', () => {
+    const wrapper = readSource('src/components/shell/Dialog.svelte');
+    for (const token of [
+      'openDialogWithFocus',
+      'showModal()',
+      'dialogEl?.close()',
+      'onclose={onClose}',
+      'oncancel=',
+      'modal-backdrop',
+    ]) {
+      expect(wrapper, token).toContain(token);
+    }
     for (const file of [...DIALOG_FILES, 'src/components/workspace/ShortcutHelpDialog.svelte']) {
       const source = readSource(file);
-      expect(source, file).toContain('openDialogWithFocus');
-      expect(source, file).toContain('showModal()');
-      expect(source, file).toMatch(/\.close\(\)/);
-      expect(source, file).toContain('onclose=');
-      expect(source, file).toContain('oncancel=');
-      expect(source, file).toContain('modal-backdrop');
+      expect(source, file).toContain('Dialog.svelte');
+      expect(source, file).toContain('<Dialog');
       if (!file.endsWith('WorkspacePage.svelte')) {
         expect(source, file).not.toContain("addEventListener('keydown'");
       }
@@ -206,8 +213,8 @@ describe('dialog focus management', () => {
 
 describe('shortcut help', () => {
   it('places the modal backdrop as a direct dialog child outside the modal box', () => {
-    const help = readSource('src/components/workspace/ShortcutHelpDialog.svelte');
-    const boxOpen = help.indexOf('<div class="modal-box');
+    const help = readSource('src/components/shell/Dialog.svelte');
+    const boxOpen = help.indexOf('<div class={`modal-box ${boxClass}`}>');
     const backdrop = help.indexOf('<form method="dialog" class="modal-backdrop">');
     const dialogClose = help.indexOf('</dialog>');
     expect(boxOpen).toBeGreaterThan(-1);

@@ -9,6 +9,7 @@
  */
 
 import { normalizeDockTab, normalizeSummaryTab, type DockTab, type SummaryTab } from '../core/types';
+import { createPersistedPreference } from './persisted-preference.svelte';
 
 export const VIEW_PREFERENCES_STORAGE_KEY = 'pincraft:workspace_view_preferences_v1';
 
@@ -21,29 +22,6 @@ export const DEFAULT_CATEGORY_EXPANSION: Readonly<Record<string, boolean>> = {
   connectivity: true,
   other: false,
 };
-
-interface StoredViewPreferences {
-  selectedPeripheral?: unknown;
-  filterText?: unknown;
-  openCategories?: unknown;
-  placementOverlayVisible?: unknown;
-  summaryTab?: unknown;
-  dockTab?: unknown;
-}
-
-/** Read the namespaced record, tolerating missing or unavailable storage. */
-function readStoredPreferences(): StoredViewPreferences {
-  if (typeof window === 'undefined') return {};
-  try {
-    const raw = window.localStorage?.getItem(VIEW_PREFERENCES_STORAGE_KEY);
-    if (!raw) return {};
-    const parsed: unknown = JSON.parse(raw);
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
-    return parsed as StoredViewPreferences;
-  } catch {
-    return {};
-  }
-}
 
 function validateSelectedPeripheral(value: unknown): string | null {
   return typeof value === 'string' && value.trim().length > 0 ? value : null;
@@ -69,113 +47,102 @@ function normalizeOverlayVisible(value: unknown): boolean {
 }
 
 /**
- * Runes-backed helper for view preferences. Each instance loads the stored
- * record on construction so a reload restores the same presentation state.
+ * Runes-backed helper for view preferences. Each preference loads its field
+ * from the shared namespaced record on construction and writes through on
+ * change, so a reload restores the same presentation state.
  */
 export class WorkspacePreferencesStore {
-  private selected = $state<string | null>(validateSelectedPeripheral(null));
-  private filter = $state(validateFilterText(null));
-  private categories = $state<Record<string, boolean>>(validateCategoryExpansion(null));
-  private overlayVisible = $state(false);
-  private summary = $state<SummaryTab>(normalizeSummaryTab(null));
-  private dock = $state<DockTab>(normalizeDockTab(null));
-
-  constructor() {
-    const stored = readStoredPreferences();
-    this.selected = validateSelectedPeripheral(stored.selectedPeripheral);
-    this.filter = validateFilterText(stored.filterText);
-    this.categories = validateCategoryExpansion(stored.openCategories);
-    this.overlayVisible = normalizeOverlayVisible(stored.placementOverlayVisible);
-    this.summary = normalizeSummaryTab(stored.summaryTab);
-    this.dock = normalizeDockTab(stored.dockTab);
-  }
+  private readonly selectedPreference = createPersistedPreference<string | null>(
+    VIEW_PREFERENCES_STORAGE_KEY,
+    null,
+    validateSelectedPeripheral,
+    'selectedPeripheral',
+  );
+  private readonly filterPreference = createPersistedPreference<string>(
+    VIEW_PREFERENCES_STORAGE_KEY,
+    '',
+    validateFilterText,
+    'filterText',
+  );
+  private readonly categoriesPreference = createPersistedPreference<Record<string, boolean>>(
+    VIEW_PREFERENCES_STORAGE_KEY,
+    DEFAULT_CATEGORY_EXPANSION,
+    validateCategoryExpansion,
+    'openCategories',
+  );
+  private readonly overlayPreference = createPersistedPreference<boolean>(
+    VIEW_PREFERENCES_STORAGE_KEY,
+    false,
+    normalizeOverlayVisible,
+    'placementOverlayVisible',
+  );
+  private readonly summaryPreference = createPersistedPreference<SummaryTab>(
+    VIEW_PREFERENCES_STORAGE_KEY,
+    normalizeSummaryTab(null),
+    normalizeSummaryTab,
+    'summaryTab',
+  );
+  private readonly dockPreference = createPersistedPreference<DockTab>(
+    VIEW_PREFERENCES_STORAGE_KEY,
+    normalizeDockTab(null),
+    normalizeDockTab,
+    'dockTab',
+  );
 
   get selectedPeripheral(): string | null {
-    return this.selected;
+    return this.selectedPreference.value;
   }
 
   set selectedPeripheral(value: string | null) {
-    this.selected = validateSelectedPeripheral(value);
-    this.persist();
+    this.selectedPreference.set(value);
   }
 
   get filterText(): string {
-    return this.filter;
+    return this.filterPreference.value;
   }
 
   set filterText(value: string) {
-    this.filter = validateFilterText(value);
-    this.persist();
+    this.filterPreference.set(value);
   }
 
   get openCategories(): Readonly<Record<string, boolean>> {
-    return this.categories;
+    return this.categoriesPreference.value;
   }
 
   /** Read one category's expansion state with a documented default. */
   isCategoryOpen(id: string): boolean {
-    return this.categories[id] ?? DEFAULT_CATEGORY_EXPANSION[id] ?? false;
+    return this.categoriesPreference.value[id] ?? DEFAULT_CATEGORY_EXPANSION[id] ?? false;
   }
 
   /** Persist one category's expansion state without affecting pin configuration. */
   setCategoryOpen(id: string, isOpen: boolean): void {
-    if (this.categories[id] === isOpen) return;
-    this.categories[id] = isOpen;
-    this.persist();
+    if (this.categoriesPreference.value[id] === isOpen) return;
+    this.categoriesPreference.set({ ...this.categoriesPreference.value, [id]: isOpen });
   }
 
   /** Canvas placement overlay visibility; localStorage only, never shareable. */
   get placementOverlayVisible(): boolean {
-    return this.overlayVisible;
+    return this.overlayPreference.value;
   }
 
   set placementOverlayVisible(value: boolean) {
-    const next = normalizeOverlayVisible(value);
-    if (this.overlayVisible === next) return;
-    this.overlayVisible = next;
-    this.persist();
+    this.overlayPreference.set(value);
   }
 
   get summaryTab(): SummaryTab {
-    return this.summary;
+    return this.summaryPreference.value;
   }
 
   set summaryTab(value: SummaryTab) {
-    const next = normalizeSummaryTab(value);
-    if (this.summary === next) return;
-    this.summary = next;
-    this.persist();
+    this.summaryPreference.set(value);
   }
 
   get dockTab(): DockTab {
-    return this.dock;
+    return this.dockPreference.value;
   }
 
   set dockTab(value: DockTab) {
-    const next = normalizeDockTab(value);
-    if (this.dock === next) return;
-    this.dock = next;
-    this.persist();
-  }
-
-  /** Write the current preference snapshot; storage failures never affect the UI. */
-  private persist(): void {
-    if (typeof window === 'undefined') return;
-    try {
-      window.localStorage?.setItem(
-        VIEW_PREFERENCES_STORAGE_KEY,
-        JSON.stringify({
-          selectedPeripheral: this.selected,
-          filterText: this.filter,
-          openCategories: this.categories,
-          placementOverlayVisible: this.overlayVisible,
-          summaryTab: this.summary,
-          dockTab: this.dock,
-        }),
-      );
-    } catch {
-      // Storage may be disabled or full; in-memory defaults still apply.
-    }
+    this.dockPreference.set(value);
   }
 }
 

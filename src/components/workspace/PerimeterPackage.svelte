@@ -11,6 +11,7 @@
 
 <script lang="ts">
   import { isQuarterTurn, localLabelAngle } from '../../core/package-rotation';
+  import { pinStatusTokens } from '../../core/pin-view';
   import {
     formatMuxLabel,
     type ChipData,
@@ -207,67 +208,12 @@
   const isModule = $derived(chip.module?.kind === 'module');
   const moduleName = $derived(chip.module?.name ?? '');
 
-  function getColors(pos: string): { fill: string; stroke: string; text: string; tagBg: string } {
-    const isHighlighted = highlightedPins.has(pos);
-    const isRemapSrc = remapSourcePos === pos;
-    const isSelected = selectedPinPos === pos;
-    const status = pinStatus[pos] ?? 'unused';
-
-    if (isRemapSrc) {
-      return {
-        fill: 'var(--pin-selected-fill)',
-        stroke: 'var(--pin-remap)',
-        text: 'var(--pin-selected-text)',
-        tagBg: 'var(--pin-remap-tag)',
-      };
-    }
-
-    if (isHighlighted) {
-      return {
-        fill: 'var(--pin-remap-fill)',
-        stroke: 'var(--pin-remap)',
-        text: 'var(--pin-text)',
-        tagBg: 'var(--pin-remap-tag)',
-      };
-    }
-
-    switch (status) {
-      case 'power':
-        return {
-          fill: 'var(--pin-power-fill)',
-          stroke: 'var(--pin-power)',
-          text: 'var(--pin-text)',
-          tagBg: 'var(--pin-power-tag)',
-        };
-      case 'assigned':
-        return {
-          fill: 'var(--pin-assigned-fill)',
-          stroke: isSelected ? 'var(--pin-remap)' : 'var(--pin-assigned)',
-          text: 'var(--pin-text)',
-          tagBg: 'var(--pin-assigned-tag)',
-        };
-      case 'partial':
-        return {
-          fill: 'var(--pin-partial-fill)',
-          stroke: isSelected ? 'var(--pin-remap)' : 'var(--pin-partial)',
-          text: 'var(--pin-text)',
-          tagBg: 'var(--pin-partial-tag)',
-        };
-      case 'conflict':
-        return {
-          fill: 'var(--pin-conflict-fill)',
-          stroke: 'var(--pin-conflict)',
-          text: 'var(--pin-text)',
-          tagBg: 'var(--pin-conflict-tag)',
-        };
-      default:
-        return {
-          fill: 'var(--pin-unused-fill)',
-          stroke: isSelected ? 'var(--pin-remap)' : 'var(--pin-unused)',
-          text: 'currentColor',
-          tagBg: 'transparent',
-        };
-    }
+  function getColors(pos: string) {
+    return pinStatusTokens(pinStatus[pos] ?? 'unused', {
+      selected: selectedPinPos === pos,
+      remapSource: remapSourcePos === pos,
+      highlighted: highlightedPins.has(pos),
+    });
   }
 
   function formatExternalTag(pos: string): string {

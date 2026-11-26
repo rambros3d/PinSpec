@@ -8,6 +8,7 @@
  */
 
 import type { VendorId } from '../core/types';
+import { createPersistedPreference } from './persisted-preference.svelte';
 
 export const DISCOVERY_PREFERENCES_STORAGE_KEY = 'pincraft:discovery_preferences_v1';
 
@@ -57,89 +58,67 @@ export function normalizeDiscoveryFilter(value: unknown): DiscoveryFilterSnapsho
   };
 }
 
-interface StoredDiscoveryPreferences {
-  catalog?: unknown;
-  quickSearch?: unknown;
-}
-
-/** Read the namespaced record, tolerating missing or unavailable storage. */
-function readStoredPreferences(): StoredDiscoveryPreferences {
-  if (typeof window === 'undefined') return {};
-  try {
-    const raw = window.localStorage?.getItem(DISCOVERY_PREFERENCES_STORAGE_KEY);
-    if (!raw) return {};
-    const parsed: unknown = JSON.parse(raw);
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
-    return parsed as StoredDiscoveryPreferences;
-  } catch {
-    return {};
-  }
-}
-
 /** One independent filter group. Each setter normalizes before persisting. */
 class DiscoveryFilterGroup {
-  private filter = $state<DiscoveryFilterSnapshot>(defaultDiscoveryFilter());
+  private readonly filterPreference: ReturnType<typeof createPersistedPreference<DiscoveryFilterSnapshot>>;
 
-  constructor(
-    private readonly persist: () => void,
-    stored: unknown,
-  ) {
-    this.filter = normalizeDiscoveryFilter(stored);
+  constructor(groupField: string) {
+    this.filterPreference = createPersistedPreference<DiscoveryFilterSnapshot>(
+      DISCOVERY_PREFERENCES_STORAGE_KEY,
+      defaultDiscoveryFilter(),
+      normalizeDiscoveryFilter,
+      groupField,
+    );
   }
 
   get query(): string {
-    return this.filter.query;
+    return this.filterPreference.value.query;
   }
 
   set query(value: string) {
     const next = normalizeDiscoveryText(value);
-    if (this.filter.query === next) return;
-    this.filter.query = next;
-    this.persist();
+    if (this.query === next) return;
+    this.filterPreference.set({ ...this.filterPreference.value, query: next });
   }
 
   get vendor(): VendorId | 'all' {
-    return this.filter.vendor;
+    return this.filterPreference.value.vendor;
   }
 
   set vendor(value: VendorId | 'all') {
     const next = normalizeDiscoveryVendor(value);
-    if (this.filter.vendor === next) return;
-    this.filter.vendor = next;
-    this.persist();
+    if (this.vendor === next) return;
+    this.filterPreference.set({ ...this.filterPreference.value, vendor: next });
   }
 
   get family(): string {
-    return this.filter.family;
+    return this.filterPreference.value.family;
   }
 
   set family(value: string) {
     const next = normalizeDiscoveryText(value);
-    if (this.filter.family === next) return;
-    this.filter.family = next;
-    this.persist();
+    if (this.family === next) return;
+    this.filterPreference.set({ ...this.filterPreference.value, family: next });
   }
 
   get package(): string {
-    return this.filter.package;
+    return this.filterPreference.value.package;
   }
 
   set package(value: string) {
     const next = normalizeDiscoveryText(value);
-    if (this.filter.package === next) return;
-    this.filter.package = next;
-    this.persist();
+    if (this.package === next) return;
+    this.filterPreference.set({ ...this.filterPreference.value, package: next });
   }
 
   /** Restore all four fields to their defaults in one persisted write. */
   reset(): void {
-    this.filter = defaultDiscoveryFilter();
-    this.persist();
+    this.filterPreference.set(defaultDiscoveryFilter());
   }
 
   /** Return a plain snapshot for the localStorage record. */
   snapshot(): DiscoveryFilterSnapshot {
-    return { ...this.filter };
+    return { ...this.filterPreference.value };
   }
 }
 
@@ -149,26 +128,8 @@ export class DiscoveryPreferencesStore {
   readonly quickSearch: DiscoveryFilterGroup;
 
   constructor() {
-    const stored = readStoredPreferences();
-    const persist = (): void => this.persist();
-    this.catalog = new DiscoveryFilterGroup(persist, stored.catalog);
-    this.quickSearch = new DiscoveryFilterGroup(persist, stored.quickSearch);
-  }
-
-  /** Write both groups; storage failures never affect discovery UI. */
-  private persist(): void {
-    if (typeof window === 'undefined') return;
-    try {
-      window.localStorage?.setItem(
-        DISCOVERY_PREFERENCES_STORAGE_KEY,
-        JSON.stringify({
-          catalog: this.catalog.snapshot(),
-          quickSearch: this.quickSearch.snapshot(),
-        }),
-      );
-    } catch {
-      // Storage may be disabled or full; in-memory filters still apply.
-    }
+    this.catalog = new DiscoveryFilterGroup('catalog');
+    this.quickSearch = new DiscoveryFilterGroup('quickSearch');
   }
 }
 

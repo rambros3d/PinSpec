@@ -8,7 +8,6 @@
   import ExportModal from '../components/workspace/ExportModal.svelte';
   import McuSwitcherModal from '../components/workspace/McuSwitcherModal.svelte';
   import PackageCanvas from '../components/workspace/PackageCanvas.svelte';
-  import PinoutDiffModal from '../components/workspace/PinoutDiffModal.svelte';
   import SummaryDrawer from '../components/workspace/SummaryDrawer.svelte';
   import { DOCK_TABS, type DockTab, type SummaryTab, type WorkspaceState } from '../core/types';
   import { catalogStore } from '../state/catalog.svelte';
@@ -398,10 +397,6 @@
   {/if}
 
   <!-- Modals; dialog flags live in transient top-bar UI state. -->
-  {#if topBarUI.diffOpen}
-    <PinoutDiffModal onClose={() => (topBarUI.diffOpen = false)} />
-  {/if}
-
   {#if topBarUI.finderOpen}
     <CompatibleMcuFinder
       chip={workspaceStore.chip}

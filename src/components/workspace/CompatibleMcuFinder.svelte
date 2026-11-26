@@ -2,6 +2,7 @@
   import Search from '@solar-icons/svelte/bold-duotone/magnifier';
   import X from '@solar-icons/svelte/bold-duotone/close';
   import { onMount } from 'svelte';
+  import Dialog from '../shell/Dialog.svelte';
   import {
     compareCandidateScores,
     deriveCompatibilitySignature,
@@ -15,7 +16,6 @@
   import { catalogPackageKinds } from '../../core/vendor-view';
   import type { ChipData, VendorId, WorkspaceState } from '../../core/types';
   import { catalogStore } from '../../state/catalog.svelte';
-  import { openDialogWithFocus } from '../../state/dialog-focus';
   import { router } from '../../state/router.svelte';
 
   interface Props {
@@ -33,7 +33,7 @@
   let scores = $state<CandidateScore[]>([]);
   let warnings = $state<string[]>([]);
   let hasSearched = $state(false);
-  let dialogEl = $state<HTMLDialogElement | null>(null);
+  let dialogRef = $state<{ close: () => void } | null>(null);
 
   // Increasing this token invalidates every pending shard load.
   let generation = 0;
@@ -121,9 +121,9 @@
     loading = false;
   }
 
-  /** Native dialog close path; the close event notifies the parent once. */
+  /** Close path; the wrapper's close event notifies the parent once. */
   function close(): void {
-    dialogEl?.close();
+    dialogRef?.close();
   }
 
   function handleClose(): void {
@@ -138,9 +138,6 @@
   }
 
   onMount(() => {
-    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    if (!dialogEl?.open) dialogEl?.showModal();
-    openDialogWithFocus(dialogEl, undefined, opener);
     void catalogStore.ensureLoaded().then(() => runSearch());
     return () => {
       generation += 1;
@@ -149,22 +146,13 @@
   });
 </script>
 
-<dialog
-  bind:this={dialogEl}
-  class="modal"
-  onclose={handleClose}
-  oncancel={(e) => {
-    e.preventDefault();
-    close();
-  }}
-  onclick={(e) => {
-    if (e.target === dialogEl) close();
-  }}
-  aria-label="Find compatible MCUs"
+<Dialog
+  bind:this={dialogRef}
+  ariaLabel="Find compatible MCUs"
+  boxClass="w-full max-w-3xl max-h-[92dvh] min-h-0 flex flex-col p-0 shadow-2xl overflow-hidden"
+  onClose={handleClose}
 >
-  <div
-    class="modal-box w-full max-w-3xl max-h-[92dvh] min-h-0 flex flex-col p-0 shadow-2xl overflow-hidden"
-  >
+  <div class="contents">
     <div class="flex items-center justify-between gap-3 px-4 py-3 border-b border-base-300 shrink-0">
       <div class="min-w-0">
         <h2 class="text-sm font-semibold text-foreground">Compatible MCUs</h2>
@@ -304,7 +292,4 @@
       {/if}
     </div>
   </div>
-  <form method="dialog" class="modal-backdrop">
-    <button aria-label="Close compatible MCU finder">close</button>
-  </form>
-</dialog>
+</Dialog>

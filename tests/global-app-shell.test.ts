@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { parseHash } from '../src/state/router.svelte';
+import { topBarUI } from '../src/state/top-bar-ui.svelte';
 import { createEmptyWorkspace } from '../src/core/solver';
 import { exportPinoutJson } from '../src/core/exporters/json';
 import { encodeWorkspaceState } from '../src/core/url-state';
@@ -23,6 +24,7 @@ describe('global shell mount and routes', () => {
     expect(shell).toContain('<GlobalSidebar />');
     expect(shell.match(/<GlobalTopBar\s*\/>/g)?.length).toBe(1);
     expect(shell).toContain('<ShortcutHelpDialog');
+    expect(shell.match(/<PinoutDiffModal/g)?.length).toBe(1);
   });
 
   it('resolves every hash route and keeps unknown hashes on home', () => {
@@ -158,9 +160,37 @@ describe('global top bar', () => {
 
   it('opens the same help dialog on every route through the shared flag', () => {
     expect(bar).toContain('topBarUI.shortcutHelpOpen = true');
-    expect(shell).toContain('topBarUI.shortcutHelpOpen');
+    expect(shell).toContain('topBarUI.activeDialog === \'shortcutHelp\'');
     expect(shell).toContain('ShortcutHelpDialog');
     expect(bar).not.toContain("'#/about'");
+  });
+
+  it('backs every dialog flag with one typed active dialog', () => {
+    const store = read('src/state/top-bar-ui.svelte.ts');
+    expect(store).toContain("export type DialogKind = 'switcher' | 'export' | 'finder' | 'diff' | 'shortcutHelp';");
+    expect(store).toContain('activeDialog = $state<DialogKind | null>(null)');
+    for (const name of ['switcher', 'export', 'finder', 'diff', 'shortcutHelp']) {
+      expect(store, name).toContain(`get ${name}Open()`);
+      expect(store, name).toContain(`set ${name}Open(`);
+    }
+    expect(store).toContain('this.activeDialog = null');
+  });
+
+  it('keeps one dialog active and clears flags through the shared owner', () => {
+    topBarUI.reset();
+    expect(topBarUI.activeDialog).toBeNull();
+    topBarUI.diffOpen = true;
+    expect(topBarUI.activeDialog).toBe('diff');
+    expect(topBarUI.diffOpen).toBe(true);
+    topBarUI.shortcutHelpOpen = true;
+    expect(topBarUI.activeDialog).toBe('shortcutHelp');
+    expect(topBarUI.diffOpen).toBe(false);
+    topBarUI.shortcutHelpOpen = false;
+    expect(topBarUI.activeDialog).toBeNull();
+    topBarUI.switcherOpen = true;
+    topBarUI.reset();
+    expect(topBarUI.activeDialog).toBeNull();
+    expect(topBarUI.switcherOpen).toBe(false);
   });
 });
 
@@ -471,7 +501,8 @@ describe('start screen redirect', () => {
     expect(page).toContain('focusQuickSearch');
     expect(page).toContain('<QuickSearchBar');
     expect(page).toContain('<BoardSelectorModal');
-    expect(page).toContain('<PinoutDiffModal');
+    expect(page).toContain('topBarUI.diffOpen = true');
+    expect(page).not.toContain('PinoutDiffModal');
     expect(page).not.toContain('id="provenance"');
   });
 

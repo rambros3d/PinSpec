@@ -129,10 +129,15 @@ describe('diff modal source contract', () => {
     const bar = source('src/components/shell/GlobalTopBar.svelte');
     expect(bar).toContain('topBarUI.diffOpen = true');
     expect(bar).toContain('Compare project pinouts');
+    const shell = source('src/components/shell/AppShell.svelte');
+    expect(shell).toContain('<PinoutDiffModal');
+    expect(shell).toContain("topBarUI.activeDialog === 'diff'");
+    expect(shell).toContain('<PinoutDiffModal onClose={() => (topBarUI.diffOpen = false)} />');
     const page = source('src/pages/WorkspacePage.svelte');
-    expect(page).toContain('PinoutDiffModal');
-    expect(page).toContain('topBarUI.diffOpen');
-    expect(page).toContain('<PinoutDiffModal onClose={() => (topBarUI.diffOpen = false)} />');
+    expect(page).not.toContain('PinoutDiffModal');
+    const landing = source('src/pages/LandingPage.svelte');
+    expect(landing).toContain('topBarUI.diffOpen = true');
+    expect(landing).not.toContain('PinoutDiffModal');
   });
 
   it('uses two independent file slots with no workspace writes or KiCad output', () => {

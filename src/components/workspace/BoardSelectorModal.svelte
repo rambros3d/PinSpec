@@ -2,9 +2,8 @@
   import CircuitBoard from '@solar-icons/svelte/bold-duotone/cpu';
   import Search from '@solar-icons/svelte/bold-duotone/magnifier';
   import X from '@solar-icons/svelte/bold-duotone/close';
-  import { onMount } from 'svelte';
   import type { BoardPreset } from '../../data/boards';
-  import { openDialogWithFocus } from '../../state/dialog-focus';
+  import Dialog from '../shell/Dialog.svelte';
 
   interface Props {
     presets: readonly BoardPreset[];
@@ -16,7 +15,7 @@
 
   let query = $state('');
   let inputEl = $state<HTMLInputElement | null>(null);
-  let dialogEl = $state<HTMLDialogElement | null>(null);
+  let dialogRef = $state<{ close: () => void } | null>(null);
 
   const results = $derived.by(() => {
     const q = query.trim().toUpperCase();
@@ -30,32 +29,17 @@
 
   /** Native dialog close path; the close event notifies the parent once. */
   function closeDialog(): void {
-    dialogEl?.close();
+    dialogRef?.close();
   }
-
-  onMount(() => {
-    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    if (!dialogEl?.open) dialogEl?.showModal();
-    openDialogWithFocus(dialogEl, inputEl, opener);
-  });
 </script>
 
-<dialog
-  bind:this={dialogEl}
-  class="modal"
-  onclose={onClose}
-  oncancel={(e) => {
-    e.preventDefault();
-    closeDialog();
-  }}
-  onclick={(e) => {
-    if (e.target === dialogEl) closeDialog();
-  }}
-  aria-label="Select a board preset"
+<Dialog
+  bind:this={dialogRef}
+  ariaLabel="Select a board preset"
+  boxClass="w-full max-w-2xl p-0 shadow-2xl overflow-hidden flex flex-col max-h-[92dvh] min-h-0"
+  {onClose}
+  bind:focusTarget={inputEl}
 >
-  <div
-    class="modal-box w-full max-w-2xl p-0 shadow-2xl overflow-hidden flex flex-col max-h-[92dvh] min-h-0"
-  >
     <div class="flex items-center justify-between px-4 py-3.5 border-b border-base-300">
       <div>
         <h2 class="text-sm font-semibold text-foreground">Official ST Board Presets</h2>
@@ -116,8 +100,4 @@
     <div class="px-4 py-2.5 border-t border-base-300 bg-base-200 text-[11px] text-base-content/60">
       Source: STMicroelectronics/STM32_open_pin_data board files (BSD-3-Clause). Curated subset.
     </div>
-  </div>
-  <form method="dialog" class="modal-backdrop">
-    <button aria-label="Close board selector">close</button>
-  </form>
-</dialog>
+</Dialog>

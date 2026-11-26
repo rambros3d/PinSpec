@@ -102,9 +102,10 @@ describe('compact configured-first tree', () => {
   });
 
   it('encodes status by hue and mode presence by fill', () => {
-    expect(tree).toContain("case 'active':\n        return 'bg-success';");
-    expect(tree).toContain("case 'partial':\n        return 'bg-warning';");
-    expect(tree).toContain("case 'error':\n        return 'bg-error';");
+    expect(tree).toContain("import { PERIPHERAL_STATUS_VIEW } from '../../core/pin-view'");
+    expect(tree).toContain('PERIPHERAL_STATUS_VIEW[status ?? \'none\'].color');
+    expect(tree).toContain('PERIPHERAL_STATUS_VIEW[status ?? \'none\'].border');
+    expect(tree).not.toContain("case 'active':");
     expect(tree).toContain("? statusColor(status) : 'bg-transparent'");
     expect(tree).toContain('Mode: ${peripheralModes[name]}');
     expect(tree).toContain('No mode selected');

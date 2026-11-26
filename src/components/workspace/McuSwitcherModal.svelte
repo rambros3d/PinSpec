@@ -4,7 +4,7 @@
   import X from '@solar-icons/svelte/bold-duotone/close';
   import { onMount } from 'svelte';
   import { catalogStore, searchCatalogEntries } from '../../state/catalog.svelte';
-  import { openDialogWithFocus } from '../../state/dialog-focus';
+  import Dialog from '../shell/Dialog.svelte';
   import {
     buildVendorTabs,
     catalogFamilies,
@@ -26,7 +26,7 @@
   let pkgFilter = $state('');
   let activeIdx = $state(0);
   let inputEl = $state<HTMLInputElement | null>(null);
-  let dialogEl = $state<HTMLDialogElement | null>(null);
+  let dialogRef = $state<{ close: () => void } | null>(null);
 
   const vendorTabs = $derived(buildVendorTabs(catalogStore.meta, catalogStore.index));
   const familyOptions = $derived(catalogFamilies(catalogStore.index));
@@ -49,7 +49,7 @@
 
   /** Native dialog close path; the close event notifies the parent once. */
   function closeDialog(): void {
-    dialogEl?.close();
+    dialogRef?.close();
   }
 
   function handleKeydown(e: KeyboardEvent): void {
@@ -67,29 +67,17 @@
   }
 
   onMount(() => {
-    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    if (!dialogEl?.open) dialogEl?.showModal();
-    openDialogWithFocus(dialogEl, inputEl, opener);
     catalogStore.ensureLoaded();
   });
 </script>
 
-<dialog
-  bind:this={dialogEl}
-  class="modal"
-  onclose={onClose}
-  oncancel={(e) => {
-    e.preventDefault();
-    closeDialog();
-  }}
-  onclick={(e) => {
-    if (e.target === dialogEl) closeDialog();
-  }}
-  aria-label="Switch MCU"
+<Dialog
+  bind:this={dialogRef}
+  ariaLabel="Switch MCU"
+  boxClass="w-full max-w-2xl p-0 shadow-2xl overflow-hidden flex flex-col max-h-[92dvh] min-h-0"
+  {onClose}
+  bind:focusTarget={inputEl}
 >
-  <div
-    class="modal-box w-full max-w-2xl p-0 shadow-2xl overflow-hidden flex flex-col max-h-[92dvh] min-h-0"
-  >
     <!-- Search bar -->
     <div class="flex items-center gap-2.5 px-4 py-3 border-b border-base-300">
       <Search class="size-4 text-base-content/40 shrink-0" />
@@ -224,8 +212,4 @@
         {/each}
       {/if}
     </div>
-  </div>
-  <form method="dialog" class="modal-backdrop">
-    <button aria-label="Close MCU switcher">close</button>
-  </form>
-</dialog>
+</Dialog>

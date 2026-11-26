@@ -11,6 +11,7 @@
 
 <script lang="ts">
   import { isQuarterTurn, localLabelAngle } from '../../core/package-rotation';
+  import { pinStatusTokens } from '../../core/pin-view';
   import {
     formatMuxLabel,
     type ChipData,
@@ -120,26 +121,12 @@
   const gridLabelAngle = $derived(localLabelAngle('left', rotation));
 
   function getBallColors(pos: string): { fill: string; stroke: string } {
-    if (remapSourcePos === pos) {
-      return { fill: 'var(--pin-selected-fill)', stroke: 'var(--pin-remap)' };
-    }
-    if (highlightedPins.has(pos)) {
-      return { fill: 'var(--pin-remap-fill)', stroke: 'var(--pin-remap)' };
-    }
-    const status = pinStatus[pos] ?? 'unused';
-    const isSelected = selectedPinPos === pos;
-    switch (status) {
-      case 'power':
-        return { fill: 'var(--pin-power-fill)', stroke: 'var(--pin-power)' };
-      case 'assigned':
-        return { fill: 'var(--pin-assigned-fill)', stroke: isSelected ? 'var(--pin-remap)' : 'var(--pin-assigned)' };
-      case 'partial':
-        return { fill: 'var(--pin-partial-fill)', stroke: isSelected ? 'var(--pin-remap)' : 'var(--pin-partial)' };
-      case 'conflict':
-        return { fill: 'var(--pin-conflict-fill)', stroke: 'var(--pin-conflict)' };
-      default:
-        return { fill: 'var(--pin-unused-fill)', stroke: isSelected ? 'var(--pin-remap)' : 'var(--pin-unused)' };
-    }
+    const tokens = pinStatusTokens(pinStatus[pos] ?? 'unused', {
+      selected: selectedPinPos === pos,
+      remapSource: remapSourcePos === pos,
+      highlighted: highlightedPins.has(pos),
+    });
+    return { fill: tokens.fill, stroke: tokens.stroke };
   }
 
   function compactLabel(text: string, maxLen: number): string {

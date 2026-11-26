@@ -4,7 +4,7 @@
   import Download from '@solar-icons/svelte/bold-duotone/download';
   import Upload from '@solar-icons/svelte/bold-duotone/upload';
   import X from '@solar-icons/svelte/bold-duotone/close';
-  import { onMount } from 'svelte';
+  import Dialog from '../shell/Dialog.svelte';
   import { exportCHeader } from '../../core/exporters/c-header';
   import { exportCsv } from '../../core/exporters/csv';
   import { exportEmbassyRust } from '../../core/exporters/embassy-rust';
@@ -12,7 +12,6 @@
   import { buildHardwareAudit, formatHardwareAuditText } from '../../core/hardware-audit';
   import { getChipVendor, type ChipData, type WorkspaceState } from '../../core/types';
   import { workspaceStore } from '../../state/workspace.svelte';
-  import { openDialogWithFocus } from '../../state/dialog-focus';
 
   interface Props {
     chip: ChipData;
@@ -32,7 +31,7 @@
   let importError = $state<string | null>(null);
   let draggingFile = $state(false);
   let fileInput = $state<HTMLInputElement | null>(null);
-  let dialogEl = $state<HTMLDialogElement | null>(null);
+  let dialogRef = $state<{ close: () => void } | null>(null);
   let copyButtonEl = $state<HTMLButtonElement | null>(null);
 
   const vendor = $derived(getChipVendor(chip));
@@ -114,7 +113,7 @@
 
   /** Native dialog close path; the close event notifies the parent once. */
   function closeDialog(): void {
-    dialogEl?.close();
+    dialogRef?.close();
   }
 
   async function handleFile(file: File): Promise<void> {
@@ -129,29 +128,15 @@
     closeDialog();
   }
 
-  onMount(() => {
-    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    if (!dialogEl?.open) dialogEl?.showModal();
-    openDialogWithFocus(dialogEl, copyButtonEl, opener);
-  });
 </script>
 
-<dialog
-  bind:this={dialogEl}
-  class="modal"
-  onclose={onClose}
-  oncancel={(e) => {
-    e.preventDefault();
-    closeDialog();
-  }}
-  onclick={(e) => {
-    if (e.target === dialogEl) closeDialog();
-  }}
-  aria-label="Export and import pinout"
+<Dialog
+  bind:this={dialogRef}
+  ariaLabel="Export and import pinout"
+  boxClass="w-full max-w-3xl max-h-[92dvh] min-h-0 flex flex-col p-0 shadow-2xl overflow-hidden"
+  {onClose}
+  bind:focusTarget={copyButtonEl}
 >
-  <div
-    class="modal-box w-full max-w-3xl max-h-[92dvh] min-h-0 flex flex-col p-0 shadow-2xl overflow-hidden"
-  >
     <!-- Header -->
     <div class="flex items-center justify-between px-5 py-3.5 border-b border-base-300">
       <div>
@@ -280,8 +265,4 @@
     <div class="flex-1 min-h-0 overflow-auto p-5">
       <pre class="p-4 rounded-box border border-base-300 bg-base-200 font-mono text-xs leading-relaxed text-foreground overflow-x-auto whitespace-pre-wrap break-all">{previewContent}</pre>
     </div>
-  </div>
-  <form method="dialog" class="modal-backdrop">
-    <button aria-label="Close export dialog">close</button>
-  </form>
-</dialog>
+</Dialog>

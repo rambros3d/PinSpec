@@ -7,6 +7,8 @@
  * `matchMedia` listener is registered.
  */
 
+import { createPersistedPreference } from './persisted-preference.svelte';
+
 /** User-selectable appearance modes, in picker cycle order. */
 export const THEME_MODES = ['system', 'light', 'dark'] as const;
 export type ThemeMode = (typeof THEME_MODES)[number];
@@ -36,16 +38,6 @@ export function resolveThemeId(mode: ThemeMode, prefersDark: boolean): ThemeId {
   return mode === 'dark' || (mode === 'system' && prefersDark) ? 'halloween' : 'fantasy';
 }
 
-/** Read the saved mode; missing, legacy, and unknown values all mean system. */
-function readInitialMode(): ThemeMode {
-  if (typeof window === 'undefined') return 'system';
-  try {
-    return normalizeThemeMode(window.localStorage?.getItem(THEME_STORAGE_KEY));
-  } catch {
-    return 'system';
-  }
-}
-
 /** Sample `prefers-color-scheme` once. No change listener is installed. */
 function readPrefersDark(): boolean {
   if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
@@ -61,25 +53,25 @@ function applyThemeToDom(theme: ThemeId): void {
   document.documentElement.dataset.theme = theme;
 }
 
-function persistMode(mode: ThemeMode): void {
-  if (typeof window === 'undefined') return;
-  try {
-    window.localStorage?.setItem(THEME_STORAGE_KEY, mode);
-  } catch {
-    // Storage unavailable: the in-memory mode still applies.
-  }
-}
-
 /**
- * Runes-backed appearance mode. Each instance resolves the saved mode and the
- * load-time color scheme on construction so a reload restores the same theme.
+ * Runes-backed appearance mode. The shared persistence helper resolves the
+ * saved mode on construction and writes each change for the no-FOUC bootstrap.
  */
 export class ThemeStore {
-  mode = $state<ThemeMode>(readInitialMode());
+  private readonly modePreference = createPersistedPreference<ThemeMode>(
+    THEME_STORAGE_KEY,
+    'system',
+    normalizeThemeMode,
+  );
   private readonly prefersDark = readPrefersDark();
 
   constructor() {
     applyThemeToDom(this.theme);
+  }
+
+  /** Active mode, normalized from localStorage on load. */
+  get mode(): ThemeMode {
+    return this.modePreference.value;
   }
 
   /** Vendored theme block selected by the current mode. */
@@ -94,9 +86,8 @@ export class ThemeStore {
 
   /** Select a mode and persist it for the no-FOUC bootstrap. */
   set(next: ThemeMode): void {
-    this.mode = normalizeThemeMode(next);
+    this.modePreference.set(normalizeThemeMode(next));
     applyThemeToDom(this.theme);
-    persistMode(this.mode);
   }
 
   /** Advance one step in System -> Light -> Dark -> System order. */

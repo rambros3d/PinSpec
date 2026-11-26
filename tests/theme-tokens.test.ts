@@ -277,19 +277,22 @@ describe('daisyUI token integration', () => {
       path.join(ROOT, 'src', 'components', 'workspace', 'PeripheralTree.svelte'),
       'utf8',
     );
+    const view = fs.readFileSync(path.join(ROOT, 'src', 'core', 'pin-view.ts'), 'utf8');
     for (const token of [
       'bg-success',
       'bg-warning',
       'bg-error',
       'bg-base-300',
-      'bg-transparent',
       'border-success',
       'border-warning',
       'border-error',
       'border-base-content/50',
+      'var(--pin-unused-fill)',
+      'var(--pin-conflict-fill)',
     ]) {
-      expect(tree, token).toContain(token);
+      expect(view, token).toContain(token);
     }
+    expect(tree).toContain('PERIPHERAL_STATUS_VIEW');
     expect(tree).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
     const sidebar = fs.readFileSync(
       path.join(ROOT, 'src', 'components', 'workspace', 'CombinedSidebar.svelte'),

@@ -119,7 +119,8 @@ describe('start screen actions', () => {
     expect(page).toContain('revealRecentSessions');
     expect(page).toContain('presetsRef?.scrollIntoView');
     expect(page).toContain('parsePinoutJson(');
-    expect(page).toContain('<PinoutDiffModal');
+    expect(page).toContain('topBarUI.diffOpen = true');
+    expect(page).not.toContain('<PinoutDiffModal');
     expect(page).toContain('<BoardSelectorModal');
     expect(page).toContain('showBoardSelector = true');
   });
@@ -146,9 +147,8 @@ describe('start screen actions', () => {
 
   it('keeps start-screen presentation state out of shareable pin configuration', () => {
     expect(page).toContain('let showBoardSelector = $state(false)');
-    expect(page).toContain('let showDiff = $state(false)');
     expect(page).toContain('let iocDropActive = $state(false)');
-    expect(Object.keys(createEmptyWorkspace('STM32G431CBU6'))).not.toContain('showDiff');
+    expect(page).not.toContain('showDiff');
     expect(read('src/state/theme.svelte.ts')).toContain(`'${THEME_STORAGE_KEY}'`);
     expect(page).not.toContain(THEME_STORAGE_KEY);
   });
@@ -296,11 +296,9 @@ describe('start-screen-only .ioc entry point', () => {
     for (const token of [
       'ambiguousImport',
       'ambiguousChoice',
-      'onclose={handleAmbiguousClose}',
-      'oncancel=',
-      'openDialogWithFocus(',
-      'showModal()',
-      'modal-backdrop',
+      'onClose={handleAmbiguousClose}',
+      'ariaLabel="Confirm MCU for .ioc import"',
+      'Dialog.svelte',
       '92dvh',
     ]) {
       expect(page, token).toContain(token);

@@ -3,6 +3,7 @@
   import ChevronDown from '@solar-icons/svelte/bold-duotone/alt-arrow-down';
   import ChevronRight from '@solar-icons/svelte/bold-duotone/alt-arrow-right';
   import Search from '@solar-icons/svelte/bold-duotone/magnifier';
+  import { PERIPHERAL_STATUS_VIEW } from '../../core/pin-view';
   import type { ChipData, PeripheralStatus } from '../../core/types';
   import {
     orderPeripheralNames,
@@ -42,42 +43,15 @@
 
   /** Hue carries the solver status; hollow circles mean no mode is selected. */
   function statusColor(status: PeripheralStatus): string {
-    switch (status) {
-      case 'active':
-        return 'bg-success';
-      case 'partial':
-        return 'bg-warning';
-      case 'error':
-        return 'bg-error';
-      default:
-        return 'bg-base-300';
-    }
+    return PERIPHERAL_STATUS_VIEW[status ?? 'none'].color;
   }
 
   function statusBorder(status: PeripheralStatus): string {
-    switch (status) {
-      case 'active':
-        return 'border-success';
-      case 'partial':
-        return 'border-warning';
-      case 'error':
-        return 'border-error';
-      default:
-        return 'border-base-content/50';
-    }
+    return PERIPHERAL_STATUS_VIEW[status ?? 'none'].border;
   }
 
   function statusLabel(status: PeripheralStatus): string {
-    switch (status) {
-      case 'active':
-        return 'Active';
-      case 'partial':
-        return 'Partial';
-      case 'error':
-        return 'Conflict';
-      default:
-        return 'Unused';
-    }
+    return PERIPHERAL_STATUS_VIEW[status ?? 'none'].label;
   }
 
   function hasMode(name: string): boolean {

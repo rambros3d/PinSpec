@@ -8,61 +8,29 @@
  * live in `workspaceStore.state`.
  */
 
+import { createPersistedPreference } from './persisted-preference.svelte';
+
 export const SHELL_PREFERENCES_STORAGE_KEY = 'pincraft:shell_preferences_v1';
 
 function normalizeSidebarExpanded(value: unknown): boolean {
   return value === true;
 }
 
-interface StoredShellPreferences {
-  sidebarExpanded?: unknown;
-}
-
-/** Read the namespaced record, tolerating missing or unavailable storage. */
-function readStoredPreferences(): StoredShellPreferences {
-  if (typeof window === 'undefined') return {};
-  try {
-    const raw = window.localStorage?.getItem(SHELL_PREFERENCES_STORAGE_KEY);
-    if (!raw) return {};
-    const parsed: unknown = JSON.parse(raw);
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
-    return parsed as StoredShellPreferences;
-  } catch {
-    return {};
-  }
-}
-
 /** Runes-backed helper restored from localStorage on construction. */
 export class ShellPreferencesStore {
-  private expanded = $state(false);
-
-  constructor() {
-    const stored = readStoredPreferences();
-    this.expanded = normalizeSidebarExpanded(stored.sidebarExpanded);
-  }
+  private readonly expandedPreference = createPersistedPreference<boolean>(
+    SHELL_PREFERENCES_STORAGE_KEY,
+    false,
+    normalizeSidebarExpanded,
+    'sidebarExpanded',
+  );
 
   get sidebarExpanded(): boolean {
-    return this.expanded;
+    return this.expandedPreference.value;
   }
 
   set sidebarExpanded(value: boolean) {
-    const next = normalizeSidebarExpanded(value);
-    if (this.expanded === next) return;
-    this.expanded = next;
-    this.persist();
-  }
-
-  /** Write the current snapshot; storage failures never affect the UI. */
-  private persist(): void {
-    if (typeof window === 'undefined') return;
-    try {
-      window.localStorage?.setItem(
-        SHELL_PREFERENCES_STORAGE_KEY,
-        JSON.stringify({ sidebarExpanded: this.expanded }),
-      );
-    } catch {
-      // Storage may be disabled or full; in-memory defaults still apply.
-    }
+    this.expandedPreference.set(value);
   }
 }
 

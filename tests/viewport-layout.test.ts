@@ -315,24 +315,28 @@ describe('native dialog contract', () => {
       'src/components/workspace/CompatibleMcuFinder.svelte',
       'src/components/workspace/PinoutDiffModal.svelte',
     ];
-    for (const file of components) {
+    const wrapper = readSource('src/components/shell/Dialog.svelte');
+    for (const token of [
+      '<dialog',
+      'class="modal"',
+      'showModal()',
+      'dialogEl?.close()',
+      'onclose={onClose}',
+      'oncancel=',
+      'modal-backdrop',
+    ]) {
+      expect(wrapper, token).toContain(token);
+    }
+    for (const file of [...components, 'src/pages/LandingPage.svelte']) {
       const source = readSource(file);
-      expect(source, file).toContain('<dialog');
-      expect(source, file).toContain('class="modal"');
-      expect(source, file).toContain('bind:this=');
-      expect(source, file).toContain('showModal()');
-      expect(source, file).toMatch(/\.close\(\)/);
-      expect(source, file).toContain('onclose=');
-      expect(source, file).toContain('oncancel=');
-      expect(source, file).toContain('modal-backdrop');
+      expect(source, file).toMatch(/Dialog\.svelte'/);
+      expect(source, file).toContain('<Dialog');
       expect(source, file).not.toContain("addEventListener('keydown'");
     }
     const landing = readSource('src/pages/LandingPage.svelte');
-    expect(landing).toContain('<dialog');
-    expect(landing).toContain('bind:this={ambiguousDialogEl}');
-    expect(landing).toContain('showModal()');
-    expect(landing).toContain('onclose={handleAmbiguousClose}');
-    expect(landing).toContain('modal-backdrop');
+    expect(landing).toContain('bind:this={ambiguousDialogRef}');
+    expect(landing).toContain('onClose={handleAmbiguousClose}');
+    expect(landing).toContain('ariaLabel="Confirm MCU for .ioc import"');
     const workspace = readSource('src/pages/WorkspacePage.svelte');
     expect(workspace).not.toContain('ambiguousDialogEl');
     expect(workspace).not.toContain('accept=".ioc"');

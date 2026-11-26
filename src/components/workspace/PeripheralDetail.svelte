@@ -1,6 +1,7 @@
 <script lang="ts">
   /** Configuration surface for the peripheral selected in the compact tree. */
   import { getModesForPeripheral } from '../../core/solver';
+  import { PERIPHERAL_STATUS_VIEW } from '../../core/pin-view';
   import {
     formatMuxLabel,
     getChipMuxModel,
@@ -85,29 +86,11 @@
   });
 
   function statusLabel(status: PeripheralStatus): string {
-    switch (status) {
-      case 'active':
-        return 'Active';
-      case 'partial':
-        return 'Partial';
-      case 'error':
-        return 'Conflict';
-      default:
-        return 'Unused';
-    }
+    return PERIPHERAL_STATUS_VIEW[status ?? 'none'].label;
   }
 
   function statusBadge(status: PeripheralStatus): string {
-    switch (status) {
-      case 'active':
-        return 'badge-success';
-      case 'partial':
-        return 'badge-warning';
-      case 'error':
-        return 'badge-error';
-      default:
-        return 'badge-ghost';
-    }
+    return PERIPHERAL_STATUS_VIEW[status ?? 'none'].badge;
   }
 </script>
 

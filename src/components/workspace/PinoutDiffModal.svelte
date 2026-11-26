@@ -3,6 +3,7 @@
   import X from '@solar-icons/svelte/bold-duotone/close';
   import { onMount, tick } from 'svelte';
   import { parsePinoutJson } from '../../core/exporters/json';
+  import { basePinStatus } from '../../core/pin-view';
   import {
     diffProjects,
     type PinChange,
@@ -12,7 +13,7 @@
   } from '../../core/project-diff';
   import { getChipMuxModel, type ChipData, type PinVisualStatus } from '../../core/types';
   import { catalogStore } from '../../state/catalog.svelte';
-  import { openDialogWithFocus } from '../../state/dialog-focus';
+  import Dialog from '../shell/Dialog.svelte';
   import GridPackage from './GridPackage.svelte';
   import PerimeterPackage from './PerimeterPackage.svelte';
 
@@ -60,7 +61,7 @@
   let afterPreviewEl = $state<HTMLDivElement | null>(null);
   let beforeMarkers = $state<MarkerRect[]>([]);
   let afterMarkers = $state<MarkerRect[]>([]);
-  let dialogEl = $state<HTMLDialogElement | null>(null);
+  let dialogRef = $state<{ close: () => void } | null>(null);
 
   let beforeGeneration = 0;
   let afterGeneration = 0;
@@ -77,18 +78,7 @@
   );
 
   function statusFor(chip: ChipData, snapshot: ProjectSnapshot): Record<string, PinVisualStatus> {
-    const status: Record<string, PinVisualStatus> = {};
-    const ioTypes = new Set(chip.pins.filter((pin) => pin.type === 'io').map((pin) => pin.pos));
-    for (const pin of chip.pins) {
-      status[pin.pos] = ioTypes.has(pin.pos)
-        ? snapshot.state.assignments[pin.pos]
-          ? 'assigned'
-          : 'unused'
-        : pin.type === 'power' || pin.type === 'reset' || pin.type === 'boot'
-          ? 'power'
-          : 'unused';
-    }
-    return status;
+    return basePinStatus(chip, snapshot.state.assignments);
   }
 
   function pinNames(chip: ChipData): Record<string, string> {
@@ -248,7 +238,7 @@
 
   /** Native dialog close path; the close event notifies the parent once. */
   function close(): void {
-    dialogEl?.close();
+    dialogRef?.close();
   }
 
   function handleClose(): void {
@@ -266,9 +256,6 @@
   }
 
   onMount(() => {
-    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    if (!dialogEl?.open) dialogEl?.showModal();
-    openDialogWithFocus(dialogEl, undefined, opener);
     return () => {
       diffGeneration += 1;
       diffController?.abort();
@@ -278,22 +265,13 @@
   });
 </script>
 
-<dialog
-  bind:this={dialogEl}
-  class="modal"
-  onclose={handleClose}
-  oncancel={(e) => {
-    e.preventDefault();
-    close();
-  }}
-  onclick={(e) => {
-    if (e.target === dialogEl) close();
-  }}
-  aria-label="Compare two pinouts"
+<Dialog
+  bind:this={dialogRef}
+  ariaLabel="Compare two pinouts"
+  boxClass="w-full max-w-5xl max-h-[92dvh] min-h-0 flex flex-col p-0 shadow-2xl overflow-hidden"
+  onClose={handleClose}
 >
-  <div
-    class="modal-box w-full max-w-5xl max-h-[92dvh] min-h-0 flex flex-col p-0 shadow-2xl overflow-hidden"
-  >
+  <div class="contents">
     <div class="flex items-center justify-between gap-3 px-4 py-3 border-b border-base-300 shrink-0">
       <div class="min-w-0">
         <h2 class="text-sm font-semibold text-foreground">Compare Project Pinouts</h2>
@@ -504,7 +482,4 @@
       {/if}
     </div>
   </div>
-  <form method="dialog" class="modal-backdrop">
-    <button aria-label="Close pinout comparison">close</button>
-  </form>
-</dialog>
+</Dialog>

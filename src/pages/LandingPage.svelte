@@ -13,7 +13,7 @@
   import PresetGrid from '../components/landing/PresetGrid.svelte';
   import QuickSearchBar from '../components/landing/QuickSearchBar.svelte';
   import BoardSelectorModal from '../components/workspace/BoardSelectorModal.svelte';
-  import PinoutDiffModal from '../components/workspace/PinoutDiffModal.svelte';
+  import { topBarUI } from '../state/top-bar-ui.svelte';
   import { parsePinoutJson } from '../core/exporters/json';
   import {
     buildWorkspaceFromPins,
@@ -28,7 +28,7 @@
     type BoardPreset,
   } from '../data/boards';
   import { catalogStore } from '../state/catalog.svelte';
-  import { openDialogWithFocus } from '../state/dialog-focus';
+  import Dialog from '../components/shell/Dialog.svelte';
   import { router } from '../state/router.svelte';
   import { workspaceStore } from '../state/workspace.svelte';
 
@@ -45,14 +45,13 @@
   let searchRef = $state<{ focusInput: () => void } | undefined>(undefined);
   let presetsRef = $state<HTMLElement | null>(null);
   let showBoardSelector = $state(false);
-  let showDiff = $state(false);
   let importError = $state<string | null>(null);
   let jsonFileInput = $state<HTMLInputElement | null>(null);
   let iocFileInput = $state<HTMLInputElement | null>(null);
   let iocDropActive = $state(false);
   let ambiguousImport = $state<{ record: IocRawRecord; candidates: string[] } | null>(null);
   let ambiguousChoice = $state<string | null>(null);
-  let ambiguousDialogEl = $state<HTMLDialogElement | null>(null);
+  let ambiguousDialogRef = $state<{ close: () => void } | null>(null);
   let ambiguousCancelEl = $state<HTMLButtonElement | null>(null);
 
   /** Focus the central part search without changing any persisted state. */
@@ -118,7 +117,7 @@
 
   /** Close the native dialog; the close event applies a choice or cancels it. */
   function closeAmbiguousDialog(): void {
-    ambiguousDialogEl?.close();
+    ambiguousDialogRef?.close();
   }
 
   function handleAmbiguousClose(): void {
@@ -156,15 +155,6 @@
       importError = err instanceof Error ? err.message : 'Unable to load the selected board MCU.';
     }
   }
-
-  // The ambiguous-import dialog is conditional, so promote it when it mounts.
-  $effect(() => {
-    if (ambiguousImport && ambiguousDialogEl && !ambiguousDialogEl.open) {
-      const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-      ambiguousDialogEl.showModal();
-      openDialogWithFocus(ambiguousDialogEl, ambiguousCancelEl, opener);
-    }
-  });
 
   function formatSyncDate(iso: string | undefined): string {
     if (!iso) return 'pending';
@@ -281,7 +271,7 @@
         </button>
         <button
           type="button"
-          onclick={() => (showDiff = true)}
+          onclick={() => (topBarUI.diffOpen = true)}
           class="w-full flex items-center gap-3 px-3.5 py-2.5 text-left hover:bg-base-200 transition-colors"
         >
           <GitCompare class="size-4 text-info shrink-0" />
@@ -400,22 +390,14 @@
 
   <!-- Ambiguous part ID confirmation, owned by the start screen. -->
   {#if ambiguousImport}
-    <dialog
-      bind:this={ambiguousDialogEl}
-      class="modal"
-      onclose={handleAmbiguousClose}
-      oncancel={(e) => {
-        e.preventDefault();
-        closeAmbiguousDialog();
-      }}
-      onclick={(e) => {
-        if (e.target === ambiguousDialogEl) closeAmbiguousDialog();
-      }}
-      aria-label="Confirm MCU for .ioc import"
+    <Dialog
+      bind:this={ambiguousDialogRef}
+      bind:focusTarget={ambiguousCancelEl}
+      ariaLabel="Confirm MCU for .ioc import"
+      boxClass="w-full max-w-md max-h-[92dvh] min-h-0 flex flex-col p-0 shadow-2xl overflow-hidden"
+      onClose={handleAmbiguousClose}
     >
-      <div
-        class="modal-box w-full max-w-md max-h-[92dvh] min-h-0 flex flex-col p-0 shadow-2xl overflow-hidden"
-      >
+      <div class="contents">
         <div class="flex items-center justify-between px-5 py-3.5 border-b border-base-300">
           <h2 class="text-sm font-semibold text-foreground">Confirm MCU for Import</h2>
           <button
@@ -447,14 +429,7 @@
           </div>
         </div>
       </div>
-      <form method="dialog" class="modal-backdrop">
-        <button aria-label="Cancel import">close</button>
-      </form>
-    </dialog>
-  {/if}
-
-  {#if showDiff}
-    <PinoutDiffModal onClose={() => (showDiff = false)} />
+    </Dialog>
   {/if}
 
   {#if showBoardSelector}

@@ -20,6 +20,7 @@
     normalizePlacement,
     type PlacementIndicator,
   } from '../../core/placement';
+  import { eligiblePlacementNames } from '../../core/placement-eligibility';
   import { clampOverlayPosition } from '../../core/overlay-position';
   import {
     PLACEMENT_ZOOM_EPSILON,
@@ -140,13 +141,19 @@
     normalizeAngle(workspaceStore.state.placementOverlayRotation ?? 0),
   );
 
-  // Only configured peripherals with an opted-in preference get an indicator.
+  // Indicators follow the same eligibility classification as the panel rows;
+  // locked-only peripherals cannot be enabled there and get no indicator.
   const placementOptions = $derived(
-    configuredPeripheralNames(
+    eligiblePlacementNames(
       chip,
-      workspaceStore.report?.peripheralStatus ?? {},
-      workspaceStore.state.peripheralModes,
       assignments,
+      locked,
+      configuredPeripheralNames(
+        chip,
+        workspaceStore.report?.peripheralStatus ?? {},
+        workspaceStore.state.peripheralModes,
+        assignments,
+      ),
     ),
   );
 

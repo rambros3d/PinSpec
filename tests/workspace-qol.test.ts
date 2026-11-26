@@ -383,6 +383,8 @@ describe('placement overlay Escape and keyboard focus', () => {
     expect(source).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
     const panel = readSource('src/components/workspace/PlacementPanel.svelte');
     expect(panel).toContain('configuredPeripheralNames');
+    expect(panel).toContain('classifyPlacementEligibility');
+    expect(panel).toContain("disabled={row.status === 'locked-only'}");
     expect(panel).toContain('setPlacement');
     expect(panel).toContain("ring: 'low', enabled: true");
     expect(panel).not.toContain('type="number"');

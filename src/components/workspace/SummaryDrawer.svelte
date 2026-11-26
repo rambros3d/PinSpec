@@ -667,6 +667,7 @@
       {peripheralStatus}
       {peripheralModes}
       {assignments}
+      {locked}
     />
 
   <!-- Tab 7: data-derived hardware audit, read-only -->

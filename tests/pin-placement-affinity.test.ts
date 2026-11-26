@@ -903,6 +903,7 @@ describe('placement overlay interaction refresh', () => {
   it('derives ring indicators from configured peripherals with enabled preferences', () => {
     const canvas = readCanvas();
     expect(canvas).toContain('configuredPeripheralNames');
+    expect(canvas).toContain('eligiblePlacementNames');
     expect(canvas).toContain('.filter((name) => placementSettings.preferences[name]?.enabled)');
     expect(canvas).toContain('measureBodyFromDom()');
     expect(canvas).not.toContain('safeRadius');
@@ -912,6 +913,9 @@ describe('placement overlay interaction refresh', () => {
       'utf8',
     );
     expect(panel).toContain('configuredPeripheralNames');
+    expect(panel).toContain('classifyPlacementEligibility');
+    expect(panel).toContain("disabled={row.status === 'locked-only'}");
+    expect(panel).toContain("row.status !== 'ineligible'");
     expect(panel).toContain("ring: 'low', enabled: true");
     expect(panel).toContain('setPlacement(');
     expect(panel).not.toContain('type="number"');

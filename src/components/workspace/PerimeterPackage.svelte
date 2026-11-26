@@ -494,8 +494,9 @@
     >
       <title>{pinTitle(item.pin)}</title>
 
-      <!-- Pad rectangle -->
+      <!-- Pad rectangle; the outermost pad extent feeds placement ring geometry. -->
       <rect
+        data-pin-bounds
         x={item.x}
         y={item.y}
         width={item.width}

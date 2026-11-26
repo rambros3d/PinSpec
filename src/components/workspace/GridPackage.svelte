@@ -296,98 +296,101 @@
         />
       {/if}
 
-      <circle
-        cx={ball.cx}
-        cy={ball.cy}
-        r={r}
-        fill={colors.fill}
-        stroke={colors.stroke}
-        stroke-width={isHighlighted || selectedPinPos === ball.pin.pos ? 2 : 1.3}
-      />
+      <!-- Ball circle and its visible text feed placement ring geometry. -->
+      <g data-pin-bounds>
+        <circle
+          cx={ball.cx}
+          cy={ball.cy}
+          r={r}
+          fill={colors.fill}
+          stroke={colors.stroke}
+          stroke-width={isHighlighted || selectedPinPos === ball.pin.pos ? 2 : 1.3}
+        />
 
-      <!-- Low zoom: crisp port name or ball coord -->
-      {#if zoom < 1.05}
-        <text
-          x={ball.cx}
-          y={ball.cy + 3.5}
-          transform={`rotate(${gridLabelAngle} ${ball.cx} ${ball.cy + 3.5})`}
-          text-anchor="middle"
-          class="font-mono font-medium fill-base-content pointer-events-none"
-          font-size="8.5"
-        >
-          {compactLabel(ball.pin.name, 5)}
-        </text>
-      {:else if zoom < 1.75}
-        <!-- Medium zoom: port name + assigned signal -->
-        <text
-          x={ball.cx}
-          y={asgn ? ball.cy - 2 : ball.cy + 3}
-          transform={`rotate(${gridLabelAngle} ${ball.cx} ${asgn ? ball.cy - 2 : ball.cy + 3})`}
-          text-anchor="middle"
-          class="font-mono font-semibold fill-base-content pointer-events-none"
-          font-size="8.5"
-        >
-          {compactLabel(ball.pin.name, 6)}
-        </text>
-        {#if asgn}
+        <!-- Low zoom: crisp port name or ball coord -->
+        {#if zoom < 1.05}
           <text
             x={ball.cx}
-            y={ball.cy + 8.5}
-            transform={`rotate(${gridLabelAngle} ${ball.cx} ${ball.cy + 8.5})`}
+            y={ball.cy + 3.5}
+            transform={`rotate(${gridLabelAngle} ${ball.cx} ${ball.cy + 3.5})`}
             text-anchor="middle"
-            class="font-mono fill-base-content pointer-events-none"
-            font-size="6.8"
+            class="font-mono font-medium fill-base-content pointer-events-none"
+            font-size="8.5"
           >
-            {compactLabel(`${asgn.peripheral}_${asgn.signal} ${formatMuxLabel(asgn, muxModel)}`, 12)}
+            {compactLabel(ball.pin.name, 5)}
           </text>
-        {/if}
-      {:else}
-        <!-- High zoom: coordinate + port name + signal + net label -->
-        <text
-          x={ball.cx}
-          y={ball.cy - 8.5}
-          transform={`rotate(${gridLabelAngle} ${ball.cx} ${ball.cy - 8.5})`}
-          text-anchor="middle"
-          class="font-mono fill-base-content/60 pointer-events-none"
-          font-size="6"
-        >
-          {ball.pin.pos}
-        </text>
-        <text
-          x={ball.cx}
-          y={ball.cy - 0.5}
-          transform={`rotate(${gridLabelAngle} ${ball.cx} ${ball.cy - 0.5})`}
-          text-anchor="middle"
-          class="font-mono font-semibold fill-base-content pointer-events-none"
-          font-size="7.5"
-        >
-          {compactLabel(ball.pin.name, 7)}
-        </text>
-        {#if asgn}
+        {:else if zoom < 1.75}
+          <!-- Medium zoom: port name + assigned signal -->
           <text
             x={ball.cx}
-            y={ball.cy + 7.5}
-            transform={`rotate(${gridLabelAngle} ${ball.cx} ${ball.cy + 7.5})`}
+            y={asgn ? ball.cy - 2 : ball.cy + 3}
+            transform={`rotate(${gridLabelAngle} ${ball.cx} ${asgn ? ball.cy - 2 : ball.cy + 3})`}
             text-anchor="middle"
-            class="font-mono fill-base-content pointer-events-none"
+            class="font-mono font-semibold fill-base-content pointer-events-none"
+            font-size="8.5"
+          >
+            {compactLabel(ball.pin.name, 6)}
+          </text>
+          {#if asgn}
+            <text
+              x={ball.cx}
+              y={ball.cy + 8.5}
+              transform={`rotate(${gridLabelAngle} ${ball.cx} ${ball.cy + 8.5})`}
+              text-anchor="middle"
+              class="font-mono fill-base-content pointer-events-none"
+              font-size="6.8"
+            >
+              {compactLabel(`${asgn.peripheral}_${asgn.signal} ${formatMuxLabel(asgn, muxModel)}`, 12)}
+            </text>
+          {/if}
+        {:else}
+          <!-- High zoom: coordinate + port name + signal + net label -->
+          <text
+            x={ball.cx}
+            y={ball.cy - 8.5}
+            transform={`rotate(${gridLabelAngle} ${ball.cx} ${ball.cy - 8.5})`}
+            text-anchor="middle"
+            class="font-mono fill-base-content/60 pointer-events-none"
             font-size="6"
           >
-            {compactLabel(`${asgn.peripheral}_${asgn.signal} ${formatMuxLabel(asgn, muxModel)}`, 13)}
+            {ball.pin.pos}
           </text>
-        {/if}
-        {#if lbl}
           <text
             x={ball.cx}
-            y={ball.cy + 14}
-            transform={`rotate(${gridLabelAngle} ${ball.cx} ${ball.cy + 14})`}
+            y={ball.cy - 0.5}
+            transform={`rotate(${gridLabelAngle} ${ball.cx} ${ball.cy - 0.5})`}
             text-anchor="middle"
-            class="font-mono fill-info pointer-events-none"
-            font-size="5.5"
+            class="font-mono font-semibold fill-base-content pointer-events-none"
+            font-size="7.5"
           >
-            {compactLabel(lbl, 10)}
+            {compactLabel(ball.pin.name, 7)}
           </text>
+          {#if asgn}
+            <text
+              x={ball.cx}
+              y={ball.cy + 7.5}
+              transform={`rotate(${gridLabelAngle} ${ball.cx} ${ball.cy + 7.5})`}
+              text-anchor="middle"
+              class="font-mono fill-base-content pointer-events-none"
+              font-size="6"
+            >
+              {compactLabel(`${asgn.peripheral}_${asgn.signal} ${formatMuxLabel(asgn, muxModel)}`, 13)}
+            </text>
+          {/if}
+          {#if lbl}
+            <text
+              x={ball.cx}
+              y={ball.cy + 14}
+              transform={`rotate(${gridLabelAngle} ${ball.cx} ${ball.cy + 14})`}
+              text-anchor="middle"
+              class="font-mono fill-info pointer-events-none"
+              font-size="5.5"
+            >
+              {compactLabel(lbl, 10)}
+            </text>
+          {/if}
         {/if}
-      {/if}
+      </g>
 
       {#if isLocked}
         <circle

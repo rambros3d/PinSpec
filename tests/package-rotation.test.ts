@@ -151,6 +151,47 @@ describe('rendered body measurement marker', () => {
   });
 });
 
+describe('pin bounds measurement markers', () => {
+  const perimeter = fs.readFileSync(
+    path.join(process.cwd(), 'src', 'components', 'workspace', 'PerimeterPackage.svelte'),
+    'utf8',
+  );
+  const grid = fs.readFileSync(
+    path.join(process.cwd(), 'src', 'components', 'workspace', 'GridPackage.svelte'),
+    'utf8',
+  );
+
+  it('marks only the perimeter pad rectangle, not tags or position text', () => {
+    const pad = perimeter.match(/<!-- Pad rectangle[\s\S]*?\/>/)?.[0] ?? '';
+    expect(pad).toContain('data-pin-bounds');
+    expect(pad).toContain('x={item.x}');
+    expect(pad).toContain('height={item.height}');
+    expect(perimeter.match(/data-pin-bounds/g)).toHaveLength(1);
+    const tag = perimeter.match(/<rect\s+x=\{item\.x - 8 - tagW\}[\s\S]*?\/>/)?.[0] ?? '';
+    expect(tag).not.toContain('data-pin-bounds');
+    expect(perimeter).toContain('{item.pin.pos}');
+  });
+
+  it('wraps the grid ball circle and visible text but leaves decorations outside', () => {
+    expect(grid.match(/data-pin-bounds/g)).toHaveLength(1);
+    const pinGroupTag = grid.match(/<g\s+data-pin-pos=\{ball\.pin\.pos\}[\s\S]*?>/)?.[0] ?? '';
+    expect(pinGroupTag).not.toContain('data-pin-bounds');
+    const boundsGroup = grid.match(/<g data-pin-bounds>[\s\S]*?\n      <\/g>/)?.[0] ?? '';
+    expect(boundsGroup).toContain('cx={ball.cx}');
+    expect(boundsGroup).toContain('r={r}');
+    expect(boundsGroup).toContain('{compactLabel(ball.pin.name, 5)}');
+    expect(boundsGroup).toContain('{compactLabel(ball.pin.name, 6)}');
+    expect(boundsGroup).toContain('{ball.pin.pos}');
+    expect(boundsGroup).toContain('{compactLabel(lbl, 10)}');
+    expect(boundsGroup).not.toContain('var(--pin-remap)');
+    expect(boundsGroup).not.toContain('var(--pin-power)');
+    const highlight = grid.match(/\{#if isHighlighted\}[\s\S]*?\{\/if\}/)?.[0] ?? '';
+    const lock = grid.match(/\{#if isLocked\}[\s\S]*?\{\/if\}/)?.[0] ?? '';
+    expect(highlight).not.toContain('data-pin-bounds');
+    expect(lock).not.toContain('data-pin-bounds');
+  });
+});
+
 describe('package rotation in pure persistence paths', () => {
   it('clones byte-identically when absent and preserves each clockwise value', () => {
     const absent = createEmptyWorkspace(chip.id);

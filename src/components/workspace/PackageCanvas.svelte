@@ -23,8 +23,10 @@
   import { clampOverlayPosition } from '../../core/overlay-position';
   import {
     PLACEMENT_ZOOM_EPSILON,
+    farthestPinCornerDistance,
     placementRingRadii,
     placementZoomLimit,
+    type PinBoundsRect,
   } from '../../core/placement-rings';
   import {
     formatMuxLabel,
@@ -173,19 +175,23 @@
   });
 
   /**
-   * Ring geometry follows the rendered IC body. The measured rectangle already
-   * includes pan, zoom and rotation, so renderer layout math is not repeated.
+   * Ring geometry follows the rendered pins around the IC body centre. Measured
+   * rectangles already include pan, zoom and rotation, so renderer layout math
+   * is not repeated. The body half-diagonal is the fallback when no pad or ball
+   * bounds can be measured.
    */
   let bodyCenterX = $state(0);
   let bodyCenterY = $state(0);
   let bodyHalfDiagonal = $state(0);
-  const ringRadii = $derived(placementRingRadii(bodyHalfDiagonal));
+  let pinRadius = $state(0);
+  const ringRadii = $derived(placementRingRadii(pinRadius));
 
   /**
-   * Measure the transformed body rectangle in the DOM and pass plain numbers to
-   * the pure ring geometry. The measured rectangle already includes pan, zoom,
-   * and rotation, so the rings stay locked to the package without repeating the
-   * renderer layout math. Canvas furniture is not part of ring geometry.
+   * Measure the transformed body and pin rectangles in the DOM and pass plain
+   * numbers to the pure ring geometry. Rectangles are converted to stage-local
+   * coordinates around the body centre; external tags, position text, highlight
+   * and lock decorations are not marked as pin bounds. Canvas furniture is not
+   * part of ring geometry.
    */
   function measureBodyFromDom(): void {
     if (!stageEl || stageWidth <= 0 || stageHeight <= 0) return;
@@ -201,23 +207,36 @@
       bodyCenterY = stageHeight / 2;
       bodyHalfDiagonal = 0;
     }
+    const bounds: PinBoundsRect[] = [];
+    for (const element of Array.from(contentEl?.querySelectorAll('[data-pin-bounds]') ?? [])) {
+      const rect = element.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) continue;
+      bounds.push({
+        left: rect.left - stageRect.left,
+        top: rect.top - stageRect.top,
+        right: rect.right - stageRect.left,
+        bottom: rect.bottom - stageRect.top,
+      });
+    }
+    const measuredRadius = farthestPinCornerDistance(bodyCenterX, bodyCenterY, bounds);
+    pinRadius = measuredRadius > 0 ? measuredRadius : bodyHalfDiagonal;
   }
 
   /**
    * Reduce zoom around the measured body centre once, when the overlay becomes
    * visible, so the low ring fits the stage half-extent. Chip and rotation
-   * changes, resize, and pointer gestures only re-measure the body.
+   * changes, resize, and pointer gestures only re-measure the body and pins.
    */
   async function autoFitPlacement(): Promise<void> {
     await tick();
     if (!placementSettings.overlayVisible || !stageEl || !contentEl) return;
     measureBodyFromDom();
-    if (bodyHalfDiagonal <= 0) return;
+    if (pinRadius <= 0) return;
     const stageRect = stageEl.getBoundingClientRect();
     const halfExtent = Math.min(stageRect.width, stageRect.height) / 2;
     if (halfExtent <= 0) return;
-    const halfDiagonalAtZoom1 = bodyHalfDiagonal / zoom;
-    const limit = placementZoomLimit(halfDiagonalAtZoom1, halfExtent);
+    const pinRadiusAtZoom1 = pinRadius / zoom;
+    const limit = placementZoomLimit(pinRadiusAtZoom1, halfExtent);
     if (!(zoom > limit + PLACEMENT_ZOOM_EPSILON)) return;
     const view = zoomAtPoint({ zoom, panX, panY }, limit / zoom, bodyCenterX, bodyCenterY);
     zoom = view.zoom;
@@ -495,7 +514,7 @@
     measureBodyFromDom();
     const stage = stageEl;
     const canvas = stage?.closest('.workspace-canvas') ?? null;
-    /** Resize re-measures the body; placement fitting stays enable-only. */
+    /** Resize re-measures body and pin bounds; placement fitting stays enable-only. */
     const handleResize = (): void => {
       measureBodyFromDom();
     };

@@ -8,23 +8,6 @@ at the stage viewport without resizing the IC body reference.
 
 ## Requirements
 
-### Requirement: Ring radii scale only from the IC body
-
-Placement ring radii SHALL be fixed multiples of the measured body half-diagonal:
-high `1.4×`, medium `1.55×`, and low `1.7×`. Furniture-safe radii SHALL NOT
-participate in ring geometry, and the order `high < medium < low` SHALL hold at
-every zoom.
-
-#### Scenario: Stable radius order
-
-- **WHEN** ring radii are computed for any finite body half-diagonal
-- **THEN** high is 1.4×, medium is 1.55×, low is 1.7×, and no stage or furniture value changes them
-
-#### Scenario: Body remains inside the inner ring
-
-- **WHEN** the user zooms or pans the package
-- **THEN** the measured body remains inside the high ring with forty percent clearance
-
 ### Requirement: Automatic zoom is limited to overlay enable
 
 Automatic zoom-out SHALL run only when the placement overlay becomes visible.

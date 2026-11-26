@@ -157,8 +157,8 @@
         cy={centerY}
         r={Math.max(1, radii[ring])}
         class="fill-none stroke-current text-info opacity-90"
-        stroke-width="2"
-        stroke-dasharray={ring === 'low' ? '5 4' : undefined}
+        stroke-width="1"
+        stroke-dasharray="2 3"
       />
       <text
         x={centerX + 5}

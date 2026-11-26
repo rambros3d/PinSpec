@@ -5,12 +5,61 @@ import {
   MIN_PLACEMENT_ZOOM,
   PLACEMENT_ZOOM_EPSILON,
   RING_RADIUS_FACTORS,
+  farthestPinCornerDistance,
   placementRingRadii,
   placementZoomLimit,
+  type PinBoundsRect,
 } from '../src/core/placement-rings';
 
+function rect(left: number, top: number, right: number, bottom: number): PinBoundsRect {
+  return { left, top, right, bottom };
+}
+
+describe('farthest pin corner helper', () => {
+  it('uses the farthest corner, not the rectangle centre', () => {
+    // Body centre at the origin; the pad sits to the right and above it.
+    expect(farthestPinCornerDistance(0, 0, [rect(30, -20, 50, -10)])).toBeCloseTo(
+      Math.hypot(50, 20),
+      9,
+    );
+    expect(farthestPinCornerDistance(0, 0, [rect(-50, 10, -30, 20)])).toBeCloseTo(
+      Math.hypot(50, 20),
+      9,
+    );
+  });
+
+  it('takes the maximum corner distance over every measured pin', () => {
+    const bounds = [rect(20, -5, 24, 5), rect(-80, -60, -70, -50), rect(-10, 40, 10, 44)];
+    expect(farthestPinCornerDistance(0, 0, bounds)).toBeCloseTo(Math.hypot(80, 60), 9);
+    expect(farthestPinCornerDistance(0, 0, [rect(5, -2, 9, 2)])).toBeCloseTo(
+      Math.hypot(9, 2),
+      9,
+    );
+  });
+
+  it('works from an arbitrary centre and tolerates reversed coordinates', () => {
+    expect(farthestPinCornerDistance(400, 300, [rect(420, 280, 440, 320)])).toBeCloseTo(
+      Math.hypot(40, 20),
+      9,
+    );
+    expect(farthestPinCornerDistance(400, 300, [rect(440, 320, 420, 280)])).toBeCloseTo(
+      Math.hypot(40, 20),
+      9,
+    );
+  });
+
+  it('yields zero when no bounds are measurable so the caller falls back', () => {
+    expect(farthestPinCornerDistance(0, 0, [])).toBe(0);
+    expect(
+      farthestPinCornerDistance(0, 0, [rect(Number.NaN, 0, 10, 10), rect(0, 0, 0, 0)]),
+    ).toBe(0);
+    expect(farthestPinCornerDistance(Number.NaN, 0, [rect(0, 0, 10, 10)])).toBe(0);
+    expect(placementRingRadii(0)).toEqual({ high: 0, medium: 0, low: 0 });
+  });
+});
+
 describe('pure placement ring geometry', () => {
-  it('uses fixed body-relative factors with forty percent clearance', () => {
+  it('uses fixed pin-relative factors with forty percent clearance', () => {
     expect(RING_RADIUS_FACTORS).toEqual({ high: 1.4, medium: 1.55, low: 1.7 });
     const radii = placementRingRadii(100);
     expect(radii.high).toBeCloseTo(140, 9);
@@ -20,15 +69,15 @@ describe('pure placement ring geometry', () => {
     expect(radii.high).toBeGreaterThan(100);
   });
 
-  it('keeps the ring order stable at every body size without a furniture argument', () => {
+  it('keeps the ring order stable at every pin radius without a furniture argument', () => {
     expect(placementRingRadii.length).toBe(1);
-    for (const diagonal of [0.5, 1, 100, 200, 1000]) {
-      const radii = placementRingRadii(diagonal);
+    for (const radius of [0.5, 1, 100, 200, 1000]) {
+      const radii = placementRingRadii(radius);
       expect(radii.high).toBeLessThan(radii.medium);
       expect(radii.medium).toBeLessThan(radii.low);
-      expect(radii.high / diagonal).toBeCloseTo(RING_RADIUS_FACTORS.high, 9);
-      expect(radii.medium / diagonal).toBeCloseTo(RING_RADIUS_FACTORS.medium, 9);
-      expect(radii.low / diagonal).toBeCloseTo(RING_RADIUS_FACTORS.low, 9);
+      expect(radii.high / radius).toBeCloseTo(RING_RADIUS_FACTORS.high, 9);
+      expect(radii.medium / radius).toBeCloseTo(RING_RADIUS_FACTORS.medium, 9);
+      expect(radii.low / radius).toBeCloseTo(RING_RADIUS_FACTORS.low, 9);
     }
   });
 

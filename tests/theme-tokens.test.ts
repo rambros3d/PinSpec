@@ -160,6 +160,20 @@ describe('daisyUI token integration', () => {
     }
   });
 
+  it('keeps placement rings on semantic tokens with a uniform fine stroke', () => {
+    const overlay = fs.readFileSync(
+      path.join(ROOT, 'src', 'components', 'workspace', 'PlacementOverlay.svelte'),
+      'utf8',
+    );
+    expect(overlay).not.toMatch(/#[0-9a-fA-F]{3,8}\b|\brgba?\(|\bhsla?\(|\boklch\(/);
+    expect(overlay).not.toMatch(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]/u);
+    const rings = overlay.match(/\{#each PLACEMENT_RINGS as ring \(ring\)[\s\S]*?\{\/each\}/)?.[0] ?? '';
+    expect(rings).toContain('text-info');
+    expect(rings).toContain('stroke-width="1"');
+    expect(rings).toContain('stroke-dasharray="2 3"');
+    expect(rings).not.toContain('5 4');
+  });
+
   it('resolves sidebar icon accents through theme tokens with no literal color', () => {
     const sidebar = fs.readFileSync(
       path.join(ROOT, 'src', 'components', 'shell', 'GlobalNavBar.svelte'),

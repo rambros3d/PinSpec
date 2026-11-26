@@ -585,17 +585,27 @@ describe('placement overlay wiring', () => {
     expect(canvas).toContain('onPlacementToggle?.(next);');
   });
 
-  it('draws legible rings and labels while keeping pin input passthrough', () => {
+  it('draws fine dotted rings with unchanged handles and pin input passthrough', () => {
     const overlay = fs.readFileSync(
       path.join(ROOT, 'src/components/workspace/PlacementOverlay.svelte'),
       'utf8',
     );
-    expect(overlay).toContain('class="fill-none stroke-current text-info opacity-90"');
-    expect(overlay).toContain('stroke-width="2"');
-    expect(overlay).toContain('class="fill-current text-info text-[11px] font-medium"');
+    const rings = overlay.match(/\{#each PLACEMENT_RINGS as ring \(ring\)[\s\S]*?\{\/each\}/)?.[0] ?? '';
+    expect(rings).toContain('class="fill-none stroke-current text-info opacity-90"');
+    expect(rings).toContain('stroke-width="1"');
+    expect(rings.match(/stroke-dasharray="2 3"/g)).toHaveLength(1);
+    expect(rings).not.toContain("ring === 'low'");
+    expect(rings).not.toContain('5 4');
+    expect(rings).toContain('class="fill-current text-info text-[11px] font-medium"');
     expect(overlay).not.toContain('opacity-40');
     expect(overlay).toContain('class="absolute inset-0 z-10 pointer-events-none"');
     expect(overlay).toContain('class="absolute inset-0 w-full h-full pointer-events-none"');
+
+    const handles = overlay.match(/\{#each indicators as indicator \(indicator\.name\)[\s\S]*?\{\/each\}/)?.[0] ?? '';
+    expect(handles).toContain('group-focus-visible:opacity-100');
+    expect(handles).toContain('stroke-width="2"');
+    expect(handles).toContain('r={selected === indicator.name ? 11 : 9}');
+    expect(handles).not.toContain('stroke-dasharray');
   });
 
   it('forwards the persisted rotation alongside the overlay', () => {
@@ -686,7 +696,7 @@ describe('placement overlay interaction refresh', () => {
       'utf8',
     );
 
-  it('uses measured body-centred radii for drawing, selection and keyboard changes', () => {
+  it('uses measured pin-bound radii around the body centre for drawing, selection and keyboard changes', () => {
     const overlay = readOverlay();
     expect(overlay).not.toContain('RING_FACTORS');
     expect(overlay).not.toContain('radius *');
@@ -698,7 +708,12 @@ describe('placement overlay interaction refresh', () => {
     const canvas = readCanvas();
     expect(canvas).toContain("querySelector('[data-ic-body]')");
     expect(canvas).toContain('bodyHalfDiagonal = Math.hypot(bodyRect.width, bodyRect.height) / 2');
-    expect(canvas).toContain('placementRingRadii(bodyHalfDiagonal)');
+    expect(canvas).toContain("querySelectorAll('[data-pin-bounds]')");
+    expect(canvas).toContain('rect.left - stageRect.left');
+    expect(canvas).toContain('rect.bottom - stageRect.top');
+    expect(canvas).toContain('farthestPinCornerDistance(bodyCenterX, bodyCenterY, bounds)');
+    expect(canvas).toContain('pinRadius = measuredRadius > 0 ? measuredRadius : bodyHalfDiagonal;');
+    expect(canvas).toContain('placementRingRadii(pinRadius)');
     expect(canvas).toContain('centerX={bodyCenterX}');
     expect(canvas).toContain('centerY={bodyCenterY}');
     expect(canvas).toContain('radii={ringRadii}');
@@ -724,7 +739,8 @@ describe('placement overlay interaction refresh', () => {
       canvas.match(/async function autoFitPlacement\(\): Promise<void> \{[\s\S]*?\n  \}/)?.[0] ?? '';
     expect(autoFit).toContain('await tick()');
     expect(autoFit).toContain('const halfExtent = Math.min(stageRect.width, stageRect.height) / 2;');
-    expect(autoFit).toContain('placementZoomLimit(');
+    expect(autoFit).toContain('const pinRadiusAtZoom1 = pinRadius / zoom;');
+    expect(autoFit).toContain('placementZoomLimit(pinRadiusAtZoom1, halfExtent)');
     expect(autoFit).toContain('zoom > limit + PLACEMENT_ZOOM_EPSILON');
     expect(autoFit).toContain('zoomAtPoint({ zoom, panX, panY }, limit / zoom, bodyCenterX, bodyCenterY)');
 

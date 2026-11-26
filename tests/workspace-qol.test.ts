@@ -363,8 +363,13 @@ describe('placement overlay Escape and keyboard focus', () => {
     expect(source).toContain("event.key === 'Escape' && draggingName");
     expect(source).toContain('cancelActiveDrag()');
     expect(source).toContain('group-focus-visible:opacity-100');
-    expect(source).toContain('class="fill-none stroke-current text-info opacity-90"');
-    expect(source).toContain('stroke-width="2"');
+    const rings = source.match(/\{#each PLACEMENT_RINGS as ring \(ring\)[\s\S]*?\{\/each\}/)?.[0] ?? '';
+    expect(rings).toContain('class="fill-none stroke-current text-info opacity-90"');
+    expect(rings).toContain('stroke-width="1"');
+    expect(rings).toContain('stroke-dasharray="2 3"');
+    expect(rings).not.toContain('5 4');
+    const handles = source.match(/\{#each indicators as indicator \(indicator\.name\)[\s\S]*?\{\/each\}/)?.[0] ?? '';
+    expect(handles).toContain('stroke-width="2"');
     expect(source).not.toContain('opacity-40');
     expect(source).toContain('role="button"');
     expect(source).toContain('tabindex="0"');

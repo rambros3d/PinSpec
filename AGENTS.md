@@ -179,13 +179,13 @@ Hash routing only, so deep links never trigger Pages 404s under a subpath:
   hydrates workspace
 
 One global shell wraps every route. A thin h-8 (32 px) navigation bar is mounted
-on every route: Home, Projects, and Catalog on the left; Workspace, an About info
-icon, a GitHub link, keyboard shortcuts, and the compact theme picker on the
-right. The app icon and `PinSpec` name appear on non-workspace routes, while the
+on every route: Home, Projects, and Catalog on the left; a centered app icon and
+`PinSpec` name on non-workspace routes; Workspace, an About info icon, a GitHub
+link, keyboard shortcuts, and the compact theme picker on the right. The
 workspace action bar carries the app icon on workspace and shared routes.
 Labels collapse to icons below the `sm` breakpoint and every target stays
 operable without horizontal scrolling. No route-title text is rendered. The
-centered Workspace control appears only on non-workspace routes, opens the
+right-side Workspace control appears only on non-workspace routes, opens the
 loaded chip or the most recent local session, and is disabled when neither
 exists; recent sessions are managed only on the Projects route. On workspace
 and shared routes a second h-12 (48 px) action bar below the navigation bar is
@@ -451,10 +451,10 @@ credits are owned by the About route and repository documentation.
 Three-pane IDE:
 
 - **Global navigation bar (32px):** Home, Projects, and Catalog on the left;
-  a centered Workspace control on non-workspace routes; About, GitHub,
-  keyboard shortcuts, and the compact theme picker on the right. GitHub and
-  shortcuts are icon-only; the app icon and name appear on non-workspace
-  routes and labels collapse to icons below `sm`. No route title is rendered.
+  a centered app icon and name on non-workspace routes; Workspace, About,
+  GitHub, keyboard shortcuts, and the compact theme picker on the right.
+  GitHub and shortcuts are icon-only; labels collapse to icons below `sm`.
+  No route title is rendered.
 - **Workspace action bar (48px):** mounted only on workspace and shared routes.
   It hosts the inline project name, MCU switcher, undo/redo, Clear All,
   Compatible MCUs, Compare, Share, and Export, with a horizontal scroll

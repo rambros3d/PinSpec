@@ -12,12 +12,11 @@ covers the removal of the collapsible sidebar and its localStorage preference.
 ### Requirement: One thin global navigation bar
 
 The shell SHALL mount one h-8 navigation bar on every route. Its left group
-SHALL be Home, Projects, and Catalog; its right group SHALL be an About info
-icon, a GitHub icon, keyboard shortcuts, and the compact theme picker. The
-Workspace control SHALL be centered between the groups on non-workspace routes
-and SHALL NOT be rendered on workspace or shared routes. Below the `sm`
-breakpoint, section labels SHALL collapse to icons while all targets remain
-operable without horizontal scrolling.
+SHALL be Home, Projects, and Catalog; its right group SHALL begin with the
+Workspace control, then About, GitHub, shortcuts, and the theme picker. The app
+icon and `PinSpec` name SHALL be centered on non-workspace routes. The Workspace
+control and centered identity SHALL NOT appear on workspace or shared routes.
+Below `sm`, section labels SHALL collapse to icons without horizontal scrolling.
 
 #### Scenario: Navigation on every route
 
@@ -32,7 +31,7 @@ operable without horizontal scrolling.
 #### Scenario: Workspace control is contextual
 
 - **WHEN** a workspace or shared route is opened
-- **THEN** the centered Workspace control is absent and the thin bar shows only the left and right groups
+- **THEN** neither the Workspace control nor the centered identity is rendered and the thin bar shows only the left and right groups
 
 ### Requirement: About and GitHub icons are accessible
 
@@ -106,15 +105,15 @@ share URLs, project files, or undo history.
 
 ### Requirement: Product identity follows the active surface
 
-Non-workspace routes SHALL show the Radiokit mark and the `PinSpec` name at the
-start of the thin bar's left group. Workspace and shared routes SHALL show the
-mark only in the workspace action bar and SHALL NOT repeat the name in the thin
-bar. No static route-title text SHALL be added.
+Non-workspace routes SHALL center the Radiokit mark and `PinSpec` name between
+the navigation groups. Workspace and shared routes SHALL show the mark only in
+the workspace action bar and SHALL NOT repeat the name in the thin bar. No
+static route-title text SHALL be added.
 
 #### Scenario: Identity on discovery routes
 
 - **WHEN** Home, Catalog, Projects, or About is opened
-- **THEN** the thin bar shows the app icon followed by the PinSpec name before the section links
+- **THEN** the thin bar centers the app icon followed by the PinSpec name between the left and right groups
 
 #### Scenario: Identity in a workspace
 

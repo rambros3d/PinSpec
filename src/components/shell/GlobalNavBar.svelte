@@ -70,16 +70,6 @@
   aria-label="Global navigation"
 >
   <nav class="flex min-w-0 items-center gap-1" aria-label="Sections">
-    {#if !isWorkspace}
-      <span class="flex shrink-0 items-center gap-1.5 pr-1" title="PinSpec">
-        <img
-          src={`${import.meta.env.BASE_URL}radiokit-logo.svg`}
-          alt=""
-          class="size-5 shrink-0"
-        />
-        <span class="hidden font-bold text-foreground sm:inline">PinSpec</span>
-      </span>
-    {/if}
     {#each LEFT_ENTRIES as entry (entry.id)}
       {@const Icon = entry.icon}
       <a
@@ -101,6 +91,19 @@
 
   {#if !isWorkspace}
     <div class="absolute left-1/2 -translate-x-1/2">
+      <span class="flex shrink-0 items-center gap-1.5" title="PinSpec">
+        <img
+          src={`${import.meta.env.BASE_URL}radiokit-logo.svg`}
+          alt=""
+          class="size-5 shrink-0"
+        />
+        <span class="font-bold text-foreground">PinSpec</span>
+      </span>
+    </div>
+  {/if}
+
+  <nav class="flex min-w-0 items-center gap-1" aria-label="Resources">
+    {#if !isWorkspace}
       {#if workspaceTarget}
         <a
           href={`#/mcu/${workspaceTarget}`}
@@ -127,10 +130,7 @@
           <span class="hidden sm:inline">Workspace</span>
         </button>
       {/if}
-    </div>
-  {/if}
-
-  <nav class="flex min-w-0 items-center gap-1" aria-label="Resources">
+    {/if}
     <a
       href="#/about"
       onclick={(e) => {

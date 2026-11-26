@@ -150,7 +150,7 @@ describe('daisyUI token integration', () => {
 
   it('keeps the changed sidebar and shortcut dialog on theme tokens', () => {
     for (const rel of [
-      'src/components/shell/GlobalSidebar.svelte',
+      'src/components/shell/GlobalNavBar.svelte',
       'src/components/workspace/ShortcutHelpDialog.svelte',
     ]) {
       const source = fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -162,7 +162,7 @@ describe('daisyUI token integration', () => {
 
   it('resolves sidebar icon accents through theme tokens with no literal color', () => {
     const sidebar = fs.readFileSync(
-      path.join(ROOT, 'src', 'components', 'shell', 'GlobalSidebar.svelte'),
+      path.join(ROOT, 'src', 'components', 'shell', 'GlobalNavBar.svelte'),
       'utf8',
     );
     expect(sidebar).toContain("'text-accent'");
@@ -231,7 +231,7 @@ describe('daisyUI token integration', () => {
 
   it('keeps the refined top bar and canvas find on theme tokens', () => {
     const read = (rel: string): string => fs.readFileSync(path.join(ROOT, rel), 'utf8');
-    const bar = read('src/components/shell/GlobalTopBar.svelte');
+    const bar = read('src/components/shell/WorkspaceTopBar.svelte');
     const canvas = read('src/components/workspace/PackageCanvas.svelte');
     for (const [name, source] of [
       ['bar', bar],

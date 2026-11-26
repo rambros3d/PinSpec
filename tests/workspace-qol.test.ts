@@ -142,7 +142,7 @@ describe('toast placement and dismissal', () => {
     expect(readSource('src/state/workspace.svelte.ts')).toContain('}, 3200);');
   });
 
-  it('keeps the toast above the expanded sidebar overlay', () => {
+  it('keeps the toast above the two shell bars', () => {
     const page = readSource('src/pages/WorkspacePage.svelte');
     expect(page).toContain('workspace-toast');
     expect(page).toContain('z-[60]');
@@ -153,9 +153,11 @@ describe('toast placement and dismissal', () => {
       expect(match, name).not.toBeNull();
       return Number(match![1]);
     };
-    expect(token('--toast-z')).toBeGreaterThan(token('--shell-panel-z'));
+    expect(token('--toast-z')).toBe(60);
     expect(css).toContain('z-index: var(--toast-z)');
-    expect(readSource('src/components/shell/GlobalSidebar.svelte')).toContain('shell-panel fixed bottom-0 left-0 top-12 z-40');
+    expect(css).not.toContain('--shell-panel-z');
+    expect(readSource('src/components/shell/GlobalNavBar.svelte')).toContain('h-9 shrink-0');
+    expect(readSource('src/components/shell/WorkspaceTopBar.svelte')).toContain('h-12 shrink-0');
   });
 });
 
@@ -247,10 +249,11 @@ describe('shortcut help', () => {
     expect(readSource('src/components/shell/AppShell.svelte').match(/<ShortcutHelpDialog/g)?.length).toBe(1);
   });
 
-  it('opens the same global-bar dialog from the keyboard and the shortcuts control', () => {
-    const bar = readSource('src/components/shell/GlobalTopBar.svelte');
-    expect(bar).toContain('topBarUI.shortcutHelpOpen = true');
-    expect(bar).toContain('aria-label="Keyboard shortcuts"');
+  it('opens the same shell dialog from the keyboard and the shortcuts control', () => {
+    const nav = readSource('src/components/shell/GlobalNavBar.svelte');
+    const bar = readSource('src/components/shell/WorkspaceTopBar.svelte');
+    expect(nav).toContain('topBarUI.shortcutHelpOpen = true');
+    expect(nav).toContain('aria-label="Keyboard shortcuts"');
     const shell = readSource('src/components/shell/AppShell.svelte');
     expect(shell).toContain('topBarUI.shortcutHelpOpen');
     expect(shell).toContain('ShortcutHelpDialog');
@@ -272,6 +275,7 @@ describe('shortcut help', () => {
     expect(bar).toContain('aria-label="Project name"');
     expect(bar).toContain('e.stopPropagation()');
     expect(bar).not.toContain('topBarUI.focusSearch = () =>');
+    expect(nav).not.toContain('topBarUI.focusSearch = () =>');
     const canvas = readSource('src/components/workspace/PackageCanvas.svelte');
     expect(canvas).toContain('topBarUI.focusSearch = () =>');
     expect(canvas).toContain('searchInputRef?.select()');
@@ -404,18 +408,18 @@ describe('portrait dock and toolbar affordance', () => {
     expect(shouldShowScrollAffordance(Number.NaN, 400, 600)).toBe(false);
     expect(shouldShowScrollAffordance(0, 0, 600)).toBe(false);
 
-    const bar = readSource('src/components/shell/GlobalTopBar.svelte');
+    const bar = readSource('src/components/shell/WorkspaceTopBar.svelte');
     for (const token of [
       'global-top-bar h-12 shrink-0',
       'overflow-x-auto',
       'min-w-0',
       'truncate max-w-[11rem]',
-      'hidden sm:inline font-bold',
       'shouldShowScrollAffordance',
       'onscroll={updateScrollHint}',
     ]) {
       expect(bar, token).toContain(token);
     }
+    expect(readSource('src/components/shell/GlobalNavBar.svelte')).not.toContain('overflow-x-auto');
   });
 });
 

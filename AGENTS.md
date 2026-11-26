@@ -178,18 +178,24 @@ Hash routing only, so deep links never trigger Pages 404s under a subpath:
 - `#/s/<COMPRESSED_PAYLOAD>` - Shared pinout; decompresses state, loads chip,
   hydrates workspace
 
-One global shell wraps every route. A single h-12 global top bar supplies
-navigation on every route and the pin-planning actions on workspace and shared
-routes; no page or workspace renders a second bar. Its leftmost control toggles
-a narrow 3rem icon rail whose width is reserved so it never covers content;
-expansion is a fixed overlay with a backdrop that never reflows the workspace
-canvas. The sidebar also offers a Hotkeys entry above About that opens the shared
-shortcut dialog over the current route; the keyboard reference is not repeated
-on About. Sidebar expansion is the only UI preference in `localStorage` under
-`pinspec:shell_preferences_v1`; the bar's dialog flags and search focus callback
-are transient view state in `src/state/top-bar-ui.svelte.ts`. Neither category
-enters share URLs or project files. About owns a single static provenance table
-and has no tab preference.
+One global shell wraps every route. A thin h-9 (36 px) navigation bar is mounted
+on every route: Home, Projects, and Catalog on the left; Workspace, an About info
+icon, a GitHub link, keyboard shortcuts, and the compact theme picker on the
+right. Labels collapse to icons below the `sm` breakpoint and every target stays
+operable without horizontal scrolling. No wordmark or route-title text is
+rendered. Workspace opens the loaded chip or the most recent local session and is
+disabled when neither exists; recent sessions are managed only on the Projects
+route. On workspace and shared routes the shell mounts one additional h-12 (48
+px) action bar below the navigation bar. That bar owns the inline project-name
+editor, MCU switcher, undo, redo, Clear All, Compatible MCUs, Compare, Share,
+Export, and the horizontal scroll affordance; other routes render no second bar.
+The Clear All confirmation anchors below both bars. The shortcuts control opens
+the shared dialog over the current route, and the keyboard reference is not
+repeated on About. Dialog flags and the search-focus callback are transient view
+state in `src/state/top-bar-ui.svelte.ts`. Discovery filters and theme are UI
+preferences persisted only in `localStorage`. Neither category enters share URLs
+or project files. About owns a single static provenance table and has no tab
+preference.
 
 `vite.config.ts` sets `base: process.env.BASE_PATH ?? '/'`. All runtime data
 fetches resolve relative to `import.meta.env.BASE_URL`, e.g.
@@ -218,11 +224,11 @@ PinSpec/
 |   |   +-- url-state.ts
 |   |   +-- exporters/{embassy-rust,c-header,csv,json}.ts
 |   +-- state/                 # Nine Svelte 5 runes stores plus the dialog-focus helper
-|   |   +-- {router,catalog,workspace,theme,shell-preferences,
-|   |   |   workspace-preferences,discovery-preferences,
-|   |   |   placement-selection,top-bar-ui}.svelte.ts
+|   |   +-- {router,catalog,workspace,theme,workspace-preferences,
+|   |   |   discovery-preferences,placement-selection,top-bar-ui,
+|   |   |   persisted-preference}.svelte.ts
 |   +-- pages/{LandingPage,CatalogPage,ProjectsPage,AboutPage,WorkspacePage}.svelte
-|   +-- components/shell/{AppShell,GlobalSidebar,GlobalTopBar}.svelte
+|   +-- components/shell/{AppShell,GlobalNavBar,WorkspaceTopBar,Dialog}.svelte
 |   +-- components/landing/{PresetGrid,QuickSearchBar}.svelte
 |   +-- components/catalog/PackageThumbnail.svelte
 |   +-- components/about/ProvenancePanel.svelte
@@ -441,10 +447,15 @@ credits are owned by the About route and repository documentation.
 
 Three-pane IDE:
 
-- **Global top bar (48px):** Sidebar toggle, route context and section links on
-  every route. On workspace and shared routes it also hosts the MCU switcher,
-  global pin/signal search (Ctrl+F), undo/redo, clear all, rotate, alternatives,
-  compare, share link, and export modal.
+- **Global navigation bar (36px):** Home, Projects, and Catalog on the left;
+  Workspace, About, GitHub, keyboard shortcuts, and the compact theme picker on
+  the right. Labels collapse to icons below `sm`; the bar never renders a
+  wordmark or a route title.
+- **Workspace action bar (48px):** mounted only on workspace and shared routes.
+  It hosts the inline project name, MCU switcher, undo/redo, Clear All,
+  Compatible MCUs, Compare, Share, and Export, with a horizontal scroll
+  affordance. Pin and signal search (Ctrl+F), rotate, fit, and placement live on
+  the canvas.
 - **Left pane (~280px):** categorized peripheral tree with status dots, mode
   selector, per-signal toggles with assigned pin badges.
 - **Center pane:** custom pointer-event pan and cursor-centered zoom

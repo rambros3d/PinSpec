@@ -1,5 +1,5 @@
 /**
- * Transient UI/view state for the single global top bar.
+ * Transient UI/view state for the two-bar application shell.
  *
  * Every field describes presentation only. Nothing here is persisted to
  * localStorage and nothing enters share URLs, version-2 project files, recent
@@ -50,7 +50,7 @@ class TopBarUIState {
     else if (this.activeDialog === 'diff') this.activeDialog = null;
   }
 
-  /** Shared by the bar, the sidebar Hotkeys entry, and the `?` shortcut. */
+  /** Shared by the navigation bar's shortcuts control and the `?` shortcut. */
   get shortcutHelpOpen(): boolean {
     return this.activeDialog === 'shortcutHelp';
   }

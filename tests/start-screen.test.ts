@@ -17,11 +17,11 @@ describe('start screen layout', () => {
     expect(page).toContain('data-zone="discovery"');
     expect(page).toContain('data-zone="rail"');
     expect(page).not.toContain('min-h-screen');
-    const bar = read('src/components/shell/GlobalTopBar.svelte');
+    const bar = read('src/components/shell/GlobalNavBar.svelte');
     expect(bar).toContain('<ThemePicker compact={true} />');
-    expect(bar).toContain("label: 'Home'");
-    expect(bar).toContain("label: 'Catalog'");
-    expect(bar).toContain("label: 'Projects'");
+    expect(bar).toContain("id: 'home'");
+    expect(bar).toContain("id: 'catalog'");
+    expect(bar).toContain("id: 'projects'");
     expect(page).toContain('href="#presets"');
     expect(page).not.toContain('href="#/about"');
     expect(page).not.toContain('href="#provenance"');

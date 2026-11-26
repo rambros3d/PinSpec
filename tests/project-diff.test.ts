@@ -126,7 +126,7 @@ describe('diff modal source contract', () => {
     fs.readFileSync(path.join(process.cwd(), rel), 'utf8');
 
   it('wires the global bar and page without writing to the workspace store', () => {
-    const bar = source('src/components/shell/GlobalTopBar.svelte');
+    const bar = source('src/components/shell/WorkspaceTopBar.svelte');
     expect(bar).toContain('topBarUI.diffOpen = true');
     expect(bar).toContain('Compare project pinouts');
     const shell = source('src/components/shell/AppShell.svelte');

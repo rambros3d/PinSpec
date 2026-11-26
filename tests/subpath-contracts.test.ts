@@ -143,10 +143,12 @@ describe('deploy workflow contract', () => {
     expect(at('Verify subpath runtime fetches')).toBeLessThan(at('Upload GitHub Pages artifact'));
   });
 
-  it('smoke-checks the page, index, and a chip shard under /pinspec/', () => {
-    expect(workflow).toContain('/pinspec/index.html');
-    expect(workflow).toContain('/pinspec/data/index.json');
-    expect(workflow).toContain('/pinspec/data/chips/');
+  it('smoke-checks the page, index, and a chip shard under the derived subpath', () => {
+    expect(workflow).toContain('BASE_PATH: /${{ github.event.repository.name }}/');
+    expect(workflow).toContain('SITE_NAME="${{ github.event.repository.name }}"');
+    expect(workflow).toContain('/$SITE_NAME/index.html');
+    expect(workflow).toContain('/$SITE_NAME/data/index.json');
+    expect(workflow).toContain('/$SITE_NAME/data/chips/');
     expect(workflow).toContain('(src|href)="/(data|assets)/');
   });
 });

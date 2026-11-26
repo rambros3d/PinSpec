@@ -17,13 +17,12 @@ const TOUCHED_FILES = [
   'src/core/exporters/c-header.ts',
   'src/core/data-url.ts',
   'src/state/catalog.svelte.ts',
-  'src/state/shell-preferences.svelte.ts',
   'src/data/provenance.ts',
   'src/components/catalog/PackageThumbnail.svelte',
   'src/core/package-thumbnail.ts',
   'src/components/shell/AppShell.svelte',
-  'src/components/shell/GlobalSidebar.svelte',
-  'src/components/shell/GlobalTopBar.svelte',
+  'src/components/shell/GlobalNavBar.svelte',
+  'src/components/shell/WorkspaceTopBar.svelte',
   'src/state/top-bar-ui.svelte.ts',
   'src/pages/WorkspacePage.svelte',
   'src/components/about/ProvenancePanel.svelte',
@@ -68,6 +67,7 @@ const TOUCHED_FILES = [
   'tests/package-thumbnails.test.ts',
   'tests/subpath-contracts.test.ts',
   'tests/docs-attribution.test.ts',
+  'tests/shell-preferences.test.ts',
   'src/core/hardware-audit.ts',
   'src/components/workspace/ExportModal.svelte',
   'src/components/workspace/CompatibleMcuFinder.svelte',
@@ -127,7 +127,7 @@ describe('multi-vendor documentation and attribution', () => {
     for (const route of ['#/', '#/catalog', '#/projects', '#/about', '#/mcu/', '#/s/']) {
       expect(readme, route).toContain(route);
     }
-    expect(readme).toContain('pinspec:shell_preferences_v1');
+    expect(readme).not.toContain('pinspec:shell_preferences_v1');
     expect(readme).toContain('About provenance table');
     expect(readme).toContain('Nine reactive Svelte 5 runes stores');
     expect(readme).toContain('TypeScript strict validation (tsc --noEmit)');
@@ -163,7 +163,7 @@ describe('multi-vendor documentation and attribution', () => {
     for (const route of ['#/catalog', '#/projects', '#/about']) {
       expect(agents, route).toContain(route);
     }
-    expect(agents).toContain('pinspec:shell_preferences_v1');
+    expect(agents).not.toContain('pinspec:shell_preferences_v1');
     expect(agents).toContain('Solar Svelte');
     expect(agents).toContain('Nine Svelte 5 runes stores');
     expect(agents).toContain('{stm32,ch32,rp,esp32,sam,nordic}');

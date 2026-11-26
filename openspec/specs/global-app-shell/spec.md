@@ -6,131 +6,6 @@ Defines the global application shell: a collapsible sidebar available on every r
 
 ## Requirements
 
-### Requirement: A collapsible sidebar is present on every route
-
-The shell SHALL render a left sidebar on all six routes with a collapsed 3rem
-rail in reserved space and a top-bar expand/collapse control. Expansion SHALL
-overlay content without reflow. The sidebar SHALL NOT render a separate brand
-header with an app logo or PinSpec label; section navigation SHALL be its
-first visible content.
-
-#### Scenario: Collapsed rail stays visible on every route
-
-- **WHEN** the user opens any supported route with the sidebar collapsed
-- **THEN** the narrow icon rail is visible and every sidebar entry remains reachable
-
-#### Scenario: Expansion overlays without moving the page
-
-- **WHEN** the user expands the sidebar while a page is open
-- **THEN** the expanded panel overlays the page and the canvas, toolbars, and panes keep their prior geometry, pan, and zoom
-
-#### Scenario: Collapse restores the unobstructed page
-
-- **WHEN** the user collapses the sidebar
-- **THEN** the overlay is removed and the underlying page content and state are unchanged
-
-#### Scenario: Navigation keeps the sidebar state
-
-- **WHEN** the user navigates to another route through the sidebar
-- **THEN** the sidebar keeps its expanded or collapsed state and the new route renders with that state
-
-#### Scenario: Collapsed rail reserves its width
-
-- **WHEN** the user opens any supported route with the sidebar collapsed
-- **THEN** the route content begins after the reserved 3rem rail and no content is covered by the rail
-
-#### Scenario: Toggle is in the global bar
-
-- **WHEN** the user looks for the sidebar control on any route
-- **THEN** the control is the leftmost control of the global top bar and is not present in the rail header
-
-#### Scenario: Navigation starts at the top
-
-- **WHEN** the sidebar is opened on any supported route
-- **THEN** the first visible block inside the panel is the section navigation and no separate logo or PinSpec label appears above it
-
-### Requirement: The sidebar provides four section entries
-
-The sidebar SHALL provide entries for Home, Workspace, Catalog, Projects, and
-About, targeting `#/`, `#/mcu/<PART_NUMBER>`, `#/catalog`, `#/projects`, and
-`#/about`, with no word "screen" in any navigation label. Home and Projects
-SHALL appear at the top followed by the recent-projects list. Catalog and About SHALL appear at the
-bottom after a visual separator. The sidebar SHALL indicate the active
-destination and SHALL remain usable while a workspace or shared pinout is open.
-
-#### Scenario: Section entries navigate to their routes
-
-- **WHEN** the user activates a section entry
-- **THEN** the hash route for that destination opens and the entry is marked active
-
-#### Scenario: Navigation works from pin-planning routes
-
-- **WHEN** the user activates a section entry from a workspace or shared pinout
-- **THEN** the destination opens without changing the saved pin configuration of that session
-
-#### Scenario: Navigation labels drop the word screen
-
-- **WHEN** the sidebar section entries are rendered
-- **THEN** the labels are Home, Workspace, Catalog, Projects, and About without the word "screen", and Workspace appears next to Home in the top group
-
-#### Scenario: Bottom group is separated
-
-- **WHEN** the sidebar is viewed in either rail or expanded state
-- **THEN** Home and Projects sit above the recent-projects list and Catalog and About form a bottom group preceded by a visual separator
-
-#### Scenario: Workspace entry resolves its target
-
-- **WHEN** a chip is loaded, or no chip is loaded and a recent session exists
-- **THEN** activating Workspace opens `#/mcu/<PART_NUMBER>` for the chip or for the most recent session
-
-#### Scenario: Workspace entry is visibly disabled
-
-- **WHEN** no chip is loaded and no recent session exists
-- **THEN** the Workspace entry is visibly disabled and activation does not change the route
-
-#### Scenario: Workspace entry keeps sidebar geometry
-
-- **WHEN** the Workspace entry is added to the single sidebar mount
-- **THEN** the collapsed rail remains 3rem, the expanded panel remains an overlay with a backdrop, and no second sidebar is mounted
-
-### Requirement: Recent projects are listed in the sidebar
-
-The sidebar recent-projects area SHALL list at most 10 sessions from
-`pinspec:recent_sessions_v1` in the same order as the workspace store. Each
-entry SHALL offer quick open and delete. Opening SHALL restore the saved pin
-configuration through the existing workspace handoff. Each entry SHALL also
-display its saved project name when present.
-
-#### Scenario: Recent projects are limited to ten
-
-- **WHEN** more than 10 recent sessions are stored
-- **THEN** the sidebar lists only the 10 most recent sessions from the store
-
-#### Scenario: Quick open restores a session
-
-- **WHEN** the user activates a recent project entry
-- **THEN** the workspace opens for that MCU with the session's assignments, labels, locks, and modes restored
-
-#### Scenario: Recent project delete updates the list
-
-- **WHEN** the user deletes a recent project from the sidebar
-- **THEN** that entry is removed from the sidebar and from the stored session list and no other session changes
-
-#### Scenario: No recent projects
-
-- **WHEN** no recent sessions are stored
-- **THEN** the sidebar shows an empty-state message and no open or delete control for a session
-
-#### Scenario: Recent entry shows its project name
-
-- **WHEN** a saved session carries a project name
-- **THEN** its sidebar entry displays that name alongside the MCU identifier
-
-#### Scenario: Recent entry without a name
-
-- **WHEN** a saved session has no project-name field
-- **THEN** its sidebar entry shows no name text and keeps its open and delete controls
-
 ### Requirement: The catalog route browses all generated parts
 
 The `#/catalog` route SHALL render a full-screen catalog browser over all
@@ -263,28 +138,26 @@ reference.
 
 ### Requirement: Shell preferences stay in localStorage
 
-Sidebar expansion and the selected About tab SHALL be UI preferences persisted
-only in localStorage. Their defaults SHALL be collapsed and the first About
-tab. Catalog discovery filters and equivalent quick-search filters SHALL also
-be UI preferences in localStorage, with default empty query, family, and
-package values and an `all` vendor value. Neither these values nor the shell
-values SHALL appear in share URLs, project JSON, recent session state, or undo
-history.
+Catalog discovery filters and equivalent quick-search filters SHALL be UI
+preferences persisted only in localStorage, with default empty query, family,
+and package values and an `all` vendor value. Retired sidebar expansion and
+About tab preferences SHALL NOT be read or written. Discovery values SHALL NOT
+appear in share URLs, project JSON, recent session state, or undo history.
 
 #### Scenario: Shell preferences survive reload
 
-- **WHEN** the sidebar is expanded and an About tab is selected and the page reloads
-- **THEN** the same sidebar state and About tab are restored from localStorage
+- **WHEN** discovery filters are changed and the page reloads
+- **THEN** the same query, family, package, and vendor values are restored from localStorage
 
 #### Scenario: Absent or unknown preference values use defaults
 
-- **WHEN** the stored preference values are absent or unrecognized
-- **THEN** the sidebar is collapsed and the first About tab is selected
+- **WHEN** no stored filter record exists or the record is malformed
+- **THEN** discovery surfaces use their defaults without failing and in-memory filter changes still apply
 
 #### Scenario: Shell preferences are never shared
 
-- **WHEN** a workspace opened through the shell is shared or exported as project JSON
-- **THEN** neither the payload nor the project JSON contains a sidebar or About tab field and all pin configuration is preserved
+- **WHEN** a workspace is shared or exported as project JSON
+- **THEN** neither payload contains a navigation, sidebar, or About-tab field and all pin configuration is preserved
 
 #### Scenario: Discovery filters are local only
 

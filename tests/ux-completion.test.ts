@@ -75,17 +75,19 @@ describe('UX completion surfaces', () => {
   });
 
   it('states what Clear All resets and exposes shortcut metadata', () => {
-    const bar = read('src/components/shell/GlobalTopBar.svelte');
+    const bar = read('src/components/shell/WorkspaceTopBar.svelte');
+    const nav = read('src/components/shell/GlobalNavBar.svelte');
     for (const token of [
       'Reset the full pin plan?',
       'Assignments, labels, locks, modes, remaps, and PIO bindings are cleared.',
       'aria-keyshortcuts="Control+K Meta+K"',
       'aria-keyshortcuts="Control+Z Meta+Z"',
       'aria-keyshortcuts="Control+Y Meta+Y Control+Shift+Z"',
-      'aria-keyshortcuts="Shift+Slash"',
+      'top-[5.25rem]',
     ]) {
       expect(bar, token).toContain(token);
     }
+    expect(nav).toContain('aria-keyshortcuts="Shift+Slash"');
     expect(read('src/components/workspace/PackageCanvas.svelte')).toContain(
       'aria-keyshortcuts="Control+F Meta+F"',
     );
@@ -99,7 +101,7 @@ describe('UX completion surfaces', () => {
     expect(SHORTCUTS.find((shortcut) => shortcut.keys === 'Ctrl+K')?.action).toBe(
       'Open the MCU switcher',
     );
-    const bar = read('src/components/shell/GlobalTopBar.svelte');
+    const bar = read('src/components/shell/WorkspaceTopBar.svelte');
     expect(bar).toContain('aria-label="Compatible MCUs"');
     expect(bar).toContain('>Compatible MCUs<');
     const finder = read('src/components/workspace/CompatibleMcuFinder.svelte');

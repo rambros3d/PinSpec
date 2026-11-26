@@ -1,5 +1,4 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { SHELL_PREFERENCES_STORAGE_KEY } from '../src/state/shell-preferences.svelte';
 import { VIEW_PREFERENCES_STORAGE_KEY } from '../src/state/workspace-preferences.svelte';
 import { stubCatalogChips } from './helpers/catalog-stub';
 
@@ -98,7 +97,7 @@ describe('localStorage-only view preferences', () => {
     expect(preferences.dockTab).toBe('peripherals');
   });
 
-  it('keeps shareable project names in recent sessions and out of shell preferences', async () => {
+  it('keeps shareable project names in recent sessions and out of view preferences', async () => {
     installStorage();
     vi.resetModules();
     const { workspaceStore } = await import('../src/state/workspace.svelte.ts');
@@ -122,13 +121,10 @@ describe('localStorage-only view preferences', () => {
     ) as Array<{ state: { projectName?: string } }>;
     expect(recent[0].state.projectName).toBe('saved-name');
 
-    const { ShellPreferencesStore } = await import('../src/state/shell-preferences.svelte.ts');
-    const shell = new ShellPreferencesStore();
-    shell.sidebarExpanded = true;
-    const storedShell = window.localStorage.getItem(SHELL_PREFERENCES_STORAGE_KEY) ?? '{}';
-    expect(storedShell).not.toContain('projectName');
-    expect(storedShell).not.toContain('saved-name');
-    expect(window.localStorage.getItem(VIEW_PREFERENCES_STORAGE_KEY)).toBeNull();
+    expect(window.localStorage.getItem('pinspec:shell_preferences_v1')).toBeNull();
+    const stored = window.localStorage.getItem(VIEW_PREFERENCES_STORAGE_KEY) ?? '{}';
+    expect(stored).not.toContain('projectName');
+    expect(stored).not.toContain('saved-name');
   });
 
   it('accepts all drawer and dock tabs and remains usable when storage is unavailable', async () => {

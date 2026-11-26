@@ -98,9 +98,7 @@
   --scrollbar-thumb: color-mix(in oklab, var(--color-base-content) 28%, transparent);
   --scrollbar-thumb-hover: color-mix(in oklab, var(--color-base-content) 48%, transparent);
 
-  /* Shell stacking: page content, overlay, backdrop, toast, native dialogs. */
-  --shell-panel-z: 40;
-  --shell-backdrop-z: 30;
+  /* Shell stacking: page content, toast, native dialogs. */
   --toast-z: 60;
 }
 
@@ -133,13 +131,13 @@ body {
   height: 100%;
   overflow-y: auto;
   overscroll-behavior: contain;
-  scroll-padding-top: 3.5rem;
+  scroll-padding-top: 2.25rem;
 }
 
 /*
- * One shell is mounted outside the route switch. Its wrappers never change
- * width when the sidebar expands: the rail is reserved below and the expanded
- * panel is a fixed overlay, so the canvas keeps the same bounding rectangle.
+ * One shell is mounted outside the route switch. The navigation bar is always
+ * present and the action bar appears only on workspace routes, so content uses
+ * the full viewport width without a reserved rail or an overlay.
  */
 .app-shell {
   display: flex;
@@ -156,12 +154,6 @@ body {
   min-height: 0;
   min-width: 0;
   flex: 1 1 auto;
-  /* Reserve the collapsed rail's 3rem; box sizing comes from Tailwind preflight. */
-  padding-left: 3rem;
-}
-
-.shell-rail {
-  width: 3rem;
 }
 
 .shell-route {
@@ -171,19 +163,7 @@ body {
   min-width: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  scroll-padding-top: 3.5rem;
-}
-
-.shell-panel {
-  position: fixed;
-  top: 3rem;
-  bottom: 0;
-  left: 0;
-  z-index: var(--shell-panel-z);
-}
-
-.shell-backdrop {
-  z-index: var(--shell-backdrop-z);
+  scroll-padding-top: 2.25rem;
 }
 
 .workspace-toast {

@@ -1,4 +1,9 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+
+const ROOT = process.cwd();
+const read = (rel: string): string => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 
 function installStorage(): Map<string, string> {
   const storage = new Map<string, string>();
@@ -11,77 +16,85 @@ function installStorage(): Map<string, string> {
   return storage;
 }
 
-/** A fresh module instance with a fresh store avoids cross-test singleton state. */
-async function freshShellPreferences() {
-  vi.resetModules();
-  return import('../src/state/shell-preferences.svelte.ts');
-}
-
 afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe('localStorage-only shell preferences', () => {
-  it('uses a collapsed sidebar when no value is stored', async () => {
-    installStorage();
-    const { ShellPreferencesStore, SHELL_PREFERENCES_STORAGE_KEY } = await freshShellPreferences();
-    expect(SHELL_PREFERENCES_STORAGE_KEY).toBe('pinspec:shell_preferences_v1');
-    const preferences = new ShellPreferencesStore();
-    expect(preferences.sidebarExpanded).toBe(false);
+/**
+ * The sidebar expansion preference is retired with the sidebar. This suite keeps
+ * coverage on the replacement contract: no shell key is written and no shell
+ * field enters share URLs, project files, or recent sessions.
+ */
+describe('retired shell preference contract', () => {
+  it('removes the sidebar store and its storage key from the application', () => {
+    expect(fs.existsSync(path.join(ROOT, 'src/state/shell-preferences.svelte.ts'))).toBe(false);
+    expect(fs.existsSync(path.join(ROOT, 'src/components/shell/GlobalSidebar.svelte'))).toBe(false);
+    for (const rel of [
+      'README.md',
+      'AGENTS.md',
+      'src/app.css',
+      'src/components/shell/AppShell.svelte',
+      'src/components/shell/GlobalNavBar.svelte',
+      'src/components/shell/WorkspaceTopBar.svelte',
+    ]) {
+      expect(read(rel), rel).not.toContain('pinspec:shell_preferences_v1');
+      expect(read(rel), rel).not.toContain('sidebarExpanded');
+    }
+    for (const removed of ['.shell-panel', '.shell-rail', '.shell-backdrop']) {
+      expect(read('src/app.css'), removed).not.toContain(removed);
+    }
   });
 
-  it('restores the sidebar state after reload and writes one namespaced field', async () => {
+  it('writes no shell field while discovery filters still persist locally', async () => {
     const storage = installStorage();
-    const first = await freshShellPreferences();
-    const preferences = new first.ShellPreferencesStore();
-    preferences.sidebarExpanded = true;
-    expect(JSON.parse(storage.get('pinspec:shell_preferences_v1') ?? '{}')).toEqual({
-      sidebarExpanded: true,
-    });
-
     vi.resetModules();
-    const second = await import('../src/state/shell-preferences.svelte.ts');
-    const reloaded = new second.ShellPreferencesStore();
-    expect(reloaded.sidebarExpanded).toBe(true);
-  });
-
-  it('normalizes unknown sidebar values to collapsed', async () => {
-    const storage = installStorage();
-    storage.set('pinspec:shell_preferences_v1', JSON.stringify({ sidebarExpanded: 'yes' }));
-    const { ShellPreferencesStore } = await freshShellPreferences();
-    const preferences = new ShellPreferencesStore();
-    expect(preferences.sidebarExpanded).toBe(false);
-  });
-
-  it('keeps values in memory when localStorage is unavailable', async () => {
-    vi.stubGlobal('window', {
-      get localStorage() {
-        throw new Error('storage disabled');
-      },
-    });
-    const { ShellPreferencesStore } = await freshShellPreferences();
-    const preferences = new ShellPreferencesStore();
-    expect(preferences.sidebarExpanded).toBe(false);
-    expect(() => {
-      preferences.sidebarExpanded = true;
-    }).not.toThrow();
-    expect(preferences.sidebarExpanded).toBe(true);
+    const { discoveryPreferences } = await import('../src/state/discovery-preferences.svelte.ts');
+    discoveryPreferences.catalog.query = 'RP2040';
+    const keys = [...storage.keys()];
+    expect(keys).not.toContain('pinspec:shell_preferences_v1');
+    expect(keys).toContain('pinspec:discovery_preferences_v1');
   });
 
   it('never writes shell fields to share links or project files', async () => {
     installStorage();
-    const { ShellPreferencesStore } = await freshShellPreferences();
-    const preferences = new ShellPreferencesStore();
-    preferences.sidebarExpanded = true;
-    const { encodeWorkspaceState, decodeWorkspaceState } = await import('../src/core/url-state');
+    const { encodeWorkspaceState } = await import('../src/core/url-state');
     const { exportPinoutJson } = await import('../src/core/exporters/json');
     const { createEmptyWorkspace } = await import('../src/core/solver');
     const state = createEmptyWorkspace('STM32G431CBU6');
     const encoded = encodeWorkspaceState(state);
     expect(encoded).not.toContain('sidebar');
+    expect(encoded).not.toContain('navigation');
+    const { decodeWorkspaceState } = await import('../src/core/url-state');
     expect(decodeWorkspaceState(encoded).ok).toBe(true);
     const project = exportPinoutJson(state);
     expect(project).not.toContain('sidebarExpanded');
     expect(Object.keys(state)).not.toContain('sidebarExpanded');
+  });
+
+  it('keeps recent sessions free of navigation fields', async () => {
+    installStorage();
+    vi.resetModules();
+    const { workspaceStore } = await import('../src/state/workspace.svelte.ts');
+    const { catalogStore } = await import('../src/state/catalog.svelte.ts');
+    const { stubCatalogChips } = await import('./helpers/catalog-stub');
+    stubCatalogChips(catalogStore, {
+      id: 'STM32G431CBU6',
+      family: 'STM32G4',
+      muxModel: 'af',
+      core: 'Cortex-M4',
+      flashKb: 128,
+      ramKb: 32,
+      package: { name: 'UFQFPN48', kind: 'perimeter', pinCount: 2, sides: [1, 0, 1, 0] },
+      pins: [],
+      peripherals: {},
+    });
+    await workspaceStore.openMcu('STM32G431CBU6');
+    const recent = JSON.parse(
+      window.localStorage.getItem('pinspec:recent_sessions_v1') ?? '[]',
+    ) as Array<Record<string, unknown>>;
+    expect(recent).toHaveLength(1);
+    expect(JSON.stringify(recent)).not.toContain('sidebarExpanded');
+    expect(JSON.stringify(recent)).not.toContain('navigation');
+    expect(window.localStorage.getItem('pinspec:shell_preferences_v1')).toBeNull();
   });
 });

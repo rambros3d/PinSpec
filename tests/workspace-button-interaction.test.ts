@@ -62,9 +62,9 @@ describe('summary drawer collapse control', () => {
   });
 });
 
-describe('workspace title icon and sidebar navigation start', () => {
-  const bar = read('src/components/shell/GlobalTopBar.svelte');
-  const sidebar = read('src/components/shell/GlobalSidebar.svelte');
+describe('workspace title icon and thin navigation start', () => {
+  const bar = read('src/components/shell/WorkspaceTopBar.svelte');
+  const nav = read('src/components/shell/GlobalNavBar.svelte');
 
   it('shows the app icon before the editable project name on workspace routes', () => {
     const icon = bar.indexOf('${import.meta.env.BASE_URL}radiokit-logo.svg');
@@ -72,18 +72,16 @@ describe('workspace title icon and sidebar navigation start', () => {
     expect(icon).toBeGreaterThan(-1);
     expect(name).toBeGreaterThan(icon);
     expect(bar).toContain('aria-label="Project name"');
-    expect(bar).toContain('PinSpec');
+    expect(bar).not.toContain('>PinSpec<');
   });
 
-  it('drops the sidebar brand header without dropping navigation', () => {
-    expect(sidebar).not.toContain('flex h-12 shrink-0 items-center border-b border-base-300');
-    expect(sidebar).not.toContain('>PinSpec<');
-    const panel = sidebar.indexOf('<aside');
-    const nav = sidebar.indexOf('<nav class="shrink-0 space-y-1 py-2"', panel);
-    const recents = sidebar.indexOf('Recent projects');
-    expect(nav).toBeGreaterThan(panel);
-    expect(nav).toBeLessThan(recents);
-    expect(sidebar).toContain('shellPreferences.sidebarExpanded = !expanded');
+  it('drops the brand header without dropping navigation', () => {
+    expect(nav).not.toContain('radiokit-logo.svg');
+    expect(nav).not.toContain('>PinSpec<');
+    expect(nav).toContain('<nav class="flex min-w-0 items-center gap-1" aria-label="Sections">');
+    expect(nav).toContain('aria-label="Workspace and resources"');
+    expect(nav).not.toContain('Recent projects');
+    expect(nav).not.toContain('shellPreferences');
   });
 });
 

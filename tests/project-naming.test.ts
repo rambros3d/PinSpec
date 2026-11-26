@@ -61,7 +61,7 @@ async function freshWorkspace() {
 describe('project title placement', () => {
   it('edits the shared name in the global bar title without persisting edit state', () => {
     const bar = fs.readFileSync(
-      path.join(process.cwd(), 'src/components/shell/GlobalTopBar.svelte'),
+      path.join(process.cwd(), 'src/components/shell/WorkspaceTopBar.svelte'),
       'utf8',
     );
     expect(bar).toContain("workspaceStore.state.projectName ?? 'Unnamed project'");

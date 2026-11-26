@@ -345,7 +345,7 @@ describe('generated module identity and discovery tags', () => {
   });
 
   it('keeps the vendor-filtered MCU switcher reachable from the global bar', () => {
-    const bar = readSource('src/components/shell/GlobalTopBar.svelte');
+    const bar = readSource('src/components/shell/WorkspaceTopBar.svelte');
     expect(bar).toContain('topBarUI.switcherOpen = true');
     expect(bar).toContain('workspaceStore.chip.id');
     const routeTitle = bar.match(/const routeTitle = \$derived\([\s\S]*?\n  \);/)?.[0] ?? '';
@@ -386,7 +386,8 @@ describe('workspace exports and provenance copy', () => {
     for (const site of [
       'src/pages/LandingPage.svelte',
       'src/pages/WorkspacePage.svelte',
-      'src/components/shell/GlobalTopBar.svelte',
+      'src/components/shell/GlobalNavBar.svelte',
+      'src/components/shell/WorkspaceTopBar.svelte',
       'src/components/workspace/McuSwitcherModal.svelte',
       'src/components/workspace/ExportModal.svelte',
       'src/components/landing/PresetGrid.svelte',

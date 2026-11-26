@@ -21,8 +21,9 @@ describe('global shell mount and routes', () => {
     }
     expect(app.match(/<WorkspacePage\b/g)?.length).toBe(2);
     const shell = read('src/components/shell/AppShell.svelte');
-    expect(shell).toContain('<GlobalSidebar />');
-    expect(shell.match(/<GlobalTopBar\s*\/>/g)?.length).toBe(1);
+    expect(shell.match(/<GlobalNavBar\s*\/>/g)?.length).toBe(1);
+    expect(shell).toContain('{#if isWorkspaceView}');
+    expect(shell.match(/<WorkspaceTopBar\s*\/>/g)?.length).toBe(1);
     expect(shell).toContain('<ShortcutHelpDialog');
     expect(shell.match(/<PinoutDiffModal/g)?.length).toBe(1);
   });
@@ -42,13 +43,16 @@ describe('global shell mount and routes', () => {
   });
 });
 
-describe('global top bar', () => {
-  const bar = read('src/components/shell/GlobalTopBar.svelte');
+describe('thin global navigation bar', () => {
+  const nav = read('src/components/shell/GlobalNavBar.svelte');
   const shell = read('src/components/shell/AppShell.svelte');
 
-  it('is the only navigation and action bar on every route', () => {
-    expect(bar).toContain('class="global-top-bar h-12 shrink-0');
-    expect(shell).toContain('<GlobalTopBar />');
+  it('is the only bar mounted on every route at h-9 without a wordmark or route title', () => {
+    expect(nav).toContain('global-nav-bar flex h-9 shrink-0');
+    expect(shell).toContain('<GlobalNavBar />');
+    expect(nav).not.toContain('radiokit-logo.svg');
+    expect(nav).not.toContain('>PinSpec<');
+    expect(nav).not.toContain('routeTitle');
     for (const file of [
       'src/pages/LandingPage.svelte',
       'src/pages/CatalogPage.svelte',
@@ -62,14 +66,119 @@ describe('global top bar', () => {
     expect(fs.existsSync(path.join(ROOT, 'src/components/workspace/TopToolbar.svelte'))).toBe(false);
   });
 
-  it('shows the wordmark on shell routes and merges workspace actions', () => {
-    expect(bar).toContain('{#if !isWorkspace}');
-    expect(bar).toContain('PinSpec');
+  it('orders the left and right groups exactly and keeps all targets below sm', () => {
+    const left = nav.slice(0, nav.indexOf('aria-label="Workspace and resources"'));
+    const right = nav.slice(nav.indexOf('aria-label="Workspace and resources"'));
+    expect(left).toContain("id: 'home'");
+    expect(left).toContain("id: 'projects'");
+    expect(left).toContain("id: 'catalog'");
+    expect(left.indexOf("id: 'home'")).toBeLessThan(left.indexOf("id: 'projects'"));
+    expect(left.indexOf("id: 'projects'")).toBeLessThan(left.indexOf("id: 'catalog'"));
+    expect(right).toContain('aria-label="Workspace"');
+    expect(right).toContain('aria-label="About"');
+    expect(right).toContain('aria-label="PinSpec repository on GitHub"');
+    expect(right).toContain('aria-label="Keyboard shortcuts"');
+    expect(right).toContain('<ThemePicker compact={true} />');
+    const workspace = right.indexOf('aria-label="Workspace"');
+    const about = right.indexOf('aria-label="About"');
+    const github = right.indexOf('aria-label="PinSpec repository on GitHub"');
+    const hotkeys = right.indexOf('aria-label="Keyboard shortcuts"');
+    const theme = right.indexOf('<ThemePicker compact={true} />');
+    expect(about).toBeGreaterThan(workspace);
+    expect(github).toBeGreaterThan(about);
+    expect(hotkeys).toBeGreaterThan(github);
+    expect(theme).toBeGreaterThan(hotkeys);
+    expect(nav.match(/class="hidden sm:inline"/g)?.length).toBe(6);
+    expect(nav).not.toContain('overflow-x-auto');
+    expect(nav).toContain('justify-between gap-1');
+    expect(nav).toContain('min-w-0');
+  });
+
+  it('marks the active section with aria-current on every route', () => {
+    expect(nav).toContain("if (view === 'landing') return 'home'");
+    expect(nav).toContain("if (view === 'workspace' || view === 'shared') return 'workspace'");
+    expect(nav.match(/aria-current=\{activeSection === entry\.id \? 'page' : undefined\}/g)?.length).toBe(1);
+    expect(nav).toContain("aria-current={activeSection === 'workspace' ? 'page' : undefined}");
+    expect(nav).toContain("aria-current={activeSection === 'about' ? 'page' : undefined}");
+    expect(nav).toContain('router.navigateHome()');
+    expect(nav).toContain('router.navigateCatalog()');
+    expect(nav).toContain('router.navigateProjects()');
+    expect(nav).toContain('router.navigateAbout()');
+  });
+
+  it('opens About through an accessible info icon without duplicating its content', () => {
+    expect(nav).toContain("import Info from '@solar-icons/svelte/bold-duotone/info-circle'");
+    expect(nav).toContain('<Info class={iconClass(\'about\')} />');
+    expect(nav).toContain('title="About"');
+    expect(nav).toContain('aria-label="About"');
+    expect(nav).toContain('router.navigateAbout()');
+    expect(read('src/pages/AboutPage.svelte')).toContain('<ProvenancePanel');
+  });
+
+  it('links the repository with an inline SVG and safe anchor attributes', () => {
+    expect(nav).toContain('href="https://github.com/rambros3d/PinSpec"');
+    expect(nav).toContain('target="_blank"');
+    expect(nav).toContain('rel="noopener noreferrer"');
+    expect(nav).toContain('aria-label="PinSpec repository on GitHub"');
+    expect(nav).toContain('title="PinSpec repository on GitHub"');
+    expect(nav).toContain('<svg');
+    expect(nav).toContain('aria-hidden="true"');
+    expect(nav).not.toContain('@solar-icons/svelte/bold-duotone/github');
+  });
+
+  it('opens the shared help dialog without a route or persisted state', () => {
+    expect(nav).toContain('topBarUI.shortcutHelpOpen = true');
+    expect(nav).toContain('aria-keyshortcuts="Shift+Slash"');
+    expect(nav).not.toContain("'#/hotkeys'");
+    expect(shell).toContain("topBarUI.activeDialog === 'shortcutHelp'");
+    expect(shell).toContain('ShortcutHelpDialog');
+  });
+
+  it('derives the Workspace target and disables it when no chip or session exists', () => {
+    expect(nav).toContain('workspaceStore.chip?.id');
+    expect(nav).toContain('workspaceStore.recentSessions[0]?.mcuId');
+    expect(nav).toContain('router.navigateMcu(workspaceTarget)');
+    expect(nav).toContain('void workspaceStore.openMcu(workspaceTarget)');
+    expect(nav).toContain('href={`#/mcu/${workspaceTarget}`}');
+    expect(nav).toContain('disabled');
+    expect(nav).toContain('title="Open a part first to enable the workspace"');
+    expect(nav).toContain('cursor-not-allowed opacity-40');
+  });
+
+  it('does not list recent sessions or session actions in the shell', () => {
+    expect(nav).not.toContain('Recent projects');
+    expect(nav).not.toContain('reviewRecent');
+    expect(nav).not.toContain('deleteRecent');
+    expect(nav).not.toContain('workspaceStore.recentSessions.slice');
+    expect(nav).not.toContain('Delete session');
+    expect(shell).not.toContain('Recent projects');
+    expect(read('src/pages/ProjectsPage.svelte')).toContain('workspaceStore.deleteRecentSession(mcuId)');
+  });
+});
+
+describe('workspace action bar', () => {
+  const bar = read('src/components/shell/WorkspaceTopBar.svelte');
+  const shell = read('src/components/shell/AppShell.svelte');
+
+  it('is mounted once by the shell only on workspace and shared routes', () => {
+    expect(bar).toContain('global-top-bar h-12 shrink-0');
+    expect(bar).toContain('aria-label="Workspace actions"');
+    expect(shell).toContain('const isWorkspaceView = $derived(');
+    expect(shell).toContain('{#if isWorkspaceView}');
+    expect(shell.match(/<WorkspaceTopBar\s*\/>/g)?.length).toBe(1);
+    for (const file of [
+      'src/pages/LandingPage.svelte',
+      'src/pages/CatalogPage.svelte',
+      'src/pages/ProjectsPage.svelte',
+      'src/pages/AboutPage.svelte',
+      'src/pages/WorkspacePage.svelte',
+    ]) {
+      expect(read(file), file).not.toContain('class="navbar');
+    }
+  });
+
+  it('owns every pin-planning action and the scroll affordance', () => {
     for (const token of [
-      'router.navigateCatalog()',
-      'router.navigateProjects()',
-      '<ThemePicker compact={true} />',
-      'topBarUI.shortcutHelpOpen = true',
       'topBarUI.switcherOpen = true',
       'workspaceStore.undo()',
       'workspaceStore.redo()',
@@ -78,13 +187,15 @@ describe('global top bar', () => {
       'topBarUI.diffOpen = true',
       'handleShare()',
       'topBarUI.exportOpen = true',
+      'overflow-x-auto',
+      'min-w-0',
+      'shouldShowScrollAffordance',
+      'onscroll={updateScrollHint}',
     ]) {
       expect(bar, token).toContain(token);
     }
-    expect(bar.match(/<ThemePicker compact=\{true\} \/>/g)?.length).toBe(2);
-    for (const token of ['overflow-x-auto', 'min-w-0', 'shouldShowScrollAffordance']) {
-      expect(bar, token).toContain(token);
-    }
+    expect(bar).not.toContain('topBarUI.shortcutHelpOpen = true');
+    expect(bar.match(/<ThemePicker compact=\{true\} \/>/g)?.length ?? 0).toBe(0);
     const state = read('src/state/top-bar-ui.svelte.ts');
     for (const field of [
       'switcherOpen',
@@ -100,7 +211,7 @@ describe('global top bar', () => {
   });
 
   it('shows an inline-editable project name at the left edge before the MCU pill', () => {
-    expect(bar).toContain('workspaceStore.state.projectName ?? \'Unnamed project\'');
+    expect(bar).toContain("workspaceStore.state.projectName ?? 'Unnamed project'");
     for (const hook of [
       'aria-label="Rename project"',
       'aria-label="Project name"',
@@ -109,14 +220,13 @@ describe('global top bar', () => {
       'cancelNameEdit()',
       'onblur={commitName}',
       'e.stopPropagation()',
-      'e.key === \'Enter\'',
-      'e.key === \'Escape\'',
+      "e.key === 'Enter'",
+      "e.key === 'Escape'",
     ]) {
       expect(bar, hook).toContain(hook);
     }
-    const routeTitle = bar.match(/const routeTitle = \$derived\([\s\S]*?\n  \);/)?.[0] ?? '';
-    expect(routeTitle).not.toContain('workspaceStore.chip?.id');
-    const title = bar.indexOf('workspaceStore.state.projectName ?? \'Unnamed project\'');
+    expect(bar).not.toContain('const routeTitle');
+    const title = bar.indexOf("workspaceStore.state.projectName ?? 'Unnamed project'");
     const mcu = bar.indexOf('title="Switch MCU (Ctrl+K)"');
     const undo = bar.indexOf('aria-label="Undo"');
     expect(title).toBeGreaterThan(-1);
@@ -124,7 +234,7 @@ describe('global top bar', () => {
     expect(mcu).toBeLessThan(undo);
   });
 
-  it('renders find in the canvas HUD and right-aligns workspace actions through Theme', () => {
+  it('leaves pin search to the canvas HUD and the theme picker to the navigation bar', () => {
     for (const token of ['workspaceStore.globalSearch', 'searchInputRef', 'topBarUI.focusSearch']) {
       expect(bar, token).not.toContain(token);
     }
@@ -139,29 +249,30 @@ describe('global top bar', () => {
     ]) {
       expect(canvas, token).toContain(token);
     }
-    const firstGroup = bar.indexOf('class="ml-auto flex shrink-0 items-center gap-1"');
-    const secondGroup = bar.indexOf('class="ml-auto flex shrink-0 items-center gap-1"', firstGroup + 1);
-    expect(firstGroup).toBeGreaterThan(-1);
-    expect(secondGroup).toBeGreaterThan(firstGroup);
-    const workspaceActions = bar.slice(firstGroup, secondGroup);
-    const shellActions = bar.slice(secondGroup);
-    expect(workspaceActions).toContain('aria-label="Undo"');
-    expect(workspaceActions).toContain('<ThemePicker compact={true} />');
-    expect(workspaceActions.indexOf('<ThemePicker compact={true} />')).toBeGreaterThan(
-      workspaceActions.indexOf('topBarUI.exportOpen = true'),
+    const actions = bar.slice(bar.indexOf('class="ml-auto flex shrink-0 items-center gap-1"'));
+    expect(actions).toContain('aria-label="Undo"');
+    expect(actions.indexOf('aria-label="Undo"')).toBeLessThan(
+      actions.indexOf('topBarUI.exportOpen = true'),
     );
-    expect(workspaceActions.indexOf('class="ml-auto')).toBeLessThan(
-      workspaceActions.indexOf('aria-label="Undo"'),
-    );
-    expect(workspaceActions).not.toContain('Rotate package clockwise');
-    expect(shellActions).toContain('aria-label="Keyboard shortcuts"');
-    expect(shellActions).not.toContain('aria-label="Undo"');
+    expect(actions).not.toContain('Rotate package clockwise');
+    expect(read('src/components/shell/GlobalNavBar.svelte')).toContain('<ThemePicker compact={true} />');
   });
 
-  it('opens the same help dialog on every route through the shared flag', () => {
-    expect(bar).toContain('topBarUI.shortcutHelpOpen = true');
-    expect(shell).toContain('topBarUI.activeDialog === \'shortcutHelp\'');
-    expect(shell).toContain('ShortcutHelpDialog');
+  it('anchors the Clear All confirmation below both bars with its full-reset copy', () => {
+    expect(bar).toContain('top-[5.25rem]');
+    expect(bar).toContain('Reset the full pin plan?');
+    expect(bar).toContain(
+      'Assignments, labels, locks, modes, remaps, and PIO bindings are cleared. You can undo with Ctrl+Z.',
+    );
+    expect(bar).toContain('aria-label="Clear all assignments"');
+    expect(bar).not.toContain('top-12 z-50');
+  });
+
+  it('keeps the help dialog owned by the shell and the other dialogs owned by the workspace', () => {
+    expect(shell).toContain('<ShortcutHelpDialog');
+    expect(shell).toContain("topBarUI.activeDialog === 'shortcutHelp'");
+    expect(read('src/pages/WorkspacePage.svelte')).toContain('<McuSwitcherModal');
+    expect(read('src/pages/WorkspacePage.svelte')).toContain('topBarUI.exportOpen');
     expect(bar).not.toContain("'#/about'");
   });
 
@@ -194,138 +305,99 @@ describe('global top bar', () => {
   });
 });
 
-describe('shell icon provenance', () => {
+describe('shell icon provenance and tokens', () => {
   it('uses Solar bold duotone icons on shell surfaces', () => {
     for (const rel of [
-      'src/components/shell/GlobalSidebar.svelte',
-      'src/components/shell/GlobalTopBar.svelte',
+      'src/components/shell/GlobalNavBar.svelte',
+      'src/components/shell/WorkspaceTopBar.svelte',
       'src/components/ThemePicker.svelte',
     ]) {
       const source = read(rel);
       expect(source, rel).not.toContain('lucide-svelte');
       expect(source, rel).toMatch(/from '@solar-icons\/svelte\/bold-duotone\/[a-z0-9-]+'/);
     }
-    const sidebar = read('src/components/shell/GlobalSidebar.svelte');
-    expect(sidebar).toContain("import Home from '@solar-icons/svelte/bold-duotone/home'");
-    expect(sidebar).toContain('PanelLeftClose');
-    expect(sidebar).toContain('PanelLeftOpen');
+    const nav = read('src/components/shell/GlobalNavBar.svelte');
+    expect(nav).toContain("import Home from '@solar-icons/svelte/bold-duotone/home'");
     const picker = read('src/components/ThemePicker.svelte');
     for (const slug of ['monitor', 'sun', 'moon']) {
       expect(picker, slug).toContain(`@solar-icons/svelte/bold-duotone/${slug}`);
     }
   });
-});
-
-describe('collapsible sidebar overlay', () => {
-  const sidebar = read('src/components/shell/GlobalSidebar.svelte');
-
-  it('renders a fixed collapse overlay that never resizes page content', () => {
-    expect(sidebar).toContain('shell-rail w-12');
-    expect(sidebar).toContain('w-72');
-    expect(sidebar).toContain('class="shell-backdrop fixed inset-0 z-30');
-    expect(sidebar).toContain('shell-panel fixed bottom-0 left-0 top-12 z-40');
-    expect(sidebar).toContain('shellPreferences.sidebarExpanded = false');
-    expect(sidebar).toContain('PanelLeftClose');
-    expect(sidebar).toContain('PanelLeftOpen');
-    expect(sidebar).toContain('shellPreferences.sidebarExpanded = !expanded');
-    expect(read('src/components/shell/GlobalTopBar.svelte')).not.toContain(
-      'shellPreferences.sidebarExpanded = !expanded',
-    );
-    const css = read('src/app.css');
-    expect(css).toContain('--shell-panel-z: 40');
-    expect(css).toContain('--shell-backdrop-z: 30');
-    expect(css).toContain('z-index: var(--shell-panel-z)');
-    expect(css).toContain('top: 3rem;');
-    const contentBlock = css.match(/\.app-shell-content\s*\{[\s\S]*?\}/)?.[0] ?? '';
-    expect(contentBlock).toContain('padding-left: 3rem');
-  });
 
   it('colors section icons with accent while labels keep their foreground', () => {
-    expect(sidebar).toContain('function sectionIconClass(section: Section): string');
-    expect(sidebar).toContain("activeSection === section.id ? 'text-info' : 'text-accent'");
-    expect(sidebar).toContain('<Icon class={sectionIconClass(section)} />');
-    expect(sidebar).toContain('<Keyboard class="size-4 shrink-0 text-accent" />');
-    expect(sidebar).toContain('<PanelLeftClose class="size-4 shrink-0 text-accent" />');
-    expect(sidebar).toContain('<PanelLeftOpen class="size-4 shrink-0 text-accent" />');
-    expect(sidebar.match(/<Icon class=\{sectionIconClass\(section\)\} \/>/g)?.length).toBe(4);
-    const sectionClassFn =
-      sidebar.match(/function sectionClass\(section: Section\): string \{[\s\S]*?\n  \}/)?.[0] ?? '';
-    expect(sectionClassFn).toContain('text-base-content/70');
-    expect(sectionClassFn).not.toContain('text-accent');
-    expect(sidebar).toContain('class="truncate text-xs">{section.label}</span>');
-    expect(sidebar).not.toMatch(/<a[^>]*text-accent[^>]*>/);
-    expect(sidebar).not.toMatch(/<button[^>]*text-accent[^>]*>/);
+    const nav = read('src/components/shell/GlobalNavBar.svelte');
+    expect(nav).toContain('function iconClass(id: SectionId): string');
+    expect(nav).toContain("activeSection === id ? 'text-info' : 'text-accent'");
+    expect(nav).toContain('<Icon class={iconClass(entry.id)} />');
+    expect(nav).toContain("import Keyboard from '@solar-icons/svelte/bold-duotone/keyboard'");
+    const entryClassFn =
+      nav.match(/function entryClass\(id: SectionId\): string \{[\s\S]*?\n  \}/)?.[0] ?? '';
+    expect(entryClassFn).toContain('text-base-content/70');
+    expect(entryClassFn).not.toContain('text-accent');
+    expect(nav).toContain('class="hidden sm:inline">{entry.label}</span>');
+    expect(nav).not.toMatch(/<a[^>]*text-accent[^>]*>/);
   });
 
-  it('offers the five section entries with active-route indication', () => {
-    for (const entry of [
-      "hash: '#/'",
-      "hash: '#/catalog'",
-      "hash: '#/projects'",
-      "hash: '#/about'",
-      "label: 'Home'",
-      "label: 'Workspace'",
-      "label: 'Catalog'",
-      "label: 'Projects'",
-      "label: 'About'",
+  it('uses theme tokens only in the two bars', () => {
+    const css = read('src/app.css');
+    for (const rel of [
+      'src/components/shell/GlobalNavBar.svelte',
+      'src/components/shell/WorkspaceTopBar.svelte',
     ]) {
-      expect(sidebar, entry).toContain(entry);
+      const source = read(rel);
+      expect(source, rel).toContain('bg-base-100');
+      expect(source, rel).not.toMatch(/#[0-9a-fA-F]{3,8}\b|\brgba?\(/);
+      expect(source, rel).not.toMatch(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]/u);
     }
-    expect(sidebar).not.toMatch(/label: '[^']*screen/i);
-    expect(sidebar).toContain('aria-current={activeSection === section.id ? \'page\' : undefined}');
-    expect(sidebar).toContain('router.navigateCatalog()');
-    expect(sidebar).toContain('router.navigateProjects()');
-    expect(sidebar).toContain('router.navigateAbout()');
-    const top = sidebar.indexOf("id: 'home'");
-    const workspace = sidebar.indexOf("id: 'workspace'");
-    const projects = sidebar.indexOf("id: 'projects'");
-    expect(workspace).toBeGreaterThan(top);
-    expect(projects).toBeGreaterThan(workspace);
+    expect(css).toContain('@utility text-foreground');
+  });
+});
+
+describe('two-bar shell layout', () => {
+  const css = read('src/app.css');
+
+  it('uses a full-width thin bar and an action bar without a rail or overlay', () => {
+    const shell = read('src/components/shell/AppShell.svelte');
+    for (const rel of [
+      'src/components/shell/GlobalNavBar.svelte',
+      'src/components/shell/WorkspaceTopBar.svelte',
+    ]) {
+      expect(read(rel), rel).not.toContain('shell-backdrop');
+      expect(read(rel), rel).not.toContain('shell-panel');
+      expect(read(rel), rel).not.toContain('shell-rail');
+    }
+    for (const removed of [
+      '.shell-panel',
+      '.shell-rail',
+      '.shell-backdrop',
+      '--shell-panel-z',
+      '--shell-backdrop-z',
+      'padding-left: 3rem',
+    ]) {
+      expect(css, removed).not.toContain(removed);
+    }
+    expect(css).toContain('scroll-padding-top: 2.25rem');
+    const contentBlock = css.match(/\.app-shell-content\s*\{[\s\S]*?\}/)?.[0] ?? '';
+    expect(contentBlock).not.toContain('padding');
+    expect(shell).toContain('<GlobalNavBar />');
+    expect(shell).toContain('{#if isWorkspaceView}');
+    const root = css.match(/\.workspace-root\s*\{[\s\S]*?\}/)?.[0] ?? '';
+    expect(root).toContain('grid-template-columns:');
+    expect(root).not.toContain('padding');
   });
 
-  it('resolves the Workspace entry from the loaded chip or the most recent session', () => {
-    expect(sidebar).toContain('workspaceStore.chip?.id');
-    expect(sidebar).toContain('workspaceStore.recentSessions[0]?.mcuId');
-    expect(sidebar).toContain('router.navigateMcu(workspaceTarget)');
-    expect(sidebar).toContain('void workspaceStore.openMcu(workspaceTarget)');
-    expect(sidebar).toContain('href={`#/mcu/${workspaceTarget}`}');
-    expect(sidebar).toContain('disabled');
-    expect(sidebar).toContain('cursor-not-allowed opacity-40');
-    const disabled = sidebar.indexOf('cursor-not-allowed opacity-40');
-    const firstSection = sidebar.indexOf('{#each TOP_SECTIONS');
-    const recent = sidebar.indexOf('Recent projects');
-    expect(disabled).toBeGreaterThan(firstSection);
-    expect(disabled).toBeLessThan(recent);
-  });
-
-  it('keeps recent sessions between the top and bottom groups', () => {
-    expect(sidebar).toContain('const TOP_SECTIONS = SECTIONS.filter');
-    expect(sidebar).toContain('const BOTTOM_SECTIONS = SECTIONS.filter');
-    expect(sidebar).toContain('role="separator"');
-    const top = sidebar.indexOf('{#each TOP_SECTIONS');
-    const recent = sidebar.indexOf('Recent projects');
-    const separator = sidebar.indexOf('role="separator"');
-    const bottom = sidebar.indexOf('{#each BOTTOM_SECTIONS');
-    expect(top).toBeLessThan(recent);
-    expect(recent).toBeLessThan(separator);
-    expect(separator).toBeLessThan(bottom);
-  });
-
-  it('shows saved project names on recent-session entries', () => {
-    expect(sidebar).toContain('{#if session.state.projectName}');
-    expect(sidebar).toContain('{session.state.projectName}');
-  });
-
-  it('lists ten recent sessions with open and delete wiring', () => {
-    expect(sidebar).toContain('workspaceStore.recentSessions.slice(0, 10)');
-    expect(sidebar).toContain('openRecent(session.mcuId)');
-    expect(sidebar).toContain('void workspaceStore.openMcu(mcuId)');
-    expect(sidebar).toContain('deleteRecent(session.mcuId)');
-    expect(sidebar).toContain('workspaceStore.deleteRecentSession(mcuId)');
-    expect(sidebar).toContain('No recent projects.');
-    const workspace = read('src/state/workspace.svelte.ts');
-    expect(workspace).toContain("'pinspec:recent_sessions_v1'");
-    expect(workspace).toContain('const MAX_RECENT = 10');
+  it('keeps the document viewport lock and portrait dock rules', () => {
+    for (const block of [
+      css.match(/html,\s*body\s*\{[\s\S]*?\}/)?.[0] ?? '',
+      css.match(/#app\s*\{[\s\S]*?\}/)?.[0] ?? '',
+    ]) {
+      expect(block).toContain('height: 100%');
+      expect(block).toContain('overflow: hidden');
+      expect(block).toContain('overscroll-behavior: none');
+    }
+    expect(css.match(/@media \(orientation: portrait\)/g)?.length).toBe(1);
+    expect(css).toContain('43dvh');
+    expect(css).toContain('bottom: calc(43dvh + 0.75rem)');
   });
 });
 
@@ -437,17 +509,14 @@ describe('about route', () => {
   });
 
   it('renders one static provenance surface with no tab preference', () => {
-    expect(page).not.toContain('shellPreferences');
+    expect(page).not.toContain('sidebar');
     expect(page).not.toContain('ABOUT_TABS');
     expect(page).not.toContain('role="tablist"');
     expect(page).not.toContain('aria-selected');
     expect(page).not.toContain('Shortcuts');
     expect(panel).not.toContain('AboutTab');
     expect(panel).not.toContain('sr-only');
-    expect(read('src/state/shell-preferences.svelte.ts')).toContain(
-      "'pinspec:shell_preferences_v1'",
-    );
-    expect(read('src/state/shell-preferences.svelte.ts')).not.toContain('aboutTab');
+    expect(fs.existsSync(path.join(ROOT, 'src/state/shell-preferences.svelte.ts'))).toBe(false);
   });
 
   it('keeps loading and retry states on the merged surface', () => {
@@ -462,35 +531,37 @@ describe('about route', () => {
     expect(panel).toContain('loading loading-spinner loading-xs');
   });
 
-  it('offers a Hotkeys entry immediately above About without a route', () => {
-    const sidebar = read('src/components/shell/GlobalSidebar.svelte');
-    expect(sidebar).toContain('Keyboard');
-    expect(sidebar).toContain('>Hotkeys<');
-    expect(sidebar).toContain("section.id === 'about'");
-    expect(sidebar).toContain('topBarUI.shortcutHelpOpen = true');
-    expect(sidebar).not.toContain("'#/hotkeys'");
-    const hotkeys = sidebar.indexOf('>Hotkeys<');
-    const about = sidebar.indexOf('{section.label}', hotkeys);
-    expect(hotkeys).toBeGreaterThan(-1);
-    expect(about).toBeGreaterThan(hotkeys);
+  it('opens the shared shortcuts dialog from the navigation bar without a route', () => {
+    const nav = read('src/components/shell/GlobalNavBar.svelte');
+    expect(nav).toContain('Keyboard');
+    expect(nav).toContain('aria-label="Keyboard shortcuts"');
+    expect(nav).toContain('topBarUI.shortcutHelpOpen = true');
+    expect(nav).not.toContain("'#/hotkeys'");
+    expect(read('src/components/shell/AppShell.svelte')).toContain('ShortcutHelpDialog');
+    expect(read('src/pages/AboutPage.svelte')).not.toContain('ShortcutHelpDialog');
   });
 });
 
 describe('shell documentation', () => {
-  it('documents local-only discovery filters and the Workspace sidebar target', () => {
+  it('documents local-only discovery filters and the two-bar Workspace contract', () => {
     const readme = read('README.md');
     expect(readme).toContain('pinspec:discovery_preferences_v1');
     expect(readme).toContain('Catalog and quick-search discovery filters');
     expect(readme).toContain('absent from share URLs, version-2 project files');
+    expect(readme).not.toContain('pinspec:shell_preferences_v1');
     expect(readme).toContain('two curated words');
     expect(readme).not.toContain('word-word-family');
-    expect(readme).toContain('Home, Workspace, and Projects form the top group');
-    expect(readme).toContain('Workspace appears next to Home');
+    expect(readme).toContain('Home, Projects, and Catalog on the left');
+    expect(readme).toContain('Workspace opens the loaded chip');
     expect(readme).toContain('most recent local session');
     expect(readme).toContain('word-word');
     expect(readme).toContain('shareable pin-planning metadata');
     expect(readme).toContain('version-2 share URLs');
     expect(readme).toContain('inline editing mode itself is component-local');
+    const agents = read('AGENTS.md');
+    expect(agents).not.toContain('pinspec:shell_preferences_v1');
+    expect(agents).toContain('h-9 (36 px) navigation bar');
+    expect(agents).toContain('action bar below the navigation bar');
   });
 });
 
@@ -517,8 +588,8 @@ describe('start screen redirect', () => {
     const shell = read('src/components/shell/AppShell.svelte');
     expect(shell.match(/<ShortcutHelpDialog/g)?.length).toBe(1);
     expect(read('src/pages/AboutPage.svelte')).not.toContain('SHORTCUTS');
-    const sidebar = read('src/components/shell/GlobalSidebar.svelte');
-    expect(sidebar).toContain('>Hotkeys<');
-    expect(sidebar).toContain('topBarUI.shortcutHelpOpen = true');
+    const nav = read('src/components/shell/GlobalNavBar.svelte');
+    expect(nav).toContain('aria-label="Keyboard shortcuts"');
+    expect(nav).toContain('topBarUI.shortcutHelpOpen = true');
   });
 });

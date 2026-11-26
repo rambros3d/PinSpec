@@ -86,7 +86,7 @@ describe('document viewport lock', () => {
       'height: 100%',
       'overflow-y: auto',
       'overscroll-behavior: contain',
-      'scroll-padding-top: 3.5rem',
+      'scroll-padding-top: 2.25rem',
     ]) {
       expect(block, declaration).toContain(declaration);
     }
@@ -94,7 +94,7 @@ describe('document viewport lock', () => {
     expect(page).toContain('class="landing-shell flex flex-col bg-base-200 text-foreground"');
     expect(page).not.toContain('min-h-screen');
     expect(page).not.toContain('class="navbar');
-    expect(readSource('src/components/shell/AppShell.svelte')).toContain('<GlobalTopBar />');
+    expect(readSource('src/components/shell/AppShell.svelte')).toContain('<GlobalNavBar />');
     expect(page).toContain('href="#presets"');
     expect(page).not.toContain('href="#export-preview"');
     expect(page).not.toContain('id="export-preview"');
@@ -138,22 +138,30 @@ describe('document viewport lock', () => {
     expect(shellBlock).not.toContain('padding');
     expect(shellBlock).not.toContain('margin');
     const contentBlock = css.match(/\.app-shell-content\s*\{[\s\S]*?\}/)?.[0] ?? '';
-    expect(contentBlock).toContain('padding-left: 3rem');
+    expect(contentBlock).not.toContain('padding');
+    expect(css.match(/scroll-padding-top: 2\.25rem/g)?.length).toBe(2);
   });
 
-  it('overlays the expanded sidebar without reflowing the workspace', () => {
-    const sidebar = readSource('src/components/shell/GlobalSidebar.svelte');
-    expect(sidebar).toContain('class="shell-backdrop fixed inset-0 z-30');
-    expect(sidebar).toContain('shell-panel fixed bottom-0 left-0 top-12 z-40');
-    expect(sidebar).toContain('shell-rail w-12');
-    expect(sidebar).toContain('w-72');
-    expect(sidebar).toContain("label: 'Workspace'");
-    expect(sidebar).toContain('cursor-not-allowed opacity-40');
+  it('uses two full-width bars without a rail or an expanding overlay', () => {
+    const nav = readSource('src/components/shell/GlobalNavBar.svelte');
+    expect(nav).toContain('global-nav-bar flex h-9 shrink-0');
+    expect(nav).toContain('aria-label="Workspace"');
+    expect(nav).toContain('cursor-not-allowed opacity-40');
+    expect(nav).toContain('hidden sm:inline');
     const shell = readSource('src/components/shell/AppShell.svelte');
-    expect(shell.match(/<GlobalSidebar\s*\/>/g)?.length).toBe(1);
+    expect(shell.match(/<GlobalNavBar\s*\/>/g)?.length).toBe(1);
+    expect(shell.match(/<WorkspaceTopBar\s*\/>/g)?.length).toBe(1);
+    expect(shell).toContain('{#if isWorkspaceView}');
     const css = readSource('src/app.css');
-    expect(css).toContain('z-index: var(--shell-panel-z)');
-    expect(css).toContain('z-index: var(--shell-backdrop-z)');
+    for (const removed of [
+      '.shell-panel',
+      '.shell-rail',
+      '.shell-backdrop',
+      '--shell-panel-z',
+      '--shell-backdrop-z',
+    ]) {
+      expect(css, removed).not.toContain(removed);
+    }
     const root = css.match(/\.workspace-root\s*\{[\s\S]*?\}/)?.[0] ?? '';
     expect(root).not.toContain('padding');
     expect(root).not.toContain('margin');
@@ -263,13 +271,13 @@ describe('orientation-driven grid layout', () => {
 });
 
 describe('global bar and modal viewport fit', () => {
-  it('keeps the global bar to one internally scrollable row', () => {
-    const source = readSource('src/components/shell/GlobalTopBar.svelte');
+  it('keeps the workspace action bar to one internally scrollable row', () => {
+    const source = readSource('src/components/shell/WorkspaceTopBar.svelte');
     expect(source).toContain('global-top-bar h-12 shrink-0');
     expect(source).toContain('overflow-x-auto');
     expect(source).toContain('min-w-0');
     expect(source).toContain('truncate max-w-[11rem]');
-    expect(source).toContain('hidden sm:inline font-bold');
+    expect(source).not.toContain('hidden sm:inline font-bold');
     expect(source).toContain('@solar-icons/svelte/bold-duotone/pen');
     expect(source).not.toContain('lucide-svelte');
     expect(source).toContain("workspaceStore.state.projectName ?? 'Unnamed project'");
@@ -279,6 +287,10 @@ describe('global bar and modal viewport fit', () => {
     );
     expect(source).not.toContain('workspaceStore.globalSearch');
     expect(source).not.toContain('searchInputRef');
+    const nav = readSource('src/components/shell/GlobalNavBar.svelte');
+    expect(nav).toContain('global-nav-bar flex h-9 shrink-0');
+    expect(nav).toContain('hidden sm:inline');
+    expect(nav).not.toContain('overflow-x-auto');
     const canvas = readSource('src/components/workspace/PackageCanvas.svelte');
     expect(canvas).toContain('topBarUI.focusSearch = () =>');
     expect(canvas).toContain('aria-label="Find pin or signal"');
@@ -428,7 +440,7 @@ describe('canvas gesture and rotation input', () => {
   });
 
   it('exposes clockwise rotate controls only on the canvas', () => {
-    const bar = readSource('src/components/shell/GlobalTopBar.svelte');
+    const bar = readSource('src/components/shell/WorkspaceTopBar.svelte');
     expect(bar).not.toContain('Rotate package clockwise');
     expect(bar).not.toContain('counter-clockwise');
     const canvas = readSource('src/components/workspace/PackageCanvas.svelte');

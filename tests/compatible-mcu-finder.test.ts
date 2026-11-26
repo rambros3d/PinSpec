@@ -226,7 +226,7 @@ describe('bounded shard loading', () => {
 
 describe('finder wiring', () => {
   it('opens from the global bar and caps its dialog to the viewport', () => {
-    const bar = readSource('src/components/shell/GlobalTopBar.svelte');
+    const bar = readSource('src/components/shell/WorkspaceTopBar.svelte');
     expect(bar).toContain('topBarUI.finderOpen = true');
     expect(bar).toContain('aria-label="Compatible MCUs"');
     expect(bar).toContain('>Compatible MCUs<');
@@ -249,7 +249,7 @@ describe('finder wiring', () => {
   });
 
   it('is reachable in portrait through the scrollable global bar', () => {
-    const bar = readSource('src/components/shell/GlobalTopBar.svelte');
+    const bar = readSource('src/components/shell/WorkspaceTopBar.svelte');
     expect(bar).toContain('overflow-x-auto');
     const css = readSource('src/app.css');
     expect(css).toContain('grid-template-areas:');

@@ -301,7 +301,7 @@ describe('workspace rotation control', () => {
 describe('name pill keeps the workspace bar contract', () => {
   it('stays within the 48px overflow-scrolling bar with token-based icons', () => {
     const source = fs.readFileSync(
-      path.join(process.cwd(), 'src/components/shell/GlobalTopBar.svelte'),
+      path.join(process.cwd(), 'src/components/shell/WorkspaceTopBar.svelte'),
       'utf8',
     );
     expect(source).toContain('global-top-bar h-12 shrink-0');

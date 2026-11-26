@@ -1169,9 +1169,12 @@ describe('matrix placement reallocation', () => {
     expect(search.assignedCount).toBe(2);
     expect(search.picks.map((pick) => pick.option?.item)).toEqual(['a2', 'b1']);
 
-    const solverSource = fs.readFileSync(path.join(ROOT, 'src/core/solver.ts'), 'utf8');
-    expect(solverSource).toContain('searchBacktracking(');
-    expect(solverSource).toContain('reallocateMatrixPlacement(');
+    const allocationSource = fs.readFileSync(
+      path.join(ROOT, 'src/core/solver-allocation.ts'),
+      'utf8',
+    );
+    expect(allocationSource).toContain('export function searchBacktracking<T>(');
+    expect(allocationSource).toContain('export function reallocateMatrixPlacement(');
   });
 
   it('assigns every required signal to a distinct legal pin', () => {

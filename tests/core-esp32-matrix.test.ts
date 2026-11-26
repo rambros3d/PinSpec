@@ -323,9 +323,18 @@ describe('pure core and unchanged version-2 codecs', () => {
   });
 
   it('imports the core in a host process without Svelte or DOM APIs', () => {
-    const source = fs.readFileSync(path.join(ROOT, 'src', 'core', 'solver.ts'), 'utf8');
-    expect(source).not.toMatch(/from 'svelte/);
-    expect(source).not.toMatch(/document\./);
+    for (const module of [
+      'solver.ts',
+      'solver-modes.ts',
+      'solver-common.ts',
+      'solver-remap.ts',
+      'solver-allocation.ts',
+      'solver-diagnostics.ts',
+    ]) {
+      const source = fs.readFileSync(path.join(ROOT, 'src', 'core', module), 'utf8');
+      expect(source, module).not.toMatch(/from 'svelte/);
+      expect(source, module).not.toMatch(/document\./);
+    }
     expect(makeMatrixChip().pins.length).toBeGreaterThan(10);
   });
 });

@@ -556,10 +556,16 @@ describe('shell documentation', () => {
     expect(readme).toContain('shareable pin-planning metadata');
     expect(readme).toContain('version-2 share URLs');
     expect(readme).toContain('inline editing mode itself is component-local');
+    expect(readme).toContain('Hero with `New pinout`');
+    expect(readme).toContain('two columns at `lg`');
+    expect(readme).not.toContain('starter chips');
     const agents = read('AGENTS.md');
     expect(agents).not.toContain('pinspec:shell_preferences_v1');
     expect(agents).toContain('h-8 (32 px) navigation bar');
     expect(agents).toContain('action bar below the navigation bar');
+    expect(agents).toContain('hero-led, two-column surface');
+    expect(agents).toContain('`Plan a pinout` headline');
+    expect(agents).not.toContain('three-zone shell');
   });
 });
 
@@ -567,8 +573,9 @@ describe('start screen redirect', () => {
   it('opens the catalog from New pinout and keeps its quick actions', () => {
     const page = read('src/pages/LandingPage.svelte');
     expect(page).toContain('router.navigateCatalog()');
-    expect(page).toContain('focusQuickSearch');
+    expect(page).toContain('>New pinout</span>');
     expect(page).toContain('<QuickSearchBar');
+    expect(page).toContain('<RecentSessions');
     expect(page).toContain('<BoardSelectorModal');
     expect(page).toContain('topBarUI.diffOpen = true');
     expect(page).not.toContain('PinoutDiffModal');
@@ -581,7 +588,7 @@ describe('start screen redirect', () => {
     expect(page).not.toContain('Shortcuts');
     expect(page).not.toContain('<kbd');
     expect(page).not.toContain('ratios.');
-    expect(page).toContain('PROVENANCE_VENDORS');
+    expect(page).not.toContain('PROVENANCE_VENDORS');
     expect(page).toContain('Synced {formatSyncDate(catalogStore.meta.generatedAt)}');
     const shell = read('src/components/shell/AppShell.svelte');
     expect(shell.match(/<ShortcutHelpDialog/g)?.length).toBe(1);

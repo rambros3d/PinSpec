@@ -187,8 +187,9 @@ Labels collapse to icons below the `sm` breakpoint and every target stays
 operable without horizontal scrolling. No route-title text is rendered. The
 right-side Workspace control appears only on non-workspace routes, opens the
 loaded chip or the most recent local session, and is disabled when neither
-exists; recent sessions are managed only on the Projects route. On workspace
-and shared routes a second h-12 (48 px) action bar below the navigation bar is
+exists. The landing route shows compact recent-session rows; the Projects route
+is the full session manager. On workspace and shared routes a second h-12 (48 px)
+action bar below the navigation bar is
 mounted. That bar owns the inline project-name
 editor, MCU switcher, undo, redo, Clear All, Compatible MCUs, Compare, Share,
 Export, and the horizontal scroll affordance; other routes render no second bar.
@@ -232,7 +233,7 @@ PinSpec/
 |   |   |   persisted-preference}.svelte.ts
 |   +-- pages/{LandingPage,CatalogPage,ProjectsPage,AboutPage,WorkspacePage}.svelte
 |   +-- components/shell/{AppShell,GlobalNavBar,WorkspaceTopBar,Dialog}.svelte
-|   +-- components/landing/{PresetGrid,QuickSearchBar}.svelte
+|   +-- components/landing/{RecentSessions,QuickSearchBar}.svelte
 |   +-- components/catalog/PackageThumbnail.svelte
 |   +-- components/about/ProvenancePanel.svelte
 |   +-- components/workspace/    # Roughly 25 pin-planning and dialog components
@@ -429,22 +430,28 @@ Non-blocking warnings:
 
 ### Start screen
 
-The start screen is a three-zone shell using daisyUI semantic tokens, with the
-theme mode persisted in `localStorage`. It has no hero chip preview, no landing
-export preview, and no technical footer.
+The start screen is a hero-led, two-column surface using daisyUI semantic tokens,
+with the theme mode persisted in `localStorage`. It has no chip preview, package
+outline, export preview, or technical footer.
 
-- Actions column: new pinout from the catalog, board presets, recent sessions,
-  `.ioc` import, version-2 JSON import, and a two-file compare dialog. It is the
-  only surface that accepts `.ioc` files; the compare dialog accepts JSON only.
-- Discovery column: fuzzy catalog quick search with vendor, family, and package
-  filters plus curated starter chips, including generated ESP32 module shards.
-- Rail: compact generated catalog facts (indexed part count, family count, sync
-  date, and per-vendor chip counts) with a retry control on load failure.
+- Hero: a full-width band inside `.landing-shell` and `max-w-7xl` with the
+  `Plan a pinout` headline, one factual sentence, a `New pinout` action that
+  opens the catalog, and the catalog quick search with vendor, family, and
+  package filters. Generated catalog facts (indexed part count, vendor count,
+  and sync date) and the retry control appear in the hero only.
+- Body: two columns at `lg`. "Other ways to start" holds board presets, `.ioc`
+  import, version-2 JSON import, and the two-file compare dialog; it is the only
+  surface that accepts `.ioc` files, and the compare dialog accepts JSON only.
+  "Recent sessions" renders compact rows with part, package, assigned/pins,
+  relative time, Reopen, and Delete through `RecentSessions.svelte`. The
+  Projects route remains the full session manager. Below `lg` the body stacks
+  in one reading order without horizontal overflow.
 
 Pin-state colors live in the vendored daisyUI theme file and package renderers;
 no raw color literal is added to UI markup. Monospace styling is reserved for
-part numbers, coordinates, AF indices, and code previews. Provenance and license
-credits are owned by the About route and repository documentation.
+part numbers, package names, counts, dates, coordinates, AF indices, shortcut
+keys, and code previews. Provenance and license credits are owned by the About
+route and repository documentation.
 
 ### Workspace
 
@@ -554,11 +561,11 @@ vendor-attributed warnings, runs all gates, and writes artifacts once.
 - CSV columns: `Vendor,Position,Pin,Type,Peripheral,Signal,Mux,Resource,Label,Locked`.
 - JSON/URL schema uses `version: 2`; there is no v1 import path, and empty
   `activeRemaps`/`pioAssignments` are omitted from share links.
-- Starter chips include ESP32 module shards such as `ESP32-C3FH4` and
-  `ESP32-WROOM-E`. Board presets and `.ioc` import remain STM32-only.
+- ESP32 module shards such as `ESP32-C3FH4` and `ESP32-WROOM-E` are emitted from
+  first-party data and remain reachable through catalog search. Board presets
+  and `.ioc` import remain STM32-only.
 - UI: 2-sided package rendering, exposed thermal pad, bonded pin labels,
-  remap dropdown, RP PIO panel, mux/hazard badges, vendor filter tabs,
-  cross-vendor presets, hero vendor switcher.
+  remap dropdown, RP PIO panel, mux/hazard badges, and vendor filter tabs.
 
 ### Multi-vendor gates
 

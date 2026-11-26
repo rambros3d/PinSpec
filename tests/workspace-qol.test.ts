@@ -299,7 +299,7 @@ describe('focus visibility, motion, and contrast', () => {
   it('raises text-bearing muted copy to the standard muted token', () => {
     const replaced: Array<[string, string]> = [
       [
-        'src/components/landing/PresetGrid.svelte',
+        'src/components/landing/RecentSessions.svelte',
         'text-base-content/40 font-mono-tabular',
       ],
       ['src/components/landing/QuickSearchBar.svelte', 'text-base-content/40 mx-0.5'],
@@ -425,7 +425,7 @@ describe('portrait dock and toolbar affordance', () => {
 
 describe('first-time recent-sessions hint', () => {
   it('derives the hint from the persisted session list', () => {
-    const source = readSource('src/components/landing/PresetGrid.svelte');
+    const source = readSource('src/components/landing/RecentSessions.svelte');
     expect(source).toContain('recentSessions.length > 0');
     expect(source).toContain('Opening a part creates a recent session in this browser.');
     expect(source).not.toContain('hintDismissed');

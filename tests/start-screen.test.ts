@@ -1,38 +1,61 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { createEmptyWorkspace } from '../src/core/solver';
 import { THEME_STORAGE_KEY } from '../src/state/theme.svelte';
 
 const ROOT = process.cwd();
 const read = (rel: string): string => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 const page = read('src/pages/LandingPage.svelte');
 const workspace = read('src/pages/WorkspacePage.svelte');
+const recent = read('src/components/landing/RecentSessions.svelte');
 
 describe('start screen layout', () => {
-  it('renders three zones inside one scrollable landing shell', () => {
+  it('renders one hero and a two-column body inside one scrollable landing shell', () => {
     expect(page).toContain('class="landing-shell flex flex-col bg-base-200 text-foreground"');
     expect(page).not.toContain('class="navbar');
+    expect(page).toContain('data-zone="hero"');
     expect(page).toContain('data-zone="actions"');
-    expect(page).toContain('data-zone="discovery"');
-    expect(page).toContain('data-zone="rail"');
+    expect(page).toContain('data-zone="sessions"');
+    expect(page).not.toContain('data-zone="discovery"');
+    expect(page).not.toContain('data-zone="rail"');
+    expect(page).not.toContain('start-grid');
     expect(page).not.toContain('min-h-screen');
+    const main = page.match(/class="landing-main[^"]*"/)?.[0] ?? '';
+    expect(main).toContain('max-w-7xl');
+    const body = page.match(/class="grid grid-cols-1[^"]*"/)?.[0] ?? '';
+    expect(body).toContain('grid-cols-1');
+    expect(body).toContain('lg:grid-cols-2');
     const bar = read('src/components/shell/GlobalNavBar.svelte');
     expect(bar).toContain('<ThemePicker compact={true} />');
     expect(bar).toContain("id: 'home'");
     expect(bar).toContain("id: 'catalog'");
     expect(bar).toContain("id: 'projects'");
-    expect(page).toContain('href="#presets"');
+    expect(page).not.toContain('href="#presets"');
     expect(page).not.toContain('href="#/about"');
     expect(page).not.toContain('href="#provenance"');
     expect(page).not.toContain('id="provenance"');
     expect(page).not.toContain('href="#export-preview"');
   });
 
-  it('keeps catalog loading and the central discovery surfaces', () => {
+  it('keeps the hero headline, one factual sentence, and the catalog action', () => {
+    const hero = page.slice(page.indexOf('data-zone="hero"'), page.indexOf('data-zone="actions"'));
+    expect(hero).toContain('<h1');
+    expect(hero).toContain('>Plan a pinout</h1>');
+    expect(hero.match(/<h1\b/g)?.length).toBe(1);
+    expect(hero.indexOf('>Plan a pinout</h1>')).toBeLessThan(hero.indexOf('<p class="text-sm'));
+    expect(hero).toContain('generated catalog');
+    expect(hero).toContain('>New pinout</span>');
+    expect(hero).toContain('router.navigateCatalog()');
+    expect(hero).toContain('<QuickSearchBar');
+    expect(hero).not.toContain('PerimeterPackage');
+    expect(hero).not.toContain('GridPackage');
+    expect(hero).not.toContain('ExportModal');
+  });
+
+  it('keeps catalog loading and the hero search surfaces', () => {
     expect(page).toContain('catalogStore.ensureLoaded()');
     expect(page).toContain('<QuickSearchBar');
-    expect(page).toContain('<PresetGrid');
+    expect(page).toContain('<RecentSessions');
     const search = read('src/components/landing/QuickSearchBar.svelte');
     expect(search).toContain('Ctrl+K');
     expect(search).toContain('buildVendorTabs');
@@ -40,7 +63,6 @@ describe('start screen layout', () => {
     expect(search).toContain('Retry catalog load');
     expect(search).toContain('No parts matched your filter criteria.');
     expect(search).toContain('export function focusInput()');
-    expect(page).toContain('focusQuickSearch');
   });
 
   it('restores quick-search filters from the localStorage-only store', () => {
@@ -59,7 +81,7 @@ describe('start screen layout', () => {
     expect(read('src/core/types.ts')).not.toContain('quickSearchFilters');
   });
 
-  it('uses daisyUI alert and loading classes on quick-search and statistics surfaces', () => {
+  it('uses daisyUI alert and loading classes on quick-search and catalog facts', () => {
     const search = read('src/components/landing/QuickSearchBar.svelte');
     expect(search).toContain('alert alert-soft alert-error');
     expect(search).toContain('loading loading-spinner loading-xs');
@@ -70,15 +92,15 @@ describe('start screen layout', () => {
 });
 
 describe('start screen vendor copy', () => {
-  it('names all six vendors and avoids an offline-font claim', () => {
-    const preset = read('src/components/landing/PresetGrid.svelte');
-    for (const source of [page, preset]) {
-      expect(source).toContain('ESP32');
-      expect(source).toContain('Microchip SAM');
-      expect(source).toContain('Nordic');
-      expect(source).not.toContain('STM32, CH32 and RP');
-    }
-    expect(page).toContain('Static / no backend');
+  it('names all six vendors and avoids claim badges', () => {
+    expect(page).toContain('STM32');
+    expect(page).toContain('CH32');
+    expect(page).toContain('RP');
+    expect(page).toContain('ESP32');
+    expect(page).toContain('Microchip SAM');
+    expect(page).toContain('Nordic');
+    expect(page).not.toContain('Static / no backend');
+    expect(page).not.toContain('Open datasets');
     expect(page).not.toContain('offline-ready');
   });
 });
@@ -88,7 +110,7 @@ describe('start screen icon provenance', () => {
     for (const rel of [
       'src/pages/LandingPage.svelte',
       'src/components/landing/QuickSearchBar.svelte',
-      'src/components/landing/PresetGrid.svelte',
+      'src/components/landing/RecentSessions.svelte',
     ]) {
       const source = read(rel);
       expect(source, rel).not.toContain('lucide-svelte');
@@ -98,17 +120,15 @@ describe('start screen icon provenance', () => {
     expect(read('src/components/landing/QuickSearchBar.svelte')).toContain(
       '@solar-icons/svelte/bold-duotone/magnifier',
     );
-    expect(read('src/components/landing/PresetGrid.svelte')).toContain(
-      '@solar-icons/svelte/bold-duotone/clock-circle',
-    );
+    expect(recent).toContain('@solar-icons/svelte/bold-duotone/clock-circle');
   });
 });
 
 describe('start screen actions', () => {
-  it('exposes the five entry points with their existing flows', () => {
+  it('exposes the secondary entry points with their existing flows', () => {
     for (const label of [
-      'New pinout MCU/Board',
-      'Open project',
+      'New pinout',
+      'Choose a board preset',
       'Import .ioc',
       'Import pinout.json',
       'Compare',
@@ -116,9 +136,8 @@ describe('start screen actions', () => {
       expect(page, label).toContain(label);
     }
     expect(page).toContain('router.navigateCatalog()');
-    expect(page).toContain('revealRecentSessions');
-    expect(page).toContain('presetsRef?.scrollIntoView');
     expect(page).toContain('parsePinoutJson(');
+    expect(page).toContain('catalogStore.retry()');
     expect(page).toContain('topBarUI.diffOpen = true');
     expect(page).not.toContain('<PinoutDiffModal');
     expect(page).toContain('<BoardSelectorModal');
@@ -154,33 +173,27 @@ describe('start screen actions', () => {
   });
 });
 
-describe('catalog rail', () => {
-  const discoveryStart = page.indexOf('data-zone="discovery"');
-  const railStart = page.indexOf('data-zone="rail"');
-  const discovery = page.slice(discoveryStart, railStart);
-  const rail = page.slice(railStart);
+describe('hero catalog facts', () => {
+  const heroStart = page.indexOf('data-zone="hero"');
+  const bodyStart = page.indexOf('data-zone="actions"');
+  const hero = page.slice(heroStart, bodyStart);
 
-  it('reads live metadata for compact vendor counts and the sync date', () => {
-    expect(page).toContain('catalogStore.meta');
-    expect(page).toContain('PROVENANCE_VENDORS');
-    expect(page).toContain('{vendor.label}');
-    expect(page).toContain('{vendorSource.chipCount.toLocaleString()} chips');
-    expect(page).toContain('Synced {formatSyncDate(catalogStore.meta.generatedAt)}');
+  it('reads generated part, vendor, and sync values and offers a retry', () => {
+    expect(hero).toContain('catalogStore.meta');
+    expect(hero).toContain('catalogStore.index.length.toLocaleString()');
+    expect(hero).toContain('vendorCount');
+    expect(hero).toContain('Synced {formatSyncDate(catalogStore.meta.generatedAt)}');
+    expect(page).toContain('Catalog statistics unavailable.');
+    expect(page).toContain('catalogStore.retry()');
+    expect(page).toContain('Retry catalog load');
     expect(page).not.toContain('ratios.');
     expect(page).not.toContain('match {');
     expect(page).not.toContain('coverage {');
-    expect(rail).not.toContain('catalogStore.meta.chipCount.toLocaleString()');
     expect(page).not.toContain('PROVENANCE_SOURCES.length');
-    expect(page).toContain('Catalog statistics unavailable.');
     expect(fs.existsSync(path.join(ROOT, 'public', 'data', 'meta.json'))).toBe(true);
   });
 
-  it('keeps the index count in discovery only and leaves shortcuts to the shared dialog', () => {
-    expect(discovery).toContain('catalogStore.index.length.toLocaleString()');
-    expect(discovery).toContain('familyCount');
-    expect(discovery.match(/parts indexed/g)?.length).toBe(1);
-    expect(rail).not.toContain('parts indexed');
-    expect(rail).not.toContain('families');
+  it('leaves shortcut reference to the shared dialog', () => {
     expect(page).not.toContain('SHORTCUTS');
     expect(page).not.toContain('Shortcuts');
     expect(page).not.toContain('<kbd');
@@ -193,15 +206,32 @@ describe('catalog rail', () => {
   });
 });
 
-describe('starter-chip module tags from generated catalog', () => {
-  it('derives module tags from the index and keeps starter-chip facts curated only', () => {
-    const preset = read('src/components/landing/PresetGrid.svelte');
-    expect(preset).toContain('moduleIds?: Set<string>');
-    expect(preset).toContain('moduleIds.has(item.id.toUpperCase())');
-    expect(preset).not.toContain('module: true');
-    expect(preset).toContain('ESP32-WROOM-E');
-    expect(page).toContain('moduleIds={moduleIds}');
-    expect(page).toContain('entry.module');
+describe('recent sessions as compact rows', () => {
+  it('renders saved fields with Reopen and Delete and no starter-chip grid', () => {
+    for (const token of [
+      'recentSessions: RecentSession[]',
+      'onOpenMcu: (mcuId: string) => void',
+      'onDeleteRecent: (mcuId: string) => void',
+      'session.mcuId',
+      'session.packageName',
+      'session.assignedCount',
+      'session.pinCount',
+      'formatRelativeTime(session.updatedAt)',
+      'Reopen',
+      'onDeleteRecent(session.mcuId)',
+    ]) {
+      expect(recent, token).toContain(token);
+    }
+    expect(page).toContain('<RecentSessions');
+    expect(page).toContain('workspaceStore.deleteRecentSession(id)');
+    for (const token of ['STARTER_CHIPS', 'moduleIds', 'Cross-Vendor Starter Chips', 'id="presets"']) {
+      expect(page, token).not.toContain(token);
+      expect(recent, token).not.toContain(token);
+    }
+    expect(recent).not.toContain('card card-border group');
+    expect(fs.existsSync(path.join(ROOT, 'src', 'components', 'landing', 'PresetGrid.svelte'))).toBe(
+      false,
+    );
   });
 });
 

@@ -238,21 +238,25 @@ describe('vendor-aware discovery and presets', () => {
     expect(catalog).toContain('filters.reset()');
   });
 
-  it('keeps the landing rail compact with one label and chip count per vendor', () => {
+  it('keeps generated catalog facts in the hero and no rail', () => {
     const landing = readSource('src/pages/LandingPage.svelte');
-    expect(landing).toContain('PROVENANCE_VENDORS');
-    expect(landing).toContain('{vendor.label}');
-    expect(landing).toContain('{vendorSource.chipCount.toLocaleString()} chips');
-    expect(landing).toContain('Synced {formatSyncDate(catalogStore.meta.generatedAt)}');
+    const hero = landing.slice(
+      landing.indexOf('data-zone="hero"'),
+      landing.indexOf('data-zone="actions"'),
+    );
+    expect(hero).toContain('catalogStore.index.length.toLocaleString()');
+    expect(hero).toContain('vendorCount');
+    expect(hero).toContain('Synced {formatSyncDate(catalogStore.meta.generatedAt)}');
+    expect(landing).toContain('catalogStore.retry()');
     expect(landing).not.toContain('ratios.');
     expect(landing).not.toContain('SHORTCUTS');
-    const rail = landing.slice(landing.indexOf('data-zone="rail"'));
-    expect(rail).not.toContain('catalogStore.meta.chipCount');
-    expect(rail).not.toContain('<kbd');
+    expect(landing).not.toContain('data-zone="rail"');
+    expect(landing).not.toContain('<kbd');
   });
 
-  it('uses cross-vendor presets', () => {
-    const source = readSource('src/components/landing/PresetGrid.svelte');
+  it('discovers parts through the catalog instead of starter chips', () => {
+    const landing = readSource('src/pages/LandingPage.svelte');
+    const sessions = readSource('src/components/landing/RecentSessions.svelte');
     for (const id of [
       'STM32G431CBU6',
       'CH32V003J4M6',
@@ -262,9 +266,11 @@ describe('vendor-aware discovery and presets', () => {
       'ESP32-C3FH4',
       'ESP32-WROOM-E',
     ]) {
-      expect(source).toContain(id);
+      expect(landing, id).not.toContain(id);
+      expect(sessions, id).not.toContain(id);
     }
-    expect(source).toContain('Cross-Vendor Starter Chips');
+    expect(landing).not.toContain('Cross-Vendor Starter Chips');
+    expect(landing).toContain('<QuickSearchBar');
   });
 
 });
@@ -302,7 +308,6 @@ describe('generated module identity and discovery tags', () => {
       'src/components/landing/QuickSearchBar.svelte',
       'src/components/workspace/McuSwitcherModal.svelte',
       'src/components/workspace/CompatibleMcuFinder.svelte',
-      'src/components/landing/PresetGrid.svelte',
     ]) {
       const source = readSource(site);
       expect(source, site).toContain('MODULE');
@@ -315,12 +320,11 @@ describe('generated module identity and discovery tags', () => {
     expect(readSource('src/components/workspace/CompatibleMcuFinder.svelte')).toContain(
       'moduleIds.has(score.mcuId.toUpperCase())',
     );
-    const preset = readSource('src/components/landing/PresetGrid.svelte');
-    expect(preset).toContain('moduleIds.has(item.id.toUpperCase())');
-    expect(preset).not.toContain('module: true');
+    const sessions = readSource('src/components/landing/RecentSessions.svelte');
+    expect(sessions).not.toContain('moduleIds');
+    expect(sessions).not.toContain('MODULE');
     const landing = readSource('src/pages/LandingPage.svelte');
-    expect(landing).toContain('moduleIds={moduleIds}');
-    expect(landing).toContain('entry.module');
+    expect(landing).not.toContain('moduleIds');
     // Vendor tabs, family/package filters and navigation remain unchanged.
     expect(readSource('src/components/landing/QuickSearchBar.svelte')).toContain('buildVendorTabs');
     expect(readSource('src/components/workspace/McuSwitcherModal.svelte')).toContain('vendorFilter');
@@ -332,7 +336,7 @@ describe('generated module identity and discovery tags', () => {
       'src/pages/ProjectsPage.svelte',
       'src/pages/WorkspacePage.svelte',
       'src/components/workspace/McuSwitcherModal.svelte',
-      'src/components/landing/PresetGrid.svelte',
+      'src/components/landing/RecentSessions.svelte',
       'src/components/landing/QuickSearchBar.svelte',
     ]) {
       const source = readSource(rel);
@@ -390,7 +394,7 @@ describe('workspace exports and provenance copy', () => {
       'src/components/shell/WorkspaceTopBar.svelte',
       'src/components/workspace/McuSwitcherModal.svelte',
       'src/components/workspace/ExportModal.svelte',
-      'src/components/landing/PresetGrid.svelte',
+      'src/components/landing/RecentSessions.svelte',
       'src/components/landing/QuickSearchBar.svelte',
     ]) {
       const source = readSource(site);

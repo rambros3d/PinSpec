@@ -86,6 +86,29 @@ describe('project title placement', () => {
   });
 });
 
+describe('recent-session row boundaries', () => {
+  it('reads saved session fields without adding persisted view state', () => {
+    const rows = fs.readFileSync(
+      path.join(process.cwd(), 'src/components/landing/RecentSessions.svelte'),
+      'utf8',
+    );
+    for (const token of [
+      'mcuId',
+      'packageName',
+      'assignedCount',
+      'pinCount',
+      'updatedAt',
+      'onOpenMcu(session.mcuId)',
+      'onDeleteRecent(session.mcuId)',
+    ]) {
+      expect(rows, token).toContain(token);
+    }
+    expect(rows).not.toContain('localStorage');
+    expect(rows).not.toContain('$state(');
+    expect(rows).not.toContain('pinspec:');
+  });
+});
+
 describe('pure project-name generation', () => {
   it('composes exactly two curated words without a family suffix', () => {
     expect(generateProjectName(makeChip('STM32H503CBT6', 'STM32H5'), amberQuartzRng())).toBe(

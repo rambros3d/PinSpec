@@ -95,29 +95,34 @@ describe('document viewport lock', () => {
     expect(page).not.toContain('min-h-screen');
     expect(page).not.toContain('class="navbar');
     expect(readSource('src/components/shell/AppShell.svelte')).toContain('<GlobalNavBar />');
-    expect(page).toContain('href="#presets"');
+    expect(page).not.toContain('href="#presets"');
+    expect(page).not.toContain('id="presets"');
     expect(page).not.toContain('href="#export-preview"');
     expect(page).not.toContain('id="export-preview"');
     expect(page).not.toContain('id="provenance"');
     expect(page).not.toContain('href="#/about"');
     expect(page).not.toContain('Data provenance');
     expect(readSource('src/pages/AboutPage.svelte')).toContain('<ProvenancePanel');
-    expect(readSource('src/components/landing/PresetGrid.svelte')).toContain('id="presets"');
+    expect(fs.existsSync(path.join(ROOT, 'src', 'components', 'landing', 'RecentSessions.svelte'))).toBe(
+      true,
+    );
 
-    // Compact three-zone framing: tighter grid spacing, one divided action
-    // surface, a primary discovery column and a tertiary rail.
-    const grid = page.match(/class="start-grid[^"]*"/)?.[0] ?? '';
-    expect(grid).toContain('max-w-7xl');
-    expect(grid).toContain('lg:grid-cols-12');
-    expect(grid).toContain('gap-4');
-    expect(grid).toContain('py-6');
-    expect(grid).not.toContain('gap-8');
+    // One hero band followed by two body columns that stack below lg.
+    const main = page.match(/class="landing-main[^"]*"/)?.[0] ?? '';
+    expect(main).toContain('max-w-7xl');
+    const body = page.match(/class="grid grid-cols-1[^"]*"/)?.[0] ?? '';
+    expect(body).toContain('grid-cols-1');
+    expect(body).toContain('lg:grid-cols-2');
+    const hero = page.slice(page.indexOf('data-zone="hero"'), page.indexOf('data-zone="actions"'));
+    expect(hero).toContain('>Plan a pinout</h1>');
+    expect(hero).toContain('<QuickSearchBar');
     expect(page).toContain('divide-y divide-base-300');
-    expect(page).toContain('class="start-discovery lg:col-span-6 min-w-0 space-y-4"');
-    expect(page).toContain('class="start-rail lg:col-span-3 space-y-2"');
-    const rail = page.slice(page.indexOf('data-zone="rail"'));
-    expect(rail).not.toContain('<kbd');
-    expect(rail).not.toContain('ratios.');
+    expect(page).toContain('data-zone="sessions"');
+    expect(page).not.toContain('start-grid');
+    expect(page).not.toContain('data-zone="discovery"');
+    expect(page).not.toContain('data-zone="rail"');
+    expect(page).not.toContain('<kbd');
+    expect(page).not.toContain('ratios.');
   });
 
   it('keeps shell routes scrollable inside the document lock', () => {

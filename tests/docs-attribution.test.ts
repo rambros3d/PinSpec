@@ -71,7 +71,7 @@ const TOUCHED_FILES = [
   'src/core/hardware-audit.ts',
   'src/components/workspace/ExportModal.svelte',
   'src/components/workspace/CompatibleMcuFinder.svelte',
-  'src/components/landing/PresetGrid.svelte',
+  'src/components/landing/RecentSessions.svelte',
   'src/components/workspace/HardwareAuditPanel.svelte',
   'src/components/workspace/SummaryDrawer.svelte',
   'tests/hardware-audit.test.ts',
@@ -140,9 +140,12 @@ describe('multi-vendor documentation and attribution', () => {
       'workspace mode',
       'interactive `STM32G431CBU6` preview',
       'lucide-svelte',
+      'starter chips',
     ]) {
       expect(readme, stale).not.toContain(stale);
     }
+    expect(readme).toContain('Hero with `New pinout`');
+    expect(readme).toContain('two columns at `lg`');
   });
 
   it('documents the single icon dependency without a retired library', () => {
@@ -175,9 +178,12 @@ describe('multi-vendor documentation and attribution', () => {
       'landing footer',
       'About tab are UI preferences',
       'legacy STM32 top-level fields',
+      'three-zone shell',
     ]) {
       expect(agents, stale).not.toContain(stale);
     }
+    expect(agents).toContain('hero-led, two-column surface');
+    expect(agents).toContain('`Plan a pinout` headline');
   });
 
   it('renders all thirteen sources, licenses, and live metadata in About', () => {
@@ -204,8 +210,9 @@ describe('multi-vendor documentation and attribution', () => {
     expect(landing).not.toContain('SHORTCUTS');
     expect(landing).not.toContain('Shortcuts');
     expect(landing).not.toContain('ratios.');
-    expect(landing).toContain('PROVENANCE_VENDORS');
+    expect(landing).not.toContain('PROVENANCE_VENDORS');
     expect(landing).toContain('formatSyncDate(');
+    expect(landing).toContain('Plan a pinout');
   });
 
   it('advertises all six vendors in the document metadata', () => {

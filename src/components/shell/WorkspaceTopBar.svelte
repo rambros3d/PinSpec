@@ -210,7 +210,7 @@
   </div>
 
   {#if confirmClear}
-    <div class="card card-border fixed right-3 top-[5.25rem] z-50 w-64 bg-base-100 shadow-xl p-3 text-xs">
+    <div class="card card-border fixed right-3 top-20 z-50 w-64 bg-base-100 shadow-xl p-3 text-xs">
       <p class="text-foreground font-medium">Reset the full pin plan?</p>
       <p class="mt-1 text-[11px] text-base-content/60">
         Assignments, labels, locks, modes, remaps, and PIO bindings are cleared. You can undo with Ctrl+Z.

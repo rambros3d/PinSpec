@@ -75,11 +75,11 @@ describe('workspace title icon and thin navigation start', () => {
     expect(bar).not.toContain('>PinSpec<');
   });
 
-  it('drops the brand header without dropping navigation', () => {
-    expect(nav).not.toContain('radiokit-logo.svg');
-    expect(nav).not.toContain('>PinSpec<');
+  it('shows the PinSpec brand on non-workspace routes', () => {
+    expect(nav).toContain('radiokit-logo.svg');
+    expect(nav).toContain('>PinSpec<');
     expect(nav).toContain('<nav class="flex min-w-0 items-center gap-1" aria-label="Sections">');
-    expect(nav).toContain('aria-label="Workspace and resources"');
+    expect(nav).toContain('aria-label="Resources"');
     expect(nav).not.toContain('Recent projects');
     expect(nav).not.toContain('shellPreferences');
   });

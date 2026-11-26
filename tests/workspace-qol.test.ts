@@ -156,7 +156,7 @@ describe('toast placement and dismissal', () => {
     expect(token('--toast-z')).toBe(60);
     expect(css).toContain('z-index: var(--toast-z)');
     expect(css).not.toContain('--shell-panel-z');
-    expect(readSource('src/components/shell/GlobalNavBar.svelte')).toContain('h-9 shrink-0');
+    expect(readSource('src/components/shell/GlobalNavBar.svelte')).toContain('h-8 shrink-0');
     expect(readSource('src/components/shell/WorkspaceTopBar.svelte')).toContain('h-12 shrink-0');
   });
 });

@@ -47,11 +47,11 @@ describe('thin global navigation bar', () => {
   const nav = read('src/components/shell/GlobalNavBar.svelte');
   const shell = read('src/components/shell/AppShell.svelte');
 
-  it('is the only bar mounted on every route at h-9 without a wordmark or route title', () => {
-    expect(nav).toContain('global-nav-bar flex h-9 shrink-0');
+  it('mounts one h-8 bar with route-specific product identity', () => {
+    expect(nav).toContain('global-nav-bar relative flex h-8 shrink-0');
     expect(shell).toContain('<GlobalNavBar />');
-    expect(nav).not.toContain('radiokit-logo.svg');
-    expect(nav).not.toContain('>PinSpec<');
+    expect(nav).toContain('radiokit-logo.svg');
+    expect(nav).toContain('>PinSpec<');
     expect(nav).not.toContain('routeTitle');
     for (const file of [
       'src/pages/LandingPage.svelte',
@@ -66,29 +66,26 @@ describe('thin global navigation bar', () => {
     expect(fs.existsSync(path.join(ROOT, 'src/components/workspace/TopToolbar.svelte'))).toBe(false);
   });
 
-  it('orders the left and right groups exactly and keeps all targets below sm', () => {
-    const left = nav.slice(0, nav.indexOf('aria-label="Workspace and resources"'));
-    const right = nav.slice(nav.indexOf('aria-label="Workspace and resources"'));
-    expect(left).toContain("id: 'home'");
-    expect(left).toContain("id: 'projects'");
-    expect(left).toContain("id: 'catalog'");
-    expect(left.indexOf("id: 'home'")).toBeLessThan(left.indexOf("id: 'projects'"));
-    expect(left.indexOf("id: 'projects'")).toBeLessThan(left.indexOf("id: 'catalog'"));
-    expect(right).toContain('aria-label="Workspace"');
-    expect(right).toContain('aria-label="About"');
-    expect(right).toContain('aria-label="PinSpec repository on GitHub"');
-    expect(right).toContain('aria-label="Keyboard shortcuts"');
-    expect(right).toContain('<ThemePicker compact={true} />');
-    const workspace = right.indexOf('aria-label="Workspace"');
-    const about = right.indexOf('aria-label="About"');
-    const github = right.indexOf('aria-label="PinSpec repository on GitHub"');
-    const hotkeys = right.indexOf('aria-label="Keyboard shortcuts"');
-    const theme = right.indexOf('<ThemePicker compact={true} />');
-    expect(about).toBeGreaterThan(workspace);
+  it('orders the sections, centered workspace, and resources', () => {
+    expect(nav.indexOf("id: 'home'")).toBeLessThan(nav.indexOf("id: 'projects'"));
+    expect(nav.indexOf("id: 'projects'")).toBeLessThan(nav.indexOf("id: 'catalog'"));
+    expect(nav).toContain('absolute left-1/2 -translate-x-1/2');
+    expect(nav).toContain('aria-label="Resources"');
+    expect(nav).toContain('aria-label="Workspace"');
+    expect(nav).toContain('aria-label="About"');
+    expect(nav).toContain('aria-label="PinSpec repository on GitHub"');
+    expect(nav).toContain('aria-label="Keyboard shortcuts"');
+    expect(nav).toContain('<ThemePicker compact={true} />');
+    const workspace = nav.indexOf('aria-label="Workspace"');
+    const about = nav.indexOf('aria-label="About"');
+    const github = nav.indexOf('aria-label="PinSpec repository on GitHub"');
+    const hotkeys = nav.indexOf('aria-label="Keyboard shortcuts"');
+    const theme = nav.indexOf('<ThemePicker compact={true} />');
+    expect(workspace).toBeLessThan(about);
     expect(github).toBeGreaterThan(about);
     expect(hotkeys).toBeGreaterThan(github);
     expect(theme).toBeGreaterThan(hotkeys);
-    expect(nav.match(/class="hidden sm:inline"/g)?.length).toBe(6);
+    expect(nav.match(/class="hidden sm:inline"/g)?.length).toBe(4);
     expect(nav).not.toContain('overflow-x-auto');
     expect(nav).toContain('justify-between gap-1');
     expect(nav).toContain('min-w-0');
@@ -98,7 +95,8 @@ describe('thin global navigation bar', () => {
     expect(nav).toContain("if (view === 'landing') return 'home'");
     expect(nav).toContain("if (view === 'workspace' || view === 'shared') return 'workspace'");
     expect(nav.match(/aria-current=\{activeSection === entry\.id \? 'page' : undefined\}/g)?.length).toBe(1);
-    expect(nav).toContain("aria-current={activeSection === 'workspace' ? 'page' : undefined}");
+    expect(nav).toContain('{#if !isWorkspace}');
+    expect(nav).toContain('absolute left-1/2 -translate-x-1/2');
     expect(nav).toContain("aria-current={activeSection === 'about' ? 'page' : undefined}");
     expect(nav).toContain('router.navigateHome()');
     expect(nav).toContain('router.navigateCatalog()');
@@ -259,7 +257,7 @@ describe('workspace action bar', () => {
   });
 
   it('anchors the Clear All confirmation below both bars with its full-reset copy', () => {
-    expect(bar).toContain('top-[5.25rem]');
+    expect(bar).toContain('top-20');
     expect(bar).toContain('Reset the full pin plan?');
     expect(bar).toContain(
       'Assignments, labels, locks, modes, remaps, and PIO bindings are cleared. You can undo with Ctrl+Z.',
@@ -376,7 +374,7 @@ describe('two-bar shell layout', () => {
     ]) {
       expect(css, removed).not.toContain(removed);
     }
-    expect(css).toContain('scroll-padding-top: 2.25rem');
+    expect(css).toContain('scroll-padding-top: 2rem');
     const contentBlock = css.match(/\.app-shell-content\s*\{[\s\S]*?\}/)?.[0] ?? '';
     expect(contentBlock).not.toContain('padding');
     expect(shell).toContain('<GlobalNavBar />');
@@ -560,7 +558,7 @@ describe('shell documentation', () => {
     expect(readme).toContain('inline editing mode itself is component-local');
     const agents = read('AGENTS.md');
     expect(agents).not.toContain('pinspec:shell_preferences_v1');
-    expect(agents).toContain('h-9 (36 px) navigation bar');
+    expect(agents).toContain('h-8 (32 px) navigation bar');
     expect(agents).toContain('action bar below the navigation bar');
   });
 });

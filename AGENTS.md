@@ -178,15 +178,18 @@ Hash routing only, so deep links never trigger Pages 404s under a subpath:
 - `#/s/<COMPRESSED_PAYLOAD>` - Shared pinout; decompresses state, loads chip,
   hydrates workspace
 
-One global shell wraps every route. A thin h-9 (36 px) navigation bar is mounted
+One global shell wraps every route. A thin h-8 (32 px) navigation bar is mounted
 on every route: Home, Projects, and Catalog on the left; Workspace, an About info
 icon, a GitHub link, keyboard shortcuts, and the compact theme picker on the
-right. Labels collapse to icons below the `sm` breakpoint and every target stays
-operable without horizontal scrolling. No wordmark or route-title text is
-rendered. Workspace opens the loaded chip or the most recent local session and is
-disabled when neither exists; recent sessions are managed only on the Projects
-route. On workspace and shared routes the shell mounts one additional h-12 (48
-px) action bar below the navigation bar. That bar owns the inline project-name
+right. The app icon and `PinSpec` name appear on non-workspace routes, while the
+workspace action bar carries the app icon on workspace and shared routes.
+Labels collapse to icons below the `sm` breakpoint and every target stays
+operable without horizontal scrolling. No route-title text is rendered. The
+centered Workspace control appears only on non-workspace routes, opens the
+loaded chip or the most recent local session, and is disabled when neither
+exists; recent sessions are managed only on the Projects route. On workspace
+and shared routes a second h-12 (48 px) action bar below the navigation bar is
+mounted. That bar owns the inline project-name
 editor, MCU switcher, undo, redo, Clear All, Compatible MCUs, Compare, Share,
 Export, and the horizontal scroll affordance; other routes render no second bar.
 The Clear All confirmation anchors below both bars. The shortcuts control opens
@@ -447,10 +450,11 @@ credits are owned by the About route and repository documentation.
 
 Three-pane IDE:
 
-- **Global navigation bar (36px):** Home, Projects, and Catalog on the left;
-  Workspace, About, GitHub, keyboard shortcuts, and the compact theme picker on
-  the right. Labels collapse to icons below `sm`; the bar never renders a
-  wordmark or a route title.
+- **Global navigation bar (32px):** Home, Projects, and Catalog on the left;
+  a centered Workspace control on non-workspace routes; About, GitHub,
+  keyboard shortcuts, and the compact theme picker on the right. GitHub and
+  shortcuts are icon-only; the app icon and name appear on non-workspace
+  routes and labels collapse to icons below `sm`. No route title is rendered.
 - **Workspace action bar (48px):** mounted only on workspace and shared routes.
   It hosts the inline project name, MCU switcher, undo/redo, Clear All,
   Compatible MCUs, Compare, Share, and Export, with a horizontal scroll

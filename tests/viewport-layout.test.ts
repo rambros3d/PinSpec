@@ -86,7 +86,7 @@ describe('document viewport lock', () => {
       'height: 100%',
       'overflow-y: auto',
       'overscroll-behavior: contain',
-      'scroll-padding-top: 2.25rem',
+      'scroll-padding-top: 2rem',
     ]) {
       expect(block, declaration).toContain(declaration);
     }
@@ -139,12 +139,12 @@ describe('document viewport lock', () => {
     expect(shellBlock).not.toContain('margin');
     const contentBlock = css.match(/\.app-shell-content\s*\{[\s\S]*?\}/)?.[0] ?? '';
     expect(contentBlock).not.toContain('padding');
-    expect(css.match(/scroll-padding-top: 2\.25rem/g)?.length).toBe(2);
+    expect(css.match(/scroll-padding-top: 2rem/g)?.length).toBe(2);
   });
 
   it('uses two full-width bars without a rail or an expanding overlay', () => {
     const nav = readSource('src/components/shell/GlobalNavBar.svelte');
-    expect(nav).toContain('global-nav-bar flex h-9 shrink-0');
+    expect(nav).toContain('global-nav-bar relative flex h-8 shrink-0');
     expect(nav).toContain('aria-label="Workspace"');
     expect(nav).toContain('cursor-not-allowed opacity-40');
     expect(nav).toContain('hidden sm:inline');
@@ -288,7 +288,7 @@ describe('global bar and modal viewport fit', () => {
     expect(source).not.toContain('workspaceStore.globalSearch');
     expect(source).not.toContain('searchInputRef');
     const nav = readSource('src/components/shell/GlobalNavBar.svelte');
-    expect(nav).toContain('global-nav-bar flex h-9 shrink-0');
+    expect(nav).toContain('global-nav-bar relative flex h-8 shrink-0');
     expect(nav).toContain('hidden sm:inline');
     expect(nav).not.toContain('overflow-x-auto');
     const canvas = readSource('src/components/workspace/PackageCanvas.svelte');

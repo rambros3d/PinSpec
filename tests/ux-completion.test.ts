@@ -83,7 +83,7 @@ describe('UX completion surfaces', () => {
       'aria-keyshortcuts="Control+K Meta+K"',
       'aria-keyshortcuts="Control+Z Meta+Z"',
       'aria-keyshortcuts="Control+Y Meta+Y Control+Shift+Z"',
-      'top-[5.25rem]',
+      'top-20',
     ]) {
       expect(bar, token).toContain(token);
     }

@@ -327,7 +327,10 @@ export function togglePeripheralSignal(
 
 /**
  * Reallocate one peripheral after a placement change. Locked pins are never
- * removed or overwritten; their signals count as already satisfied.
+ * removed or overwritten; their signals count as already satisfied. The
+ * remaining signals are placed together by the bounded backtracking search
+ * shared with mode and matrix allocation, so one signal can give up a pin that
+ * a later signal needs.
  */
 export function reallocatePeripheralPlacement(
   chip: ChipData,
@@ -345,8 +348,16 @@ export function reallocatePeripheralPlacement(
   };
   const signalPinCounts = computeSignalPinCounts(chip);
 
+  /** Assignment and custom label captured before an unlocked pin is released. */
+  interface PriorPlacement {
+    pos: string;
+    assignment: PinAssignment;
+    label: string | undefined;
+  }
+
   const satisfied = new Set<string>();
   const signals = new Set<string>(signalNames ?? []);
+  const priorBySignal = new Map<string, PriorPlacement>();
   for (const [pos, asgn] of Object.entries(state.assignments)) {
     if (asgn.peripheral !== peripheral) continue;
     if (next.locked[pos]) {
@@ -354,45 +365,88 @@ export function reallocatePeripheralPlacement(
       continue;
     }
     signals.add(asgn.signal);
+    if (!priorBySignal.has(asgn.signal)) {
+      priorBySignal.set(asgn.signal, { pos, assignment: asgn, label: state.labels[pos] });
+    }
     delete next.assignments[pos];
   }
   if (signals.size === 0) return next;
 
-  const signalOrder = [...signals].sort((a, b) => {
-    const countA = chip.pins.filter(
-      (p) => p.type === 'io' && pinSupportsSignal(p, peripheral, a) !== null,
-    ).length;
-    const countB = chip.pins.filter(
-      (p) => p.type === 'io' && pinSupportsSignal(p, peripheral, b) !== null,
-    ).length;
-    return countA - countB || a.localeCompare(b);
-  });
+  interface PlacementCandidate {
+    pin: PinInfo;
+    sig: PinSignal;
+  }
 
-  for (const signal of signalOrder) {
-    if (satisfied.has(signal)) continue;
-    const candidates = chip.pins.filter(
-      (pin) =>
-        pin.type === 'io' &&
-        !next.locked[pin.pos] &&
-        !next.assignments[pin.pos] &&
-        pinSupportsSignal(pin, peripheral, signal) !== null,
+  // One group per unsatisfied signal. Only free, unlocked I/O pins supporting
+  // the signal are options; locked pins stay fixed and are never candidates.
+  // Scores reuse the existing scarcity plus affinity term without new penalties.
+  const groups = [...signals]
+    .filter((signal) => !satisfied.has(signal))
+    .map((signal) => {
+      const options: BacktrackingOption<PlacementCandidate>[] = [];
+      for (const pin of chip.pins) {
+        if (pin.type !== 'io') continue;
+        if (next.locked[pin.pos] || next.assignments[pin.pos]) continue;
+        const match = pinSupportsSignal(pin, peripheral, signal);
+        if (!match) continue;
+        options.push({
+          key: pin.pos,
+          score: computePinScarcityScore(
+            pin,
+            chip,
+            next,
+            signalPinCounts,
+            peripheral,
+            context,
+          ),
+          item: { pin, sig: match },
+        });
+      }
+      options.sort(
+        (a, b) => a.score - b.score || a.key.localeCompare(b.key, undefined, { numeric: true }),
+      );
+      return { signal, options };
+    })
+    .sort(
+      (a, b) => a.options.length - b.options.length || a.signal.localeCompare(b.signal),
     );
-    candidates.sort(
-      (a, b) =>
-        computePinScarcityScore(a, chip, next, signalPinCounts, peripheral, context) -
-          computePinScarcityScore(b, chip, next, signalPinCounts, peripheral, context) ||
-        a.pos.localeCompare(b.pos, undefined, { numeric: true }),
-    );
-    const chosen = candidates[0];
-    if (!chosen) continue;
-    const match = pinSupportsSignal(chosen, peripheral, signal)!;
-    next.assignments[chosen.pos] = {
-      ...match,
+
+  const search = searchBacktracking(groups);
+
+  const finalPosBySignal = new Map<string, string>();
+  for (const pick of search.picks) {
+    const candidate = pick.option?.item;
+    if (!candidate) continue;
+    finalPosBySignal.set(pick.signal, candidate.pin.pos);
+    next.assignments[candidate.pin.pos] = {
+      ...candidate.sig,
       peripheral,
-      signal: match.signal,
-      af: match.af,
+      signal: candidate.sig.signal,
+      af: candidate.sig.af,
     };
   }
+  // A signal with no pick keeps its prior position, assignment, and label.
+  for (const [signal, prior] of priorBySignal) {
+    if (finalPosBySignal.has(signal)) continue;
+    finalPosBySignal.set(signal, prior.pos);
+    next.assignments[prior.pos] = prior.assignment;
+  }
+
+  // Rebuild labels from the captured values so a moved label never leaves a
+  // stale entry behind, including when two assignments exchange pins.
+  if (priorBySignal.size > 0) {
+    const releasedPos = new Set([...priorBySignal.values()].map((entry) => entry.pos));
+    const labels: Record<string, string> = {};
+    for (const [pos, label] of Object.entries(state.labels)) {
+      if (!releasedPos.has(pos)) labels[pos] = label;
+    }
+    for (const [signal, prior] of priorBySignal) {
+      if (prior.label === undefined) continue;
+      labels[finalPosBySignal.get(signal) ?? prior.pos] = prior.label;
+    }
+    next.labels = labels;
+  }
+
   return next;
 }
 

@@ -466,6 +466,141 @@ describe('placement-driven reallocation', () => {
   });
 });
 
+describe('non-matrix backtracking reallocation', () => {
+  /** Three signals where greedy commitment leaves one unassigned. */
+  function trapChip(): ChipData {
+    const sig = (name: string): PinSignal => ({ peripheral: 'TEST', signal: name, af: null });
+    const unique: PinSignal = { peripheral: 'OTHER', signal: 'UNIQUE', af: null };
+    return fixtureChip({
+      id: 'TRAPTEST',
+      package: { name: 'SOP3', kind: 'perimeter', pinCount: 3, sides: [2, 0, 1, 0] },
+      pins: [
+        { pos: '2', name: 'PA0', type: 'io', signals: [sig('AAA'), sig('BBB'), sig('CCC')] },
+        { pos: '3', name: 'PA1', type: 'io', signals: [sig('BBB'), sig('CCC'), unique] },
+        { pos: '4', name: 'PA2', type: 'io', signals: [sig('AAA'), unique] },
+      ],
+      peripherals: {
+        TEST: { kind: 'spi', signals: ['AAA', 'BBB', 'CCC'] },
+        OTHER: { kind: 'other', signals: ['UNIQUE'] },
+      },
+    });
+  }
+
+  it('reconsiders a first-choice pin so every signal can be placed', () => {
+    const c = trapChip();
+    const next = reallocatePeripheralPlacement(
+      c,
+      createEmptyWorkspace(c.id),
+      'TEST',
+      null,
+      ['AAA', 'BBB', 'CCC'],
+    );
+    expect(Object.keys(next.assignments)).toHaveLength(3);
+    // AAA prefers pad 2 but yields it so BBB and CCC both find a pin.
+    expect(next.assignments['4']?.signal).toBe('AAA');
+    expect(next.assignments['2']?.signal).toBe('BBB');
+    expect(next.assignments['3']?.signal).toBe('CCC');
+  });
+
+  it('keeps a locked assignment fixed while other signals move', () => {
+    const geometry = buildPinGeometryMap(chip);
+    const state: WorkspaceState = {
+      ...empty,
+      assignments: {
+        '2': { peripheral: 'SPI1', signal: 'SCK', af: 5 },
+        '6': { peripheral: 'SPI1', signal: 'MISO', af: 5 },
+      },
+      labels: { '2': 'Clock' },
+      locked: { '2': true },
+      placement: {
+        SPI1: { angle: geometry.byPos.get('5')!.angle, ring: 'high', enabled: true },
+      },
+    };
+    const next = reallocatePeripheralPlacement(chip, state, 'SPI1');
+    expect(next.assignments['2']).toEqual(state.assignments['2']);
+    expect(next.labels['2']).toBe('Clock');
+    expect(next.locked['2']).toBe(true);
+    expect(Object.keys(next.assignments)).toHaveLength(2);
+  });
+
+  it('moves a custom label to the new pin without leaving a stale label', () => {
+    const geometry = buildPinGeometryMap(chip);
+    const state: WorkspaceState = {
+      ...empty,
+      assignments: { '2': { peripheral: 'SPI1', signal: 'SCK', af: 5 } },
+      labels: { '2': 'Clock' },
+      placement: {
+        SPI1: { angle: geometry.byPos.get('5')!.angle, ring: 'high', enabled: true },
+      },
+    };
+    const next = reallocatePeripheralPlacement(chip, state, 'SPI1');
+    expect(next.assignments['5']?.signal).toBe('SCK');
+    expect(next.labels['5']).toBe('Clock');
+    expect(next.labels['2']).toBeUndefined();
+    expect(state.labels['2']).toBe('Clock');
+  });
+
+  it('preserves the prior assignment and label when a signal has no candidate', () => {
+    const c = fixtureChip({
+      id: 'NOCANDIDATE',
+      package: { name: 'SOP3', kind: 'perimeter', pinCount: 3, sides: [2, 0, 1, 0] },
+      pins: [
+        { pos: '2', name: 'PA5', type: 'io', signals: [{ peripheral: 'SPI1', signal: 'SCK', af: 5 }] },
+        { pos: '3', name: 'PA6', type: 'io', signals: [] },
+        { pos: '4', name: 'PA7', type: 'io', signals: [] },
+      ],
+    });
+    const state: WorkspaceState = {
+      ...empty,
+      mcuId: c.id,
+      assignments: {
+        '2': { peripheral: 'USART1', signal: 'TX', af: 7 },
+        '4': { peripheral: 'SPI1', signal: 'SCK', af: 5 },
+      },
+      labels: { '4': 'Clock' },
+    };
+    const next = reallocatePeripheralPlacement(c, state, 'SPI1');
+    expect(next.assignments['4']).toEqual(state.assignments['4']);
+    expect(next.labels['4']).toBe('Clock');
+    expect(next.assignments['2']).toEqual(state.assignments['2']);
+  });
+
+  it('leaves an already optimal workspace byte-identical with placement disabled', () => {
+    const base = allocatePeripheralMode(chip, empty, 'SPI1', 'full_duplex').state;
+    const disabled: WorkspaceState = {
+      ...base,
+      placement: { SPI1: { angle: 90, ring: 'high', enabled: false } },
+    };
+    expect(reallocatePeripheralPlacement(chip, disabled, 'SPI1')).toEqual(disabled);
+  });
+
+  it('keeps the matrix entry path and matrix legality unchanged', () => {
+    const nonMatrix = matrixChip();
+    nonMatrix.muxModel = 'af';
+    nonMatrix.vendor = 'stm32';
+    const state = createEmptyWorkspace(nonMatrix.id);
+    state.assignments = {
+      '5': { peripheral: 'SPI2', signal: 'SCK', af: null },
+      '6': { peripheral: 'SPI2', signal: 'MOSI', af: null },
+      '7': { peripheral: 'SPI2', signal: 'MISO', af: null },
+    };
+    expect(reallocateMatrixPlacement(nonMatrix, state, 'SPI2', null)).toEqual(
+      reallocatePeripheralPlacement(nonMatrix, state, 'SPI2', null),
+    );
+
+    const flex = matrixChip();
+    const next = reallocateMatrixPlacement(
+      flex,
+      createEmptyWorkspace(flex.id),
+      'SPI2',
+      null,
+      ['SCK', 'MOSI', 'MISO'],
+    );
+    expect(Object.keys(next.assignments)).toHaveLength(3);
+    expect(validateMatrixPlan(flex, next)).toEqual([]);
+  });
+});
+
 describe('placement persistence', () => {
   const placementState: WorkspaceState = {
     ...empty,
@@ -1477,11 +1612,20 @@ describe('matrix placement store dispatch', () => {
     vi.unstubAllGlobals();
   });
 
-  it('keeps non-matrix chips on the greedy reallocation path', () => {
+  it('keeps non-matrix chips on the shared backtracking reallocation path', () => {
     const store = fs.readFileSync(path.join(ROOT, 'src/state/workspace.svelte.ts'), 'utf8');
     expect(store).toContain("getChipMuxModel(this.chip) === 'gpio-matrix'");
     expect(store).toContain('reallocateMatrixPlacement(this.chip, next, peripheral, preference)');
     expect(store).toContain('reallocatePeripheralPlacement(this.chip, next, peripheral, preference)');
+    const allocation = fs.readFileSync(
+      path.join(ROOT, 'src/core/solver-allocation.ts'),
+      'utf8',
+    );
+    const reallocation =
+      allocation.match(/export function reallocatePeripheralPlacement\([\s\S]*?\n\}/)?.[0] ?? '';
+    expect(reallocation).toContain('searchBacktracking(groups)');
+    expect(reallocation).toContain('BacktrackingOption<PlacementCandidate>');
+    expect(reallocation).not.toContain('const chosen = candidates[0]');
     const baseline = reallocatePeripheralPlacement(chip, empty, 'SPI1', null);
     expect(baseline.assignments).toEqual({});
     expect(validateMatrixPlan(chip, baseline)).toEqual([]);

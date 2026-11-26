@@ -266,35 +266,6 @@ selected indicator between adjacent rings.
 - **WHEN** the user presses `Shift+ArrowUp` or `Shift+ArrowDown` while an indicator is selected
 - **THEN** the stored ring moves one step inward or outward within the three rings and the indicator is redrawn on the new ring
 
-### Requirement: Overlay rings are closer with a larger outer ring
-
-The overlay SHALL draw the three rings with reduced spacing between adjacent
-rings, preserving high, medium, and low priority order. The outer ring SHALL
-use the largest radius the canvas permits without overlapping the reserved
-rectangles of the view HUD, remap banner, bottom-centre placement toggle,
-legend, hint, and workspace canvas buttons. The ring centre SHALL remain at the
-package or stage centre.
-
-#### Scenario: Ring geometry is updated
-
-- **WHEN** the placement overlay is displayed for a package with measured canvas furniture
-- **THEN** adjacent rings are closer together than before, the outer ring has the largest radius that clears the reserved rectangles, and the high ring still denotes the highest priority
-
-#### Scenario: Outer ring clears canvas furniture
-
-- **WHEN** the reserved rectangles of the view HUD, remap banner, placement toggle, legend, hint, and workspace canvas buttons are measured
-- **THEN** the outer ring does not overlap any reserved rectangle and its centre stays at the stage centre
-
-#### Scenario: Pure radius helper is host-testable
-
-- **WHEN** the radius helper is called with plain numbers in a host-side unit test
-- **THEN** it returns a finite radius without importing Svelte or browser APIs
-
-#### Scenario: Transient overlays do not shrink the ring
-
-- **WHEN** a tooltip, popover, or context menu is visible
-- **THEN** the outer ring radius is unchanged because transient overlays are not reserved rectangles
-
 ### Requirement: Overlay rotation is a persisted display-only setting
 
 The placement overlay SHALL provide a rotate control that changes only how the
@@ -367,25 +338,3 @@ panel SHALL be rendered on the canvas.
 
 - **WHEN** the user drags an indicator or changes its angle or ring with the keyboard
 - **THEN** the interaction occurs on the canvas overlay and the Placement tab reflects the stored preference
-
-### Requirement: Outer radius comes from a pure measured helper
-
-The maximum safe outer-ring radius SHALL be computed by a pure helper that
-takes the stage centre, stage bounds, and measured reserved rectangles as plain
-numbers. Transient overlays SHALL NOT be included in the measurement, and a
-finite fallback SHALL be used for degenerate or missing measurements.
-
-#### Scenario: Radius helper uses plain numbers
-
-- **WHEN** the radius helper is called with plain numbers in a host-side unit test
-- **THEN** it returns a finite radius without importing Svelte or browser APIs
-
-#### Scenario: Transient overlays are excluded from measurement
-
-- **WHEN** a tooltip, popover, or context menu is visible
-- **THEN** the outer ring radius is unchanged because those overlays are not reserved rectangles
-
-#### Scenario: Degenerate measurements use a finite fallback
-
-- **WHEN** stage bounds or reserved rectangles are missing or degenerate
-- **THEN** the helper returns a finite fallback radius and keeps the stage centre

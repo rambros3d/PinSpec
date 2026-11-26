@@ -11,12 +11,14 @@
     type PlacementRing,
   } from '../../core/types';
   import { normalizeAngle, type PlacementIndicator } from '../../core/placement';
+  import type { PlacementRingRadii } from '../../core/placement-rings';
 
   interface Props {
     stageEl: HTMLElement | null;
     centerX: number;
     centerY: number;
-    radius: number;
+    /** Measured radii shared by drawing, pointer selection and keyboard changes. */
+    radii: PlacementRingRadii;
     indicators: PlacementIndicator[];
     selected: string | null;
     overlayRotation: number;
@@ -28,20 +30,13 @@
     stageEl,
     centerX,
     centerY,
-    radius,
+    radii,
     indicators,
     selected,
     overlayRotation,
     onSelect,
     onAngle,
   }: Props = $props();
-
-  /** Display-only ring radii relative to the safe outer radius, high first. */
-  const RING_FACTORS: Record<PlacementRing, number> = {
-    high: 0.8,
-    medium: 0.89,
-    low: 0.98,
-  };
 
   let dragTarget: Element | null = null;
   let dragPointerId = 0;
@@ -50,7 +45,7 @@
   /** Draw at the stored angle plus the display-only rotation offset. */
   function pointFor(preference: PinPlacementPreference): { x: number; y: number } {
     const radians = ((preference.angle + overlayRotation) * Math.PI) / 180;
-    const ringRadius = radius * RING_FACTORS[preference.ring];
+    const ringRadius = radii[preference.ring];
     return {
       x: centerX + Math.cos(radians) * ringRadius,
       y: centerY - Math.sin(radians) * ringRadius,
@@ -75,7 +70,7 @@
     let nearest: PlacementRing = 'low';
     let bestDelta = Number.POSITIVE_INFINITY;
     for (const ring of PLACEMENT_RINGS) {
-      const delta = Math.abs(distance - radius * RING_FACTORS[ring]);
+      const delta = Math.abs(distance - radii[ring]);
       if (delta < bestDelta) {
         bestDelta = delta;
         nearest = ring;
@@ -160,14 +155,14 @@
       <circle
         cx={centerX}
         cy={centerY}
-        r={Math.max(1, radius * RING_FACTORS[ring])}
+        r={Math.max(1, radii[ring])}
         class="fill-none stroke-current text-info opacity-90"
         stroke-width="2"
         stroke-dasharray={ring === 'low' ? '5 4' : undefined}
       />
       <text
         x={centerX + 5}
-        y={centerY - Math.max(1, radius * RING_FACTORS[ring]) - 4}
+        y={centerY - Math.max(1, radii[ring]) - 4}
         class="fill-current text-info text-[11px] font-medium"
       >
         {PLACEMENT_RING_LABELS[ring]}

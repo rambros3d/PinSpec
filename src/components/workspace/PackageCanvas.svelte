@@ -7,7 +7,7 @@
   import RotateCw from '@solar-icons/svelte/bold-duotone/rotate-clockwise';
   import Search from '@solar-icons/svelte/bold-duotone/magnifier';
   import X from '@solar-icons/svelte/bold-duotone/close';
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import {
     fitViewTransform,
     pointerMetrics,
@@ -23,6 +23,11 @@
     type PlacementIndicator,
   } from '../../core/placement';
   import { clampOverlayPosition } from '../../core/overlay-position';
+  import {
+    PLACEMENT_ZOOM_EPSILON,
+    placementRingRadii,
+    placementZoomLimit,
+  } from '../../core/placement-rings';
   import {
     formatMuxLabel,
     getChipMuxModel,
@@ -169,18 +174,36 @@
     return set;
   });
 
-  /** Ring geometry stays centred on the stage; only the radius is measured. */
-  const overlayCenterX = $derived(stageWidth / 2);
-  const overlayCenterY = $derived(stageHeight / 2);
+  /**
+   * Ring geometry follows the rendered IC body. The measured rectangle already
+   * includes pan, zoom and rotation, so renderer layout math is not repeated.
+   */
+  let bodyCenterX = $state(0);
+  let bodyCenterY = $state(0);
+  let bodyHalfDiagonal = $state(0);
   let safeRadius = $state(40);
+  const ringRadii = $derived(placementRingRadii(bodyHalfDiagonal, safeRadius));
 
   /**
-   * Measure canvas furniture in the DOM and pass plain rectangles to the pure
-   * radius helper. Transient overlays are deliberately not measured.
+   * Measure the transformed body rectangle and canvas furniture in the DOM,
+   * then pass plain numbers to the pure geometry helpers. Transient overlays
+   * are deliberately not measured as furniture.
    */
   function measureSafeRadiusFromDom(): void {
     if (!stageEl || stageWidth <= 0 || stageHeight <= 0) return;
     const stageRect = stageEl.getBoundingClientRect();
+    const body = contentEl?.querySelector('[data-ic-body]');
+    const bodyRect = body?.getBoundingClientRect();
+    if (bodyRect && bodyRect.width > 0 && bodyRect.height > 0) {
+      bodyCenterX = (bodyRect.left + bodyRect.right) / 2 - stageRect.left;
+      bodyCenterY = (bodyRect.top + bodyRect.bottom) / 2 - stageRect.top;
+      bodyHalfDiagonal = Math.hypot(bodyRect.width, bodyRect.height) / 2;
+    } else {
+      bodyCenterX = stageWidth / 2;
+      bodyCenterY = stageHeight / 2;
+      bodyHalfDiagonal = 0;
+    }
+
     const canvas = stageEl.closest('.workspace-canvas') ?? stageEl;
     const reserved: MeasuredRect[] = [];
     for (const node of Array.from(canvas.querySelectorAll('[data-placement-furniture]'))) {
@@ -194,22 +217,55 @@
       });
     }
     safeRadius = measuredSafeRadius(
-      overlayCenterX,
-      overlayCenterY,
+      bodyCenterX,
+      bodyCenterY,
       { left: 0, top: 0, width: stageWidth, height: stageHeight },
       reserved,
       Math.max(40, Math.min(stageWidth, stageHeight) * 0.25),
     );
   }
 
-  // Re-measure on resize, zoom and furniture changes such as the remap banner.
+  /**
+   * Reduce zoom around the body centre when the high ring cannot clear the
+   * body inside the furniture-safe radius. This runs only on overlay enable,
+   * chip/rotation changes, and resize; pointer movement never schedules it.
+   */
+  async function autoFitPlacement(): Promise<void> {
+    await tick();
+    if (!placementSettings.overlayVisible || !stageEl || !contentEl) return;
+    measureSafeRadiusFromDom();
+    if (bodyHalfDiagonal <= 0) return;
+    const halfDiagonalAtZoom1 = bodyHalfDiagonal / zoom;
+    const limit = placementZoomLimit(halfDiagonalAtZoom1, safeRadius);
+    if (!(zoom > limit + PLACEMENT_ZOOM_EPSILON)) return;
+    const view = zoomAtPoint({ zoom, panX, panY }, limit / zoom, bodyCenterX, bodyCenterY);
+    zoom = view.zoom;
+    panX = view.panX;
+    panY = view.panY;
+  }
+
+  // Re-measure on resize, pan, zoom, furniture changes, chip and rotation.
+  // Auto zoom is scheduled separately by the event handlers below.
   $effect(() => {
     void stageWidth;
     void stageHeight;
     void zoom;
+    void panX;
+    void panY;
+    void chip.id;
+    void rotation;
     void placementSettings.overlayVisible;
     void remapSourcePos;
     queueMicrotask(measureSafeRadiusFromDom);
+  });
+
+  // Enabling the overlay from the canvas, drawer, or dock tab fits the body
+  // inside the high ring; disabling and ordinary pointer input do not.
+  let wasOverlayVisible = false;
+  $effect(() => {
+    const visible = placementSettings.overlayVisible;
+    if (visible && !wasOverlayVisible) void autoFitPlacement();
+    wasOverlayVisible = visible;
   });
 
   function placementPreference(name: string): PinPlacementPreference {
@@ -422,13 +478,17 @@
     hoveredPin = { pin, x: e.clientX, y: e.clientY };
   }
 
-  // Fit view automatically whenever chip or rotation changes
+  // Fit view automatically whenever chip or rotation changes, then respect
+  // the placement ring contract if the overlay is visible.
   let lastFittedKey = '';
   $effect(() => {
     const key = `${chip.id}:${rotation}`;
     if (key !== lastFittedKey && stageEl && contentEl) {
       lastFittedKey = key;
-      queueMicrotask(() => fitView());
+      queueMicrotask(() => {
+        fitView();
+        void autoFitPlacement();
+      });
     }
   });
 
@@ -457,13 +517,18 @@
     measureSafeRadiusFromDom();
     const stage = stageEl;
     const canvas = stage?.closest('.workspace-canvas') ?? null;
+    /** Resize is an explicit auto-fit trigger; pan and pointer moves are not. */
+    const handleResize = (): void => {
+      measureSafeRadiusFromDom();
+      void autoFitPlacement();
+    };
     const observer =
-      typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measureSafeRadiusFromDom);
+      typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(handleResize);
     if (observer) {
       if (stage) observer.observe(stage);
       if (canvas) observer.observe(canvas);
     }
-    window.addEventListener('resize', measureSafeRadiusFromDom);
+    window.addEventListener('resize', handleResize);
     if (stage) {
       stage.addEventListener('wheel', handleWheel, { passive: false });
       stage.addEventListener('gesturestart', handleGestureStart, { passive: false });
@@ -485,7 +550,7 @@
     return () => {
       topBarUI.focusSearch = null;
       observer?.disconnect();
-      window.removeEventListener('resize', measureSafeRadiusFromDom);
+      window.removeEventListener('resize', handleResize);
       if (stage) {
         stage.removeEventListener('wheel', handleWheel);
         stage.removeEventListener('gesturestart', handleGestureStart);
@@ -599,9 +664,9 @@
   {#if placementSettings.overlayVisible}
     <PlacementOverlay
       {stageEl}
-      centerX={overlayCenterX}
-      centerY={overlayCenterY}
-      radius={safeRadius}
+      centerX={bodyCenterX}
+      centerY={bodyCenterY}
+      radii={ringRadii}
       indicators={placementIndicators}
       selected={placementSelection.selected}
       {overlayRotation}

@@ -175,6 +175,7 @@
   <g transform={geometryTransform}>
   <!-- Substrate Frame -->
   <rect
+    data-ic-body
     x={layout.outerPad + layout.headerPad - 8}
     y={layout.outerPad + layout.headerPad - 8}
     width={layout.gridWidth + 16}

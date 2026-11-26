@@ -135,6 +135,22 @@ describe('pure package rotation geometry helpers', () => {
   });
 });
 
+describe('rendered body measurement marker', () => {
+  it('marks the transformed body rectangle in both package renderers', () => {
+    for (const file of ['PerimeterPackage.svelte', 'GridPackage.svelte']) {
+      const source = fs.readFileSync(
+        path.join(process.cwd(), 'src', 'components', 'workspace', file),
+        'utf8',
+      );
+      expect(source, file).toContain('data-ic-body');
+      expect(source, file).toContain('<g transform={geometryTransform}>');
+      const body = source.match(/<rect\s+data-ic-body[\s\S]*?\/>/)?.[0] ?? '';
+      expect(body, file).not.toBe('');
+      expect(body, file).toContain('class="fill-neutral stroke-base-300"');
+    }
+  });
+});
+
 describe('package rotation in pure persistence paths', () => {
   it('clones byte-identically when absent and preserves each clockwise value', () => {
     const absent = createEmptyWorkspace(chip.id);

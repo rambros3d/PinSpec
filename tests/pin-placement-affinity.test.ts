@@ -686,14 +686,55 @@ describe('placement overlay interaction refresh', () => {
       'utf8',
     );
 
-  it('uses tighter ring spacing with a larger outer ring', () => {
+  it('uses measured body-centred radii for drawing, selection and keyboard changes', () => {
     const overlay = readOverlay();
-    expect(overlay).toContain('high: 0.8');
-    expect(overlay).toContain('medium: 0.89');
-    expect(overlay).toContain('low: 0.98');
-    expect(overlay).not.toContain('0.34');
-    expect(overlay).not.toContain('0.66');
-    expect(overlay).not.toContain('0.96');
+    expect(overlay).not.toContain('RING_FACTORS');
+    expect(overlay).not.toContain('radius *');
+    expect(overlay).toContain('radii: PlacementRingRadii');
+    expect(overlay).toContain('radii[preference.ring]');
+    expect(overlay).toContain('radii[ring]');
+    expect(overlay).toContain('ringFromEvent(event)');
+
+    const canvas = readCanvas();
+    expect(canvas).toContain("querySelector('[data-ic-body]')");
+    expect(canvas).toContain('bodyHalfDiagonal = Math.hypot(bodyRect.width, bodyRect.height) / 2');
+    expect(canvas).toContain('placementRingRadii(bodyHalfDiagonal, safeRadius)');
+    expect(canvas).toContain('centerX={bodyCenterX}');
+    expect(canvas).toContain('centerY={bodyCenterY}');
+    expect(canvas).toContain('radii={ringRadii}');
+    expect(canvas).toMatch(/measuredSafeRadius\([\s\S]{0,80}bodyCenterX,[\s\S]{0,40}bodyCenterY,/);
+  });
+
+  it('re-measures ring geometry when the body pans', () => {
+    const canvas = readCanvas();
+    const effect =
+      canvas.match(/\$effect\(\(\) => \{\n    void stageWidth;[\s\S]*?queueMicrotask\(measureSafeRadiusFromDom\);\n  \}\);/)?.[0] ?? '';
+    expect(effect).toContain('void panX;');
+    expect(effect).toContain('void panY;');
+    expect(effect).toContain('void zoom;');
+    expect(effect).toContain('void chip.id;');
+    expect(effect).toContain('void rotation;');
+  });
+
+  it('auto-fits only on overlay enable, chip or rotation change, and resize', () => {
+    const canvas = readCanvas();
+    const autoFit =
+      canvas.match(/async function autoFitPlacement\(\): Promise<void> \{[\s\S]*?\n  \}/)?.[0] ?? '';
+    expect(autoFit).toContain('await tick()');
+    expect(autoFit).toContain('placementZoomLimit(');
+    expect(autoFit).toContain('zoom > limit + PLACEMENT_ZOOM_EPSILON');
+    expect(autoFit).toContain('zoomAtPoint({ zoom, panX, panY }, limit / zoom, bodyCenterX, bodyCenterY)');
+
+    const resize =
+      canvas.match(/const handleResize = \(\): void => \{[\s\S]*?\n    \};/)?.[0] ?? '';
+    expect(resize).toContain('void autoFitPlacement()');
+    expect(canvas).toContain('if (visible && !wasOverlayVisible) void autoFitPlacement();');
+
+    const pointerMove =
+      canvas.match(/function handlePointerMove\(e: PointerEvent\): void \{[\s\S]*?\n  \}/)?.[0] ?? '';
+    expect(pointerMove).not.toContain('autoFitPlacement');
+    const zoomBy = canvas.match(/function zoomBy\([\s\S]*?\n  \}/)?.[0] ?? '';
+    expect(zoomBy).not.toContain('autoFitPlacement');
   });
 
   it('keeps keyboard angle steps and adds clamped ring stepping', () => {
@@ -865,9 +906,15 @@ describe('priority ring identifiers', () => {
       path.join(ROOT, 'src/components/workspace/PlacementOverlay.svelte'),
       'utf8',
     );
-    expect(overlay).toContain('high: 0.8');
-    expect(overlay).toContain('medium: 0.89');
-    expect(overlay).toContain('low: 0.98');
+    expect(overlay).not.toContain('RING_FACTORS');
+    expect(overlay).toContain('radii: PlacementRingRadii');
+    expect(overlay).toContain('radii[preference.ring]');
+    const canvas = fs.readFileSync(
+      path.join(ROOT, 'src/components/workspace/PackageCanvas.svelte'),
+      'utf8',
+    );
+    expect(canvas).toContain('placementZoomLimit(');
+    expect(canvas).toContain('PLACEMENT_ZOOM_EPSILON');
     const panel = fs.readFileSync(
       path.join(ROOT, 'src/components/workspace/PlacementPanel.svelte'),
       'utf8',
@@ -981,6 +1028,13 @@ describe('priority ring identifiers', () => {
       measuredSafeRadius(Number.NaN, 300, { left: 0, top: 0, width: 0, height: 0 }, [], 40),
     ).toBe(40);
     expect(measuredSafeRadius(400, 300, bounds, [])).toBe(300);
+  });
+
+  it('uses an arbitrary centre without assuming the stage midpoint', () => {
+    const bounds = { left: 40, top: 60, width: 800, height: 600 };
+    expect(measuredSafeRadius(240, 210, bounds, [])).toBe(150);
+    const reserved = [{ left: 40, top: 60, right: 140, bottom: 160 }];
+    expect(measuredSafeRadius(240, 210, bounds, reserved)).toBeCloseTo(Math.hypot(100, 50) - 6, 9);
   });
 });
 

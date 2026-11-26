@@ -291,6 +291,7 @@
   <!-- IC Package Body -->
   <g>
     <rect
+      data-ic-body
       x={layout.originX}
       y={layout.originY}
       width={layout.bodyWidth}
